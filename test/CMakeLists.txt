@@ -1,0 +1,9 @@
+# Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+
+add_executable(simnow
+    simnow.cpp)
+target_link_libraries(simnow ft cppex pthread)
+
+add_executable(simnow_cli
+simnow_cli.cpp)
+target_link_libraries(simnow_cli ft cppex pthread)
