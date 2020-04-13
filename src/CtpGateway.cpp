@@ -548,30 +548,25 @@ void CtpGateway::on_position(
     else
       pos.yd_volume = position->Position - position->TodayPosition;
 
-    auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
-    auto contract = ContractTable::get(ticker);
-    if (!contract) {
-      spdlog::warn("[CTP] on_position. {} is not in interest list. "
-                    "Please query the contract before other operations",
-                    ticker);
-      return;
-    }
-
-    int size = contract->size;
-    double cost = pos.price * pos.volume * size;
-
-    pos.volume += position->Position;
-    pos.pnl += position->PositionProfit;
-
-    if (pos.volume > 0 && size > 0) {
-      cost += position->PositionCost;
-      pos.price = cost / (pos.volume * size);
-    }
-
     if (pos.direction == Direction::BUY)
       pos.frozen += position->LongFrozen;
     else
       pos.frozen += position->ShortFrozen;
+
+    int original = pos.volume;
+    pos.volume += position->Position;
+    pos.pnl += position->PositionProfit;
+
+    auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
+    auto contract = ContractTable::get(ticker);
+    if (!contract) {
+      spdlog::warn("[CTP] on_position. {} is not in contract list. "
+                    "Please update the contract list before other operations",
+                    ticker);
+    } else if (pos.volume > 0 && contract->size > 0) {
+      double cost = pos.price * original * contract->size + position->PositionCost;
+      pos.price = cost / (pos.volume * contract->size);
+    }
   }
 
   if (is_last) {
