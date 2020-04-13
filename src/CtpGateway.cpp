@@ -368,7 +368,7 @@ void CtpGateway::on_trade(CThostFtdcTradeField *trade) {
   td.symbol = trade->InstrumentID;
   td.exchange = trade->ExchangeID;
   td.ticker = to_ticker(td.symbol, td.exchange);
-  td.trade_id = trade->TradeID;
+  td.trade_id = std::stoi(trade->TradeID);
   td.trade_time = trade->TradeTime;
   td.direction = direction(trade->Direction);
   td.offset = offset(trade->OffsetFlag);

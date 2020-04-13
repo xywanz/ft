@@ -14,10 +14,10 @@ struct Trade {
   std::string     exchange;
   std::string     ticker;
   std::string     order_id;
-  std::string     trade_id;
   std::string     trade_time;
   Direction       direction;
-  Offset  offset;
+  Offset          offset;
+  int             trade_id;
   double          price;
   int             volume;
 };
