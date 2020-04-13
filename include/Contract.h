@@ -61,7 +61,7 @@ class ContractTable {
     }
   }
 
-  static Contract* get(const std::string& ticker) {
+  static const Contract* get(const std::string& ticker) {
     auto iter = contracts.find(ticker);
     if (iter == contracts.end())
       return nullptr;
