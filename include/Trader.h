@@ -138,15 +138,11 @@ class Trader : public TraderInterface {
                          Direction direction, Offset offset,
                          OrderType type, double price);
 
-  void update_pending(const std::string& ticker,
-                      Direction direction,
-                      Offset offset,
-                      int volume);
-
-  void update_traded(const std::string& ticker,
+  void update_volume(const std::string& ticker,
                      Direction direction,
                      Offset offset,
-                     int volume);
+                     int traded,
+                     int pending_changed);
 
   void update_pnl(const std::string& ticker, double last_price);
 

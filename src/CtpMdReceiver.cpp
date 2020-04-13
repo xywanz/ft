@@ -205,7 +205,7 @@ void CtpMdReceiver::on_depth_md(
 
   data.open_interest = depth_market_data->OpenInterest;
 
-  spdlog::debug("[CTP MD] on_depth_md. Ticker: {}, Time MS: {}, LastPrice: {}, "
+  spdlog::debug("[CTP MD] on_depth_md. Ticker: {}, Time MS: {}, LastPrice: {:.2f}, "
                 "Volume: {}, Turnover: {}, Open Interest: {}",
                data.ticker, data.time_ms, data.last_price, data.volume,
                data.turnover, data.open_interest);

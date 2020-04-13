@@ -344,7 +344,7 @@ void CtpGateway::on_order(CThostFtdcOrderField *ctp_order) {
 
   spdlog::debug("[CTP] on_order. Order ID: {}, Instrument: {}, Exchange: {}, "
                 "Direction: {}, Offset: {}, Origin Volume: {}, Traded: {}, "
-                "Price: {}, Status: {}, Status Msg: {}",
+                "Price: {:.2f}, Status: {}, Status Msg: {}",
                 order.order_id, order.symbol, order.exchange, to_string(order.direction),
                 to_string(order.offset), order.volume, order.volume_traded, order.price,
                 to_string(order.status), gb2312_to_utf8(ctp_order->StatusMsg));
@@ -376,7 +376,7 @@ void CtpGateway::on_trade(CThostFtdcTradeField *trade) {
   td.volume = trade->Volume;
 
   spdlog::debug("[CTP] on_trade. Order ID: {}, Instrument: {}, Exchange: {}, "
-              "Trade ID: {}, Trade Time: {}, Direction: {}, Offset: {}, Price: {}, "
+              "Trade ID: {}, Trade Time: {}, Direction: {}, Offset: {}, Price: {:.2f}, "
               "Volume: {}",
               td.order_id, td.symbol, td.exchange, td.trade_id, td.trade_time,
               to_string(td.direction), to_string(td.offset), td.price, td.volume);

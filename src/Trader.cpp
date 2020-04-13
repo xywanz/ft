@@ -65,35 +65,11 @@ bool Trader::login(const LoginParams& params) {
   return true;
 }
 
-void Trader::update_pending(const std::string& ticker,
-                            Direction direction,
-                            Offset offset,
-                            int volume) {
-  bool is_close = is_offset_close(offset);
-  if (is_close)
-    direction = opp_direction(direction);
-
-  auto key = to_pos_key(ticker, direction);
-  std::unique_lock<std::mutex> lock(position_mutex_);
-  auto& pos = positions_[key];
-  if (pos.ticker.empty()) {
-    pos.ticker = ticker;
-    pos.direction = direction;
-  }
-
-  if (offset == Offset::OPEN)
-    pos.open_pending += volume;
-  else if (is_close)
-    pos.close_pending += volume;
-
-  assert(pos.open_pending >= 0);
-  assert(pos.close_pending >= 0);
-}
-
-void Trader::update_traded(const std::string& ticker,
+void Trader::update_volume(const std::string& ticker,
                            Direction direction,
                            Offset offset,
-                           int volume) {
+                           int traded,
+                           int pending_changed) {
   bool is_close = is_offset_close(offset);
   if (is_close)
     direction = opp_direction(direction);
@@ -105,11 +81,11 @@ void Trader::update_traded(const std::string& ticker,
   // TODO(kevin): 这里可能出问题，初始化时如果on_trade比on_position
   // 先到达，那么会出现仓位计算不正确的问题
   if (offset == Offset::OPEN) {
-    pos.open_pending -= volume;
-    pos.volume += volume;
+    pos.open_pending += pending_changed;
+    pos.volume += traded;
   } else if (is_close) {
-    pos.close_pending -= volume;
-    pos.volume -= volume;
+    pos.close_pending += pending_changed;
+    pos.volume -= traded;
   }
 
   assert(pos.volume >= 0);
@@ -145,7 +121,7 @@ bool Trader::send_order(const std::string& ticker, int volume,
 
   order.order_id = gateway_->send_order(&order);
   if (order.order_id.empty()) {
-    spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {}, "
+    spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                     "Direction: {}, Offset: {}",
                     ticker, volume, to_string(type), price,
                     to_string(direction), to_string(offset));
@@ -156,9 +132,9 @@ bool Trader::send_order(const std::string& ticker, int volume,
   std::unique_lock<std::mutex> lock(order_mutex_);
   orders_.emplace(order.order_id, order);
   lock.unlock();
-  update_pending(ticker, direction, offset, volume);
+  update_volume(ticker, direction, offset, 0, volume);
 
-  spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {}, "
+  spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
                 ticker, volume, to_string(type), price,
                 to_string(direction), to_string(offset));
@@ -208,7 +184,7 @@ void Trader::show_positions() {
   std::unique_lock<std::mutex> lock(position_mutex_);
   for (const auto& [key, pos] : positions_) {
     spdlog::info("[Trader] [Position] Ticker: {}, Direction: {}, Price: {:.2f}, "
-                 "Holding: {}, Open Pending: {}, Close Pending: {}, PNL: {}",
+                 "Holding: {}, Open Pending: {}, Close Pending: {}, PNL: {:.2f}",
                  pos.ticker,
                  to_string(pos.direction),
                  pos.price,
@@ -227,7 +203,7 @@ void Trader::on_market_data(const MarketData* data) {
 
 void Trader::on_position(const Position* position) {
   spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
-               "Direction: {}, Volume: {}, Price: {}, Frozen: {}",
+               "Direction: {}, Volume: {}, Price: {:.2f}, Frozen: {}",
                position->ticker, to_string(position->direction),
                position->volume, position->price, position->frozen);
   if (position->volume == 0)
@@ -302,7 +278,7 @@ void Trader::on_order(const Order* rtn_order) {
 // TODO(Kevin): fix incorrect calculation and missing data
 void Trader::on_trade(const Trade* trade) {
   spdlog::debug("[Trader] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
-                "Direction: {}, Offset: {}, Price: {}, Volume: {}",
+                "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
                 to_string(trade->direction), to_string(trade->offset),
                 trade->price, trade->volume);
@@ -323,7 +299,7 @@ void Trader::on_trade(const Trade* trade) {
       if (is_close) {
         spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
                       "Order ID: {}, Trade ID: {}, Direction: {}, Offset: {}, "
-                      "Price: {}, Volume: {}",
+                      "Price: {:.2f}, Volume: {}",
                       trade->ticker, trade->order_id, trade->trade_id,
                       to_string(d), to_string(trade->offset),
                       trade->price, trade->volume);
@@ -342,7 +318,8 @@ void Trader::on_trade(const Trade* trade) {
     }
   }
 
-  update_traded(trade->ticker, trade->direction, trade->offset, trade->volume);
+  update_volume(trade->ticker, trade->direction, trade->offset,
+                trade->volume, -trade->volume);
 
   auto contract = ContractTable::get(trade->ticker);
   if (!contract) {
@@ -370,7 +347,7 @@ void Trader::handle_canceled(const Order* rtn_order) {
   }
 
   auto left_vol = rtn_order->volume - rtn_order->volume_traded;
-  update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
+  update_volume(rtn_order->ticker, rtn_order->direction, rtn_order->offset, 0, -left_vol);
 }
 
 void Trader::handle_submitted(const Order* rtn_order) {
@@ -393,16 +370,9 @@ void Trader::handle_all_traded(const Order* rtn_order) {
 }
 
 void Trader::handle_cancel_rejected(const Order* rtn_order) {
-  int volume;
-
-  {
     std::unique_lock<std::mutex> lock(order_mutex_);
     auto& order = orders_[rtn_order->order_id];
-    volume = order.volume - order.volume_traded;
     order.flags.reset(kCancelBit);
-  }
-
-  update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -volume);
 }
 
 }  // namespace ft
