@@ -129,18 +129,21 @@ class CtpGateway : public GatewayInterface {
   AsyncStatus req_async_status(int req_id) {
     std::unique_lock<std::mutex> lock(status_mutex_);
     auto res = req_status_.emplace(req_id, AsyncStatus{true});
+    assert(res.second == true);
     return res.first->second;
   }
 
   void rsp_async_status(int req_id, bool success) {
     std::unique_lock<std::mutex> lock(status_mutex_);
-    auto status = req_status_[req_id];
-    req_status_.erase(req_id);
-    lock.unlock();
+    auto iter = req_status_.find(req_id);
+    if (iter == req_status_.end())
+      return;
+
     if (success)
-      status.set_success();
+      iter->second.set_success();
     else
-      status.set_error();
+      iter->second.set_error();
+    req_status_.erase(iter);
   }
 
   int next_req_id() {

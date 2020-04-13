@@ -52,33 +52,17 @@ bool Trader::login(const LoginParams& params) {
   is_login_ = true;
   spdlog::info("[Trader] login. Login as {}", params.investor_id());
 
-  subscribe(params.subscribed_list());
-  for (const auto& ticker : params.subscribed_list())
+  // query all positions
+  status = gateway_->query_position("", "");
+  if (!status.wait()) {
+    spdlog::error("[Trader] login. Failed to query positions");
+    return false;
+  }
+
+  for (auto& ticker : params.subscribed_list())
     md_center_.emplace(ticker, MdManager(ticker));
 
   return true;
-}
-
-std::size_t Trader::subscribe(const std::vector<std::string>& tickers) {
-  if (!is_login_) {
-    spdlog::error("[Trader] Subscribe: Login first");
-    return 0;
-  }
-
-  std::string symbol;
-  std::string exchange;
-  std::size_t n = 0;
-
-  for (const auto& ticker : tickers) {
-    ticker_split(ticker, &symbol, &exchange);
-    auto status = gateway_->query_position(symbol, exchange);
-    if (!status.wait()) {
-      spdlog::error("[Trader] subscribe. Failed to query position.");
-      continue;
-    }
-  }
-
-  return n;
 }
 
 void Trader::update_pending(const std::string& ticker,
@@ -102,6 +86,33 @@ void Trader::update_pending(const std::string& ticker,
   else if (is_close)
     pos.close_pending += volume;
 
+  assert(pos.open_pending >= 0);
+  assert(pos.close_pending >= 0);
+}
+
+void Trader::update_traded(const std::string& ticker,
+                           Direction direction,
+                           Offset offset,
+                           int volume) {
+  bool is_close = is_offset_close(offset);
+  if (is_close)
+    direction = opp_direction(direction);
+
+  auto key = to_pos_key(ticker, direction);
+  std::unique_lock<std::mutex> lock(position_mutex_);
+  auto& pos = positions_[key];
+
+  // TODO(kevin): 这里可能出问题，初始化时如果on_trade比on_position
+  // 先到达，那么会出现仓位计算不正确的问题
+  if (offset == Offset::OPEN) {
+    pos.open_pending -= volume;
+    pos.volume += volume;
+  } else if (is_close) {
+    pos.close_pending -= volume;
+    pos.volume -= volume;
+  }
+
+  assert(pos.volume >= 0);
   assert(pos.open_pending >= 0);
   assert(pos.close_pending >= 0);
 }
@@ -290,73 +301,66 @@ void Trader::on_order(const Order* rtn_order) {
 
 // TODO(Kevin): fix incorrect calculation and missing data
 void Trader::on_trade(const Trade* trade) {
-  trade_record_[trade->ticker].emplace_back(*trade);
-
-  Direction d = trade->direction;
-  bool is_close = is_offset_close(trade->offset);
-  if (is_close)
-    d = opp_direction(d);
-
-  auto key = to_pos_key(trade->ticker, d);
-
-  std::unique_lock<std::mutex> lock(position_mutex_);
-  auto iter = positions_.find(key);
-  if (iter == positions_.end()) {
-    lock.unlock();
-    if (is_close) {
-      spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
-                    "Order ID: {}, Trade ID: {}, Direction: {}, Offset: {}, "
-                    "Price: {}, Volume: {}",
-                    trade->ticker, trade->order_id, trade->trade_id,
-                    to_string(d), to_string(trade->offset),
-                    trade->price, trade->volume);
-      return;
-    }
-
-    Position pos;
-    pos.symbol = trade->symbol;
-    pos.exchange = trade->exchange;
-    pos.ticker = trade->ticker;
-    pos.direction = trade->direction;
-    pos.volume = trade->volume;
-    pos.price = trade->price;
-    lock.lock();
-    positions_.emplace(std::move(key), std::move(pos));
-  }
-  lock.unlock();
-
   spdlog::debug("[Trader] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
                 "Direction: {}, Offset: {}, Price: {}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
                 to_string(trade->direction), to_string(trade->offset),
                 trade->price, trade->volume);
 
+  trade_record_[trade->ticker].emplace_back(*trade);
+
+  Direction d = trade->direction;
+  bool is_close = is_offset_close(trade->offset);
+  if (is_close)
+    d = opp_direction(d);
+  auto key = to_pos_key(trade->ticker, d);
+
+  {
+    std::unique_lock<std::mutex> lock(position_mutex_);
+    auto iter = positions_.find(key);
+    if (iter == positions_.end()) {
+      lock.unlock();
+      if (is_close) {
+        spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
+                      "Order ID: {}, Trade ID: {}, Direction: {}, Offset: {}, "
+                      "Price: {}, Volume: {}",
+                      trade->ticker, trade->order_id, trade->trade_id,
+                      to_string(d), to_string(trade->offset),
+                      trade->price, trade->volume);
+        return;
+      }
+
+      Position pos;
+      pos.symbol = trade->symbol;
+      pos.exchange = trade->exchange;
+      pos.ticker = trade->ticker;
+      pos.direction = trade->direction;
+      pos.volume = trade->volume;
+      pos.price = trade->price;
+      lock.lock();
+      positions_.emplace(std::move(key), std::move(pos));
+    }
+  }
+
+  update_traded(trade->ticker, trade->direction, trade->offset, trade->volume);
+
   auto contract = ContractTable::get(trade->ticker);
   if (!contract) {
     spdlog::error("[Trader] on_trade. Contract not found. Ticker: {}", trade->ticker);
     return;
   }
-  int size = contract->size;
 
-  lock.lock();
+  std::unique_lock<std::mutex> lock(position_mutex_);
   auto& pos = positions_[key];
-  double cost = size * pos.volume * pos.price;
+  double cost = contract->size * (pos.volume - trade->volume) * pos.price;
 
-  if (trade->offset == Offset::OPEN) {
-    cost += size * trade->volume * trade->price;
+  if (trade->offset == Offset::OPEN)
+    cost += contract->size * trade->volume * trade->price;
+  else if (is_offset_close(trade->offset))
+    cost -= contract->size * trade->volume * trade->price;
 
-    pos.volume += trade->volume;
-    pos.open_pending -= trade->volume;
-    if (pos.volume > 0 && size > 0)
-      pos.price = cost / (pos.volume * size);
-  } else if (is_offset_close(trade->offset)) {
-    cost -= size * trade->volume * trade->price;
-
-    pos.volume -= trade->volume;
-    pos.close_pending -= trade->volume;
-    if (pos.volume > 0 && size > 0)
-      pos.price = cost / (pos.volume * size);
-  }
+  if (pos.volume > 0 && contract->size > 0)
+      pos.price = cost / (pos.volume * contract->size);
 }
 
 void Trader::handle_canceled(const Order* rtn_order) {

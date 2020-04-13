@@ -57,10 +57,10 @@ int main(int argc, char** argv) {
     exit(-1);
   }
 
-  // trader.sell_open("rb2009.SHFE", 41, ft::OrderType::FAK, 3200);
+  trader.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
-  trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
+  // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
   while (1) {
     sleep(1);

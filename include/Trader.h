@@ -143,6 +143,11 @@ class Trader : public TraderInterface {
                       Offset offset,
                       int volume);
 
+  void update_traded(const std::string& ticker,
+                     Direction direction,
+                     Offset offset,
+                     int volume);
+
   void update_pnl(const std::string& ticker, double last_price);
 
   void handle_canceled(const Order* rtn_order);
