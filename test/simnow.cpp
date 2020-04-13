@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpMdReceiver.h"
+#include "Strategy.h"
 #include "Trader.h"
 
 const char* kSimnowTradeAddr[] = {
@@ -27,8 +28,20 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
+class MyStrategy : public ft::Strategy {
+ public:
+  void on_init(ft::QuantitativTradingContext* ctx) override {
+    spdlog::info("[MyStrategy::on_init]");
+  }
+
+  void on_tick(ft::QuantitativTradingContext* ctx) override {
+    spdlog::info("[MyStrategy::on_tick]");
+    ctx->buy_open(1, ft::OrderType::FOK, 3500);
+  }
+};
+
 int main(int argc, char** argv) {
-  spdlog::set_level(spdlog::level::debug);
+  spdlog::set_level(spdlog::level::info);
 
   ft::ContractTable::init("./contracts.txt");
   ft::Trader trader(ft::FrontType::CTP);
@@ -61,6 +74,9 @@ int main(int argc, char** argv) {
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
+
+  MyStrategy strategy;
+  trader.mount_strategy("rb2009.SHFE", &strategy);
 
   while (1) {
     sleep(1);

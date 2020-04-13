@@ -3,10 +3,12 @@
 #ifndef FT_INCLUDE_TRADER_H_
 #define FT_INCLUDE_TRADER_H_
 
+#include <list>
 #include <map>
 #include <mutex>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "Account.h"
@@ -22,6 +24,8 @@
 #include "TraderInterface.h"
 
 namespace ft {
+
+class Strategy;
 
 class Trader : public TraderInterface {
  public:
@@ -53,33 +57,6 @@ class Trader : public TraderInterface {
 
   void show_positions();
 
-  void get_orders(std::vector<const Order*>* out);
-
-  void get_orders(const std::string&ticker, std::vector<const Order*>* out);
-
-  const KChart* get_kchart(const std::string& ticker, Period period) {
-    return md_center_[ticker].get_kchart(period);
-  }
-
-  bool query_all_contracts() {
-    auto status = gateway_->query_contract("", "");
-    return status.wait();
-  }
-
-  const Position* get_position(const std::string& ticker, Direction direction) const {
-    auto iter = positions_.find(to_pos_key(ticker, direction));
-    if (iter == positions_.end())
-      return nullptr;
-    return &iter->second;
-  }
-
-  const std::vector<Trade>* get_trades(const std::string& ticker) const {
-    auto iter = trade_record_.find(ticker);
-    if (iter == trade_record_.end())
-      return nullptr;
-    return &iter->second;
-  }
-
   const Account* get_account() const {
     thread_local static Account account;
 
@@ -92,6 +69,8 @@ class Trader : public TraderInterface {
       return nullptr;
     return &account;
   }
+
+  bool mount_strategy(const std::string& ticker, Strategy *strategy);
 
   void join() {
     md_receiver_->join();
@@ -162,10 +141,15 @@ class Trader : public TraderInterface {
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;
+  std::map<std::string, std::list<Strategy*>> strategies_;
+
+  std::atomic<std::size_t> pending_strategy_count_ = 0;
+  std::vector<std::pair<std::string, Strategy*>> pending_strategies_;
 
   mutable std::mutex order_mutex_;
   mutable std::mutex account_mutex_;
   mutable std::mutex position_mutex_;
+  mutable std::mutex strategy_mutex_;
 
   bool is_login_ = false;
 };

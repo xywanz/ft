@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 #include <set>
+#include <Strategy.h>
 #include <vector>
 
 #include <spdlog/spdlog.h>
@@ -168,18 +169,6 @@ bool Trader::cancel_order(const std::string& order_id) {
   return true;
 }
 
-void Trader::get_orders(std::vector<const Order*>* out) {
-  for (const auto& [order_id, order] : orders_)
-    out->push_back(&order);
-}
-
-void Trader::get_orders(const std::string&ticker, std::vector<const Order*>* out) {
-  for (const auto& [order_id, order] : orders_) {
-    if (order.ticker == ticker)
-      out->push_back(&order);
-  }
-}
-
 void Trader::show_positions() {
   std::unique_lock<std::mutex> lock(position_mutex_);
   for (const auto& [key, pos] : positions_) {
@@ -195,10 +184,34 @@ void Trader::show_positions() {
   }
 }
 
+bool Trader::mount_strategy(const std::string& ticker, Strategy *strategy) {
+  strategy->set_ctx(new QuantitativTradingContext(ticker, this));
+  std::unique_lock<std::mutex> lock(strategy_mutex_);
+  pending_strategies_.emplace_back(ticker, strategy);
+  ++pending_strategy_count_;
+}
+
 
 void Trader::on_market_data(const MarketData* data) {
   md_center_[data->ticker].on_tick(data);
   update_pnl(data->ticker, data->last_price);
+
+  if (pending_strategy_count_ > 0) {
+    std::unique_lock<std::mutex> lock(strategy_mutex_);
+    auto tmp = std::move(pending_strategies_);
+    pending_strategy_count_ = 0;
+    lock.unlock();
+    for (auto& [ticker, strategy] : tmp) {
+      strategies_[ticker].emplace_back(strategy);
+      strategy->on_init(strategy->get_ctx());
+    }
+  }
+
+  auto iter = strategies_.find(data->ticker);
+  if (iter != strategies_.end()) {
+    for (auto strategy : iter->second)
+      strategy->on_tick(strategy->get_ctx());
+  }
 }
 
 void Trader::on_position(const Position* position) {

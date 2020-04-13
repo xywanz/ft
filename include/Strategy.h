@@ -12,68 +12,63 @@ namespace ft {
 
 class QuantitativTradingContext {
  public:
-  explicit QuantitativTradingContext(Trader* trader)
-    : trader_(trader) {
+  explicit QuantitativTradingContext(const std::string& ticker, Trader* trader)
+    : ticker_(ticker),
+      trader_(trader) {
   }
 
-  bool subscribe(const std::vector<std::string>& tickers) {
-    auto n = trader_->subscribe(tickers);
-    if (n != tickers.size())
-      return false;
-
-    return true;
+  bool buy_open(int volume, OrderType type, double price) {
+    return trader_->buy_open(ticker_, volume, type, price);
   }
 
-  bool buy_open(const std::string& ticker, int volume,
-                OrderType type, double price = 0) {
-    return trader_->buy_open(ticker, volume, type, price);
+  bool sell_close(int volume, OrderType type, double price) {
+    return trader_->sell_close(ticker_, volume, type, price);
   }
 
-  bool sell_close(const std::string& ticker, int volume,
-                  OrderType type, double price = 0) {
-    return trader_->sell_close(ticker, volume, type, price);
+  bool sell_open(int volume, OrderType type, double price) {
+    return trader_->sell_open(ticker_, volume, type, price);
   }
 
-  bool sell_open(const std::string& ticker, int volume,
-                 OrderType type, double price = 0) {
-    return trader_->sell_open(ticker, volume, type, price);
-  }
-
-  bool buy_close(const std::string& ticker, int volume,
-                 OrderType type, double price = 0)  {
-    return trader_->buy_close(ticker, volume, type, price);
+  bool buy_close(int volume, OrderType type, double price)  {
+    return trader_->buy_close(ticker_, volume, type, price);
   }
 
   bool cancel_order(const std::string& order_id) {
     return trader_->cancel_order(order_id);
   }
 
-  void get_orders(std::vector<const Order*>* out) {
-    return trader_->get_orders(out);
-  }
-
-  void get_orders(const std::string&ticker,
-                  std::vector<const Order*>* out) {
-    return trader_->get_orders(ticker, out);
+  const std::string& this_ticker() const {
+    return ticker_;
   }
 
  private:
+  std::string ticker_;
   Trader* trader_;
 };
 
 
 class Strategy {
  public:
-  virtual void on_init(QuantitativTradingContext* ctx) {
+  virtual ~Strategy() {}
+
+  virtual void on_init(QuantitativTradingContext* ctx) {}
+
+  virtual void on_tick(QuantitativTradingContext* ctx) {}
+
+  virtual void on_exit(QuantitativTradingContext* ctx) {}
+
+ private:
+  friend class Trader;
+  void set_ctx(QuantitativTradingContext* ctx) {
+    ctx_ = ctx;
   }
 
-  virtual void on_tick(QuantitativTradingContext* ctx) {
-  }
-
-  virtual void on_exit(QuantitativTradingContext* ctx) {
+  auto get_ctx() const {
+    return ctx_;
   }
 
  private:
+  QuantitativTradingContext* ctx_;
 };
 
 }  // namespace ft

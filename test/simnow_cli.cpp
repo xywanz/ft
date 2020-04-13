@@ -97,9 +97,6 @@ int main(int argc, char** argv) {
       double price = std::stod(args[2]);
       trader.sell_close(ticker, volume, ft::OrderType::FAK, price);
     } else if (args[0] == "last_price") {
-      auto kchart = trader.get_kchart(ticker, ft::Period::M1);
-      if (kchart && !kchart->empty())
-        fmt::print("last: {}\n", kchart->back().close);
     }
 
 next:

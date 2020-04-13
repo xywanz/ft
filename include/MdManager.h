@@ -59,7 +59,7 @@ class MdManager {
 
   uint64_t volume_;
   uint64_t open_interest_;
-  double turnover_;
+  uint64_t turnover_;
 };
 
 }  // namespace ft

@@ -35,7 +35,7 @@ struct MarketData {
   double      lower_limit_price = 0;
 
   uint64_t    volume;
-  double      turnover;
+  uint64_t    turnover;
 
   uint64_t    open_interest;
 };
