@@ -32,10 +32,12 @@ CtpGateway::~CtpGateway() {
 
 bool CtpGateway::login(const LoginParams& params) {
   if (params.broker_id().size() > sizeof(TThostFtdcBrokerIDType) ||
+      params.broker_id().empty() ||
       params.investor_id().size() > sizeof(TThostFtdcUserIDType) ||
+      params.investor_id().empty() ||
       params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
-      params.auth_code().size() > sizeof(TThostFtdcAuthCodeType) ||
-      params.app_id().size() > sizeof(TThostFtdcAppIDType)) {
+      params.passwd().empty() ||
+      params.front_addr().empty()) {
     spdlog::error("[CTP] Invalid login params");
     return false;
   }

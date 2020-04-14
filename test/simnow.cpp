@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpMdReceiver.h"
@@ -40,25 +41,20 @@ class MyStrategy : public ft::Strategy {
   }
 };
 
-int main(int argc, char** argv) {
-  spdlog::set_level(spdlog::level::info);
+int main() {
+  std::size_t front_index = getarg(0UL, "--front");
+  int log_level = getarg(2, "--loglevel");
 
-  ft::ContractTable::init("./contracts.txt");
+  spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
+
   ft::Trader trader(ft::FrontType::CTP);
   ft::LoginParams params;
-  bool status;
 
-  if (argc == 2) {
-    int i = std::stoi(argv[1]);
-    if (i < 0 || i > 3)
-      exit(-1);
-    params.set_front_addr(kSimnowTradeAddr[i]);
-    params.set_md_server_addr(kSimnowMdAddr[i]);
-  } else {
-    params.set_front_addr(kSimnowTradeAddr[0]);
-    params.set_md_server_addr(kSimnowMdAddr[0]);
-  }
+  if (front_index >= sizeof(kSimnowTradeAddr) / sizeof(kSimnowTradeAddr[0]))
+    exit(-1);
 
+  params.set_front_addr(kSimnowTradeAddr[front_index]);
+  params.set_md_server_addr(kSimnowMdAddr[front_index]);
   params.set_broker_id(kBrokerID);
   params.set_investor_id(kInvestorID);
   params.set_passwd(kPasswd);

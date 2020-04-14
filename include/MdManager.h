@@ -53,6 +53,8 @@ class MdManager {
  private:
   std::string ticker_;
 
+  std::vector<MarketData> tick_data_;
+
   KChart kchart_m1_;
   KLine last_kline_m1_;
   uint64_t last_mininute_ = 0;

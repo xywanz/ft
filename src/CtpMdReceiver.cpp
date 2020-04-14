@@ -18,8 +18,12 @@ CtpMdReceiver::CtpMdReceiver() {
 
 bool CtpMdReceiver::login(const LoginParams& params) {
   if (params.broker_id().size() > sizeof(TThostFtdcBrokerIDType) ||
+      params.broker_id().empty() ||
       params.investor_id().size() > sizeof(TThostFtdcUserIDType) ||
-      params.passwd().size() > sizeof(TThostFtdcPasswordType)) {
+      params.investor_id().empty() ||
+      params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
+      params.passwd().empty() ||
+      params.md_server_addr().empty()) {
     spdlog::error("[CTP MD] Invalid login params");
     return false;
   }
@@ -161,56 +165,66 @@ void CtpMdReceiver::on_unsub_for_quote_rsp(
 }
 
 void CtpMdReceiver::on_depth_md(
-                      CThostFtdcDepthMarketDataField *depth_market_data) {
-  if (!depth_market_data) {
+                      CThostFtdcDepthMarketDataField *md) {
+  if (!md) {
     spdlog::error("[CTP MD] on_depth_md. Null pointer of market data");
+    return;
   }
 
-  MarketData data;
-  data.symbol = depth_market_data->InstrumentID;
-  data.exchange = depth_market_data->ExchangeID;
+  MarketData tick;
+  tick.symbol = md->InstrumentID;
   // TODO(Kevin): 处理symbol、exchange、ticker的问题，因为行情是不带exchange的
   // 但是和交易相关的又是需要交由特定的交易所去处理，更新pnl的时候也是需要exchange
   // 这个信息，否则无法定位到指定的ticker
-  data.ticker = to_ticker(data.symbol, "SHFE");
+  // tick.exchange = md->ExchangeID;
+  tick.exchange = "SHFE";
+  tick.ticker = to_ticker(tick.symbol, tick.exchange);
 
-  data.time_ms = depth_market_data->UpdateMillisec;
+  struct tm _tm;
+  strptime(md->UpdateTime, "%H:%M:%S", &_tm);
+  tick.time_sec = _tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600;
+  tick.time_ms = md->UpdateMillisec;
+  tick.date = md->ActionDay;
 
-  data.level = 5;
-  data.ask[0] = depth_market_data->AskPrice1;
-  data.ask[1] = depth_market_data->AskPrice2;
-  data.ask[2] = depth_market_data->AskPrice3;
-  data.ask[3] = depth_market_data->AskPrice4;
-  data.ask[4] = depth_market_data->AskPrice5;
-  data.bid[0] = depth_market_data->BidPrice1;
-  data.bid[1] = depth_market_data->BidPrice2;
-  data.bid[2] = depth_market_data->BidPrice3;
-  data.bid[3] = depth_market_data->BidPrice4;
-  data.bid[4] = depth_market_data->BidPrice5;
-  data.ask_volume[0] = depth_market_data->AskVolume1;
-  data.ask_volume[1] = depth_market_data->AskVolume2;
-  data.ask_volume[2] = depth_market_data->AskVolume3;
-  data.ask_volume[3] = depth_market_data->AskVolume4;
-  data.ask_volume[4] = depth_market_data->AskVolume5;
-  data.bid_volume[0] = depth_market_data->BidVolume1;
-  data.bid_volume[1] = depth_market_data->BidVolume2;
-  data.bid_volume[2] = depth_market_data->BidVolume3;
-  data.bid_volume[3] = depth_market_data->BidVolume4;
-  data.bid_volume[4] = depth_market_data->BidVolume5;
+  tick.volume = md->Volume;
+  tick.turnover = md->Turnover;
+  tick.open_interest = md->OpenInterest;
+  tick.last_price = adjust_price(md->LastPrice);
+  tick.open_price = adjust_price(md->OpenPrice);
+  tick.highest_price = adjust_price(md->HighestPrice);
+  tick.lowest_price = adjust_price(md->LowestPrice);
+  tick.pre_close_price = adjust_price(md->PreClosePrice);
+  tick.upper_limit_price = adjust_price(md->UpperLimitPrice);
+  tick.lower_limit_price = adjust_price(md->LowerLimitPrice);
 
-  data.last_price = depth_market_data->LastPrice;
-
-  data.volume = depth_market_data->Volume;
-  data.turnover = depth_market_data->Turnover;
-
-  data.open_interest = depth_market_data->OpenInterest;
+  tick.level = 5;
+  tick.ask[0] = adjust_price(md->AskPrice1);
+  tick.ask[1] = adjust_price(md->AskPrice2);
+  tick.ask[2] = adjust_price(md->AskPrice3);
+  tick.ask[3] = adjust_price(md->AskPrice4);
+  tick.ask[4] = adjust_price(md->AskPrice5);
+  tick.bid[0] = adjust_price(md->BidPrice1);
+  tick.bid[1] = adjust_price(md->BidPrice2);
+  tick.bid[2] = adjust_price(md->BidPrice3);
+  tick.bid[3] = adjust_price(md->BidPrice4);
+  tick.bid[4] = adjust_price(md->BidPrice5);
+  tick.ask_volume[0] = md->AskVolume1;
+  tick.ask_volume[1] = md->AskVolume2;
+  tick.ask_volume[2] = md->AskVolume3;
+  tick.ask_volume[3] = md->AskVolume4;
+  tick.ask_volume[4] = md->AskVolume5;
+  tick.bid_volume[0] = md->BidVolume1;
+  tick.bid_volume[1] = md->BidVolume2;
+  tick.bid_volume[2] = md->BidVolume3;
+  tick.bid_volume[3] = md->BidVolume4;
+  tick.bid_volume[4] = md->BidVolume5;
 
   spdlog::debug("[CTP MD] on_depth_md. Ticker: {}, Time MS: {}, LastPrice: {:.2f}, "
                 "Volume: {}, Turnover: {}, Open Interest: {}",
-               data.ticker, data.time_ms, data.last_price, data.volume,
-               data.turnover, data.open_interest);
+               tick.ticker, tick.time_ms, tick.last_price, tick.volume,
+               tick.turnover, tick.open_interest);
 
-  trader_->on_market_data(&data);
+  trader_->on_market_data(&tick);
 }
 
 void CtpMdReceiver::on_for_quote_rsp(CThostFtdcForQuoteRspField *for_quote_rsp) {

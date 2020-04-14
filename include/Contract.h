@@ -32,6 +32,7 @@ inline void load_contract_file(const std::string& file,
   std::string line;
   std::vector<std::string> fields;
   Contract contract;
+
   while (std::getline(ifs, line)) {
     fields.clear();
     split(line, ",", fields);
@@ -53,7 +54,7 @@ inline void load_contract_file(const std::string& file,
 class ContractTable {
  public:
   static bool init(const std::string& file) {
-    static bool is_inited;
+    static bool is_inited = false;
 
     if (!is_inited) {
       load_contract_file(file, &contracts);

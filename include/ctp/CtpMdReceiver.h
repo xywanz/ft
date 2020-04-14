@@ -4,6 +4,7 @@
 #define FT_INCLUDE_CTP_CTPMDRECEIVER_H_
 
 #include <atomic>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -17,6 +18,14 @@
 #include "TraderInterface.h"
 
 namespace ft {
+
+template<class PriceType>
+inline PriceType adjust_price(PriceType price) {
+  PriceType ret = price;
+  if (price >= std::numeric_limits<PriceType>::max() - PriceType(1e-6))
+    ret = PriceType(0);
+  return ret;
+}
 
 class CtpMdReceiver : public MdReceiverInterface {
  public:
