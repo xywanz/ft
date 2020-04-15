@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADERINTERFACE_H_
-#define FT_INCLUDE_TRADERINTERFACE_H_
+#ifndef FT_INCLUDE_TRADINGSYSTEMCALLBACK_H_
+#define FT_INCLUDE_TRADINGSYSTEMCALLBACK_H_
 
 #include <string>
 
@@ -15,7 +15,7 @@
 
 namespace ft {
 
-class TraderInterface {
+class TradingSystemCallback {
  public:
   virtual void on_contract(const Contract* contract) {}
 
@@ -53,4 +53,4 @@ class TraderInterface {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADERINTERFACE_H_
+#endif  // FT_INCLUDE_TRADINGSYSTEMCALLBACK_H_

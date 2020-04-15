@@ -224,7 +224,7 @@ void CtpMdReceiver::on_depth_md(
                tick.ticker, tick.time_ms, tick.last_price, tick.volume,
                tick.turnover, tick.open_interest);
 
-  trader_->on_market_data(&tick);
+  ts_->on_market_data(&tick);
 }
 
 void CtpMdReceiver::on_for_quote_rsp(CThostFtdcForQuoteRspField *for_quote_rsp) {

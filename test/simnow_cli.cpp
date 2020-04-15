@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpMdReceiver.h"
-#include "Trader.h"
+#include "TradingSystem.h"
 
 const char* kSimnowTradeAddr[] = {
   "tcp://180.168.146.187:10130",
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::info);
 
   ft::ContractTable::init("./contracts.txt");
-  ft::Trader trader(ft::FrontType::CTP);
+  ft::TradingSystem ts(ft::FrontType::CTP);
   ft::LoginParams params;
 
   std::string ticker = "rb2009.SHFE";
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   params.set_app_id(kAppID);
   params.set_subscribed_list({ticker});
 
-  if (!trader.login(params)) {
+  if (!ts.login(params)) {
     exit(-1);
   }
 
@@ -75,27 +75,27 @@ int main(int argc, char** argv) {
     if (args[0] == "help") {
       help();
     } else if (args[0] == "query_position") {
-      trader.show_positions();
+      ts.show_positions();
     } else if (args[0] == "query_account") {
-      auto account = trader.get_account();
+      auto account = ts.get_account();
       spdlog::info("Account ID: {}, Balance: {}, Fronzen: {}",
                    account->account_id, account->balance, account->frozen);
     } else if (args[0] == "buy_open") {
       int volume = std::stoi(args[1]);
       double price = std::stod(args[2]);
-      trader.buy_open(ticker, volume, ft::OrderType::FAK, price);
+      ts.buy_open(ticker, volume, ft::OrderType::FAK, price);
     } else if (args[0] == "sell_open") {
       int volume = std::stoi(args[1]);
       double price = std::stod(args[2]);
-      trader.sell_open(ticker, volume, ft::OrderType::FAK, price);
+      ts.sell_open(ticker, volume, ft::OrderType::FAK, price);
     } else if (args[0] == "buy_close") {
       int volume = std::stoi(args[1]);
       double price = std::stod(args[2]);
-      trader.buy_close(ticker, volume, ft::OrderType::FAK, price);
+      ts.buy_close(ticker, volume, ft::OrderType::FAK, price);
     } else if (args[0] == "sell_close") {
       int volume = std::stoi(args[1]);
       double price = std::stod(args[2]);
-      trader.sell_close(ticker, volume, ft::OrderType::FAK, price);
+      ts.sell_close(ticker, volume, ft::OrderType::FAK, price);
     } else if (args[0] == "last_price") {
     }
 
@@ -103,5 +103,5 @@ next:
     fmt::print(">>>");
   }
 
-  trader.join();
+  ts.join();
 }

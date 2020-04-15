@@ -6,35 +6,35 @@
 #include <string>
 #include <vector>
 
-#include "Trader.h"
+#include "TradingSystem.h"
 
 namespace ft {
 
 class QuantitativTradingContext {
  public:
-  explicit QuantitativTradingContext(const std::string& ticker, Trader* trader)
+  explicit QuantitativTradingContext(const std::string& ticker, TradingSystem* trader)
     : ticker_(ticker),
-      trader_(trader) {
+      ts_(trader) {
   }
 
   bool buy_open(int volume, OrderType type, double price) {
-    return trader_->buy_open(ticker_, volume, type, price);
+    return ts_->buy_open(ticker_, volume, type, price);
   }
 
   bool sell_close(int volume, OrderType type, double price) {
-    return trader_->sell_close(ticker_, volume, type, price);
+    return ts_->sell_close(ticker_, volume, type, price);
   }
 
   bool sell_open(int volume, OrderType type, double price) {
-    return trader_->sell_open(ticker_, volume, type, price);
+    return ts_->sell_open(ticker_, volume, type, price);
   }
 
   bool buy_close(int volume, OrderType type, double price)  {
-    return trader_->buy_close(ticker_, volume, type, price);
+    return ts_->buy_close(ticker_, volume, type, price);
   }
 
   bool cancel_order(const std::string& order_id) {
-    return trader_->cancel_order(order_id);
+    return ts_->cancel_order(order_id);
   }
 
   const std::string& this_ticker() const {
@@ -43,7 +43,7 @@ class QuantitativTradingContext {
 
  private:
   std::string ticker_;
-  Trader* trader_;
+  TradingSystem* ts_;
 };
 
 
@@ -58,7 +58,7 @@ class Strategy {
   virtual void on_exit(QuantitativTradingContext* ctx) {}
 
  private:
-  friend class Trader;
+  friend class TradingSystem;
   void set_ctx(QuantitativTradingContext* ctx) {
     ctx_ = ctx;
   }

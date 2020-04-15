@@ -7,7 +7,7 @@
 
 #include "LoginParams.h"
 #include "Order.h"
-#include "TraderInterface.h"
+#include "TradingSystemCallback.h"
 
 namespace ft {
 
@@ -16,7 +16,7 @@ class MdReceiverInterface {
   virtual ~MdReceiverInterface() {
   }
 
-  virtual void register_cb(TraderInterface* trader) {
+  virtual void register_cb(TradingSystemCallback* trader) {
   }
 
   virtual bool login(const LoginParams& params) {

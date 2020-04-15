@@ -309,7 +309,7 @@ void CtpGateway::on_order_rejected(
                 "Order ID: {}, Instrument: {}, Exchange: {}, Error Msg: {}",
                 order.order_id, order.symbol, order.exchange,
                 gb2312_to_utf8(rsp_info->ErrorMsg));
-  trader_->on_order(&order);
+  ts_->on_order(&order);
 }
 
 void CtpGateway::on_order(CThostFtdcOrderField *ctp_order) {
@@ -358,7 +358,7 @@ void CtpGateway::on_order(CThostFtdcOrderField *ctp_order) {
     id2order_.erase(order.order_id);
   }
 
-  trader_->on_order(&order);
+  ts_->on_order(&order);
 }
 
 void CtpGateway::on_trade(CThostFtdcTradeField *trade) {
@@ -383,7 +383,7 @@ void CtpGateway::on_trade(CThostFtdcTradeField *trade) {
               td.order_id, td.symbol, td.exchange, td.trade_id, td.trade_time,
               to_string(td.direction), to_string(td.offset), td.price, td.volume);
 
-  trader_->on_trade(&td);
+  ts_->on_trade(&td);
 }
 
 bool CtpGateway::cancel_order(const std::string& order_id) {
@@ -432,7 +432,7 @@ void CtpGateway::on_order_action(
   lock.unlock();
   order.status = OrderStatus::CANCEL_REJECTED;
 
-  trader_->on_order(&order);
+  ts_->on_order(&order);
 }
 
 AsyncStatus CtpGateway::query_contract(const std::string& symbol,
@@ -486,7 +486,7 @@ void CtpGateway::on_contract(
   contract.size = instrument->VolumeMultiple;
   contract.price_tick = instrument->PriceTick;
 
-  trader_->on_contract(&contract);
+  ts_->on_contract(&contract);
 
   if (is_last)
     rsp_async_status(req_id, true);
@@ -573,7 +573,7 @@ void CtpGateway::on_position(
 
   if (is_last) {
     for (auto& [key, pos] : pos_cache)
-      trader_->on_position(&pos);
+      ts_->on_position(&pos);
     pos_caches_.erase(req_id);
     rsp_async_status(req_id, true);
   }
@@ -619,7 +619,7 @@ void CtpGateway::on_account(
                    trading_account->FrozenMargin +
                    trading_account->FrozenCommission;
 
-  trader_->on_account(&account);
+  ts_->on_account(&account);
   rsp_async_status(req_id, true);
 }
 

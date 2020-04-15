@@ -16,7 +16,6 @@
 #include "LoginParams.h"
 #include "GatewayInterface.h"
 #include "Order.h"
-#include "TraderInterface.h"
 
 namespace ft {
 
@@ -26,8 +25,8 @@ class CtpGateway : public GatewayInterface {
 
   ~CtpGateway();
 
-  void register_cb(TraderInterface* trader) override {
-    trader_ = trader;
+  void register_cb(TradingSystemCallback* trader) override {
+    ts_ = trader;
   }
 
   bool login(const LoginParams& params) override;
@@ -162,7 +161,7 @@ class CtpGateway : public GatewayInterface {
   AsyncStatus req_settlement_confirm();
 
  private:
-  TraderInterface* trader_;
+  TradingSystemCallback* ts_;
 
   CThostFtdcTraderApi* api_ = nullptr;
   CThostFtdcTraderSpi* spi_ = nullptr;

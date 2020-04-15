@@ -7,7 +7,7 @@
 
 #include "LoginParams.h"
 #include "Order.h"
-#include "TraderInterface.h"
+#include "TradingSystemCallback.h"
 
 namespace ft {
 
@@ -16,7 +16,7 @@ class GatewayInterface {
   virtual ~GatewayInterface() {
   }
 
-  virtual void register_cb(TraderInterface* cb) {
+  virtual void register_cb(TradingSystemCallback* cb) {
   }
 
   virtual bool login(const LoginParams& params) {

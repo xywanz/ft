@@ -7,7 +7,7 @@
 
 #include "ctp/CtpMdReceiver.h"
 #include "Strategy.h"
-#include "Trader.h"
+#include "TradingSystem.h"
 
 const char* kSimnowTradeAddr[] = {
   "tcp://180.168.146.187:10130",
@@ -47,7 +47,7 @@ int main() {
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
-  ft::Trader trader(ft::FrontType::CTP);
+  ft::TradingSystem ts(ft::FrontType::CTP);
   ft::LoginParams params;
 
   if (front_index >= sizeof(kSimnowTradeAddr) / sizeof(kSimnowTradeAddr[0]))
@@ -62,20 +62,20 @@ int main() {
   params.set_app_id(kAppID);
   params.set_subscribed_list({"rb2009.SHFE"});
 
-  if (!trader.login(params)) {
+  if (!ts.login(params)) {
     exit(-1);
   }
 
-  trader.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
+  ts.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
   MyStrategy strategy;
-  trader.mount_strategy("rb2009.SHFE", &strategy);
+  ts.mount_strategy("rb2009.SHFE", &strategy);
 
   while (1) {
     sleep(1);
-    trader.show_positions();
+    ts.show_positions();
   }
 }

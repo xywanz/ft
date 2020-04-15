@@ -14,8 +14,7 @@
 #include "Common.h"
 #include "LoginParams.h"
 #include "MdReceiverInterface.h"
-#include "Trader.h"
-#include "TraderInterface.h"
+#include "TradingSystem.h"
 
 namespace ft {
 
@@ -31,8 +30,8 @@ class CtpMdReceiver : public MdReceiverInterface {
  public:
   CtpMdReceiver();
 
-  void register_cb(TraderInterface* trader) override {
-    trader_ = trader;
+  void register_cb(TradingSystemCallback* ts) override {
+    ts_ = ts;
   }
 
   // need front_addr, broker_id, investor_id and passwd
@@ -107,7 +106,7 @@ class CtpMdReceiver : public MdReceiverInterface {
   }
 
  private:
-  TraderInterface* trader_;
+  TradingSystemCallback* ts_;
 
   CThostFtdcMdSpi* spi_ = nullptr;
   CThostFtdcMdApi* api_ = nullptr;

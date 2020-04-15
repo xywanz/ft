@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADER_H_
-#define FT_INCLUDE_TRADER_H_
+#ifndef FT_INCLUDE_TRADINGSYSTEM_H_
+#define FT_INCLUDE_TRADINGSYSTEM_H_
 
 #include <list>
 #include <map>
@@ -21,17 +21,17 @@
 #include "Order.h"
 #include "Position.h"
 #include "Trade.h"
-#include "TraderInterface.h"
+#include "TradingSystemCallback.h"
 
 namespace ft {
 
 class Strategy;
 
-class Trader : public TraderInterface {
+class TradingSystem : public TradingSystemCallback {
  public:
-  explicit Trader(FrontType front_type);
+  explicit TradingSystem(FrontType front_type);
 
-  ~Trader();
+  ~TradingSystem();
 
   bool login(const LoginParams& params);
 
@@ -83,30 +83,30 @@ class Trader : public TraderInterface {
    * 进行汇总，每个{ticker-direction}对应一个Position对象，本次查询完成后，
    * 对每个汇总的Position对象回调Trader::on_position
    */
-  void on_position(const Position* position);
+  void on_position(const Position* position) override;
 
   /*
    * 接收查询到的账户信息
    */
-  void on_account(const Account* account);
+  void on_account(const Account* account) override;
 
   /*
    * 接受订单信息
    * 当订单状态发生改变时触发
    */
-  void on_order(const Order* order);
+  void on_order(const Order* order) override;
 
   /*
    * 接受成交信息
    * 每笔成交都会回调
    */
-  void on_trade(const Trade* trade);
+  void on_trade(const Trade* trade) override;
 
   /*
    * 接受行情数据
    * 每一个tick都会回调
    */
-  void on_market_data(const MarketData* data);
+  void on_market_data(const MarketData* data) override;
 
  private:
   static std::string to_pos_key(const std::string& ticker, Direction direction) {
@@ -156,4 +156,4 @@ class Trader : public TraderInterface {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADER_H_
+#endif  // FT_INCLUDE_TRADINGSYSTEM_H_

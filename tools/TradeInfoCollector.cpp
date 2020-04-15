@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpGateway.h"
-#include "TraderInterface.h"
+#include "TradingSystemCallback.h"
 
 const char* kSimnowTradeAddr[] = {
   "tcp://180.168.146.187:10130",
@@ -22,7 +22,7 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
-class TradeInfoCollector : public ft::TraderInterface {
+class TradeInfoCollector : public ft::TradingSystemCallback {
  public:
   TradeInfoCollector() {
     gateway_ = new ft::CtpGateway;

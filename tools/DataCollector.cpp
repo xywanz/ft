@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpMdReceiver.h"
-#include "TraderInterface.h"
+#include "TradingSystemCallback.h"
 
 const char* kSimnowMdAddr[] = {
   "tcp://180.168.146.187:10131",
@@ -22,7 +22,7 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
-class DataCollector : public ft::TraderInterface {
+class DataCollector : public ft::TradingSystemCallback {
  public:
   DataCollector() {
     md_receiver_ = new ft::CtpMdReceiver;

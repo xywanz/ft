@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Trader.h"
+#include "TradingSystem.h"
 
 #include <cassert>
 #include <iostream>
@@ -16,7 +16,7 @@
 
 namespace ft {
 
-Trader::Trader(FrontType front_type) {
+TradingSystem::TradingSystem(FrontType front_type) {
   switch (front_type) {
   case FrontType::CTP:
     gateway_ = new CtpGateway;
@@ -30,12 +30,12 @@ Trader::Trader(FrontType front_type) {
   md_receiver_->register_cb(this);
 }
 
-Trader::~Trader() {
+TradingSystem::~TradingSystem() {
   if (gateway_)
     delete gateway_;
 }
 
-bool Trader::login(const LoginParams& params) {
+bool TradingSystem::login(const LoginParams& params) {
   if (!md_receiver_->login(params)) {
     spdlog::error("[Trader] login. Failed to login into MD server");
     return false;
@@ -66,7 +66,7 @@ bool Trader::login(const LoginParams& params) {
   return true;
 }
 
-void Trader::update_volume(const std::string& ticker,
+void TradingSystem::update_volume(const std::string& ticker,
                            Direction direction,
                            Offset offset,
                            int traded,
@@ -94,7 +94,7 @@ void Trader::update_volume(const std::string& ticker,
   assert(pos.close_pending >= 0);
 }
 
-void Trader::update_pnl(const std::string& ticker, double last_price) {
+void TradingSystem::update_pnl(const std::string& ticker, double last_price) {
   auto contract = ContractTable::get(ticker);
   if (!contract || contract->size <= 0)
     return;
@@ -115,7 +115,7 @@ void Trader::update_pnl(const std::string& ticker, double last_price) {
   }
 }
 
-bool Trader::send_order(const std::string& ticker, int volume,
+bool TradingSystem::send_order(const std::string& ticker, int volume,
                         Direction direction, Offset offset,
                         OrderType type, double price) {
   Order order(ticker, direction, offset, volume, type, price);
@@ -143,7 +143,7 @@ bool Trader::send_order(const std::string& ticker, int volume,
   return true;
 }
 
-bool Trader::cancel_order(const std::string& order_id) {
+bool TradingSystem::cancel_order(const std::string& order_id) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = orders_.find(order_id);
   if (iter == orders_.end()) {
@@ -169,7 +169,7 @@ bool Trader::cancel_order(const std::string& order_id) {
   return true;
 }
 
-void Trader::show_positions() {
+void TradingSystem::show_positions() {
   std::unique_lock<std::mutex> lock(position_mutex_);
   for (const auto& [key, pos] : positions_) {
     spdlog::info("[Trader] [Position] Ticker: {}, Direction: {}, Price: {:.2f}, "
@@ -184,7 +184,7 @@ void Trader::show_positions() {
   }
 }
 
-bool Trader::mount_strategy(const std::string& ticker, Strategy *strategy) {
+bool TradingSystem::mount_strategy(const std::string& ticker, Strategy *strategy) {
   strategy->set_ctx(new QuantitativTradingContext(ticker, this));
   std::unique_lock<std::mutex> lock(strategy_mutex_);
   pending_strategies_.emplace_back(ticker, strategy);
@@ -192,7 +192,7 @@ bool Trader::mount_strategy(const std::string& ticker, Strategy *strategy) {
 }
 
 
-void Trader::on_market_data(const MarketData* data) {
+void TradingSystem::on_market_data(const MarketData* data) {
   md_center_[data->ticker].on_tick(data);
   update_pnl(data->ticker, data->last_price);
 
@@ -214,7 +214,7 @@ void Trader::on_market_data(const MarketData* data) {
   }
 }
 
-void Trader::on_position(const Position* position) {
+void TradingSystem::on_position(const Position* position) {
   spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
                "Direction: {}, Volume: {}, Price: {:.2f}, Frozen: {}",
                position->ticker, to_string(position->direction),
@@ -235,7 +235,7 @@ void Trader::on_position(const Position* position) {
   pos.pnl = position->pnl;
 }
 
-void Trader::on_account(const Account* account) {
+void TradingSystem::on_account(const Account* account) {
   {
     std::unique_lock<std::mutex> lock(account_mutex_);
     account_ = *account;
@@ -244,7 +244,7 @@ void Trader::on_account(const Account* account) {
                account_.account_id, account_.balance, account_.frozen);
 }
 
-void Trader::on_order(const Order* rtn_order) {
+void TradingSystem::on_order(const Order* rtn_order) {
   {
     std::unique_lock<std::mutex> lock(order_mutex_);
     if (orders_.find(rtn_order->order_id) == orders_.end()) {
@@ -289,7 +289,7 @@ void Trader::on_order(const Order* rtn_order) {
 }
 
 // TODO(Kevin): fix incorrect calculation and missing data
-void Trader::on_trade(const Trade* trade) {
+void TradingSystem::on_trade(const Trade* trade) {
   spdlog::debug("[Trader] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
                 "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
@@ -353,7 +353,7 @@ void Trader::on_trade(const Trade* trade) {
       pos.price = cost / (pos.volume * contract->size);
 }
 
-void Trader::handle_canceled(const Order* rtn_order) {
+void TradingSystem::handle_canceled(const Order* rtn_order) {
   {
     std::unique_lock<std::mutex> lock(order_mutex_);
     orders_.erase(rtn_order->order_id);
@@ -363,13 +363,13 @@ void Trader::handle_canceled(const Order* rtn_order) {
   update_volume(rtn_order->ticker, rtn_order->direction, rtn_order->offset, 0, -left_vol);
 }
 
-void Trader::handle_submitted(const Order* rtn_order) {
+void TradingSystem::handle_submitted(const Order* rtn_order) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto& order = orders_[rtn_order->order_id];
   order.status = OrderStatus::NO_TRADED;
 }
 
-void Trader::handle_part_traded(const Order* rtn_order) {
+void TradingSystem::handle_part_traded(const Order* rtn_order) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto& order = orders_[rtn_order->order_id];
   if (rtn_order->volume_traded > order.volume_traded)
@@ -377,12 +377,12 @@ void Trader::handle_part_traded(const Order* rtn_order) {
   order.status = OrderStatus::PART_TRADED;
 }
 
-void Trader::handle_all_traded(const Order* rtn_order) {
+void TradingSystem::handle_all_traded(const Order* rtn_order) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   orders_.erase(rtn_order->order_id);
 }
 
-void Trader::handle_cancel_rejected(const Order* rtn_order) {
+void TradingSystem::handle_cancel_rejected(const Order* rtn_order) {
     std::unique_lock<std::mutex> lock(order_mutex_);
     auto& order = orders_[rtn_order->order_id];
     order.flags.reset(kCancelBit);
