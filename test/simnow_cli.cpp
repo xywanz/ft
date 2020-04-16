@@ -6,7 +6,6 @@
 #include <cppex/string.h>
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpMdReceiver.h"
 #include "TradingSystem.h"
 
 const char* kSimnowTradeAddr[] = {

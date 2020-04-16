@@ -10,8 +10,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpGateway.h"
-#include "ctp/CtpMdReceiver.h"
+#include "ctp/CtpApi.h"
 #include "LoginParams.h"
 
 namespace ft {
@@ -19,42 +18,33 @@ namespace ft {
 TradingSystem::TradingSystem(FrontType front_type) {
   switch (front_type) {
   case FrontType::CTP:
-    gateway_ = new CtpGateway;
-    md_receiver_ = new CtpMdReceiver;
+    api_ = new CtpApi(this);
     break;
   default:
     assert(false);
   }
-
-  gateway_->register_cb(this);
-  md_receiver_->register_cb(this);
 }
 
 TradingSystem::~TradingSystem() {
-  if (gateway_)
-    delete gateway_;
+  if (api_)
+    delete api_;
 }
 
 bool TradingSystem::login(const LoginParams& params) {
-  if (!md_receiver_->login(params)) {
-    spdlog::error("[Trader] login. Failed to login into MD server");
-    return false;
-  }
-
-  if (!gateway_->login(params)) {
-    spdlog::error("[Trader] login. Failed to login into trading server");
+  if (!api_->login(params)) {
+    spdlog::error("[Trader] login. Failed to login");
     return false;
   }
 
   AsyncStatus status;
-  status = gateway_->query_account();
+  status = api_->query_account();
   if (!status.wait())
     return false;
   is_login_ = true;
   spdlog::info("[Trader] login. Login as {}", params.investor_id());
 
   // query all positions
-  status = gateway_->query_position("", "");
+  status = api_->query_position("", "");
   if (!status.wait()) {
     spdlog::error("[Trader] login. Failed to query positions");
     return false;
@@ -120,7 +110,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
                         OrderType type, double price) {
   Order order(ticker, direction, offset, volume, type, price);
 
-  order.order_id = gateway_->send_order(&order);
+  order.order_id = api_->send_order(&order);
   if (order.order_id.empty()) {
     spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                     "Direction: {}, Offset: {}",
@@ -157,7 +147,7 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
     return true;
   order.flags.set(kCancelBit);
 
-  if (!gateway_->cancel_order(order_id)) {
+  if (!api_->cancel_order(order_id)) {
     order.flags.reset(kCancelBit);
     spdlog::error("[Trader] cancel_order. Failed: unknown error");
     return false;
@@ -192,7 +182,7 @@ bool TradingSystem::mount_strategy(const std::string& ticker, Strategy *strategy
 }
 
 
-void TradingSystem::on_market_data(const MarketData* data) {
+void TradingSystem::on_tick(const MarketData* data) {
   md_center_[data->ticker].on_tick(data);
   update_pnl(data->ticker, data->last_price);
 

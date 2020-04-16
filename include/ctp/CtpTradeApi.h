@@ -1,9 +1,10 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_CTPGATEWAY_H_
-#define FT_INCLUDE_CTP_CTPGATEWAY_H_
+#ifndef FT_INCLUDE_CTP_CTPTRADEAPI_H_
+#define FT_INCLUDE_CTP_CTPTRADEAPI_H_
 
 #include <atomic>
+#include <cassert>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -14,46 +15,43 @@
 #include <ThostFtdcTraderApi.h>
 
 #include "LoginParams.h"
-#include "GatewayInterface.h"
+#include "GeneralApi.h"
 #include "Order.h"
+#include "Position.h"
 
 namespace ft {
 
-class CtpGateway : public GatewayInterface {
+class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  CtpGateway();
+  CtpTradeApi(GeneralApi* api);
 
-  ~CtpGateway();
+  ~CtpTradeApi();
 
-  void register_cb(TradingSystemCallback* trader) override {
-    ts_ = trader;
-  }
-
-  bool login(const LoginParams& params) override;
+  bool login(const LoginParams& params);
 
   bool logout() {
   }
 
-  std::string send_order(const Order* order) override;
+  std::string send_order(const Order* order);
 
-  bool cancel_order(const std::string& order_id) override;
+  bool cancel_order(const std::string& order_id);
 
   AsyncStatus query_contract(const std::string& symbol,
-                             const std::string& exchange) override;
+                             const std::string& exchange);
 
   AsyncStatus query_position(const std::string& symbol,
-                             const std::string& exchange) override;
+                             const std::string& exchange);
 
-  AsyncStatus query_account() override;
+  AsyncStatus query_account();
 
-  void join() override {
+  void join() {
     if (is_login_)
-      api_->Join();
+      ctp_api_->Join();
   }
 
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
-  void on_connected();
+  void OnFrontConnected() override;
 
   // 当客户端与交易后台通信连接断开时，该方法被调用。
   // 当发生这个情况后，API会自动重新连接，客户端可不做处理。
@@ -63,66 +61,67 @@ class CtpGateway : public GatewayInterface {
   //         0x2001 接收心跳超时
   //         0x2002 发送心跳失败
   //         0x2003 收到错误报文
-  void on_disconnected(int reason);
+  void OnFrontDisconnected(int reason) override;
 
   // 心跳超时警告。当长时间未收到报文时，该方法被调用。
   // @param time_lapse 距离上次接收报文的时间
-  void on_heart_beat_warning(int time_lapse);
+  void OnHeartBeatWarning(int time_lapse) override;
 
   // 客户端认证响应
-  void on_authenticate(CThostFtdcRspAuthenticateField *rsp_authenticate_field,
-                       CThostFtdcRspInfoField *rsp_info,
-                       int req_id,
-                       bool is_last);
+  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenticate_field,
+                         CThostFtdcRspInfoField *rsp_info,
+                         int req_id,
+                         bool is_last) override;
 
   // 登录请求响应
-  void on_login(CThostFtdcRspUserLoginField *rsp_user_login,
-                CThostFtdcRspInfoField *rsp_info,
-                int req_id,
-                bool is_last);
+  void OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
+                      CThostFtdcRspInfoField *rsp_info,
+                      int req_id,
+                      bool is_last) override;
 
-  void on_settlement(CThostFtdcSettlementInfoField *settlement_info,
-                     CThostFtdcRspInfoField *rsp_info,
-                     int req_id,
-                     bool is_last);
+  void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement_info,
+                              CThostFtdcRspInfoField *rsp_info,
+                              int req_id,
+                              bool is_last) override;
 
-  void on_settlement_confirm(
+  void OnRspSettlementInfoConfirm(
           CThostFtdcSettlementInfoConfirmField *settlement_info_confirm,
           CThostFtdcRspInfoField *rsp_info,
           int req_id,
-          bool is_last);
+          bool is_last) override;
 
   // 拒绝报单
-  void on_order_rejected(CThostFtdcInputOrderField *ctp_order,
-                         CThostFtdcRspInfoField *rsp_info,
-                         int req_id,
-                         bool is_last);
+  void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
+                        CThostFtdcRspInfoField *rsp_info,
+                        int req_id,
+                        bool is_last) override;
 
-  void on_order_action(CThostFtdcInputOrderActionField *action,
-                       CThostFtdcRspInfoField *rsp_info,
-                       int req_id,
-                       bool is_last);
+  void OnRspOrderAction(CThostFtdcInputOrderActionField *action,
+                        CThostFtdcRspInfoField *rsp_info,
+                        int req_id,
+                        bool is_last) override;
 
-  void on_order(CThostFtdcOrderField *ctp_order);
+  void OnRtnOrder(CThostFtdcOrderField *ctp_order) override;
 
   // 成交通知
-  void on_trade(CThostFtdcTradeField *trade);
+  void OnRtnTrade(CThostFtdcTradeField *trade) override;
 
-  void on_contract(CThostFtdcInstrumentField *instrument,
-                   CThostFtdcRspInfoField *rsp_info,
-                   int req_id,
-                   bool is_last);
+  void OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
+                          CThostFtdcRspInfoField *rsp_info,
+                          int req_id,
+                          bool is_last) override;
 
-  void on_position(
+  void OnRspQryInvestorPosition(
           CThostFtdcInvestorPositionField *position,
           CThostFtdcRspInfoField *rsp_info,
           int req_id,
-          bool is_last);
+          bool is_last) override;
 
-  void on_account(CThostFtdcTradingAccountField *trading_account,
-                  CThostFtdcRspInfoField *rsp_info,
-                  int req_id,
-                  bool is_last);
+  void OnRspQryTradingAccount(
+          CThostFtdcTradingAccountField *trading_account,
+          CThostFtdcRspInfoField *rsp_info,
+          int req_id,
+          bool is_last) override;
 
  private:
   AsyncStatus req_async_status(int req_id) {
@@ -161,10 +160,8 @@ class CtpGateway : public GatewayInterface {
   AsyncStatus req_settlement_confirm();
 
  private:
-  TradingSystemCallback* ts_;
-
-  CThostFtdcTraderApi* api_ = nullptr;
-  CThostFtdcTraderSpi* spi_ = nullptr;
+  GeneralApi* general_api_;
+  CThostFtdcTraderApi* ctp_api_ = nullptr;
 
   std::string front_addr_;
   std::string broker_id_;
@@ -189,4 +186,4 @@ class CtpGateway : public GatewayInterface {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_CTPGATEWAY_H_
+#endif  // FT_INCLUDE_CTP_CTPTRADEAPI_H_

@@ -5,7 +5,6 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpMdReceiver.h"
 #include "Strategy.h"
 #include "TradingSystem.h"
 

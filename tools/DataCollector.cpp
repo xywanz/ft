@@ -6,8 +6,8 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpMdReceiver.h"
-#include "TradingSystemCallback.h"
+#include "ctp/CtpApi.h"
+#include "Engine.h"
 
 const char* kSimnowMdAddr[] = {
   "tcp://180.168.146.187:10131",
@@ -22,15 +22,14 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
-class DataCollector : public ft::TradingSystemCallback {
+class DataCollector : public ft::Engine {
  public:
   DataCollector() {
-    md_receiver_ = new ft::CtpMdReceiver;
-    md_receiver_->register_cb(this);
+    api_ = new ft::CtpApi(this);
   }
 
   bool login(const ft::LoginParams& params) {
-    if (!md_receiver_->login(params)) {
+    if (!api_->login(params)) {
       spdlog::error("[DataCollector] login. Failed to login into md server");
       return false;
     }
@@ -39,10 +38,10 @@ class DataCollector : public ft::TradingSystemCallback {
   }
 
   void join() {
-    md_receiver_->join();
+    api_->join();
   }
 
-  void on_market_data(const ft::MarketData* tick) override {
+  void on_tick(const ft::MarketData* tick) override {
     auto iter = ofs_map_.find(tick->ticker);
     if (iter == ofs_map_.end()) {
       std::string file = fmt::format("{}-{}.csv", tick->ticker, tick->date);
@@ -89,12 +88,13 @@ class DataCollector : public ft::TradingSystemCallback {
   }
 
  private:
-  ft::MdReceiverInterface* md_receiver_;
+  ft::GeneralApi* api_;
   std::map<std::string, ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;
 
   std::map<std::string, std::ofstream> ofs_map_;
 };
+
 
 int main() {
   std::size_t front_index = getarg(0UL, "--front");

@@ -14,20 +14,19 @@
 #include "Account.h"
 #include "Common.h"
 #include "Contract.h"
-#include "GatewayInterface.h"
+#include "Engine.h"
+#include "GeneralApi.h"
 #include "MarketData.h"
 #include "MdManager.h"
-#include "MdReceiverInterface.h"
 #include "Order.h"
 #include "Position.h"
 #include "Trade.h"
-#include "TradingSystemCallback.h"
 
 namespace ft {
 
 class Strategy;
 
-class TradingSystem : public TradingSystemCallback {
+class TradingSystem : public Engine {
  public:
   explicit TradingSystem(FrontType front_type);
 
@@ -73,8 +72,7 @@ class TradingSystem : public TradingSystemCallback {
   bool mount_strategy(const std::string& ticker, Strategy *strategy);
 
   void join() {
-    md_receiver_->join();
-    gateway_->join();
+    api_->join();
   }
 
   /*
@@ -106,7 +104,7 @@ class TradingSystem : public TradingSystemCallback {
    * 接受行情数据
    * 每一个tick都会回调
    */
-  void on_market_data(const MarketData* data) override;
+  void on_tick(const MarketData* data) override;
 
  private:
   static std::string to_pos_key(const std::string& ticker, Direction direction) {
@@ -132,8 +130,7 @@ class TradingSystem : public TradingSystemCallback {
   void handle_cancel_rejected(const Order* rtn_order);
 
  private:
-  GatewayInterface* gateway_ = nullptr;
-  MdReceiverInterface* md_receiver_ = nullptr;
+  GeneralApi* api_ = nullptr;
 
   Account account_;
 

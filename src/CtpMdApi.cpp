@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ctp/CtpMdReceiver.h"
+#include "ctp/CtpMdApi.h"
 
 #include <spdlog/spdlog.h>
 
@@ -8,15 +8,15 @@
 #include <ThostFtdcUserApiStruct.h>
 
 #include "ctp/CtpCommon.h"
-#include "ctp/CtpMdSpi.h"
 #include "MarketData.h"
 
 namespace ft {
 
-CtpMdReceiver::CtpMdReceiver() {
+CtpMdApi::CtpMdApi(GeneralApi* general_api)
+  : general_api_(general_api) {
 }
 
-bool CtpMdReceiver::login(const LoginParams& params) {
+bool CtpMdApi::login(const LoginParams& params) {
   if (params.broker_id().size() > sizeof(TThostFtdcBrokerIDType) ||
       params.broker_id().empty() ||
       params.investor_id().size() > sizeof(TThostFtdcUserIDType) ||
@@ -31,16 +31,15 @@ bool CtpMdReceiver::login(const LoginParams& params) {
   front_addr_ = params.md_server_addr();
   investor_id_ = params.investor_id();
 
-  api_ = CThostFtdcMdApi::CreateFtdcMdApi();
-  if (!api_) {
+  ctp_api_ = CThostFtdcMdApi::CreateFtdcMdApi();
+  if (!ctp_api_) {
     spdlog::error("[CTP MD] Failed to create CTP MD API");
     return false;
   }
 
-  spi_ = new CtpMdSpi(this);
-  api_->RegisterSpi(spi_);
-  api_->RegisterFront(const_cast<char*>(params.md_server_addr().c_str()));
-  api_->Init();
+  ctp_api_->RegisterSpi(this);
+  ctp_api_->RegisterFront(const_cast<char*>(params.md_server_addr().c_str()));
+  ctp_api_->Init();
   while (!is_connected_)
     continue;
 
@@ -54,7 +53,7 @@ bool CtpMdReceiver::login(const LoginParams& params) {
   strncpy(login_req.Password, params.passwd().c_str(), sizeof(login_req.Password));
   req_id = next_req_id();
   status = req_async_status(req_id);
-  if (api_->ReqUserLogin(&login_req, req_id) != 0) {
+  if (ctp_api_->ReqUserLogin(&login_req, req_id) != 0) {
     spdlog::error("[CTP MD] Invalid user-login field");
     rsp_async_status(req_id, false);
   }
@@ -75,7 +74,7 @@ bool CtpMdReceiver::login(const LoginParams& params) {
     symbol_list.emplace_back(const_cast<char*>(subscribed_list_.back().c_str()));
   }
 
-  if (api_->SubscribeMarketData(symbol_list.data(), symbol_list.size()) != 0) {
+  if (ctp_api_->SubscribeMarketData(symbol_list.data(), symbol_list.size()) != 0) {
     spdlog::error("[CTP MD] Failed to subscribe");
     return false;
   }
@@ -83,21 +82,22 @@ bool CtpMdReceiver::login(const LoginParams& params) {
   return true;
 }
 
-void CtpMdReceiver::on_connected() {
+void CtpMdApi::OnFrontConnected() {
   is_connected_ = true;
-  spdlog::debug("[CTP MD] on_connected. Connected to the front {}", front_addr_);
+  spdlog::debug("[CTP MD] OnFrontConnected. Connected to the front {}", front_addr_);
 }
 
-void CtpMdReceiver::on_disconnected(int reason) {
+void CtpMdApi::OnFrontDisconnected(int reason) {
   is_connected_ = false;
-  spdlog::error("[CTP MD] on_disconnected. Disconnected from the front {}", front_addr_);
+  spdlog::error("[CTP MD] OnFrontDisconnected. Disconnected from the front {}",
+                front_addr_);
 }
 
-void CtpMdReceiver::on_heart_beat_warning(int time_lapse) {
-  spdlog::warn("[CTP MD] on_heart_beat_warning. No packet received for a period of time");
+void CtpMdApi::OnHeartBeatWarning(int time_lapse) {
+  spdlog::warn("[CTP MD] OnHeartBeatWarning. No packet received for a period of time");
 }
 
-void CtpMdReceiver::on_login(
+void CtpMdApi::OnRspUserLogin(
                       CThostFtdcRspUserLoginField *rsp_user_login,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
@@ -106,68 +106,68 @@ void CtpMdReceiver::on_login(
     return;
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CTP MD] on_login. Error ID: {}", rsp_info->ErrorID);
+    spdlog::error("[CTP MD] OnRspUserLogin. Error ID: {}", rsp_info->ErrorID);
     rsp_async_status(req_id, false);
     return;
   }
 
   rsp_async_status(req_id, true);
-  spdlog::debug("[CTP MD] on_login. Login as {}", investor_id_);
+  spdlog::debug("[CTP MD] OnRspUserLogin. Login as {}", investor_id_);
 }
 
-void CtpMdReceiver::on_logout(
+void CtpMdApi::OnRspUserLogout(
                       CThostFtdcUserLogoutField *uesr_logout,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdReceiver::on_error(
+void CtpMdApi::OnRspError(
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdReceiver::on_sub_md(
+void CtpMdApi::OnRspSubMarketData(
                       CThostFtdcSpecificInstrumentField *specific_instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
   if (is_error_rsp(rsp_info) || !specific_instrument) {
-    spdlog::error("[CTP MD] on_sub_md. Failed to subscribe. Error Msg: {}",
+    spdlog::error("[CTP MD] OnRspSubMarketData. Failed to subscribe. Error Msg: {}",
                   rsp_info->ErrorMsg);
     return;
   }
 
-  spdlog::debug("[CTP MD] on_sub_md. Successfully subscribe. Instrument: {}",
+  spdlog::debug("[CTP MD] OnRspSubMarketData. Successfully subscribe. Instrument: {}",
                specific_instrument->InstrumentID);
 }
 
-void CtpMdReceiver::on_unsub_md(
+void CtpMdApi::OnRspUnSubMarketData(
                       CThostFtdcSpecificInstrumentField *specific_instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdReceiver::on_sub_for_quote_rsp(
+void CtpMdApi::OnRspSubForQuoteRsp(
                       CThostFtdcSpecificInstrumentField *specific_instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdReceiver::on_unsub_for_quote_rsp(
+void CtpMdApi::OnRspUnSubForQuoteRsp(
                       CThostFtdcSpecificInstrumentField *specific_instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdReceiver::on_depth_md(
+void CtpMdApi::OnRtnDepthMarketData(
                       CThostFtdcDepthMarketDataField *md) {
   if (!md) {
-    spdlog::error("[CTP MD] on_depth_md. Null pointer of market data");
+    spdlog::error("[CTP MD] OnRtnDepthMarketData. Null pointer of market data");
     return;
   }
 
@@ -219,15 +219,15 @@ void CtpMdReceiver::on_depth_md(
   tick.bid_volume[3] = md->BidVolume4;
   tick.bid_volume[4] = md->BidVolume5;
 
-  spdlog::debug("[CTP MD] on_depth_md. Ticker: {}, Time MS: {}, LastPrice: {:.2f}, "
-                "Volume: {}, Turnover: {}, Open Interest: {}",
+  spdlog::debug("[CTP MD] OnRtnDepthMarketData. Ticker: {}, Time MS: {}, "
+                "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
                tick.ticker, tick.time_ms, tick.last_price, tick.volume,
                tick.turnover, tick.open_interest);
 
-  ts_->on_market_data(&tick);
+  general_api_->on_tick(&tick);
 }
 
-void CtpMdReceiver::on_for_quote_rsp(CThostFtdcForQuoteRspField *for_quote_rsp) {
+void CtpMdApi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) {
 }
 
 }  // namespace ft
