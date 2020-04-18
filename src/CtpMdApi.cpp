@@ -72,17 +72,18 @@ bool CtpMdApi::login(const LoginParams& params) {
       break;
   }
 
-  const auto& sub_list = params.subscribed_list();
-  std::vector<char*> symbol_list;
+  std::vector<char*> sub_list;
   std::string symbol;
   std::string exchange;
-  for (const auto& ticker : sub_list) {
+  for (const auto& ticker : params.subscribed_list()) {
     ticker_split(ticker, &symbol, &exchange);
     subscribed_list_.emplace_back(std::move(symbol));
-    symbol_list.emplace_back(const_cast<char*>(subscribed_list_.back().c_str()));
   }
 
-  if (ctp_api_->SubscribeMarketData(symbol_list.data(), symbol_list.size()) != 0) {
+  for (const auto& p : subscribed_list_)
+    sub_list.emplace_back(const_cast<char*>(p.c_str()));
+
+  if (ctp_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
     spdlog::error("[CTP MD] Failed to subscribe");
     return false;
   }

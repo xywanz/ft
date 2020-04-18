@@ -130,7 +130,7 @@ inline void ticker_split(const std::string& ticker,
                         std::string* exchange) {
   auto pos = ticker.find_first_of('.');
   *symbol = ticker.substr(0, pos);
-  if (pos + 1 < ticker.size())
+  if (pos != std::string::npos && pos + 1 < ticker.size())
     *exchange = ticker.substr(pos + 1);
 }
 

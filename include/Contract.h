@@ -27,8 +27,8 @@ struct Contract {
   double        price_tick;
 };
 
-inline void load_contract_file(const std::string& file,
-                               std::map<std::string, Contract>* contracts) {
+inline void load_contracts(const std::string& file,
+                           std::map<std::string, Contract>* contracts) {
   std::ifstream ifs(file);
   std::string line;
   std::vector<std::string> fields;
@@ -78,7 +78,7 @@ class ContractTable {
     static bool is_inited = false;
 
     if (!is_inited) {
-      load_contract_file(file, &contracts);
+      load_contracts(file, &contracts);
       is_inited = true;
     }
   }
