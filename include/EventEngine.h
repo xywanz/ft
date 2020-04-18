@@ -15,15 +15,6 @@
 
 #include <cppex/Any.h>
 
-#include "Account.h"
-#include "Contract.h"
-#include "Common.h"
-#include "LoginParams.h"
-#include "MarketData.h"
-#include "Order.h"
-#include "Position.h"
-#include "Trade.h"
-
 namespace ft {
 
 enum EventType : int {

@@ -6,7 +6,14 @@
 #include <memory>
 #include <string>
 
+#include "Account.h"
+#include "Contract.h"
 #include "EventEngine.h"
+#include "LoginParams.h"
+#include "MarketData.h"
+#include "Order.h"
+#include "Position.h"
+#include "Trade.h"
 
 namespace ft {
 
