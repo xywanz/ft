@@ -101,16 +101,23 @@ class EventEngine {
   }
 
   void loop() {
+    std::queue<Event> tmp;
+    std::unique_lock<std::mutex> lock(mutex_, std::defer_lock);
     for (;;) {
-      std::unique_lock<std::mutex> lock(mutex_);
+      lock.lock();
       cv_.wait(lock, [this] { return !event_queue_.empty(); });
-      auto ev = std::move(event_queue_.front());
-      event_queue_.pop();
+      tmp.swap(event_queue_);
       lock.unlock();
-      process_event(&ev);
+
+      while (!tmp.empty()) {
+        auto ev = std::move(tmp.front());
+        tmp.pop();
+        process_event(&ev);
+      }
     }
   }
 
+ private:
   inline static const std::size_t kMaxHandlers = 256;
   HandleType handlers_[kMaxHandlers];
 
