@@ -59,7 +59,9 @@ class TradingSystem {
 
   void on_show_position(cppex::Any*);
 
-  bool mount_strategy(const std::string& ticker, Strategy *strategy);
+  void mount_strategy(const std::string& ticker, Strategy* strategy);
+
+  void unmount_strategy(Strategy* strategy);
 
   void join() {
     api_->join();
@@ -84,16 +86,30 @@ class TradingSystem {
   }
 
   // unsafe. only called within strategy
-  const Position* get_position(const std::string& ticker, Direction direction) {
+  const Position* get_position(const std::string& ticker, Direction direction) const {
     auto iter = positions_.find(to_pos_key(ticker, direction));
     if (iter == positions_.end())
       return nullptr;
     return &iter->second;
   }
 
+  // unsafe. only called within strategy
+  const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
+    auto iter = ticks_.find(ticker);
+    if (iter == ticks_.end())
+      return nullptr;
+
+    auto& vec = iter->second;
+    if (offset >= vec.size())
+      return nullptr;
+    return &*(vec.rbegin() + offset);
+  }
+
   // callback
 
   void on_mount_strategy(cppex::Any* data);
+
+  void on_unmount_strategy(cppex::Any* data);
 
   /*
    * 接收查询到的汇总仓位数据
@@ -152,7 +168,8 @@ class TradingSystem {
  private:
   enum EventType {
     EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
-    EV_SHOW_POSITION
+    EV_UMOUNT_STRATEGY,
+    EV_SHOW_POSITION,
   };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
@@ -164,7 +181,8 @@ class TradingSystem {
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;
-  std::map<std::string, std::list<std::unique_ptr<Strategy>>> strategies_;
+  std::map<std::string, std::list<Strategy*>> strategies_;
+  std::map<std::string, std::vector<MarketData>> ticks_;
 
   mutable std::mutex order_mutex_;
 

@@ -31,6 +31,7 @@ TradingSystem::TradingSystem(FrontType front_type)
   engine_->set_handler(EV_TRADE, MEM_HANDLER(TradingSystem::on_trade));
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
+  engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_unmount_strategy));
   engine_->set_handler(EV_SHOW_POSITION, MEM_HANDLER(TradingSystem::on_show_position));
 
   engine_->run(false);
@@ -190,23 +191,53 @@ void TradingSystem::on_show_position(cppex::Any*) {
   }
 }
 
-bool TradingSystem::mount_strategy(const std::string& ticker, Strategy *strategy) {
-  strategy->set_ctx(new QuantitativTradingContext(ticker, this));
+void TradingSystem::mount_strategy(const std::string& ticker,
+                                   Strategy* strategy) {
+  strategy->set_ctx(new QuantitativeTradingContext(ticker, this));
   engine_->post(EV_MOUNT_STRATEGY, strategy);
 }
 
 void TradingSystem::on_mount_strategy(cppex::Any* data) {
-  auto strategy = data->get<Strategy>();
-  strategy->on_init(strategy->get_ctx());
-
+  auto strategy_unique_ptr = data->fetch<Strategy>();
+  auto* strategy = strategy_unique_ptr.release();
   auto& list = strategies_[strategy->get_ctx()->this_ticker()];
   list.emplace_back(std::move(strategy));
+
+  strategy->on_init(strategy->get_ctx());
+}
+
+void TradingSystem::unmount_strategy(Strategy* strategy) {
+  engine_->post(EV_UMOUNT_STRATEGY, strategy);
+}
+
+void TradingSystem::on_unmount_strategy(cppex::Any* data) {
+  auto strategy_unique_ptr = data->fetch<Strategy>();
+  auto* strategy = strategy_unique_ptr.release();
+
+  auto ctx = strategy->get_ctx();
+  if (!ctx)
+    return;
+
+  auto iter = strategies_.find(ctx->this_ticker());
+  if (iter == strategies_.end())
+    return;
+
+  auto& list = iter->second;
+  for (auto iter = list.begin(); iter != list.end(); ++iter) {
+    if (*iter == strategy) {
+      strategy->on_exit(ctx);
+      strategy->set_ctx(nullptr);
+      list.erase(iter);
+      return;
+    }
+  }
 }
 
 void TradingSystem::on_tick(cppex::Any* data) {
   auto* tick = data->cast<MarketData>();
-  md_center_[tick->ticker].on_tick(tick);
   update_pnl(tick->ticker, tick->last_price);
+  md_center_[tick->ticker].on_tick(tick);
+  ticks_[tick->ticker].emplace_back(*tick);
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {

@@ -3,6 +3,7 @@
 #ifndef FT_INCLUDE_STRATEGY_H_
 #define FT_INCLUDE_STRATEGY_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,9 +11,9 @@
 
 namespace ft {
 
-class QuantitativTradingContext {
+class QuantitativeTradingContext {
  public:
-  explicit QuantitativTradingContext(const std::string& ticker, TradingSystem* trader)
+  explicit QuantitativeTradingContext(const std::string& ticker, TradingSystem* trader)
     : ticker_(ticker),
       ts_(trader) {
   }
@@ -37,6 +38,14 @@ class QuantitativTradingContext {
     return ts_->cancel_order(order_id);
   }
 
+  const Position* get_position(Direction direction) const {
+    return ts_->get_position(ticker_, direction);
+  }
+
+  const MarketData* get_tick(std::size_t offset = 0) const {
+    return ts_->get_tick(ticker_, offset);
+  }
+
   const std::string& this_ticker() const {
     return ticker_;
   }
@@ -51,24 +60,34 @@ class Strategy {
  public:
   virtual ~Strategy() {}
 
-  virtual void on_init(QuantitativTradingContext* ctx) {}
+  virtual void on_init(QuantitativeTradingContext* ctx) {}
 
-  virtual void on_tick(QuantitativTradingContext* ctx) {}
+  virtual void on_tick(QuantitativeTradingContext* ctx) {}
 
-  virtual void on_exit(QuantitativTradingContext* ctx) {}
+  virtual void on_exit(QuantitativeTradingContext* ctx) {}
+
+  bool is_mounted() const {
+    return is_mounted_;
+  }
 
  private:
   friend class TradingSystem;
-  void set_ctx(QuantitativTradingContext* ctx) {
-    ctx_ = ctx;
+  void set_ctx(QuantitativeTradingContext* ctx) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (is_mounted_)
+      return;
+    ctx_.reset(ctx);
+    is_mounted_ = ctx ? true : false;
   }
 
   auto get_ctx() const {
-    return ctx_;
+    return ctx_.get();
   }
 
  private:
-  QuantitativTradingContext* ctx_;
+  bool is_mounted_ = false;
+  std::mutex mutex_;
+  std::unique_ptr<QuantitativeTradingContext> ctx_;
 };
 
 }  // namespace ft

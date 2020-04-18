@@ -30,14 +30,66 @@ const char* kAppID = "simnow_client_test";
 
 class MyStrategy : public ft::Strategy {
  public:
-  void on_init(ft::QuantitativTradingContext* ctx) override {
+  void on_init(ft::QuantitativeTradingContext* ctx) override {
     spdlog::info("[MyStrategy::on_init]");
+    auto* long_pos = ctx->get_position(ft::Direction::BUY);
+    auto* short_pos = ctx->get_position(ft::Direction::SELL);
+
+    if (long_pos && long_pos->volume > 0) {
+      ctx->sell_close(long_pos->volume, ft::OrderType::FAK, 3300);
+      spdlog::info("Close all long pos");
+    }
+
+    if (short_pos && short_pos->volume > 0) {
+      ctx->buy_close(short_pos->volume, ft::OrderType::FAK, 3600);
+      spdlog::info("Close all short pos");
+    }
   }
 
-  void on_tick(ft::QuantitativTradingContext* ctx) override {
-    spdlog::info("[MyStrategy::on_tick]");
-    // ctx->buy_open(1, ft::OrderType::FOK, 3500);
+  const ft::MarketData* get_tick(std::size_t i) {
+    return &*(history_ticks_.rbegin() + i);
   }
+
+  void on_tick(ft::QuantitativeTradingContext* ctx) override {
+    auto* tick = ctx->get_tick();
+    spdlog::info("[MyStrategy::on_tick] last_price: {:.2f}", ctx->get_tick()->last_price);
+
+    if (price_ <= 1e-6)
+      price_ = tick->last_price;
+
+    double grid = 10.0;
+    int volume = 10;
+
+    auto long_pos = ctx->get_position(ft::Direction::BUY);
+    auto short_pos = ctx->get_position(ft::Direction::SELL);
+
+    if (tick->last_price - price_ >= grid - 1e-6) {
+      if (long_pos && long_pos->volume >= volume)
+        ctx->sell_close(volume, ft::OrderType::FAK, tick->bid[0]);
+      else
+        ctx->sell_open(volume, ft::OrderType::FAK, tick->bid[0]);
+      spdlog::info("[GRID] SELL VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
+                   volume, tick->bid[0], tick->last_price, price_);
+      price_ = tick->last_price;
+    } else if (tick->last_price - price_ <= -grid + 1e-6) {
+      if (short_pos && short_pos->volume >= volume)
+        ctx->buy_close(volume, ft::OrderType::FAK, tick->ask[0]);
+      else
+        ctx->buy_open(volume, ft::OrderType::FAK, tick->ask[0]);
+      spdlog::info("[GRID] BUY VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
+                   volume, tick->ask[0], tick->last_price, price_);
+      price_ = tick->last_price;
+    }
+  }
+
+  void on_exit(ft::QuantitativeTradingContext* ctx) override {
+    spdlog::info("[MyStrategy::on_exit]");
+  }
+
+ private:
+  std::vector<ft::MarketData> history_ticks_;
+
+  double price_ = 0.0;
 };
 
 int main() {
@@ -49,6 +101,7 @@ int main() {
   ft::ContractTable::init("./contracts.csv");
   ft::TradingSystem ts(ft::FrontType::CTP);
   ft::LoginParams params;
+  const std::string ticker = "rb2009.SHFE";
 
   if (front_index >= sizeof(kSimnowTradeAddr) / sizeof(kSimnowTradeAddr[0]))
     exit(-1);
@@ -60,13 +113,13 @@ int main() {
   params.set_passwd(kPasswd);
   params.set_auth_code(kAuthCode);
   params.set_app_id(kAppID);
-  params.set_subscribed_list({"rb2009.SHFE"});
+  params.set_subscribed_list({ticker});
 
   if (!ts.login(params)) {
     exit(-1);
   }
 
-  ts.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
+  // ts.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
 
   // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
@@ -75,7 +128,7 @@ int main() {
   ts.mount_strategy("rb2009.SHFE", &strategy);
 
   while (1) {
-    sleep(1);
+    sleep(60);
     ts.show_positions();
   }
 }

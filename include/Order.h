@@ -38,7 +38,7 @@ struct Order {
   std::string     order_id;
   OrderType       type;
   Direction       direction;
-  Offset  offset;
+  Offset          offset;
   double          price = 0;
   int             volume = 0;
 
