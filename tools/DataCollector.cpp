@@ -107,6 +107,7 @@ int main() {
   int log_level = getarg(0, "--loglevel");
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
+  ft::ContractTable::init("./contracts.csv");
 
   auto* collector = new DataCollector;
   ft::LoginParams params;

@@ -55,15 +55,14 @@ class TradeInfoCollector {
   }
 
   void on_contract(cppex::Any* data) {
-    // contracts_[contract->ticker] = *contract;
     auto* contract = data->cast<ft::Contract>();
-    contracts_[contract->ticker] = std::move(*contract);
+    contracts_.emplace_back(std::move(*contract));
   }
 
  private:
   ft::EventEngine* engine_;
   ft::GeneralApi* api_;
-  std::map<std::string, ft::Contract> contracts_;
+  std::vector<ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;
 };
 

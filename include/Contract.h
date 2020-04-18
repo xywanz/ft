@@ -27,8 +27,7 @@ struct Contract {
   double        price_tick;
 };
 
-inline void load_contracts(const std::string& file,
-                           std::map<std::string, Contract>* contracts) {
+inline void load_contracts(const std::string& file, std::vector<Contract>* contracts) {
   std::ifstream ifs(file);
   std::string line;
   std::vector<std::string> fields;
@@ -43,25 +42,22 @@ inline void load_contracts(const std::string& file,
       continue;
     assert(fields.size() == 5);
 
-    if (contracts->find(fields[0]) != contracts->end())
-      continue;
-
     contract.ticker = std::move(fields[0]);
     ticker_split(contract.ticker, &contract.symbol, &contract.exchange);
     contract.name = std::move(fields[1]);
     contract.product_type = string2product(fields[2]);
     contract.size = std::stoi(fields[3]);
     contract.price_tick = std::stod(fields[4]);
-    contracts->emplace(contract.ticker, std::move(contract));
+    contracts->emplace_back(std::move(contract));
   }
 }
 
 inline void store_contracts(const std::string& file,
-                            const std::map<std::string, Contract>& contracts) {
+                            const std::vector<Contract>& contracts) {
   std::ofstream ofs(file, std::ios_base::trunc);
   std::string line = fmt::format("ticker,name,product_type,size,price_tick\n");
   ofs << line;
-  for (const auto& [ticker, contract] : contracts) {
+  for (const auto& contract : contracts) {
     line = fmt::format("{},{},{},{},{}\n",
                        contract.ticker,
                        contract.name,
@@ -83,17 +79,31 @@ class ContractTable {
       load_contracts(file, &contracts);
       is_inited = true;
     }
+
+    for (auto& contract : contracts) {
+      ticker2contract.emplace(contract.ticker, &contract);
+      symbol2contract.emplace(contract.symbol, &contract);
+    }
   }
 
-  static const Contract* get(const std::string& ticker) {
-    auto iter = contracts.find(ticker);
-    if (iter == contracts.end())
+  static const Contract* get_by_ticker(const std::string& ticker) {
+    auto iter = ticker2contract.find(ticker);
+    if (iter == ticker2contract.end())
       return nullptr;
-    return &iter->second;
+    return iter->second;
+  }
+
+  static const Contract* get_by_symbol(const std::string& symbol) {
+    auto iter = symbol2contract.find(symbol);
+    if (iter == symbol2contract.end())
+      return nullptr;
+    return iter->second;
   }
 
  private:
-  inline static std::map<std::string, Contract> contracts;
+  inline static std::vector<Contract> contracts;
+  inline static std::map<std::string, Contract*> ticker2contract;
+  inline static std::map<std::string, Contract*> symbol2contract;
 };
 
 }  // namespace ft

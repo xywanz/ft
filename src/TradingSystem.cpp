@@ -97,7 +97,7 @@ void TradingSystem::update_volume(const std::string& ticker,
 }
 
 void TradingSystem::update_pnl(const std::string& ticker, double last_price) {
-  auto contract = ContractTable::get(ticker);
+  auto contract = ContractTable::get_by_ticker(ticker);
   if (!contract || contract->size <= 0)
     return;
 
@@ -334,7 +334,7 @@ void TradingSystem::on_trade(cppex::Any* data) {
   update_volume(trade->ticker, trade->direction, trade->offset,
                 trade->volume, -trade->volume);
 
-  auto contract = ContractTable::get(trade->ticker);
+  auto contract = ContractTable::get_by_ticker(trade->ticker);
   if (!contract) {
     spdlog::error("[Trader] on_trade. Contract not found. Ticker: {}", trade->ticker);
     return;

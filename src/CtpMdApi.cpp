@@ -149,8 +149,17 @@ void CtpMdApi::OnRspSubMarketData(
     return;
   }
 
-  spdlog::debug("[CTP MD] OnRspSubMarketData. Successfully subscribe. Instrument: {}",
-               specific_instrument->InstrumentID);
+  auto* contract = ContractTable::get_by_symbol(specific_instrument->InstrumentID);
+  if (!contract) {
+    spdlog::error("[CTP MD] OnRspSubMarketData. ExchangeID not found in contract list. "
+                  "Maybe you should update the contract list. Symbol: {}",
+                  specific_instrument->InstrumentID);
+    return;
+  }
+  symbol2exchange_.emplace(contract->symbol, contract->exchange);
+
+  spdlog::debug("[CTP MD] OnRspSubMarketData. Successfully subscribe. Ticker: {}",
+                contract->ticker);
 }
 
 void CtpMdApi::OnRspUnSubMarketData(
@@ -181,13 +190,17 @@ void CtpMdApi::OnRtnDepthMarketData(
     return;
   }
 
+  auto iter = symbol2exchange_.find(md->InstrumentID);
+  if (iter == symbol2exchange_.end()) {
+    spdlog::warn("[CTP MD] OnRtnDepthMarketData. ExchangeID not found in contract list. "
+                 "Maybe you should update the contract list. Symbol: {}",
+                 md->InstrumentID);
+    return;
+  }
+
   MarketData tick;
   tick.symbol = md->InstrumentID;
-  // TODO(Kevin): 处理symbol、exchange、ticker的问题，因为行情是不带exchange的
-  // 但是和交易相关的又是需要交由特定的交易所去处理，更新pnl的时候也是需要exchange
-  // 这个信息，否则无法定位到指定的ticker
-  // tick.exchange = md->ExchangeID;
-  tick.exchange = "SHFE";
+  tick.exchange = iter->second;
   tick.ticker = to_ticker(tick.symbol, tick.exchange);
 
   struct tm _tm;

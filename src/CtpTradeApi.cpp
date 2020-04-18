@@ -562,7 +562,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
     pos.pnl += position->PositionProfit;
 
     auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
-    auto contract = ContractTable::get(ticker);
+    auto contract = ContractTable::get_by_ticker(ticker);
     if (!contract) {
       spdlog::warn("[CTP] OnRspQryInvestorPosition. {} is not in contract list. "
                     "Please update the contract list before other operations",

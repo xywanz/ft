@@ -95,9 +95,10 @@ class CtpMdApi : public CThostFtdcMdSpi {
   std::atomic<bool> is_error_ = false;
   std::atomic<bool> is_connected_ = false;
   std::atomic<bool> is_login_ = false;
-  std::map<int, AsyncStatus> req_status_;
 
   std::vector<std::string> subscribed_list_;
+
+  std::map<std::string, std::string> symbol2exchange_;
 };
 
 
