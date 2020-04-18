@@ -91,7 +91,7 @@ int main() {
     exit(-1);
   }
 
-  if (!collector->dump_contracts("contracts.txt")) {
+  if (!collector->dump_contracts("contracts.csv")) {
     spdlog::error("Failed to export contracts");
     exit(-1);
   }

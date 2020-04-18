@@ -46,7 +46,7 @@ int main() {
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
-  ft::ContractTable::init("./contracts.txt");
+  ft::ContractTable::init("./contracts.csv");
   ft::TradingSystem ts(ft::FrontType::CTP);
   ft::LoginParams params;
 

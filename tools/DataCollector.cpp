@@ -120,7 +120,7 @@ int main() {
   params.set_passwd(kPasswd);
   params.set_auth_code(kAuthCode);
   params.set_app_id(kAppID);
-  params.set_subscribed_list({"rb2009.SHFE"});
+  params.set_subscribed_list({"rb2009.SHFE", "zn2009.SHFE"});
 
   if (!collector->login(params)) {
     exit(-1);

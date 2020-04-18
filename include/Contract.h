@@ -34,10 +34,12 @@ inline void load_contracts(const std::string& file,
   std::vector<std::string> fields;
   Contract contract;
 
+  std::getline(ifs, line);  // skip header
+
   while (std::getline(ifs, line)) {
     fields.clear();
     split(line, ",", fields);
-    if (fields.empty() || fields[0].front() == '#' || fields[0].front() == '\n')
+    if (fields.empty() || fields[0].front() == '\n')
       continue;
     assert(fields.size() == 5);
 
@@ -57,7 +59,7 @@ inline void load_contracts(const std::string& file,
 inline void store_contracts(const std::string& file,
                             const std::map<std::string, Contract>& contracts) {
   std::ofstream ofs(file, std::ios_base::trunc);
-  std::string line = fmt::format("#ticker,name,product_type,size,price_tick\n");
+  std::string line = fmt::format("ticker,name,product_type,size,price_tick\n");
   ofs << line;
   for (const auto& [ticker, contract] : contracts) {
     line = fmt::format("{},{},{},{},{}\n",

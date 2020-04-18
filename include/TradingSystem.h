@@ -65,6 +65,34 @@ class TradingSystem {
     api_->join();
   }
 
+  // unsafe. only called within strategy
+  void get_orders(std::vector<const Order*>* out, const std::string& ticker = "") const {
+    if (ticker.empty()) {
+      for (const auto& [order_id, order] : orders_)
+        out->emplace_back(&order);
+    } else {
+      for (const auto& [order_id, order] : orders_) {
+        if (order.ticker == ticker)
+          out->emplace_back(&order);
+      }
+    }
+  }
+
+  // unsafe. only called within strategy
+  const Account* get_account() const {
+    return &account_;
+  }
+
+  // unsafe. only called within strategy
+  const Position* get_position(const std::string& ticker, Direction direction) {
+    auto iter = positions_.find(to_pos_key(ticker, direction));
+    if (iter == positions_.end())
+      return nullptr;
+    return &iter->second;
+  }
+
+  // callback
+
   void on_mount_strategy(cppex::Any* data);
 
   /*
@@ -136,7 +164,7 @@ class TradingSystem {
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;
-  std::map<std::string, std::list<Strategy*>> strategies_;
+  std::map<std::string, std::list<std::unique_ptr<Strategy>>> strategies_;
 
   mutable std::mutex order_mutex_;
 

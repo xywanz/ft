@@ -196,13 +196,11 @@ bool TradingSystem::mount_strategy(const std::string& ticker, Strategy *strategy
 }
 
 void TradingSystem::on_mount_strategy(cppex::Any* data) {
-  auto* strategy = data->cast<Strategy>();
-  data->release();
+  auto strategy = data->get<Strategy>();
+  strategy->on_init(strategy->get_ctx());
 
   auto& list = strategies_[strategy->get_ctx()->this_ticker()];
-  list.emplace_back(strategy);
-
-  strategy->on_init(strategy->get_ctx());
+  list.emplace_back(std::move(strategy));
 }
 
 void TradingSystem::on_tick(cppex::Any* data) {
@@ -212,7 +210,8 @@ void TradingSystem::on_tick(cppex::Any* data) {
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {
-    for (auto strategy : iter->second)
+    auto& strategy_list = iter->second;
+    for (auto& strategy : strategy_list)
       strategy->on_tick(strategy->get_ctx());
   }
 }
