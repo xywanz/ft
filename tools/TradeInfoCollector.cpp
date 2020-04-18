@@ -7,7 +7,8 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpApi.h"
-#include "Engine.h"
+#include "Contract.h"
+#include "EventEngine.h"
 
 const char* kSimnowTradeAddr[] = {
   "tcp://180.168.146.187:10130",
@@ -22,15 +23,19 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
-class TradeInfoCollector : public ft::Engine {
+class TradeInfoCollector {
  public:
-  TradeInfoCollector() {
-    api_ = new ft::CtpApi(this);
+  TradeInfoCollector()
+    : engine_(new ft::EventEngine) {
+    api_ = new ft::CtpApi(engine_);
+    engine_->set_handler(ft::EV_CONTRACT, MEM_HANDLER(TradeInfoCollector::on_contract));
+
+    engine_->run(false);
   }
 
   bool login(const ft::LoginParams& params) {
     if (!api_->login(params)) {
-      spdlog::error("[ContractExporter] login. Failed to login into trading server");
+      spdlog::error("[TradeInfoCollector] login. Failed to login into trading server");
       return false;
     }
     is_login_ = true;
@@ -45,26 +50,18 @@ class TradeInfoCollector : public ft::Engine {
     if (!status.wait())
       return false;
 
-    std::ofstream ofs(file, std::ios_base::trunc);
-    std::string line = fmt::format("#ticker,size,price_tick\n");
-    ofs << line;
-    for (const auto& [ticker, contract] : contracts_) {
-      line = fmt::format("{},{},{}\n",
-                         contract.ticker,
-                         contract.size,
-                         contract.price_tick);
-      ofs << line;
-    }
-
-    ofs.close();
+    store_contracts(file, contracts_);
     return true;
   }
 
-  void on_contract(const ft::Contract* contract) {
-    contracts_[contract->ticker] = *contract;
+  void on_contract(cppex::Any* data) {
+    // contracts_[contract->ticker] = *contract;
+    auto* contract = data->cast<ft::Contract>();
+    contracts_[contract->ticker] = std::move(*contract);
   }
 
  private:
+  ft::EventEngine* engine_;
   ft::GeneralApi* api_;
   std::map<std::string, ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;

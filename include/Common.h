@@ -188,6 +188,24 @@ inline const std::string& to_string(Offset off) {
   return off_str.find(off)->second;
 }
 
+inline const std::string& to_string(ProductType product) {
+  static const std::map<ProductType, std::string> product_str = {
+    {ProductType::FUTURES, "Futures"},
+    {ProductType::OPTIONS, "Options"}
+  };
+
+  return product_str.find(product)->second;
+}
+
+inline ProductType string2product(const std::string& product) {
+  static const std::map<std::string, ProductType> product_map = {
+    {"Futures", ProductType::FUTURES},
+    {"Options", ProductType::OPTIONS}
+  };
+
+  return product_map.find(product)->second;
+}
+
 }  // namespace ft
 
 #endif  // FT_INCLUDE_COMMON_H_

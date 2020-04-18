@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "ctp/CtpApi.h"
-#include "Engine.h"
+#include "EventEngine.h"
 
 const char* kSimnowMdAddr[] = {
   "tcp://180.168.146.187:10131",
@@ -22,10 +22,14 @@ const char* kPasswd = "lsk4129691";
 const char* kAuthCode = "0000000000000000";
 const char* kAppID = "simnow_client_test";
 
-class DataCollector : public ft::Engine {
+class DataCollector {
  public:
-  DataCollector() {
-    api_ = new ft::CtpApi(this);
+  DataCollector()
+    : engine_(new ft::EventEngine) {
+    api_.reset(new ft::CtpApi(engine_.get()));
+
+    engine_->set_handler(ft::EV_TICK, MEM_HANDLER(DataCollector::on_tick));
+    engine_->run(false);
   }
 
   bool login(const ft::LoginParams& params) {
@@ -41,7 +45,8 @@ class DataCollector : public ft::Engine {
     api_->join();
   }
 
-  void on_tick(const ft::MarketData* tick) override {
+  void on_tick(cppex::Any* data) {
+    auto* tick = data->cast<ft::MarketData>();
     auto iter = ofs_map_.find(tick->ticker);
     if (iter == ofs_map_.end()) {
       std::string file = fmt::format("{}-{}.csv", tick->ticker, tick->date);
@@ -88,7 +93,8 @@ class DataCollector : public ft::Engine {
   }
 
  private:
-  ft::GeneralApi* api_;
+  std::unique_ptr<ft::EventEngine> engine_;
+  std::unique_ptr<ft::GeneralApi> api_;
   std::map<std::string, ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;
 
@@ -102,7 +108,7 @@ int main() {
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
-  auto collector = new DataCollector;
+  auto* collector = new DataCollector;
   ft::LoginParams params;
 
   if (front_index >= sizeof(kSimnowMdAddr) / sizeof(kSimnowMdAddr[0]))

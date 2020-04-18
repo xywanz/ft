@@ -23,14 +23,11 @@ namespace ft {
 
 class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  CtpTradeApi(GeneralApi* api);
+  explicit CtpTradeApi(GeneralApi* api);
 
   ~CtpTradeApi();
 
   bool login(const LoginParams& params);
-
-  bool logout() {
-  }
 
   std::string send_order(const Order* order);
 

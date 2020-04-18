@@ -15,19 +15,28 @@
 
 namespace ft {
 
-TradingSystem::TradingSystem(FrontType front_type) {
+TradingSystem::TradingSystem(FrontType front_type)
+  : engine_(new EventEngine) {
   switch (front_type) {
   case FrontType::CTP:
-    api_ = new CtpApi(this);
+    api_.reset(new CtpApi(engine_.get()));
     break;
   default:
     assert(false);
   }
+
+  engine_->set_handler(EV_ACCOUNT, MEM_HANDLER(TradingSystem::on_account));
+  engine_->set_handler(EV_POSITION, MEM_HANDLER(TradingSystem::on_position));
+  engine_->set_handler(EV_ORDER, MEM_HANDLER(TradingSystem::on_order));
+  engine_->set_handler(EV_TRADE, MEM_HANDLER(TradingSystem::on_trade));
+  engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
+  engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
+  engine_->set_handler(EV_SHOW_POSITION, MEM_HANDLER(TradingSystem::on_show_position));
+
+  engine_->run(false);
 }
 
 TradingSystem::~TradingSystem() {
-  if (api_)
-    delete api_;
 }
 
 bool TradingSystem::login(const LoginParams& params) {
@@ -65,9 +74,12 @@ void TradingSystem::update_volume(const std::string& ticker,
   if (is_close)
     direction = opp_direction(direction);
 
-  auto key = to_pos_key(ticker, direction);
-  std::unique_lock<std::mutex> lock(position_mutex_);
-  auto& pos = positions_[key];
+  auto& pos = positions_[to_pos_key(ticker, direction)];
+  if (pos.ticker.empty()) {
+    pos.ticker = ticker;
+    ticker_split(pos.ticker, &pos.symbol, &pos.exchange);
+    pos.direction = direction;
+  }
 
   // TODO(kevin): 这里可能出问题，初始化时如果on_trade比on_position
   // 先到达，那么会出现仓位计算不正确的问题
@@ -89,7 +101,6 @@ void TradingSystem::update_pnl(const std::string& ticker, double last_price) {
   if (!contract || contract->size <= 0)
     return;
 
-  std::unique_lock<std::mutex> lock(position_mutex_);
   auto iter = positions_.find(to_pos_key(ticker, Direction::BUY));
   if (iter != positions_.end()) {
     auto& pos = iter->second;
@@ -109,6 +120,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
                         Direction direction, Offset offset,
                         OrderType type, double price) {
   Order order(ticker, direction, offset, volume, type, price);
+  order.status = OrderStatus::SUBMITTING;
 
   order.order_id = api_->send_order(&order);
   if (order.order_id.empty()) {
@@ -119,10 +131,11 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
     return false;
   }
 
-  order.status = OrderStatus::SUBMITTING;
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  orders_.emplace(order.order_id, order);
-  lock.unlock();
+  {
+    std::unique_lock<std::mutex> lock(order_mutex_);
+    orders_.emplace(order.order_id, order);
+  }
+
   update_volume(ticker, direction, offset, 0, volume);
 
   spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
@@ -160,7 +173,10 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
 }
 
 void TradingSystem::show_positions() {
-  std::unique_lock<std::mutex> lock(position_mutex_);
+  engine_->post(EV_SHOW_POSITION);
+}
+
+void TradingSystem::on_show_position(cppex::Any*) {
   for (const auto& [key, pos] : positions_) {
     spdlog::info("[Trader] [Position] Ticker: {}, Direction: {}, Price: {:.2f}, "
                  "Holding: {}, Open Pending: {}, Close Pending: {}, PNL: {:.2f}",
@@ -176,35 +192,33 @@ void TradingSystem::show_positions() {
 
 bool TradingSystem::mount_strategy(const std::string& ticker, Strategy *strategy) {
   strategy->set_ctx(new QuantitativTradingContext(ticker, this));
-  std::unique_lock<std::mutex> lock(strategy_mutex_);
-  pending_strategies_.emplace_back(ticker, strategy);
-  ++pending_strategy_count_;
+  engine_->post(EV_MOUNT_STRATEGY, strategy);
 }
 
+void TradingSystem::on_mount_strategy(cppex::Any* data) {
+  auto* strategy = data->cast<Strategy>();
+  data->release();
 
-void TradingSystem::on_tick(const MarketData* data) {
-  md_center_[data->ticker].on_tick(data);
-  update_pnl(data->ticker, data->last_price);
+  auto& list = strategies_[strategy->get_ctx()->this_ticker()];
+  list.emplace_back(strategy);
 
-  if (pending_strategy_count_ > 0) {
-    std::unique_lock<std::mutex> lock(strategy_mutex_);
-    auto tmp = std::move(pending_strategies_);
-    pending_strategy_count_ = 0;
-    lock.unlock();
-    for (auto& [ticker, strategy] : tmp) {
-      strategies_[ticker].emplace_back(strategy);
-      strategy->on_init(strategy->get_ctx());
-    }
-  }
+  strategy->on_init(strategy->get_ctx());
+}
 
-  auto iter = strategies_.find(data->ticker);
+void TradingSystem::on_tick(cppex::Any* data) {
+  auto* tick = data->cast<MarketData>();
+  md_center_[tick->ticker].on_tick(tick);
+  update_pnl(tick->ticker, tick->last_price);
+
+  auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {
     for (auto strategy : iter->second)
       strategy->on_tick(strategy->get_ctx());
   }
 }
 
-void TradingSystem::on_position(const Position* position) {
+void TradingSystem::on_position(cppex::Any* data) {
+  auto* position = data->cast<Position>();
   spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
                "Direction: {}, Volume: {}, Price: {:.2f}, Frozen: {}",
                position->ticker, to_string(position->direction),
@@ -212,11 +226,10 @@ void TradingSystem::on_position(const Position* position) {
   if (position->volume == 0)
     return;
 
-  std::unique_lock<std::mutex> lock(position_mutex_);
   auto& pos = positions_[to_pos_key(position->ticker, position->direction)];
   pos.symbol = position->symbol;
   pos.exchange = position->exchange;
-  pos.ticker = to_ticker(pos.symbol, pos.exchange);
+  pos.ticker = position->ticker;
   pos.direction = position->direction;
   pos.yd_volume = position->yd_volume;
   pos.volume = position->volume;
@@ -225,16 +238,15 @@ void TradingSystem::on_position(const Position* position) {
   pos.pnl = position->pnl;
 }
 
-void TradingSystem::on_account(const Account* account) {
-  {
-    std::unique_lock<std::mutex> lock(account_mutex_);
-    account_ = *account;
-  }
+void TradingSystem::on_account(cppex::Any* data) {
+  auto* account = data->cast<Account>();
+  account_ = *account;
   spdlog::info("[Trader] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
                account_.account_id, account_.balance, account_.frozen);
 }
 
-void TradingSystem::on_order(const Order* rtn_order) {
+void TradingSystem::on_order(cppex::Any* data) {
+  auto* rtn_order = data->cast<Order>();
   {
     std::unique_lock<std::mutex> lock(order_mutex_);
     if (orders_.find(rtn_order->order_id) == orders_.end()) {
@@ -279,7 +291,8 @@ void TradingSystem::on_order(const Order* rtn_order) {
 }
 
 // TODO(Kevin): fix incorrect calculation and missing data
-void TradingSystem::on_trade(const Trade* trade) {
+void TradingSystem::on_trade(cppex::Any* data) {
+  auto* trade = data->cast<Trade>();
   spdlog::debug("[Trader] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
                 "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
@@ -288,27 +301,22 @@ void TradingSystem::on_trade(const Trade* trade) {
 
   trade_record_[trade->ticker].emplace_back(*trade);
 
-  Direction d = trade->direction;
+  auto d = trade->direction;
   bool is_close = is_offset_close(trade->offset);
   if (is_close)
     d = opp_direction(d);
   auto key = to_pos_key(trade->ticker, d);
 
-  {
-    std::unique_lock<std::mutex> lock(position_mutex_);
-    auto iter = positions_.find(key);
-    if (iter == positions_.end()) {
-      lock.unlock();
-      if (is_close) {
-        spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
-                      "Order ID: {}, Trade ID: {}, Direction: {}, Offset: {}, "
-                      "Price: {:.2f}, Volume: {}",
-                      trade->ticker, trade->order_id, trade->trade_id,
-                      to_string(d), to_string(trade->offset),
-                      trade->price, trade->volume);
-        return;
-      }
-
+  auto iter = positions_.find(key);
+  if (iter == positions_.end()) {
+    if (is_close) {
+      spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
+                    "Order ID: {}, Trade ID: {}, Direction: {}, Offset: {}, "
+                    "Price: {:.2f}, Volume: {}",
+                    trade->ticker, trade->order_id, trade->trade_id,
+                    to_string(d), to_string(trade->offset),
+                    trade->price, trade->volume);
+    } else {
       Position pos;
       pos.symbol = trade->symbol;
       pos.exchange = trade->exchange;
@@ -316,9 +324,12 @@ void TradingSystem::on_trade(const Trade* trade) {
       pos.direction = trade->direction;
       pos.volume = trade->volume;
       pos.price = trade->price;
-      lock.lock();
       positions_.emplace(std::move(key), std::move(pos));
+
+      spdlog::warn("[Trader] trade arrived early than position");
     }
+
+    return;
   }
 
   update_volume(trade->ticker, trade->direction, trade->offset,
@@ -330,7 +341,6 @@ void TradingSystem::on_trade(const Trade* trade) {
     return;
   }
 
-  std::unique_lock<std::mutex> lock(position_mutex_);
   auto& pos = positions_[key];
   double cost = contract->size * (pos.volume - trade->volume) * pos.price;
 

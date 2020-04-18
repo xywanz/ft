@@ -480,9 +480,12 @@ void CtpTradeApi::OnRspQryInstrument(
   contract.symbol = instrument->InstrumentID;
   contract.exchange = instrument->ExchangeID;
   contract.ticker = to_ticker(contract.symbol, contract.exchange);
-  contract.name = instrument->InstrumentName;
+  contract.name = gb2312_to_utf8(instrument->InstrumentName);
+  contract.product_type = product_type(instrument->ProductClass);
   contract.size = instrument->VolumeMultiple;
   contract.price_tick = instrument->PriceTick;
+
+
 
   general_api_->on_contract(&contract);
 

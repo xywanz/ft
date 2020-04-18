@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <cppex/string.h>
+#include <fmt/format.h>
 
 #include "Common.h"
 
@@ -38,17 +39,37 @@ inline void load_contract_file(const std::string& file,
     split(line, ",", fields);
     if (fields.empty() || fields[0].front() == '#' || fields[0].front() == '\n')
       continue;
-    assert(fields.size() == 3);
+    assert(fields.size() == 5);
 
     if (contracts->find(fields[0]) != contracts->end())
       continue;
 
     contract.ticker = std::move(fields[0]);
     ticker_split(contract.ticker, &contract.symbol, &contract.exchange);
-    contract.size = std::stoi(fields[1]);
-    contract.price_tick = std::stod(fields[2]);
+    contract.name = std::move(fields[1]);
+    contract.product_type = string2product(fields[2]);
+    contract.size = std::stoi(fields[3]);
+    contract.price_tick = std::stod(fields[4]);
     contracts->emplace(contract.ticker, std::move(contract));
   }
+}
+
+inline void store_contracts(const std::string& file,
+                            const std::map<std::string, Contract>& contracts) {
+  std::ofstream ofs(file, std::ios_base::trunc);
+  std::string line = fmt::format("#ticker,name,product_type,size,price_tick\n");
+  ofs << line;
+  for (const auto& [ticker, contract] : contracts) {
+    line = fmt::format("{},{},{},{},{}\n",
+                       contract.ticker,
+                       contract.name,
+                       to_string(contract.product_type),
+                       contract.size,
+                       contract.price_tick);
+    ofs << line;
+  }
+
+  ofs.close();
 }
 
 class ContractTable {

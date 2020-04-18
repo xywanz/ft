@@ -3,15 +3,16 @@
 #ifndef FT_INCLUDE_GENERALAPI_H_
 #define FT_INCLUDE_GENERALAPI_H_
 
+#include <memory>
 #include <string>
 
-#include "Engine.h"
+#include "EventEngine.h"
 
 namespace ft {
 
 class GeneralApi {
  public:
-  explicit GeneralApi(Engine* engine)
+  explicit GeneralApi(EventEngine* engine)
     : engine_(engine) {
   }
 
@@ -55,53 +56,65 @@ class GeneralApi {
    * 进行汇总，每个{ticker-direction}对应一个Position对象，本次查询完成后，
    * 对每个汇总的Position对象回调Trader::on_position
    */
-  virtual void on_position(const Position* position) {
-    if (engine_)
-      engine_->on_position(position);
+  void on_position(const Position* position) {
+    if (engine_) {
+      auto* data = new Position(*position);
+      engine_->post(EV_POSITION, data);
+    }
   }
 
   /*
    * 接收查询到的账户信息
    */
-  virtual void on_account(const Account* account) {
-    if (engine_)
-      engine_->on_account(account);
+  void on_account(const Account* account) {
+    if (engine_) {
+      auto* data = new Account(*account);
+      engine_->post(EV_ACCOUNT, data);
+    }
   }
 
-  virtual void on_contract(const Contract* contract) {
-    if (engine_)
-      engine_->on_contract(contract);
+  void on_contract(const Contract* contract) {
+    if (engine_) {
+      auto* data = new Contract(*contract);
+      engine_->post(EV_CONTRACT, data);
+    }
   }
 
   /*
    * 接受订单信息
    * 当订单状态发生改变时触发
    */
-  virtual void on_order(const Order* order) {
-    if (engine_)
-      engine_->on_order(order);
+  void on_order(const Order* order) {
+    if (engine_) {
+      auto* data = new Order(*order);
+      engine_->post(EV_ORDER, data);
+    }
   }
 
   /*
    * 接受成交信息
    * 每笔成交都会回调
    */
-  virtual void on_trade(const Trade* trade) {
-    if (engine_)
-      engine_->on_trade(trade);
+  void on_trade(const Trade* trade) {
+    if (engine_) {
+      auto* data = new Trade(*trade);
+      engine_->post(EV_TRADE, data);
+    }
   }
 
   /*
    * 接受行情数据
    * 每一个tick都会回调
    */
-  virtual void on_tick(const MarketData* data) {
-    if (engine_)
-      engine_->on_tick(data);
+  void on_tick(const MarketData* tick) {
+    if (engine_) {
+      auto* data = new MarketData(*tick);
+      engine_->post(EV_TICK, data);
+    }
   }
 
  private:
-  Engine* engine_;
+  EventEngine* engine_;
 };
 
 }  // namespace ft

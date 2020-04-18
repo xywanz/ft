@@ -17,7 +17,7 @@ namespace ft {
 
 class CtpApi : public GeneralApi {
  public:
-  explicit CtpApi(Engine* engine)
+  explicit CtpApi(EventEngine* engine)
     : GeneralApi(engine) {
     trade_api_.reset(new CtpTradeApi(this));
     md_api_.reset(new CtpMdApi(this));

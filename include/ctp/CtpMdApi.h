@@ -19,7 +19,12 @@ namespace ft {
 
 class CtpMdApi : public CThostFtdcMdSpi {
  public:
-  CtpMdApi(GeneralApi* general_api);
+  explicit CtpMdApi(GeneralApi* general_api);
+
+  CtpMdApi() {
+    if (ctp_api_)
+      ctp_api_->Release();
+  }
 
   // need front_addr, broker_id, investor_id and passwd
   bool login(const LoginParams& params);
@@ -74,20 +79,6 @@ class CtpMdApi : public CThostFtdcMdSpi {
   void OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) override;
 
  private:
-  AsyncStatus req_async_status(int req_id) {
-    auto res = req_status_.emplace(req_id, AsyncStatus{true});
-    return res.first->second;
-  }
-
-  void rsp_async_status(int req_id, bool success) {
-    auto status = req_status_[req_id];
-    req_status_.erase(req_id);
-    if (success)
-      status.set_success();
-    else
-      status.set_error();
-  }
-
   int next_req_id() {
     return next_req_id_++;
   }
@@ -101,6 +92,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
   int next_req_id_ = 0;
 
+  std::atomic<bool> is_error_ = false;
   std::atomic<bool> is_connected_ = false;
   std::atomic<bool> is_login_ = false;
   std::map<int, AsyncStatus> req_status_;

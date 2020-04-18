@@ -5,6 +5,7 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
@@ -14,7 +15,7 @@
 #include "Account.h"
 #include "Common.h"
 #include "Contract.h"
-#include "Engine.h"
+#include "EventEngine.h"
 #include "GeneralApi.h"
 #include "MarketData.h"
 #include "MdManager.h"
@@ -26,7 +27,7 @@ namespace ft {
 
 class Strategy;
 
-class TradingSystem : public Engine {
+class TradingSystem {
  public:
   explicit TradingSystem(FrontType front_type);
 
@@ -56,18 +57,7 @@ class TradingSystem : public Engine {
 
   void show_positions();
 
-  const Account* get_account() const {
-    thread_local static Account account;
-
-    {
-      std::unique_lock<std::mutex> lock(account_mutex_);
-      account = account_;
-    }
-
-    if (account.account_id.empty())
-      return nullptr;
-    return &account;
-  }
+  void on_show_position(cppex::Any*);
 
   bool mount_strategy(const std::string& ticker, Strategy *strategy);
 
@@ -75,36 +65,38 @@ class TradingSystem : public Engine {
     api_->join();
   }
 
+  void on_mount_strategy(cppex::Any* data);
+
   /*
    * 接收查询到的汇总仓位数据
    * 当gateway触发了一次仓位查询时，需要把仓位缓存并根据{ticker-direction}
    * 进行汇总，每个{ticker-direction}对应一个Position对象，本次查询完成后，
    * 对每个汇总的Position对象回调Trader::on_position
    */
-  void on_position(const Position* position) override;
+  void on_position(cppex::Any* data);
 
   /*
    * 接收查询到的账户信息
    */
-  void on_account(const Account* account) override;
+  void on_account(cppex::Any* data);
 
   /*
    * 接受订单信息
    * 当订单状态发生改变时触发
    */
-  void on_order(const Order* order) override;
+  void on_order(cppex::Any* data);
 
   /*
    * 接受成交信息
    * 每笔成交都会回调
    */
-  void on_trade(const Trade* trade) override;
+  void on_trade(cppex::Any* data);
 
   /*
    * 接受行情数据
    * 每一个tick都会回调
    */
-  void on_tick(const MarketData* data) override;
+  void on_tick(cppex::Any* data);
 
  private:
   static std::string to_pos_key(const std::string& ticker, Direction direction) {
@@ -130,7 +122,13 @@ class TradingSystem : public Engine {
   void handle_cancel_rejected(const Order* rtn_order);
 
  private:
-  GeneralApi* api_ = nullptr;
+  enum EventType {
+    EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
+    EV_SHOW_POSITION
+  };
+
+  std::unique_ptr<EventEngine> engine_ = nullptr;
+  std::unique_ptr<GeneralApi> api_ = nullptr;
 
   Account account_;
 
@@ -140,13 +138,7 @@ class TradingSystem : public Engine {
   std::map<std::string, MdManager> md_center_;
   std::map<std::string, std::list<Strategy*>> strategies_;
 
-  std::atomic<std::size_t> pending_strategy_count_ = 0;
-  std::vector<std::pair<std::string, Strategy*>> pending_strategies_;
-
   mutable std::mutex order_mutex_;
-  mutable std::mutex account_mutex_;
-  mutable std::mutex position_mutex_;
-  mutable std::mutex strategy_mutex_;
 
   bool is_login_ = false;
 };

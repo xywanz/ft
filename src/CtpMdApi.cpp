@@ -40,8 +40,14 @@ bool CtpMdApi::login(const LoginParams& params) {
   ctp_api_->RegisterSpi(this);
   ctp_api_->RegisterFront(const_cast<char*>(params.md_server_addr().c_str()));
   ctp_api_->Init();
-  while (!is_connected_)
-    continue;
+
+  for (;;) {
+    if (is_error_)
+      return false;
+
+    if (is_connected_)
+      break;
+  }
 
   int req_id;
   AsyncStatus status;
@@ -52,17 +58,19 @@ bool CtpMdApi::login(const LoginParams& params) {
   strncpy(login_req.UserID, params.investor_id().c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, params.passwd().c_str(), sizeof(login_req.Password));
   req_id = next_req_id();
-  status = req_async_status(req_id);
   if (ctp_api_->ReqUserLogin(&login_req, req_id) != 0) {
     spdlog::error("[CTP MD] Invalid user-login field");
-    rsp_async_status(req_id, false);
-  }
-
-  if (!status.wait()) {
-    spdlog::error("[CTP MD] Failed to login");
     return false;
   }
-  is_login_ = true;
+
+
+  for (;;) {
+    if (is_error_)
+      return false;
+
+    if (is_login_)
+      break;
+  }
 
   const auto& sub_list = params.subscribed_list();
   std::vector<char*> symbol_list;
@@ -88,6 +96,7 @@ void CtpMdApi::OnFrontConnected() {
 }
 
 void CtpMdApi::OnFrontDisconnected(int reason) {
+  is_error_ = true;
   is_connected_ = false;
   spdlog::error("[CTP MD] OnFrontDisconnected. Disconnected from the front {}",
                 front_addr_);
@@ -107,11 +116,11 @@ void CtpMdApi::OnRspUserLogin(
 
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CTP MD] OnRspUserLogin. Error ID: {}", rsp_info->ErrorID);
-    rsp_async_status(req_id, false);
+    is_error_ = true;
     return;
   }
 
-  rsp_async_status(req_id, true);
+  is_login_ = true;
   spdlog::debug("[CTP MD] OnRspUserLogin. Login as {}", investor_id_);
 }
 

@@ -36,7 +36,7 @@ class MyStrategy : public ft::Strategy {
 
   void on_tick(ft::QuantitativTradingContext* ctx) override {
     spdlog::info("[MyStrategy::on_tick]");
-    ctx->buy_open(1, ft::OrderType::FOK, 3500);
+    // ctx->buy_open(1, ft::OrderType::FOK, 3500);
   }
 };
 
@@ -46,6 +46,7 @@ int main() {
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
+  ft::ContractTable::init("./contracts.txt");
   ft::TradingSystem ts(ft::FrontType::CTP);
   ft::LoginParams params;
 
