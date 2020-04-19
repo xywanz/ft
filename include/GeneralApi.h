@@ -41,21 +41,19 @@ class GeneralApi {
     return false;
   }
 
-  virtual AsyncStatus query_contract(const std::string& symbol,
+  virtual bool query_contract(const std::string& symbol,
                                      const std::string& exchange) {
-    return AsyncStatus();
+    return false;
   }
 
-  virtual AsyncStatus query_position(const std::string& symbol,
+  virtual bool query_position(const std::string& symbol,
                                      const std::string& exchange) {
-    return AsyncStatus();
+    return false;
   }
 
-  virtual AsyncStatus query_account() {
-    return AsyncStatus();
+  virtual bool query_account() {
+    return false;
   }
-
-  virtual void join() {}
 
     /*
    * 接收查询到的汇总仓位数据

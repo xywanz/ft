@@ -33,18 +33,13 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool cancel_order(const std::string& order_id);
 
-  AsyncStatus query_contract(const std::string& symbol,
+  bool query_contract(const std::string& symbol,
                              const std::string& exchange);
 
-  AsyncStatus query_position(const std::string& symbol,
+  bool query_position(const std::string& symbol,
                              const std::string& exchange);
 
-  AsyncStatus query_account();
-
-  void join() {
-    if (is_login_)
-      ctp_api_->Join();
-  }
+  bool query_account();
 
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
@@ -121,26 +116,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
           bool is_last) override;
 
  private:
-  AsyncStatus req_async_status(int req_id) {
-    std::unique_lock<std::mutex> lock(status_mutex_);
-    auto res = req_status_.emplace(req_id, AsyncStatus{true});
-    assert(res.second == true);
-    return res.first->second;
-  }
-
-  void rsp_async_status(int req_id, bool success) {
-    std::unique_lock<std::mutex> lock(status_mutex_);
-    auto iter = req_status_.find(req_id);
-    if (iter == req_status_.end())
-      return;
-
-    if (success)
-      iter->second.set_success();
-    else
-      iter->second.set_error();
-    req_status_.erase(iter);
-  }
-
   int next_req_id() {
     return next_req_id_++;
   }
@@ -152,9 +127,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::string get_order_id(const char* order_ref) {
     return fmt::format("{}_{}_{}", front_id_, session_id_, order_ref);
   }
-
-  AsyncStatus query_settlement();
-  AsyncStatus req_settlement_confirm();
 
  private:
   GeneralApi* general_api_;
@@ -169,11 +141,15 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<int> next_req_id_ = 0;
   std::atomic<int> next_order_ref_ = 0;
 
+  std::atomic<bool> is_error_ = false;
   std::atomic<bool> is_connected_ = false;
+  std::atomic<bool> is_authenticated_ = false;
   std::atomic<bool> is_login_ = false;
-
-  std::map<int, AsyncStatus> req_status_;
-  std::mutex status_mutex_;
+  std::atomic<bool> is_query_settlement_ = false;
+  std::atomic<bool> is_settlement_confirmed_ = false;
+  std::atomic<bool> is_qry_contract_done_ = false;
+  std::atomic<bool> is_qry_account_done_ = false;
+  std::atomic<bool> is_qry_position_done_ = false;
 
   std::map<std::string, Order> id2order_;
   std::mutex order_mutex_;

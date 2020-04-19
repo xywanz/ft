@@ -66,59 +66,6 @@ enum class FrontType {
   CTP
 };
 
-class AsyncStatus {
- public:
-  explicit AsyncStatus(bool init_with_wait = false) {
-    if (init_with_wait)
-      status_ = std::make_shared<std::atomic<int>>(0);
-  }
-
-  bool success() const {
-    if (!status_)
-      return false;
-
-    return *status_ == 1;
-  }
-
-  bool waiting() const {
-    if (!status_)
-      return false;
-
-    return *status_ == 0;
-  }
-
-  bool error() const {
-    return !status_ || *status_ == -1;
-  }
-
-  void set_error() {
-    if (!status_) {
-      status_ = std::make_shared<std::atomic<int>>(-1);
-      return;
-    }
-
-    *status_ = -1;
-  }
-
-  void set_success() {
-    if (!status_) {
-      status_ = std::make_shared<std::atomic<int>>(1);
-      return;
-    }
-
-    *status_ = 1;
-  }
-
-  bool wait() {
-    while (waiting())
-      continue;
-    return success();
-  }
-
- private:
-  std::shared_ptr<std::atomic<int>> status_;
-};
-
 // such as rb2009.SHFE
 inline std::string to_ticker(const std::string& symbol,
                           const std::string& exchange) {

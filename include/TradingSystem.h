@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+#include <spdlog/spdlog.h>
+
 #include "Account.h"
 #include "Common.h"
 #include "Contract.h"
@@ -32,6 +34,11 @@ class TradingSystem {
   explicit TradingSystem(FrontType front_type);
 
   ~TradingSystem();
+
+  void close() {
+    api_.reset();
+    engine_->stop();
+  }
 
   bool login(const LoginParams& params);
 
@@ -62,10 +69,6 @@ class TradingSystem {
   void mount_strategy(const std::string& ticker, Strategy* strategy);
 
   void unmount_strategy(Strategy* strategy);
-
-  void join() {
-    api_->join();
-  }
 
   // unsafe. only called within strategy
   void get_orders(std::vector<const Order*>* out, const std::string& ticker = "") const {

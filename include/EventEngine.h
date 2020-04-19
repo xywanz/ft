@@ -33,13 +33,16 @@ class EventEngine {
  public:
   using HandleType = std::function<void(cppex::Any*)>;
 
-  virtual ~EventEngine() {}
+  ~EventEngine() {
+    stop();
+  }
 
   template<class T>
   void post(int event, T* ctx) {
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      event_queue_.emplace(event, ctx);
+      if (!is_to_stop_)
+        event_queue_.emplace(event, ctx);
     }
     cv_.notify_one();
   }
@@ -47,7 +50,8 @@ class EventEngine {
   void post(int event) {
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      event_queue_.emplace(event);
+      if (!is_to_stop_)
+        event_queue_.emplace(event);
     }
     cv_.notify_one();
   }
@@ -59,11 +63,21 @@ class EventEngine {
   }
 
   void run(bool loop_in_this_thread = true) {
+    is_to_stop_ = false;
+    is_stopped_ = false;
+
     if (loop_in_this_thread) {
       loop();
     } else {
       std::thread([this] { loop(); }).detach();
     }
+  }
+
+  void stop() {
+    is_to_stop_ = true;
+    cv_.notify_one();
+    while (!is_stopped_)
+      continue;
   }
 
  private:
@@ -94,9 +108,9 @@ class EventEngine {
   void loop() {
     std::queue<Event> tmp;
     std::unique_lock<std::mutex> lock(mutex_, std::defer_lock);
-    for (;;) {
+    while (!is_to_stop_) {
       lock.lock();
-      cv_.wait(lock, [this] { return !event_queue_.empty(); });
+      cv_.wait(lock, [this] { return !event_queue_.empty() || is_to_stop_; });
       tmp.swap(event_queue_);
       lock.unlock();
 
@@ -106,6 +120,8 @@ class EventEngine {
         process_event(&ev);
       }
     }
+
+    is_stopped_ = true;
   }
 
  private:
@@ -115,6 +131,9 @@ class EventEngine {
   std::queue<Event> event_queue_;
   std::mutex mutex_;
   std::condition_variable cv_;
+
+  volatile bool is_to_stop_ = false;
+  volatile bool is_stopped_ = false;
 };
 
 }  // namespace ft

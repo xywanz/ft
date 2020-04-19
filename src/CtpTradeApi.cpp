@@ -36,13 +36,13 @@ bool CtpTradeApi::login(const LoginParams& params) {
       params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
       params.passwd().empty() ||
       params.front_addr().empty()) {
-    spdlog::error("[CTP] Invalid login params");
+    spdlog::error("[CTP] login. Invalid login params");
     return false;
   }
 
   ctp_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
   if (!ctp_api_) {
-    spdlog::error("[CTP] Failed to create CTP API");
+    spdlog::error("[CTP] login. Failed to create CTP API");
     return false;
   }
 
@@ -54,11 +54,10 @@ bool CtpTradeApi::login(const LoginParams& params) {
   ctp_api_->RegisterSpi(this);
   ctp_api_->RegisterFront(const_cast<char*>(params.front_addr().c_str()));
   ctp_api_->Init();
-  while (!is_connected_)
-    continue;
-
-  int req_id;
-  AsyncStatus status;
+  while (!is_connected_) {
+    if (is_error_)
+      return false;
+  }
 
   if (!params.auth_code().empty()) {
     CThostFtdcReqAuthenticateField auth_req;
@@ -67,14 +66,16 @@ bool CtpTradeApi::login(const LoginParams& params) {
     strncpy(auth_req.UserID, params.investor_id().c_str(), sizeof(auth_req.UserID));
     strncpy(auth_req.AuthCode, params.auth_code().c_str(), sizeof(auth_req.AuthCode));
     strncpy(auth_req.AppID, params.app_id().c_str(), sizeof(auth_req.AppID));
-    req_id = next_req_id();
-    status = req_async_status(req_id);
-    if (ctp_api_->ReqAuthenticate(&auth_req, req_id) != 0)
-      rsp_async_status(req_id, false);
-
-    if (!status.wait()) {
-      spdlog::error("[CTP] Failed to authenticate");
+    if (ctp_api_->ReqAuthenticate(&auth_req, next_req_id()) != 0) {
+      spdlog::error("[CTP] login. Invalid user-login field");
       return false;
+    }
+
+    while (is_authenticated_) {
+      if (is_error_) {
+        spdlog::error("[CTP] login. Failed to authenticate");
+        return false;
+      }
     }
   }
 
@@ -83,32 +84,50 @@ bool CtpTradeApi::login(const LoginParams& params) {
   strncpy(login_req.BrokerID, params.broker_id().c_str(), sizeof(login_req.BrokerID));
   strncpy(login_req.UserID, params.investor_id().c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, params.passwd().c_str(), sizeof(login_req.Password));
-  req_id = next_req_id();
-  status = req_async_status(req_id);
-  if (ctp_api_->ReqUserLogin(&login_req, req_id) != 0) {
-    spdlog::error("[CTP] Invalid user-login field");
-    rsp_async_status(req_id, false);
-  }
-
-  if (!status.wait()) {
-    spdlog::error("[CTP] Failed to login");
+  if (ctp_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
+    spdlog::error("[CTP] login. Invalid user-login field");
     return false;
   }
 
-  // 投资结算确认后才能进行交易
-  status = query_settlement();
-  if (!status.wait()) {
-    spdlog::error("[CTP] Failed to query settlement info");
+  while (!is_login_) {
+    if (is_error_) {
+      spdlog::error("[CTP] login. Failed to login");
+      return false;
+    }
+  }
+
+  CThostFtdcQrySettlementInfoField qs_req;
+  memset(&qs_req, 0, sizeof(qs_req));
+  strncpy(qs_req.BrokerID, broker_id_.c_str(), sizeof(qs_req.BrokerID));
+  strncpy(qs_req.InvestorID, investor_id_.c_str(), sizeof(qs_req.InvestorID));
+  if (ctp_api_->ReqQrySettlementInfo(&qs_req, next_req_id()) != 0) {
+    spdlog::error("[CTP] login. ReqQrySettlementInfo returned nonzero");
     return false;
   }
 
-  status = req_settlement_confirm();
-  if (!status.wait()) {
-    spdlog::error("[CTP] Failed to confirm settlement info");
+  while (!is_query_settlement_) {
+    if (is_error_) {
+      spdlog::error("[CTP] login. Failed to ReqQrySettlementInfo");
+      return false;
+    }
+  }
+
+  CThostFtdcSettlementInfoConfirmField confirm_req;
+  memset(&confirm_req, 0, sizeof(confirm_req));
+  strncpy(confirm_req.BrokerID, broker_id_.c_str(), sizeof(confirm_req.BrokerID));
+  strncpy(confirm_req.InvestorID, investor_id_.c_str(), sizeof(confirm_req.InvestorID));
+  if (ctp_api_->ReqSettlementInfoConfirm(&confirm_req, next_req_id()) != 0) {
+    spdlog::error("[CTP] login. Failed to ReqSettlementInfoConfirm");
     return false;
   }
 
-  is_login_ = true;
+  while (!is_settlement_confirmed_) {
+    if (is_error_) {
+      spdlog::error("[CTP] login. Failed to ReqSettlementInfoConfirm");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -118,6 +137,7 @@ void CtpTradeApi::OnFrontConnected() {
 }
 
 void CtpTradeApi::OnFrontDisconnected(int reason) {
+  is_error_ = true;
   is_connected_ = false;
   spdlog::error("[CTP] OnFrontDisconnected. Disconnected from the front {}", front_addr_);
 }
@@ -135,11 +155,11 @@ void CtpTradeApi::OnRspAuthenticate(
     return;
 
   if (is_error_rsp(rsp_info)) {
-    rsp_async_status(req_id, false);
+    is_error_ = true;
     return;
   }
 
-  rsp_async_status(req_id, true);
+  is_authenticated_ = true;
   spdlog::debug("[CTP] OnRspAuthenticate. Investor ID: {}", investor_id_);
 }
 
@@ -152,8 +172,8 @@ void CtpTradeApi::OnRspUserLogin(
     return;
 
   if (is_error_rsp(rsp_info)) {
+    is_error_ = true;
     spdlog::error("[CTP] OnRspUserLogin. Error ID: {}", rsp_info->ErrorID);
-    rsp_async_status(req_id, false);
     return;
   }
 
@@ -161,27 +181,10 @@ void CtpTradeApi::OnRspUserLogin(
   session_id_ = rsp_user_login->SessionID;
   int max_order_ref = std::stoi(rsp_user_login->MaxOrderRef);
   next_order_ref_ = max_order_ref + 1;
-  rsp_async_status(req_id, true);
+  is_login_ = true;
   spdlog::info("[CTP] OnRspUserLogin. Login as {}. "
                "Front ID: {}, Session ID: {}, Max OrderRef: {}",
                investor_id_, front_id_, session_id_, max_order_ref);
-}
-
-AsyncStatus CtpTradeApi::query_settlement() {
-  CThostFtdcQrySettlementInfoField req;
-  memset(&req, 0, sizeof(req));
-  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-
-  int req_id = next_req_id();
-  auto status = req_async_status(req_id);
-  if (ctp_api_->ReqQrySettlementInfo(&req, req_id) != 0) {
-    spdlog::error("[CTP] query_settlement. ReqQrySettlementInfo returned nonzero");
-    rsp_async_status(req_id, false);
-  }
-
-  spdlog::debug("[CTP] query_settlement");
-  return status;
 }
 
 void CtpTradeApi::OnRspQrySettlementInfo(
@@ -192,30 +195,14 @@ void CtpTradeApi::OnRspQrySettlementInfo(
   if (!is_last)
     return;
 
-  bool res = false;
   if (!is_error_rsp(rsp_info)) {
-    res = true;
+    is_query_settlement_ = true;
     spdlog::debug("[CTP] OnRspQrySettlementInfo. Success");
   } else {
+    is_error_ = true;
     spdlog::error("[CTP] OnRspQrySettlementInfo. Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
   }
-  rsp_async_status(req_id, res);
-}
-
-AsyncStatus CtpTradeApi::req_settlement_confirm() {
-  CThostFtdcSettlementInfoConfirmField req;
-  memset(&req, 0, sizeof(req));
-  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-
-  int req_id = next_req_id();
-  auto status = req_async_status(req_id);
-  if (ctp_api_->ReqSettlementInfoConfirm(&req, req_id) != 0)
-    rsp_async_status(req_id, false);
-
-  spdlog::debug("[CTP] req_settlement_confirm");
-  return status;
 }
 
 void CtpTradeApi::OnRspSettlementInfoConfirm(
@@ -226,12 +213,12 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
   if (!is_last)
     return;
 
-  bool res = false;
   if (!is_error_rsp(rsp_info) && settlement_info_confirm) {
-    res = true;
+    is_settlement_confirmed_ = true;
     spdlog::debug("[CTP] OnRspSettlementInfoConfirm. Settlement info confirmed");
+  } else {
+    is_error_ = true;
   }
-  rsp_async_status(req_id, res);
 }
 
 std::string CtpTradeApi::send_order(const Order* order) {
@@ -432,7 +419,7 @@ void CtpTradeApi::OnRspOrderAction(
   general_api_->on_order(&order);
 }
 
-AsyncStatus CtpTradeApi::query_contract(const std::string& symbol,
+bool CtpTradeApi::query_contract(const std::string& symbol,
                                        const std::string& exchange) {
   CThostFtdcQryInstrumentField req;
   memset(&req, 0, sizeof(req));
@@ -441,11 +428,16 @@ AsyncStatus CtpTradeApi::query_contract(const std::string& symbol,
     strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
   }
 
-  int req_id = next_req_id();
-  auto status = req_async_status(req_id);
-  if (ctp_api_->ReqQryInstrument(&req, req_id) != 0)
-    rsp_async_status(req_id, false);
-  return status;
+  is_qry_contract_done_ = false;
+  if (ctp_api_->ReqQryInstrument(&req, next_req_id()) != 0)
+    return false;
+
+  while (!is_qry_contract_done_) {
+    if (is_error_)
+      return false;
+  }
+
+  return true;
 }
 
 void CtpTradeApi::OnRspQryInstrument(
@@ -453,21 +445,13 @@ void CtpTradeApi::OnRspQryInstrument(
                     CThostFtdcRspInfoField *rsp_info,
                     int req_id,
                     bool is_last) {
-  {
-    std::unique_lock<std::mutex> lock(status_mutex_);
-    if (req_status_.find(req_id) == req_status_.end()) {
-      spdlog::warn("[CTP] OnRspQryInstrument. Invalid rsp");
-      return;
-    }
-  }
-
   if (is_error_rsp(rsp_info)) {
-    rsp_async_status(req_id, false);
+    is_error_ = true;
     spdlog::error("[CTP] OnRspQryInstrument. Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
     return;
   } else if (!instrument) {
-    rsp_async_status(req_id, true);
+    is_error_ = true;
     spdlog::error("[CTP] OnRspQryInstrument. Null pointer of instrument");
     return;
   }
@@ -490,10 +474,10 @@ void CtpTradeApi::OnRspQryInstrument(
   general_api_->on_contract(&contract);
 
   if (is_last)
-    rsp_async_status(req_id, true);
+    is_qry_contract_done_ = true;
 }
 
-AsyncStatus CtpTradeApi::query_position(const std::string& symbol,
+bool CtpTradeApi::query_position(const std::string& symbol,
                                        const std::string& exchange) {
   CThostFtdcQryInvestorPositionField req;
   memset(&req, 0, sizeof(req));
@@ -502,11 +486,16 @@ AsyncStatus CtpTradeApi::query_position(const std::string& symbol,
   strncpy(req.InstrumentID, symbol.c_str(), symbol.size());
   strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
 
-  int req_id = next_req_id();
-  auto status = req_async_status(req_id);
-  if (ctp_api_->ReqQryInvestorPosition(&req, req_id) != 0)
-    status.set_error();
-  return status;
+  is_qry_position_done_ = false;
+  if (ctp_api_->ReqQryInvestorPosition(&req, next_req_id()) != 0)
+    return false;
+
+  while (!is_qry_position_done_) {
+    if (is_error_)
+      return false;
+  }
+
+  return true;
 }
 
 void CtpTradeApi::OnRspQryInvestorPosition(
@@ -514,20 +503,12 @@ void CtpTradeApi::OnRspQryInvestorPosition(
                     CThostFtdcRspInfoField *rsp_info,
                     int req_id,
                     bool is_last) {
-  {
-    std::unique_lock<std::mutex> lock(status_mutex_);
-    if (req_status_.find(req_id) == req_status_.end()) {
-      spdlog::warn("[CTP] OnRspQryInvestorPosition. Invalid rsp");
-      return;
-    }
-  }
-
   spdlog::debug("[CTP] OnRspQryInvestorPosition");
   auto& pos_cache = pos_caches_[req_id];
 
   if (is_error_rsp(rsp_info)) {
     pos_caches_.erase(req_id);
-    rsp_async_status(req_id, false);
+    is_error_ = true;
     spdlog::error("[CTP] OnRspQryInvestorPosition. Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
     return;
@@ -577,23 +558,27 @@ void CtpTradeApi::OnRspQryInvestorPosition(
     for (auto& [key, pos] : pos_cache)
       general_api_->on_position(&pos);
     pos_caches_.erase(req_id);
-    rsp_async_status(req_id, true);
+    is_qry_position_done_ = true;
   }
 }
 
-AsyncStatus CtpTradeApi::query_account() {
+bool CtpTradeApi::query_account() {
   CThostFtdcQryTradingAccountField req;
   memset(&req, 0, sizeof(req));
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
-  int req_id = next_req_id();
-  auto status = req_async_status(req_id);
   spdlog::debug("[CTP] query_account");
-  if (ctp_api_->ReqQryTradingAccount(&req, req_id) != 0)
-    rsp_async_status(req_id, false);
+  is_qry_account_done_ = false;
+  if (ctp_api_->ReqQryTradingAccount(&req, next_req_id()) != 0)
+    return false;
 
-  return status;
+  while (!is_qry_account_done_) {
+    if (is_error_)
+      return false;
+  }
+
+  return true;
 }
 
 void CtpTradeApi::OnRspQryTradingAccount(
@@ -605,7 +590,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
     return;
 
   if (is_error_rsp(rsp_info)) {
-    rsp_async_status(req_id, false);
+    is_error_ = true;
     return;
   }
 
@@ -621,7 +606,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
                    trading_account->FrozenCommission;
 
   general_api_->on_account(&account);
-  rsp_async_status(req_id, true);
+  is_qry_account_done_ = true;
 }
 
 }  // namespace ft

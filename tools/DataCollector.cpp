@@ -29,7 +29,6 @@ class DataCollector {
     api_.reset(new ft::CtpApi(engine_.get()));
 
     engine_->set_handler(ft::EV_TICK, MEM_HANDLER(DataCollector::on_tick));
-    engine_->run(false);
   }
 
   bool login(const ft::LoginParams& params) {
@@ -41,8 +40,8 @@ class DataCollector {
     return true;
   }
 
-  void join() {
-    api_->join();
+  void run() {
+    engine_->run();
   }
 
   void on_tick(cppex::Any* data) {
@@ -127,5 +126,5 @@ int main() {
     exit(-1);
   }
 
-  collector->join();
+  collector->run();
 }

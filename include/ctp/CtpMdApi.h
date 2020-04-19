@@ -21,18 +21,10 @@ class CtpMdApi : public CThostFtdcMdSpi {
  public:
   explicit CtpMdApi(GeneralApi* general_api);
 
-  CtpMdApi() {
-    if (ctp_api_)
-      ctp_api_->Release();
-  }
+  ~CtpMdApi();
 
   // need front_addr, broker_id, investor_id and passwd
   bool login(const LoginParams& params);
-
-  void join() {
-    if (is_login_)
-      ctp_api_->Join();
-  }
 
   void OnFrontConnected();
 

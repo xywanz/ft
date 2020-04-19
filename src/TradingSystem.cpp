@@ -38,6 +38,7 @@ TradingSystem::TradingSystem(FrontType front_type)
 }
 
 TradingSystem::~TradingSystem() {
+  close();
 }
 
 bool TradingSystem::login(const LoginParams& params) {
@@ -46,16 +47,13 @@ bool TradingSystem::login(const LoginParams& params) {
     return false;
   }
 
-  AsyncStatus status;
-  status = api_->query_account();
-  if (!status.wait())
+  if (!api_->query_account())
     return false;
   is_login_ = true;
   spdlog::info("[Trader] login. Login as {}", params.investor_id());
 
   // query all positions
-  status = api_->query_position("", "");
-  if (!status.wait()) {
+  if (!api_->query_position("", "")) {
     spdlog::error("[Trader] login. Failed to query positions");
     return false;
   }

@@ -115,20 +115,14 @@ int main() {
   params.set_app_id(kAppID);
   params.set_subscribed_list({ticker});
 
-  if (!ts.login(params)) {
-    exit(-1);
-  }
-
-  // ts.sell_open("rb2009.SHFE", 1, ft::OrderType::FAK, 3200);
-  // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
-
-  // trader.buy_close("rb2009.SHFE", 41, ft::OrderType::FAK, 3500);
+  if (!ts.login(params))
+    return -1;
 
   MyStrategy strategy;
   ts.mount_strategy("rb2009.SHFE", &strategy);
 
   while (1) {
     sleep(60);
-    ts.show_positions();
+    // ts.show_positions();
   }
 }

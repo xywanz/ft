@@ -16,6 +16,12 @@ CtpMdApi::CtpMdApi(GeneralApi* general_api)
   : general_api_(general_api) {
 }
 
+CtpMdApi::~CtpMdApi() {
+  is_error_ = true;
+  if (ctp_api_)
+    ctp_api_->Release();
+}
+
 bool CtpMdApi::login(const LoginParams& params) {
   if (params.broker_id().size() > sizeof(TThostFtdcBrokerIDType) ||
       params.broker_id().empty() ||
@@ -49,16 +55,12 @@ bool CtpMdApi::login(const LoginParams& params) {
       break;
   }
 
-  int req_id;
-  AsyncStatus status;
-
   CThostFtdcReqUserLoginField login_req;
   memset(&login_req, 0, sizeof(login_req));
   strncpy(login_req.BrokerID, params.broker_id().c_str(), sizeof(login_req.BrokerID));
   strncpy(login_req.UserID, params.investor_id().c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, params.passwd().c_str(), sizeof(login_req.Password));
-  req_id = next_req_id();
-  if (ctp_api_->ReqUserLogin(&login_req, req_id) != 0) {
+  if (ctp_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
     spdlog::error("[CTP MD] Invalid user-login field");
     return false;
   }

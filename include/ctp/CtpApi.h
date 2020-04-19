@@ -45,26 +45,18 @@ class CtpApi : public GeneralApi {
     return trade_api_->cancel_order(order_id);
   }
 
-  AsyncStatus query_contract(const std::string& symbol,
+  bool query_contract(const std::string& symbol,
                             const std::string& exchange) override {
     return trade_api_->query_contract(symbol, exchange);
   }
 
-  AsyncStatus query_position(const std::string& symbol,
+  bool query_position(const std::string& symbol,
                              const std::string& exchange) override {
     return trade_api_->query_position(symbol, exchange);
   }
 
-  AsyncStatus query_account() override {
+  bool query_account() override {
     return trade_api_->query_account();
-  }
-
-  void join() {
-    if (trade_api_)
-      trade_api_->join();
-
-    if (md_api_)
-      md_api_->join();
   }
 
  private:

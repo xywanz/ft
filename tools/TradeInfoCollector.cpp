@@ -46,8 +46,7 @@ class TradeInfoCollector {
     if (!is_login_)
       return false;
 
-    auto status = api_->query_contract("", "");
-    if (!status.wait())
+    if (!api_->query_contract("", ""))
       return false;
 
     store_contracts(file, contracts_);
