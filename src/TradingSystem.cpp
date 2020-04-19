@@ -42,11 +42,9 @@ TradingSystem::~TradingSystem() {
 }
 
 void TradingSystem::close() {
-    void close() {
     api_.reset();
     if (engine_)
       engine_->stop();
-  }
 }
 
 bool TradingSystem::login(const LoginParams& params) {

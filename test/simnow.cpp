@@ -48,26 +48,27 @@ class MyStrategy : public ft::Strategy {
 
   void on_tick(ft::QuantitativeTradingContext* ctx) override {
     auto* tick = ctx->get_tick();
-    spdlog::info("[MyStrategy::on_tick] last_price: {:.2f}", ctx->get_tick()->last_price);
 
     if (price_ <= 1e-6)
       price_ = tick->last_price;
 
-    double grid = 10.0;
-    int volume = 10;
-
     auto long_pos = ctx->get_position(ft::Direction::BUY);
     auto short_pos = ctx->get_position(ft::Direction::SELL);
 
-    if (tick->last_price - price_ >= grid - 1e-6) {
-      ctx->sell(volume, tick->bid[0]);
+    spdlog::info("[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}",
+                 ctx->get_tick()->last_price, price_,
+                 long_pos ? long_pos->volume : 0,
+                 short_pos ? short_pos->volume : 0);
+
+    if (tick->last_price - price_ >= grid_ - 1e-6) {
+      ctx->sell(volume_, tick->bid[0]);
       spdlog::info("[GRID] SELL VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
-                   volume, tick->bid[0], tick->last_price, price_);
+                   volume_, tick->bid[0], tick->last_price, price_);
       price_ = tick->last_price;
-    } else if (tick->last_price - price_ <= -grid + 1e-6) {
-      ctx->buy(volume, tick->ask[0]);
+    } else if (tick->last_price - price_ <= -grid_ + 1e-6) {
+      ctx->buy(volume_, tick->ask[0]);
       spdlog::info("[GRID] BUY VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
-                   volume, tick->ask[0], tick->last_price, price_);
+                   volume_, tick->ask[0], tick->last_price, price_);
       price_ = tick->last_price;
     }
   }
@@ -78,6 +79,8 @@ class MyStrategy : public ft::Strategy {
 
  private:
   double price_ = 0.0;
+  double grid_ = 10.0;
+  int volume_ = 100;
 };
 
 int main() {
