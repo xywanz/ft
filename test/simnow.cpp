@@ -46,10 +46,6 @@ class MyStrategy : public ft::Strategy {
     }
   }
 
-  const ft::MarketData* get_tick(std::size_t i) {
-    return &*(history_ticks_.rbegin() + i);
-  }
-
   void on_tick(ft::QuantitativeTradingContext* ctx) override {
     auto* tick = ctx->get_tick();
     spdlog::info("[MyStrategy::on_tick] last_price: {:.2f}", ctx->get_tick()->last_price);
@@ -87,8 +83,6 @@ class MyStrategy : public ft::Strategy {
   }
 
  private:
-  std::vector<ft::MarketData> history_ticks_;
-
   double price_ = 0.0;
 };
 

@@ -12,8 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include <spdlog/spdlog.h>
-
 #include "Account.h"
 #include "Common.h"
 #include "Contract.h"

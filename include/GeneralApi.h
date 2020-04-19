@@ -14,7 +14,6 @@
 #include "Order.h"
 #include "Position.h"
 #include "Trade.h"
-
 namespace ft {
 
 class GeneralApi {
