@@ -4,6 +4,7 @@
 #define FT_INCLUDE_POSITION_H_
 
 #include <atomic>
+#include <map>
 #include <string>
 
 #include "Common.h"
@@ -51,6 +52,15 @@ struct Position {
 
   double price = 0;
   double pnl = 0;
+};
+
+
+class PositionManager {
+ public:
+  PositionManager();
+
+ private:
+  std::map<std::string, Position> pos_map_;
 };
 
 }  // namespace ft

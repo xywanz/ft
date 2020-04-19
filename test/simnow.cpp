@@ -36,12 +36,12 @@ class MyStrategy : public ft::Strategy {
     auto* short_pos = ctx->get_position(ft::Direction::SELL);
 
     if (long_pos && long_pos->volume > 0) {
-      ctx->sell_close(long_pos->volume, ft::OrderType::FAK, 3300);
+      ctx->sell(long_pos->volume, 3300);
       spdlog::info("Close all long pos");
     }
 
     if (short_pos && short_pos->volume > 0) {
-      ctx->buy_close(short_pos->volume, ft::OrderType::FAK, 3600);
+      ctx->buy(short_pos->volume, 3600);
       spdlog::info("Close all short pos");
     }
   }
@@ -60,18 +60,12 @@ class MyStrategy : public ft::Strategy {
     auto short_pos = ctx->get_position(ft::Direction::SELL);
 
     if (tick->last_price - price_ >= grid - 1e-6) {
-      if (long_pos && long_pos->volume >= volume)
-        ctx->sell_close(volume, ft::OrderType::FAK, tick->bid[0]);
-      else
-        ctx->sell_open(volume, ft::OrderType::FAK, tick->bid[0]);
+      ctx->sell(volume, tick->bid[0]);
       spdlog::info("[GRID] SELL VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    volume, tick->bid[0], tick->last_price, price_);
       price_ = tick->last_price;
     } else if (tick->last_price - price_ <= -grid + 1e-6) {
-      if (short_pos && short_pos->volume >= volume)
-        ctx->buy_close(volume, ft::OrderType::FAK, tick->ask[0]);
-      else
-        ctx->buy_open(volume, ft::OrderType::FAK, tick->ask[0]);
+      ctx->buy(volume, tick->ask[0]);
       spdlog::info("[GRID] BUY VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    volume, tick->ask[0], tick->last_price, price_);
       price_ = tick->last_price;

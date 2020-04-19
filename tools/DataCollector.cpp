@@ -40,6 +40,15 @@ class DataCollector {
     return true;
   }
 
+  void set_output_path(const std::string& path) {
+    if (path.empty())
+      return;
+
+    path_ = path;
+    if (path_.back() == '/')
+      path_.pop_back();
+  }
+
   void run() {
     engine_->run();
   }
@@ -48,7 +57,7 @@ class DataCollector {
     auto* tick = data->cast<ft::MarketData>();
     auto iter = ofs_map_.find(tick->ticker);
     if (iter == ofs_map_.end()) {
-      std::string file = fmt::format("{}-{}.csv", tick->ticker, tick->date);
+      std::string file = fmt::format("{}/{}-{}.csv", path_, tick->ticker, tick->date);
       std::ofstream ofs(file, std::ios_base::app);
       if (!ofs) {
         spdlog::error("Failed to open file '{}'", file);
@@ -98,12 +107,15 @@ class DataCollector {
   std::atomic<bool> is_login_ = false;
 
   std::map<std::string, std::ofstream> ofs_map_;
+
+  std::string path_ = "./";
 };
 
 
 int main() {
   std::size_t front_index = getarg(0UL, "--front");
   int log_level = getarg(0, "--loglevel");
+  std::string path = getarg("./", "--path");
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
   ft::ContractTable::init("./contracts.csv");
@@ -126,5 +138,6 @@ int main() {
     exit(-1);
   }
 
+  collector->set_output_path(path);
   collector->run();
 }

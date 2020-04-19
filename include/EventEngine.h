@@ -17,16 +17,6 @@
 
 namespace ft {
 
-enum EventType : int {
-  EV_TICK = 0,
-  EV_ORDER,
-  EV_TRADE,
-  EV_POSITION,
-  EV_ACCOUNT,
-  EV_CONTRACT,
-  EV_USER_EVENT_START
-};
-
 #define MEM_HANDLER(f) std::bind(std::mem_fn(&f), this, std::placeholders::_1)
 
 class EventEngine {

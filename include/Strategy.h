@@ -7,54 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "TradingSystem.h"
+#include "Context.h"
 
 namespace ft {
-
-class QuantitativeTradingContext {
- public:
-  explicit QuantitativeTradingContext(const std::string& ticker, TradingSystem* trader)
-    : ticker_(ticker),
-      ts_(trader) {
-  }
-
-  bool buy_open(int volume, OrderType type, double price) {
-    return ts_->buy_open(ticker_, volume, type, price);
-  }
-
-  bool sell_close(int volume, OrderType type, double price) {
-    return ts_->sell_close(ticker_, volume, type, price);
-  }
-
-  bool sell_open(int volume, OrderType type, double price) {
-    return ts_->sell_open(ticker_, volume, type, price);
-  }
-
-  bool buy_close(int volume, OrderType type, double price)  {
-    return ts_->buy_close(ticker_, volume, type, price);
-  }
-
-  bool cancel_order(const std::string& order_id) {
-    return ts_->cancel_order(order_id);
-  }
-
-  const Position* get_position(Direction direction) const {
-    return ts_->get_position(ticker_, direction);
-  }
-
-  const MarketData* get_tick(std::size_t offset = 0) const {
-    return ts_->get_tick(ticker_, offset);
-  }
-
-  const std::string& this_ticker() const {
-    return ticker_;
-  }
-
- private:
-  std::string ticker_;
-  TradingSystem* ts_;
-};
-
 
 class Strategy {
  public:

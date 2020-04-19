@@ -16,6 +16,15 @@
 #include "Trade.h"
 namespace ft {
 
+enum EventType : int {
+  EV_TICK = 0,
+  EV_ORDER,
+  EV_TRADE,
+  EV_POSITION,
+  EV_ACCOUNT,
+  EV_CONTRACT,
+  EV_USER_EVENT_START
+};
 class GeneralApi {
  public:
   explicit GeneralApi(EventEngine* engine)

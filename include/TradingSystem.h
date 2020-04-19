@@ -33,14 +33,9 @@ class TradingSystem {
 
   ~TradingSystem();
 
-  void close() {
-    api_.reset();
-    engine_->stop();
-  }
+  void close();
 
   bool login(const LoginParams& params);
-
-  std::size_t subscribe(const std::vector<std::string>& tickers);
 
   bool buy_open(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);

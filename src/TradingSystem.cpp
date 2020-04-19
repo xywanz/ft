@@ -41,6 +41,14 @@ TradingSystem::~TradingSystem() {
   close();
 }
 
+void TradingSystem::close() {
+    void close() {
+    api_.reset();
+    if (engine_)
+      engine_->stop();
+  }
+}
+
 bool TradingSystem::login(const LoginParams& params) {
   if (!api_->login(params)) {
     spdlog::error("[Trader] login. Failed to login");
