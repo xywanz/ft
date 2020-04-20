@@ -96,7 +96,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
     orders_.emplace(order.order_id, order);
   }
 
-  pos_mgr_.update_volume(ticker, direction, offset, 0, volume);
+  pos_mgr_.update_pending(ticker, direction, offset, volume);
 
   spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
@@ -284,8 +284,8 @@ void TradingSystem::on_trade(cppex::Any* data) {
                 trade->price, trade->volume);
 
   trade_record_[trade->ticker].emplace_back(*trade);
-  pos_mgr_.update_volume(trade->ticker, trade->direction, trade->offset,
-                         trade->volume, 0, trade->price);
+  pos_mgr_.update_traded(trade->ticker, trade->direction, trade->offset,
+                         trade->volume, trade->price);
 }
 
 void TradingSystem::handle_canceled(const Order* rtn_order) {
@@ -295,7 +295,7 @@ void TradingSystem::handle_canceled(const Order* rtn_order) {
   }
 
   auto left_vol = rtn_order->volume - rtn_order->volume_traded;
-  pos_mgr_.update_volume(rtn_order->ticker, rtn_order->direction, rtn_order->offset, 0, -left_vol);
+  pos_mgr_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
 }
 
 void TradingSystem::handle_submitted(const Order* rtn_order) {

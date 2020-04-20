@@ -56,20 +56,41 @@ struct Position {
       long_pos(other.long_pos),
       short_pos(other.short_pos) {}
 
-  void update_volume(Direction direction, Offset offset,
-                     int traded, int pending_changed, double traded_price = 0.0) {
+  void update_pending(Direction direction, Offset offset,
+                      int changed) {
+    if (changed == 0)
+      return;
+
     bool is_close = is_offset_close(offset);
     if (is_close)
       direction = opp_direction(direction);
 
     auto& pos_detail = direction == Direction::BUY ? long_pos : short_pos;
+    if (is_close)
+      pos_detail.close_pending += changed;
+    else
+      pos_detail.open_pending += changed;
 
-    if (offset == Offset::OPEN) {
-      pos_detail.open_pending += pending_changed;
-      pos_detail.volume += traded;
-    } else if (is_close) {
-      pos_detail.close_pending += pending_changed;
+    assert(pos_detail.open_pending >= 0);
+    assert(pos_detail.close_pending >= 0);
+  }
+
+  void update_traded(Direction direction, Offset offset,
+                     int traded, double traded_price) {
+    if (traded == 0)
+      return;
+
+    bool is_close = is_offset_close(offset);
+    if (is_close)
+      direction = opp_direction(direction);
+
+    auto& pos_detail = direction == Direction::BUY ? long_pos : short_pos;
+    if (is_close) {
+      pos_detail.close_pending -= traded;
       pos_detail.volume -= traded;
+    } else if (is_close) {
+      pos_detail.open_pending -= traded;
+      pos_detail.volume += traded;
     }
 
     // TODO(kevin): 这里可能出问题
@@ -79,9 +100,6 @@ struct Position {
     assert(pos_detail.volume >= 0);
     assert(pos_detail.open_pending >= 0);
     assert(pos_detail.close_pending >= 0);
-
-    if (traded == 0 || is_equal(traded_price, 0.0))
-      return;
 
     const auto* contract = ContractTable::get_by_ticker(ticker);
     if (!contract) {
@@ -129,6 +147,7 @@ struct Position {
   double short_pnl = 0;
 };
 
+
 /*
  * 不是线程安全的，对于更新来说是安全的，因为更新都是单线程的，
  * 但是get_position不安全，因为get_position的同时，可能会有
@@ -148,13 +167,22 @@ class PositionManager {
     pos_map_.emplace(pos.ticker, pos);
   }
 
-  void update_volume(const std::string& ticker, Direction direction, Offset offset,
-                     int traded, int pending_changed, double traded_price = 0.0) {
-    if (traded == 0 && pending_changed == 0)
+  void update_pending(const std::string& ticker, Direction direction, Offset offset,
+                      int changed) {
+    if (changed == 0)
       return;
 
     auto& pos = find_or_create_pos(ticker);
-    pos.update_volume(direction, offset, traded, pending_changed, traded_price);
+    pos.update_pending(direction, offset, changed);
+  }
+
+  void update_traded(const std::string& ticker, Direction direction, Offset offset,
+                     int traded, double traded_price) {
+    if (traded == 0)
+      return;
+
+    auto& pos = find_or_create_pos(ticker);
+    pos.update_traded(direction, offset, traded, traded_price);
   }
 
   void update_pnl(const std::string& ticker, double last_price) {
