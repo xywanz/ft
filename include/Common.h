@@ -85,6 +85,15 @@ inline Direction opp_direction(Direction d) {
   return d == Direction::BUY ? Direction::SELL : Direction::BUY;
 }
 
+template<class RealType>
+bool is_equal(const RealType& lhs, const RealType& rhs, RealType error = RealType(1e-5)) {
+  return rhs - error <= lhs && lhs <= rhs + error;
+}
+
+inline bool is_offset_open(Offset offset) {
+  return offset == Offset::OPEN;
+}
+
 inline bool is_offset_close(Offset offset) {
   return offset == Offset::CLOSE ||
          offset == Offset::CLOSE_TODAY ||

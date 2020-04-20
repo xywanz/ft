@@ -83,10 +83,7 @@ class TradingSystem {
 
   // unsafe. only called within strategy
   const Position* get_position(const std::string& ticker) const {
-    auto iter = positions_.find(ticker);
-    if (iter == positions_.end())
-      return nullptr;
-    return &iter->second;
+    return pos_mgr_.get_position(ticker);
   }
 
   // unsafe. only called within strategy
@@ -143,14 +140,6 @@ class TradingSystem {
                          Direction direction, Offset offset,
                          OrderType type, double price);
 
-  void update_volume(const std::string& ticker,
-                     Direction direction,
-                     Offset offset,
-                     int traded,
-                     int pending_changed);
-
-  void update_pnl(const std::string& ticker, double last_price);
-
   void handle_canceled(const Order* rtn_order);
   void handle_submitted(const Order* rtn_order);
   void handle_part_traded(const Order* rtn_order);
@@ -167,9 +156,10 @@ class TradingSystem {
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
-  Account account_;
+  std::vector<Position> initial_positions_;
 
-  std::map<std::string, Position> positions_;  // ticker_direction->position
+  Account account_;
+  PositionManager pos_mgr_;
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;

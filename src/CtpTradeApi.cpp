@@ -182,9 +182,9 @@ void CtpTradeApi::OnRspUserLogin(
   int max_order_ref = std::stoi(rsp_user_login->MaxOrderRef);
   next_order_ref_ = max_order_ref + 1;
   is_login_ = true;
-  spdlog::info("[CTP] OnRspUserLogin. Login as {}. "
-               "Front ID: {}, Session ID: {}, Max OrderRef: {}",
-               investor_id_, front_id_, session_id_, max_order_ref);
+  spdlog::debug("[CTP] OnRspUserLogin. Login as {}. "
+                "Front ID: {}, Session ID: {}, Max OrderRef: {}",
+                investor_id_, front_id_, session_id_, max_order_ref);
 }
 
 void CtpTradeApi::OnRspQrySettlementInfo(
