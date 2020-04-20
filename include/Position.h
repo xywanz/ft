@@ -11,47 +11,56 @@
 
 namespace ft {
 
-struct Position {
-  Position() {
-  }
+struct PositionDetail {
+  PositionDetail() {}
 
-  Position(const std::string& _symbol,
-           const std::string& _exchange,
-           Direction _direction)
+  PositionDetail(const PositionDetail& other)
+    : yd_volume(other.yd_volume),
+      volume(other.volume),
+      frozen(other.frozen),
+      open_pending(other.open_pending.load()),
+      close_pending(other.close_pending.load()),
+      cost_price(other.cost_price),
+      pnl(other.pnl) {}
+
+  int64_t yd_volume = 0;
+  int64_t volume = 0;
+  int64_t frozen = 0;
+  std::atomic<int64_t> open_pending = 0;
+  std::atomic<int64_t> close_pending = 0;
+  double cost_price = 0;
+  double pnl = 0;
+};
+
+struct Position {
+  Position() {}
+
+  Position(const std::string& _symbol, const std::string& _exchange)
     : symbol(_symbol),
       exchange(_exchange),
-      ticker(to_ticker(_symbol, _exchange)),
-      direction(_direction) {
-  }
+      ticker(to_ticker(_symbol, _exchange)) {}
 
   Position(const Position& other)
     : symbol(other.symbol),
       exchange(other.exchange),
       ticker(other.ticker),
-      direction(other.direction),
-      yd_volume(other.yd_volume),
-      volume(other.volume),
-      frozen(other.frozen),
-      open_pending(other.open_pending.load()),
-      close_pending(other.close_pending.load()),
-      price(other.price),
-      pnl(other.pnl) {
-  }
+      long_pos(other.long_pos),
+      short_pos(other.short_pos) {}
 
   std::string symbol;
   std::string exchange;
   std::string ticker;
-  Direction direction;
 
-  int yd_volume = 0;
-  int volume = 0;
-  int frozen = 0;
+  PositionDetail long_pos;
+  PositionDetail short_pos;
 
-  std::atomic<int> open_pending = 0;
-  std::atomic<int> close_pending = 0;
-
-  double price = 0;
-  double pnl = 0;
+  int64_t short_yd_volume = 0;
+  int64_t short_volume = 0;
+  int64_t short_frozen = 0;
+  std::atomic<int64_t> short_open_pending = 0;
+  std::atomic<int64_t> short_close_pending = 0;
+  double short_cost_price = 0;
+  double short_pnl = 0;
 };
 
 

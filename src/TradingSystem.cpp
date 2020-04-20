@@ -71,34 +71,34 @@ bool TradingSystem::login(const LoginParams& params) {
 }
 
 void TradingSystem::update_volume(const std::string& ticker,
-                           Direction direction,
-                           Offset offset,
-                           int traded,
-                           int pending_changed) {
+                                  Direction direction,
+                                  Offset offset,
+                                  int traded,
+                                  int pending_changed) {
   bool is_close = is_offset_close(offset);
   if (is_close)
     direction = opp_direction(direction);
 
-  auto& pos = positions_[to_pos_key(ticker, direction)];
+  auto& pos = positions_[ticker];
   if (pos.ticker.empty()) {
     pos.ticker = ticker;
     ticker_split(pos.ticker, &pos.symbol, &pos.exchange);
-    pos.direction = direction;
   }
+  auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
 
   // TODO(kevin): 这里可能出问题，初始化时如果on_trade比on_position
   // 先到达，那么会出现仓位计算不正确的问题
   if (offset == Offset::OPEN) {
-    pos.open_pending += pending_changed;
-    pos.volume += traded;
+    pos_detail.open_pending += pending_changed;
+    pos_detail.volume += traded;
   } else if (is_close) {
-    pos.close_pending += pending_changed;
-    pos.volume -= traded;
+    pos_detail.close_pending += pending_changed;
+    pos_detail.volume -= traded;
   }
 
-  assert(pos.volume >= 0);
-  assert(pos.open_pending >= 0);
-  assert(pos.close_pending >= 0);
+  assert(pos_detail.volume >= 0);
+  assert(pos_detail.open_pending >= 0);
+  assert(pos_detail.close_pending >= 0);
 }
 
 void TradingSystem::update_pnl(const std::string& ticker, double last_price) {
@@ -106,19 +106,18 @@ void TradingSystem::update_pnl(const std::string& ticker, double last_price) {
   if (!contract || contract->size <= 0)
     return;
 
-  auto iter = positions_.find(to_pos_key(ticker, Direction::BUY));
-  if (iter != positions_.end()) {
-    auto& pos = iter->second;
-    if (pos.volume > 0)
-      pos.pnl = pos.volume * contract->size * (last_price - pos.price);
-  }
+  auto iter = positions_.find(ticker);
+  if (iter == positions_.end())
+    return;
+  auto& pos = iter->second;
 
-  iter = positions_.find(to_pos_key(ticker, Direction::SELL));
-  if (iter != positions_.end()) {
-    auto& pos = iter->second;
-    if (pos.volume > 0)
-      pos.pnl = pos.volume * contract->size * (pos.price - last_price);
-  }
+  auto& lp = pos.long_pos;
+  if (lp.volume > 0)
+    lp.pnl = lp.volume * contract->size * (last_price - lp.cost_price);
+
+  auto& sp = pos.short_pos;
+  if (sp.volume > 0)
+    sp.pnl = sp.volume * contract->size * (sp.cost_price - last_price);
 }
 
 bool TradingSystem::send_order(const std::string& ticker, int volume,
@@ -182,16 +181,15 @@ void TradingSystem::show_positions() {
 }
 
 void TradingSystem::on_show_position(cppex::Any*) {
-  for (const auto& [key, pos] : positions_) {
-    spdlog::info("[Trader] [Position] Ticker: {}, Direction: {}, Price: {:.2f}, "
-                 "Holding: {}, Open Pending: {}, Close Pending: {}, PNL: {:.2f}",
+  for (const auto& [ticker, pos] : positions_) {
+    auto& lp = pos.long_pos;
+    auto& sp = pos.short_pos;
+    spdlog::info("[Trader] [Position] Ticker: {}, "
+                 "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
+                 "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
                  pos.ticker,
-                 to_string(pos.direction),
-                 pos.price,
-                 pos.volume,
-                 pos.open_pending,
-                 pos.close_pending,
-                 pos.pnl);
+                 lp.volume, lp.close_pending, lp.cost_price, lp.pnl, sp.volume,
+                 sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
   }
 }
 
@@ -253,23 +251,19 @@ void TradingSystem::on_tick(cppex::Any* data) {
 
 void TradingSystem::on_position(cppex::Any* data) {
   auto* position = data->cast<Position>();
+  auto& lp = position->long_pos;
+  auto& sp = position->short_pos;
   spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
-               "Direction: {}, Volume: {}, Price: {:.2f}, Frozen: {}",
-               position->ticker, to_string(position->direction),
-               position->volume, position->price, position->frozen);
-  if (position->volume == 0)
+               "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
+               "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
+               position->ticker,
+               lp.volume, lp.cost_price, lp.frozen, lp.pnl,
+               sp.volume, sp.cost_price, sp.frozen, sp.pnl);
+
+  if (lp.volume == 0 && sp.volume == 0)
     return;
 
-  auto& pos = positions_[to_pos_key(position->ticker, position->direction)];
-  pos.symbol = position->symbol;
-  pos.exchange = position->exchange;
-  pos.ticker = position->ticker;
-  pos.direction = position->direction;
-  pos.yd_volume = position->yd_volume;
-  pos.volume = position->volume;
-  pos.frozen = position->frozen;
-  pos.price = position->price;
-  pos.pnl = position->pnl;
+  positions_.emplace(position->ticker, *position);
 }
 
 void TradingSystem::on_account(cppex::Any* data) {
@@ -339,9 +333,8 @@ void TradingSystem::on_trade(cppex::Any* data) {
   bool is_close = is_offset_close(trade->offset);
   if (is_close)
     d = opp_direction(d);
-  auto key = to_pos_key(trade->ticker, d);
 
-  auto iter = positions_.find(key);
+  auto iter = positions_.find(trade->ticker);
   if (iter == positions_.end()) {
     if (is_close) {
       spdlog::error("[Trader] on_trade: position to close not found. Ticker: {}, "
@@ -351,16 +344,13 @@ void TradingSystem::on_trade(cppex::Any* data) {
                     to_string(d), to_string(trade->offset),
                     trade->price, trade->volume);
     } else {
-      Position pos;
-      pos.symbol = trade->symbol;
-      pos.exchange = trade->exchange;
-      pos.ticker = trade->ticker;
-      pos.direction = trade->direction;
-      pos.volume = trade->volume;
-      pos.price = trade->price;
-      positions_.emplace(std::move(key), std::move(pos));
+      Position pos(trade->symbol, trade->exchange);
+      auto& pos_detail = d == Direction::BUY ? pos.long_pos : pos.short_pos;
+      pos_detail.volume = trade->volume;
+      pos_detail.cost_price = trade->price;
+      positions_.emplace(pos.ticker, pos);
 
-      spdlog::warn("[Trader] trade arrived early than position");
+      spdlog::warn("[Trader] on_trade arrived early than on_position");
     }
 
     return;
@@ -375,16 +365,17 @@ void TradingSystem::on_trade(cppex::Any* data) {
     return;
   }
 
-  auto& pos = positions_[key];
-  double cost = contract->size * (pos.volume - trade->volume) * pos.price;
+  auto& pos = iter->second;
+  auto& pos_detail = d == Direction::BUY ? pos.long_pos : pos.short_pos;
+  double cost = contract->size * (pos_detail.volume - trade->volume) * pos_detail.cost_price;
 
   if (trade->offset == Offset::OPEN)
     cost += contract->size * trade->volume * trade->price;
   else if (is_offset_close(trade->offset))
     cost -= contract->size * trade->volume * trade->price;
 
-  if (pos.volume > 0 && contract->size > 0)
-      pos.price = cost / (pos.volume * contract->size);
+  if (pos_detail.volume > 0 && contract->size > 0)
+      pos_detail.cost_price = cost / (pos_detail.volume * contract->size);
 }
 
 void TradingSystem::handle_canceled(const Order* rtn_order) {

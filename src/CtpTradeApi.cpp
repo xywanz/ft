@@ -515,43 +515,36 @@ void CtpTradeApi::OnRspQryInvestorPosition(
   }
 
   if (position) {
-    std::string key = fmt::format("{}.{}_{}",
-                                  position->InstrumentID,
-                                  position->ExchangeID,
-                                  position->PosiDirection);
-    auto iter = pos_cache.find(key);
-    if (iter == pos_cache.end()) {
-      Position pos(position->InstrumentID,
-                   position->ExchangeID,
-                   direction(position->PosiDirection));
-      auto pair = pos_cache.emplace(std::move(key), std::move(pos));
-      iter = pair.first;
-    }
-    auto& pos = iter->second;
-    if (pos.exchange == kSHFE || pos.exchange == kINE)
-      pos.yd_volume = position->YdPosition;
-    else
-      pos.yd_volume = position->Position - position->TodayPosition;
-
-    if (pos.direction == Direction::BUY)
-      pos.frozen += position->LongFrozen;
-    else
-      pos.frozen += position->ShortFrozen;
-
-    int original = pos.volume;
-    pos.volume += position->Position;
-    pos.pnl += position->PositionProfit;
-
     auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
-    auto contract = ContractTable::get_by_ticker(ticker);
-    if (!contract) {
+    auto& pos = pos_cache[ticker];
+    if (pos.ticker.empty()) {
+      pos.symbol = position->InstrumentID;
+      pos.exchange = position->ExchangeID;
+      pos.ticker = ticker;
+    }
+
+    bool is_long_pos = position->PosiDirection == THOST_FTDC_PD_Long;
+    auto& pos_detail =  is_long_pos ? pos.long_pos : pos.short_pos;
+    if (pos.exchange == kSHFE || pos.exchange == kINE)
+      pos_detail.yd_volume = position->YdPosition;
+    else
+      pos_detail.yd_volume = position->Position - position->TodayPosition;
+
+    if (is_long_pos)
+      pos_detail.frozen += position->LongFrozen;
+    else
+      pos_detail.frozen += position->ShortFrozen;
+
+    pos_detail.volume = position->Position;
+    pos_detail.pnl = position->PositionProfit;
+
+    auto contract = ContractTable::get_by_ticker(pos.ticker);
+    if (!contract)
       spdlog::warn("[CTP] OnRspQryInvestorPosition. {} is not in contract list. "
                     "Please update the contract list before other operations",
-                    ticker);
-    } else if (pos.volume > 0 && contract->size > 0) {
-      double cost = pos.price * original * contract->size + position->PositionCost;
-      pos.price = cost / (pos.volume * contract->size);
-    }
+                    pos.ticker);
+    else if (pos_detail.volume > 0 && contract->size > 0)
+      pos_detail.cost_price = position->PositionCost / (pos_detail.volume * contract->size);
   }
 
   if (is_last) {

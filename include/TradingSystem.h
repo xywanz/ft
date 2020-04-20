@@ -82,8 +82,8 @@ class TradingSystem {
   }
 
   // unsafe. only called within strategy
-  const Position* get_position(const std::string& ticker, Direction direction) const {
-    auto iter = positions_.find(to_pos_key(ticker, direction));
+  const Position* get_position(const std::string& ticker) const {
+    auto iter = positions_.find(ticker);
     if (iter == positions_.end())
       return nullptr;
     return &iter->second;
@@ -139,10 +139,6 @@ class TradingSystem {
   void on_tick(cppex::Any* data);
 
  private:
-  static std::string to_pos_key(const std::string& ticker, Direction direction) {
-    return fmt::format("{}_{}", ticker, to_string(direction));
-  }
-
   bool send_order(const std::string& ticker, int volume,
                          Direction direction, Offset offset,
                          OrderType type, double price);

@@ -33,24 +33,25 @@ class QuantitativeTradingContext {
     return ts_->buy_close(ticker_, volume, type, price);
   }
 
-  int buy(int volume, double price, bool allow_part_traded = false) {
+  int64_t buy(int64_t volume, double price, bool allow_part_traded = false) {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    auto* short_pos = get_position(Direction::SELL);
-    auto* long_pos = get_position(Direction::BUY);
+    const auto* pos = get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
-    int sell_pending = 0;
-    sell_pending += short_pos ? short_pos->open_pending.load() : 0;
-    sell_pending += long_pos ? long_pos->close_pending.load() : 0;
+    int64_t sell_pending = 0;
+    sell_pending += sp.close_pending;
+    sell_pending += lp.close_pending;
 
     if (sell_pending > 0)
       return -sell_pending;
 
-    int original_volume = volume;
+    int64_t original_volume = volume;
     auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
-    if (short_pos && short_pos->volume > 0) {
-      int to_close = std::min(short_pos->volume, volume);
+    if (sp.volume > 0) {
+      int64_t to_close = std::min(sp.volume, volume);
       if (!buy_close(to_close, type, price))
         return 0;
       volume -= to_close;
@@ -64,24 +65,25 @@ class QuantitativeTradingContext {
     return original_volume;
   }
 
-  int sell(int volume, double price, bool allow_part_traded = false) {
+  int64_t sell(int64_t volume, double price, bool allow_part_traded = false) {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    auto* short_pos = get_position(Direction::SELL);
-    auto* long_pos = get_position(Direction::BUY);
+    const auto* pos = get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
-    int buy_pending = 0;
-    buy_pending += short_pos ? short_pos->close_pending.load() : 0;
-    buy_pending += long_pos ? long_pos->open_pending.load() : 0;
+    int64_t buy_pending = 0;
+    buy_pending += sp.close_pending;
+    buy_pending += lp.open_pending;
 
     if (buy_pending > 0)
       return -buy_pending;
 
-    int original_volume = volume;
+    int64_t original_volume = volume;
     auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
-    if (long_pos && long_pos->volume > 0) {
-      int to_close = std::min(long_pos->volume, volume);
+    if (lp.volume > 0) {
+      int64_t to_close = std::min(lp.volume, volume);
       if (!sell_close(to_close, type, price))
         return 0;
       volume -= to_close;
@@ -99,8 +101,11 @@ class QuantitativeTradingContext {
     return ts_->cancel_order(order_id);
   }
 
-  const Position* get_position(Direction direction) const {
-    return ts_->get_position(ticker_, direction);
+  const Position* get_position() const {
+    static const Position position;
+
+    auto ret = ts_->get_position(ticker_);
+    return ret ? ret : &position;
   }
 
   const MarketData* get_tick(std::size_t offset = 0) const {

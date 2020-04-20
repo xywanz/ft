@@ -32,16 +32,18 @@ class MyStrategy : public ft::Strategy {
  public:
   void on_init(ft::QuantitativeTradingContext* ctx) override {
     spdlog::info("[MyStrategy::on_init]");
-    auto* long_pos = ctx->get_position(ft::Direction::BUY);
-    auto* short_pos = ctx->get_position(ft::Direction::SELL);
 
-    if (long_pos && long_pos->volume > 0) {
-      ctx->sell(long_pos->volume, 3300);
+    const auto* pos = ctx->get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
+
+    if (lp.volume > 0) {
+      ctx->sell(lp.volume, 3300);
       spdlog::info("Close all long pos");
     }
 
-    if (short_pos && short_pos->volume > 0) {
-      ctx->buy(short_pos->volume, 3600);
+    if (sp.volume > 0) {
+      ctx->buy(sp.volume, 3600);
       spdlog::info("Close all short pos");
     }
   }
@@ -52,24 +54,26 @@ class MyStrategy : public ft::Strategy {
     if (price_ <= 1e-6)
       price_ = tick->last_price;
 
-    auto long_pos = ctx->get_position(ft::Direction::BUY);
-    auto short_pos = ctx->get_position(ft::Direction::SELL);
+    auto* pos = ctx->get_position();
+    auto& lp = pos->long_pos;
+    auto& sp = pos->short_pos;
 
-    spdlog::info("[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}",
-                 ctx->get_tick()->last_price, price_,
-                 long_pos ? long_pos->volume : 0,
-                 short_pos ? short_pos->volume : 0);
+    spdlog::info(
+      "[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
+      ctx->get_tick()->last_price, price_, lp.volume, sp.volume, trades_);
 
     if (tick->last_price - price_ >= grid_ - 1e-6) {
       ctx->sell(volume_, tick->bid[0]);
       spdlog::info("[GRID] SELL VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    volume_, tick->bid[0], tick->last_price, price_);
       price_ = tick->last_price;
+      ++trades_;
     } else if (tick->last_price - price_ <= -grid_ + 1e-6) {
       ctx->buy(volume_, tick->ask[0]);
       spdlog::info("[GRID] BUY VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    volume_, tick->ask[0], tick->last_price, price_);
       price_ = tick->last_price;
+      ++trades_;
     }
   }
 
@@ -81,6 +85,7 @@ class MyStrategy : public ft::Strategy {
   double price_ = 0.0;
   double grid_ = 10.0;
   int volume_ = 100;
+  int trades_ = 0;
 };
 
 int main() {
