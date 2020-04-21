@@ -32,7 +32,6 @@ TradingSystem::TradingSystem(FrontType front_type)
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_unmount_strategy));
-  engine_->set_handler(EV_SHOW_POSITION, MEM_HANDLER(TradingSystem::on_show_position));
 
   engine_->run(false);
 }
@@ -82,17 +81,18 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
-  order.order_id = api_->send_order(&order);
-  if (order.order_id.empty()) {
-    spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
+  {
+    // 这里加锁是怕成交回执或订单回执在order插入到map前就到了且被处理了
+    std::unique_lock<std::mutex> lock(order_mutex_);
+    order.order_id = api_->send_order(&order);
+    if (order.order_id.empty()) {
+      spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                     "Direction: {}, Offset: {}",
                     ticker, volume, to_string(type), price,
                     to_string(direction), to_string(offset));
-    return false;
-  }
+      return false;
+    }
 
-  {
-    std::unique_lock<std::mutex> lock(order_mutex_);
     orders_.emplace(order.order_id, order);
   }
 
@@ -115,11 +115,10 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
   }
 
   auto& order = iter->second;
-
   if (order.flags.test(kCancelBit))
     return true;
-  order.flags.set(kCancelBit);
 
+  order.flags.set(kCancelBit);
   if (!api_->cancel_order(order_id)) {
     order.flags.reset(kCancelBit);
     spdlog::error("[Trader] cancel_order. Failed: unknown error");
@@ -128,25 +127,25 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
 
   spdlog::debug("[Trader] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
                 order_id, order.ticker, order.volume - order.volume_traded);
-
   return true;
 }
 
 void TradingSystem::show_positions() {
-  engine_->post(EV_SHOW_POSITION);
-}
-
-void TradingSystem::on_show_position(cppex::Any*) {
-  // for (const auto& [ticker, pos] : pos_mgr_.get_position()) {
-  //   auto& lp = pos.long_pos;
-  //   auto& sp = pos.short_pos;
-  //   spdlog::info("[Trader] [Position] Ticker: {}, "
-  //                "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
-  //                "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
-  //                pos.ticker,
-  //                lp.volume, lp.close_pending, lp.cost_price, lp.pnl, sp.volume,
-  //                sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
-  // }
+  std::vector<std::string> pos_ticker_list;
+  pos_mgr_.get_pos_ticker_list(&pos_ticker_list);
+  for (const auto& ticker : pos_ticker_list) {
+    const auto pos = pos_mgr_.get_position(ticker);
+    if (pos.ticker.empty())
+      continue;
+    auto& lp = pos.long_pos;
+    auto& sp = pos.short_pos;
+    spdlog::info("[Trader] [Position] Ticker: {}, "
+                 "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
+                 "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
+                 pos.ticker,
+                 lp.volume, lp.close_pending, lp.cost_price, lp.pnl, sp.volume,
+                 sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
+  }
 }
 
 void TradingSystem::mount_strategy(const std::string& ticker,
@@ -169,8 +168,7 @@ void TradingSystem::unmount_strategy(Strategy* strategy) {
 }
 
 void TradingSystem::on_unmount_strategy(cppex::Any* data) {
-  auto strategy_unique_ptr = data->fetch<Strategy>();
-  auto* strategy = strategy_unique_ptr.release();
+  auto* strategy = data->fetch<Strategy>().release();
 
   auto ctx = strategy->get_ctx();
   if (!ctx)
@@ -192,10 +190,14 @@ void TradingSystem::on_unmount_strategy(cppex::Any* data) {
 }
 
 void TradingSystem::on_tick(cppex::Any* data) {
-  auto* tick = data->cast<MarketData>();
-  pos_mgr_.update_pnl(tick->ticker, tick->last_price);
+  auto* tick = data->fetch<MarketData>().release();
+
+  std::unique_lock<std::mutex> lock(tick_mutex_);
   md_center_[tick->ticker].on_tick(tick);
-  ticks_[tick->ticker].emplace_back(*tick);
+  ticks_[tick->ticker].emplace_back(tick);
+  lock.unlock();
+
+  pos_mgr_.update_pnl(tick->ticker, tick->last_price);
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {
@@ -223,6 +225,7 @@ void TradingSystem::on_position(cppex::Any* data) {
 }
 
 void TradingSystem::on_account(cppex::Any* data) {
+  std::unique_lock<std::mutex> lock(account_mutex_);
   auto* account = data->cast<Account>();
   account_ = *account;
   spdlog::info("[Trader] on_account. Account ID: {}, Balance: {}, Fronzen: {}",

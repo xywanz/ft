@@ -124,10 +124,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     return next_order_ref_++;
   }
 
-  std::string get_order_id(const char* order_ref) {
-    return fmt::format("{}_{}_{}", front_id_, session_id_, order_ref);
-  }
-
  private:
   GeneralApi* general_api_;
   CThostFtdcTraderApi* ctp_api_ = nullptr;

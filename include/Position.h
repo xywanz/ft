@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -16,22 +17,11 @@
 namespace ft {
 
 struct PositionDetail {
-  PositionDetail() {}
-
-  PositionDetail(const PositionDetail& other)
-    : yd_volume(other.yd_volume),
-      volume(other.volume),
-      frozen(other.frozen),
-      open_pending(other.open_pending.load()),
-      close_pending(other.close_pending.load()),
-      cost_price(other.cost_price),
-      pnl(other.pnl) {}
-
   int64_t yd_volume = 0;
   int64_t volume = 0;
   int64_t frozen = 0;
-  std::atomic<int64_t> open_pending = 0;
-  std::atomic<int64_t> close_pending = 0;
+  int64_t open_pending = 0;
+  int64_t close_pending = 0;
   double cost_price = 0;
   double pnl = 0;
 };
@@ -49,15 +39,8 @@ struct Position {
       exchange(_exchange),
       ticker(to_ticker(_symbol, _exchange)) {}
 
-  Position(const Position& other)
-    : symbol(other.symbol),
-      exchange(other.exchange),
-      ticker(other.ticker),
-      long_pos(other.long_pos),
-      short_pos(other.short_pos) {}
 
-  void update_pending(Direction direction, Offset offset,
-                      int changed) {
+  void update_pending(Direction direction, Offset offset, int changed) {
     if (changed == 0)
       return;
 
@@ -75,8 +58,7 @@ struct Position {
     assert(pos_detail.close_pending >= 0);
   }
 
-  void update_traded(Direction direction, Offset offset,
-                     int traded, double traded_price) {
+  void update_traded(Direction direction, Offset offset, int traded, double traded_price) {
     if (traded == 0)
       return;
 
@@ -137,29 +119,22 @@ struct Position {
 
   PositionDetail long_pos;
   PositionDetail short_pos;
-
-  int64_t short_yd_volume = 0;
-  int64_t short_volume = 0;
-  int64_t short_frozen = 0;
-  std::atomic<int64_t> short_open_pending = 0;
-  std::atomic<int64_t> short_close_pending = 0;
-  double short_cost_price = 0;
-  double short_pnl = 0;
 };
 
 
 /*
- * 不是线程安全的，对于更新来说是安全的，因为更新都是单线程的，
- * 但是get_position不安全，因为get_position的同时，可能会有
- * 更新线程在执行任务
+ * 线程安全
+ * 虽说线程安全，使用上还是要注意，init_position要在其他任何仓位操作之前完成。
+ * 即启动时查询一次仓位，等待仓位全部初始化完毕后，才可进行交易，之后的仓位更新
+ * 操作全权交由PosManager负责，不再从API查询。
  */
 class PositionManager {
  public:
   PositionManager() {}
 
   void init_position(const Position& pos) {
-    auto iter = pos_map_.find(pos.ticker);
-    if (iter != pos_map_.end()) {
+    std::unique_lock<std::mutex> lock(pos_mutex_);
+    if (find(pos.ticker)) {
       spdlog::warn("[PositionManager::init_position] Failed to init pos: position already exists");
       return;
     }
@@ -172,6 +147,7 @@ class PositionManager {
     if (changed == 0)
       return;
 
+    std::unique_lock<std::mutex> lock(pos_mutex_);
     auto& pos = find_or_create_pos(ticker);
     pos.update_pending(direction, offset, changed);
   }
@@ -181,26 +157,36 @@ class PositionManager {
     if (traded == 0)
       return;
 
+    std::unique_lock<std::mutex> lock(pos_mutex_);
     auto& pos = find_or_create_pos(ticker);
     pos.update_traded(direction, offset, traded, traded_price);
   }
 
   void update_pnl(const std::string& ticker, double last_price) {
-    auto iter = pos_map_.find(ticker);
-    if (iter == pos_map_.end())
-      return;
-
-    iter->second.update_pnl(last_price);
+    std::unique_lock<std::mutex> lock(pos_mutex_);
+    auto* pos = find(ticker);
+    if (pos)
+      pos->update_pnl(last_price);
   }
 
-  const Position* get_position(const std::string& ticker) const {
-    auto iter = pos_map_.find(ticker);
-    if (iter == pos_map_.end())
-      return nullptr;
-    return &iter->second;
+  Position get_position(const std::string& ticker) const {
+    static const Position empty_pos;
+
+    std::unique_lock<std::mutex> lock(pos_mutex_);
+    const auto* pos = find(ticker);
+    return pos ? *pos : empty_pos;
+  }
+
+  void get_pos_ticker_list(std::vector<std::string>* out) const {
+    std::unique_lock<std::mutex> lock(pos_mutex_);
+    for (const auto& [ticker, pos] : pos_map_) {
+      if (!is_empty_pos(pos))
+        out->emplace_back(ticker);
+    }
   }
 
   void clear() {
+    std::unique_lock<std::mutex> lock(pos_mutex_);
     pos_map_.clear();
   }
 
@@ -214,8 +200,28 @@ class PositionManager {
     return pos;
   }
 
+  bool is_empty_pos(const Position& pos) const {
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
+    return lp.open_pending == 0 && lp.close_pending == 0 && lp.frozen == 0 &&
+           lp.volume == 0 && sp.open_pending == 0 && sp.close_pending == 0 &&
+           sp.frozen == 0 && sp.volume == 0;
+  }
+
+  Position* find(const std::string& ticker) {
+    auto iter = pos_map_.find(ticker);
+    if (iter == pos_map_.end())
+      return nullptr;
+    return &iter->second;
+  }
+
+  const Position* find(const std::string& ticker) const {
+    return const_cast<PositionManager*>(this)->find(ticker);
+  }
+
  private:
   std::map<std::string, Position> pos_map_;
+  mutable std::mutex pos_mutex_;
 };
 
 }  // namespace ft

@@ -256,7 +256,7 @@ std::string CtpTradeApi::send_order(const Order* order) {
   if (ctp_api_->ReqOrderInsert(&ctp_order, next_req_id()) != 0)
     return order_id;
 
-  order_id = get_order_id(ctp_order.OrderRef);
+  order_id = ctp_order.OrderRef;
 
   {
     std::unique_lock<std::mutex> lock(order_mutex_);
@@ -277,23 +277,35 @@ void CtpTradeApi::OnRspOrderInsert(
     return;
   }
 
-  Order order;
-  order.order_id = get_order_id(ctp_order->OrderRef);
-  order.symbol = ctp_order->InstrumentID;
-  order.exchange = ctp_order->ExchangeID;
-  order.ticker = to_ticker(order.symbol, order.exchange);
-  order.direction = direction(ctp_order->Direction);
-  order.offset = offset(ctp_order->CombOffsetFlag[0]);
-  order.price = ctp_order->LimitPrice;
-  order.volume = ctp_order->VolumeTotalOriginal;
-  order.type = order_type(ctp_order->OrderPriceType);
-  order.status = OrderStatus::REJECTED;
+  std::string order_id = ctp_order->OrderRef;
+  std::unique_lock<std::mutex> lock(order_mutex_);
+  auto iter = id2order_.find(order_id);
+  if (iter != id2order_.end()) {
+    auto order = iter->second;
+    id2order_.erase(iter);
+    lock.unlock();
 
-  spdlog::error("[CTP] OnRspOrderInsert. Order's failed to submit. "
-                "Order ID: {}, Instrument: {}, Exchange: {}, Error Msg: {}",
-                order.order_id, order.symbol, order.exchange,
-                gb2312_to_utf8(rsp_info->ErrorMsg));
-  general_api_->on_order(&order);
+    order.status = OrderStatus::REJECTED;
+    general_api_->on_order(&order);
+  } else {
+    Order order;
+    order.order_id = order_id;
+    order.symbol = ctp_order->InstrumentID;
+    order.exchange = ctp_order->ExchangeID;
+    order.ticker = to_ticker(order.symbol, order.exchange);
+    order.direction = direction(ctp_order->Direction);
+    order.offset = offset(ctp_order->CombOffsetFlag[0]);
+    order.price = ctp_order->LimitPrice;
+    order.volume = ctp_order->VolumeTotalOriginal;
+    order.type = order_type(ctp_order->OrderPriceType);
+    order.status = OrderStatus::REJECTED;
+
+    spdlog::error("[CTP] OnRspOrderInsert. Order not found. Ticker: {}, "
+              "Order ID: {}, Direction: {}, Offset: {}, Volume: {}",
+              order_id);
+
+    general_api_->on_order(&order);
+  }
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
@@ -309,7 +321,7 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
   }
 
   Order order;
-  order.order_id = get_order_id(ctp_order->OrderRef);
+  order.order_id = ctp_order->OrderRef;
   order.symbol = ctp_order->InstrumentID;
   order.exchange = ctp_order->ExchangeID;
   order.ticker = to_ticker(order.symbol, order.exchange);
@@ -350,7 +362,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
 
   Trade td;
-  td.order_id = get_order_id(trade->OrderRef);
+  td.order_id = trade->OrderRef;
   td.symbol = trade->InstrumentID;
   td.exchange = trade->ExchangeID;
   td.ticker = to_ticker(td.symbol, td.exchange);
@@ -387,13 +399,10 @@ bool CtpTradeApi::cancel_order(const std::string& order_id) {
 
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+  strncpy(req.OrderRef, order_id.c_str(), sizeof(req.OrderRef));
   req.ActionFlag = THOST_FTDC_AF_Delete;
-
-  char *end;
-  req.FrontID = strtol(order_id.c_str(), &end, 0);
-  req.SessionID = strtol(end, nullptr, 0);
-  auto pos = order_id.find_last_of('_') + 1;
-  strncpy(req.OrderRef, &order_id[pos], sizeof(req.OrderRef));
+  req.FrontID = front_id_;
+  req.SessionID = session_id_;
 
   if (ctp_api_->ReqOrderAction(&req, next_req_id()) != 0)
     return false;
@@ -412,7 +421,7 @@ void CtpTradeApi::OnRspOrderAction(
   spdlog::error("[CTP] OnRspOrderAction. Rejected.");
 
   std::unique_lock<std::mutex> lock(order_mutex_);
-  auto order = id2order_[get_order_id(action->OrderRef)];
+  auto order = id2order_[action->OrderRef];
   lock.unlock();
   order.status = OrderStatus::CANCEL_REJECTED;
 

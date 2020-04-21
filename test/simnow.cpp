@@ -33,9 +33,9 @@ class MyStrategy : public ft::Strategy {
   void on_init(ft::QuantitativeTradingContext* ctx) override {
     spdlog::info("[MyStrategy::on_init]");
 
-    const auto* pos = ctx->get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = ctx->get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     if (lp.volume > 0) {
       ctx->sell(lp.volume, 3300);
@@ -54,9 +54,9 @@ class MyStrategy : public ft::Strategy {
     if (price_ <= 1e-6)
       price_ = tick->last_price;
 
-    auto* pos = ctx->get_position();
-    auto& lp = pos->long_pos;
-    auto& sp = pos->short_pos;
+    const auto pos = ctx->get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     spdlog::info(
       "[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",

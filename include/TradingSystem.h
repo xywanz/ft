@@ -55,39 +55,60 @@ class TradingSystem {
 
   bool cancel_order(const std::string& order_id);
 
-  void show_positions();
+  void cancel_all(const std::string& ticker = "") {
+    std::vector<std::string> order_id_list;
+    get_order_id_list(&order_id_list, ticker);
+    for (const auto& order_id : order_id_list)
+      cancel_order(order_id);
+  }
 
-  void on_show_position(cppex::Any*);
+  void show_positions();
 
   void mount_strategy(const std::string& ticker, Strategy* strategy);
 
   void unmount_strategy(Strategy* strategy);
 
-  // unsafe. only called within strategy
-  void get_orders(std::vector<const Order*>* out, const std::string& ticker = "") const {
+  void get_order_id_list(std::vector<std::string>* out, const std::string& ticker = "") const {
+    std::unique_lock<std::mutex> lock(order_mutex_);
     if (ticker.empty()) {
       for (const auto& [order_id, order] : orders_)
-        out->emplace_back(&order);
+        out->emplace_back(order_id);
     } else {
       for (const auto& [order_id, order] : orders_) {
         if (order.ticker == ticker)
-          out->emplace_back(&order);
+          out->emplace_back(order_id);
       }
     }
   }
 
-  // unsafe. only called within strategy
-  const Account* get_account() const {
-    return &account_;
+  void get_order_list(std::vector<Order>* out, const std::string& ticker = "") const {
+    std::unique_lock<std::mutex> lock(order_mutex_);
+    if (ticker.empty()) {
+      for (const auto& [order_id, order] : orders_)
+        out->emplace_back(order);
+    } else {
+      for (const auto& [order_id, order] : orders_) {
+        if (order.ticker == ticker)
+          out->emplace_back(order);
+      }
+    }
   }
 
-  // unsafe. only called within strategy
-  const Position* get_position(const std::string& ticker) const {
+  Account get_account() const {
+    std::unique_lock<std::mutex> lock(account_mutex_);
+    return account_;
+  }
+
+  Position get_position(const std::string& ticker) const {
     return pos_mgr_.get_position(ticker);
   }
 
-  // unsafe. only called within strategy
+  void get_pos_ticker_list(std::vector<std::string>* out) const {
+    pos_mgr_.get_pos_ticker_list(out);
+  }
+
   const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
+    std::unique_lock<std::mutex> lock(tick_mutex_);
     auto iter = ticks_.find(ticker);
     if (iter == ticks_.end())
       return nullptr;
@@ -95,7 +116,7 @@ class TradingSystem {
     auto& vec = iter->second;
     if (offset >= vec.size())
       return nullptr;
-    return &*(vec.rbegin() + offset);
+    return *(vec.rbegin() + offset);
   }
 
   // callback
@@ -150,7 +171,6 @@ class TradingSystem {
   enum EventType {
     EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
     EV_UMOUNT_STRATEGY,
-    EV_SHOW_POSITION,
   };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
@@ -164,9 +184,11 @@ class TradingSystem {
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;
   std::map<std::string, std::list<Strategy*>> strategies_;
-  std::map<std::string, std::vector<MarketData>> ticks_;
+  std::map<std::string, std::vector<MarketData*>> ticks_;
 
+  mutable std::mutex account_mutex_;
   mutable std::mutex order_mutex_;
+  mutable std::mutex tick_mutex_;
 
   bool is_login_ = false;
 };

@@ -37,9 +37,9 @@ class QuantitativeTradingContext {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    const auto* pos = get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     int64_t sell_pending = 0;
     sell_pending += sp.close_pending;
@@ -69,9 +69,9 @@ class QuantitativeTradingContext {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    const auto* pos = get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     int64_t buy_pending = 0;
     buy_pending += sp.close_pending;
@@ -101,11 +101,8 @@ class QuantitativeTradingContext {
     return ts_->cancel_order(order_id);
   }
 
-  const Position* get_position() const {
-    static const Position position;
-
-    auto ret = ts_->get_position(ticker_);
-    return ret ? ret : &position;
+  Position get_position() const {
+    return ts_->get_position(ticker_);
   }
 
   const MarketData* get_tick(std::size_t offset = 0) const {
