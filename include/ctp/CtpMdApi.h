@@ -82,7 +82,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
   std::string front_addr_;
   std::string investor_id_;
 
-  int next_req_id_ = 0;
+  std::atomic<int> next_req_id_ = 0;
 
   std::atomic<bool> is_error_ = false;
   std::atomic<bool> is_connected_ = false;

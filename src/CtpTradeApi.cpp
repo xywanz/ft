@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstring>
 
+#include <cppex/split.h>
 #include <spdlog/spdlog.h>
 #include <ThostFtdcUserApiDataType.h>
 #include <ThostFtdcUserApiStruct.h>
@@ -252,18 +253,10 @@ std::string CtpTradeApi::send_order(const Order* order) {
     ctp_order.VolumeCondition = THOST_FTDC_VC_AV;
   }
 
-  std::string order_id;
   if (ctp_api_->ReqOrderInsert(&ctp_order, next_req_id()) != 0)
-    return order_id;
+    return "";
 
-  order_id = ctp_order.OrderRef;
-
-  {
-    std::unique_lock<std::mutex> lock(order_mutex_);
-    id2order_.emplace(order_id, *order);
-  }
-
-  return order_id;
+  return get_order_id(ctp_order.InstrumentID, ctp_order.ExchangeID, ctp_order.OrderRef);
 }
 
 void CtpTradeApi::OnRspOrderInsert(
@@ -277,35 +270,21 @@ void CtpTradeApi::OnRspOrderInsert(
     return;
   }
 
-  std::string order_id = ctp_order->OrderRef;
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = id2order_.find(order_id);
-  if (iter != id2order_.end()) {
-    auto order = iter->second;
-    id2order_.erase(iter);
-    lock.unlock();
+  Order order;
+  order.order_id = get_order_id(ctp_order->InstrumentID,
+                                ctp_order->ExchangeID,
+                                ctp_order->OrderRef);
+  order.symbol = ctp_order->InstrumentID;
+  order.exchange = ctp_order->ExchangeID;
+  order.ticker = to_ticker(order.symbol, order.exchange);
+  order.direction = direction(ctp_order->Direction);
+  order.offset = offset(ctp_order->CombOffsetFlag[0]);
+  order.price = ctp_order->LimitPrice;
+  order.volume = ctp_order->VolumeTotalOriginal;
+  order.type = order_type(ctp_order->OrderPriceType);
+  order.status = OrderStatus::REJECTED;
 
-    order.status = OrderStatus::REJECTED;
-    general_api_->on_order(&order);
-  } else {
-    Order order;
-    order.order_id = order_id;
-    order.symbol = ctp_order->InstrumentID;
-    order.exchange = ctp_order->ExchangeID;
-    order.ticker = to_ticker(order.symbol, order.exchange);
-    order.direction = direction(ctp_order->Direction);
-    order.offset = offset(ctp_order->CombOffsetFlag[0]);
-    order.price = ctp_order->LimitPrice;
-    order.volume = ctp_order->VolumeTotalOriginal;
-    order.type = order_type(ctp_order->OrderPriceType);
-    order.status = OrderStatus::REJECTED;
-
-    spdlog::error("[CTP] OnRspOrderInsert. Order not found. Ticker: {}, "
-              "Order ID: {}, Direction: {}, Offset: {}, Volume: {}",
-              order_id);
-
-    general_api_->on_order(&order);
-  }
+  general_api_->on_order(&order);
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
@@ -321,7 +300,9 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
   }
 
   Order order;
-  order.order_id = ctp_order->OrderRef;
+  order.order_id = get_order_id(ctp_order->InstrumentID,
+                                ctp_order->ExchangeID,
+                                ctp_order->OrderRef);
   order.symbol = ctp_order->InstrumentID;
   order.exchange = ctp_order->ExchangeID;
   order.ticker = to_ticker(order.symbol, order.exchange);
@@ -347,13 +328,6 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
                 to_string(order.offset), order.volume, order.volume_traded, order.price,
                 to_string(order.status), gb2312_to_utf8(ctp_order->StatusMsg));
 
-  if (order.status == OrderStatus::REJECTED ||
-      order.status == OrderStatus::CANCELED ||
-      order.status == OrderStatus::ALL_TRADED) {
-    std::unique_lock<std::mutex> lock(order_mutex_);
-    id2order_.erase(order.order_id);
-  }
-
   general_api_->on_order(&order);
 }
 
@@ -362,7 +336,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
 
   Trade td;
-  td.order_id = trade->OrderRef;
+  td.order_id = get_order_id(trade->InstrumentID, trade->ExchangeID, trade->OrderRef);
   td.symbol = trade->InstrumentID;
   td.exchange = trade->ExchangeID;
   td.ticker = to_ticker(td.symbol, td.exchange);
@@ -386,20 +360,15 @@ bool CtpTradeApi::cancel_order(const std::string& order_id) {
   CThostFtdcInputOrderActionField req;
   memset(&req, 0, sizeof(req));
 
-  {
-    std::unique_lock<std::mutex> lock(order_mutex_);
-    auto iter = id2order_.find(order_id);
-    if (iter == id2order_.end())
-      return false;
+  auto fields = split<std::string>(order_id, ".");
+  if (fields.size() != 3)
+    return false;
 
-    const auto& order = iter->second;
-    strncpy(req.InstrumentID, order.symbol.c_str(), sizeof(req.InstrumentID));
-    strncpy(req.ExchangeID, order.exchange.c_str(), sizeof(req.ExchangeID));
-  }
-
+  strncpy(req.InstrumentID, fields[0].c_str(), sizeof(req.InstrumentID));
+  strncpy(req.ExchangeID, fields[1].c_str(), sizeof(req.ExchangeID));
+  strncpy(req.OrderRef, fields[2].c_str(), sizeof(req.OrderRef));
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-  strncpy(req.OrderRef, order_id.c_str(), sizeof(req.OrderRef));
   req.ActionFlag = THOST_FTDC_AF_Delete;
   req.FrontID = front_id_;
   req.SessionID = session_id_;
@@ -420,22 +389,20 @@ void CtpTradeApi::OnRspOrderAction(
 
   spdlog::error("[CTP] OnRspOrderAction. Rejected.");
 
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto order = id2order_[action->OrderRef];
-  lock.unlock();
+  Order order;
+  order.order_id = get_order_id(action->InstrumentID, action->ExchangeID, action->OrderRef);
   order.status = OrderStatus::CANCEL_REJECTED;
 
   general_api_->on_order(&order);
 }
 
-bool CtpTradeApi::query_contract(const std::string& symbol,
-                                       const std::string& exchange) {
+bool CtpTradeApi::query_contract(const std::string& symbol, const std::string& exchange) {
+  std::unique_lock<std::mutex> lock(query_mutex_);
+
   CThostFtdcQryInstrumentField req;
   memset(&req, 0, sizeof(req));
-  if (!symbol.empty()) {
-    strncpy(req.InstrumentID, symbol.c_str(), sizeof(req.InstrumentID));
-    strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
-  }
+  strncpy(req.InstrumentID, symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
 
   is_qry_contract_done_ = false;
   if (ctp_api_->ReqQryInstrument(&req, next_req_id()) != 0)
@@ -488,6 +455,8 @@ void CtpTradeApi::OnRspQryInstrument(
 
 bool CtpTradeApi::query_position(const std::string& symbol,
                                        const std::string& exchange) {
+  std::unique_lock<std::mutex> lock(query_mutex_);
+
   CThostFtdcQryInvestorPositionField req;
   memset(&req, 0, sizeof(req));
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -513,10 +482,9 @@ void CtpTradeApi::OnRspQryInvestorPosition(
                     int req_id,
                     bool is_last) {
   spdlog::debug("[CTP] OnRspQryInvestorPosition");
-  auto& pos_cache = pos_caches_[req_id];
 
   if (is_error_rsp(rsp_info)) {
-    pos_caches_.erase(req_id);
+    pos_cache_.clear();
     is_error_ = true;
     spdlog::error("[CTP] OnRspQryInvestorPosition. Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
@@ -525,7 +493,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
 
   if (position) {
     auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
-    auto& pos = pos_cache[ticker];
+    auto& pos = pos_cache_[ticker];
     if (pos.ticker.empty()) {
       pos.symbol = position->InstrumentID;
       pos.exchange = position->ExchangeID;
@@ -557,14 +525,18 @@ void CtpTradeApi::OnRspQryInvestorPosition(
   }
 
   if (is_last) {
-    for (auto& [key, pos] : pos_cache)
+    for (auto& [key, pos] : pos_cache_)
       general_api_->on_position(&pos);
-    pos_caches_.erase(req_id);
+    // 查询结束回调空指针作为结束信号
+    general_api_->on_position(nullptr);
+    pos_cache_.clear();
     is_qry_position_done_ = true;
   }
 }
 
 bool CtpTradeApi::query_account() {
+  std::unique_lock<std::mutex> lock(query_mutex_);
+
   CThostFtdcQryTradingAccountField req;
   memset(&req, 0, sizeof(req));
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));

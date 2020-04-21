@@ -65,8 +65,12 @@ bool TradingSystem::login(const LoginParams& params) {
     spdlog::error("[Trader] login. Failed to query positions");
     return false;
   }
-  for (const auto& pos : initial_positions_)
-    pos_mgr_.init_position(pos);
+
+  while (!is_process_pos_done_)
+    continue;
+
+  for (auto& pos : initial_positions_)
+    pos_mgr_.init_position(*pos);
   initial_positions_.clear();
 
   for (auto& ticker : params.subscribed_list())
@@ -143,8 +147,8 @@ void TradingSystem::show_positions() {
                  "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
                  "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
                  pos.ticker,
-                 lp.volume, lp.close_pending, lp.cost_price, lp.pnl, sp.volume,
-                 sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
+                 lp.volume, lp.open_pending, lp.close_pending, lp.cost_price, lp.pnl,
+                 sp.volume, sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
   }
 }
 
@@ -208,7 +212,15 @@ void TradingSystem::on_tick(cppex::Any* data) {
 }
 
 void TradingSystem::on_position(cppex::Any* data) {
-  auto position = data->cast<Position>();
+  if (is_process_pos_done_)
+    return;
+
+  if (!data) {
+    is_process_pos_done_ = true;
+    return;
+  }
+
+  auto position = data->fetch<Position>();
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
   spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
@@ -218,10 +230,10 @@ void TradingSystem::on_position(cppex::Any* data) {
                lp.volume, lp.cost_price, lp.frozen, lp.pnl,
                sp.volume, sp.cost_price, sp.frozen, sp.pnl);
 
-  if (lp.volume == 0 && sp.volume == 0)
+  if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
     return;
 
-  initial_positions_.emplace_back(*position);
+  initial_positions_.emplace_back(std::move(position));
 }
 
 void TradingSystem::on_account(cppex::Any* data) {

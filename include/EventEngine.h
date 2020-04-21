@@ -92,7 +92,10 @@ class EventEngine {
     if (event < 0 || event >= kMaxHandlers || !handlers_[event])
       return;
 
-    handlers_[event](&ev->data);
+    if (ev->data.empty())
+      handlers_[event](nullptr);
+    else
+      handlers_[event](&ev->data);
   }
 
   void loop() {

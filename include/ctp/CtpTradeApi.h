@@ -116,6 +116,12 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
           bool is_last) override;
 
  private:
+  static std::string get_order_id(const char* instrument,
+                                  const char* exchange,
+                                  const char* order_ref) {
+    return fmt::format("{}.{}.{}", instrument, exchange, order_ref);
+  }
+
   int next_req_id() {
     return next_req_id_++;
   }
@@ -147,10 +153,9 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<bool> is_qry_account_done_ = false;
   std::atomic<bool> is_qry_position_done_ = false;
 
-  std::map<std::string, Order> id2order_;
-  std::mutex order_mutex_;
+  std::map<std::string, Position> pos_cache_;
 
-  std::map<int, std::map<std::string, Position>> pos_caches_;
+  std::mutex query_mutex_;
 };
 
 }  // namespace ft

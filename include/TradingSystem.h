@@ -176,7 +176,8 @@ class TradingSystem {
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
-  std::vector<Position> initial_positions_;
+  std::atomic<bool> is_process_pos_done_ = false;
+  std::vector<std::unique_ptr<Position>> initial_positions_;
 
   Account account_;
   PositionManager pos_mgr_;

@@ -71,8 +71,12 @@ class GeneralApi {
    */
   void on_position(const Position* position) {
     if (engine_) {
-      auto* data = new Position(*position);
-      engine_->post(EV_POSITION, data);
+      if (position) {
+        auto* data = new Position(*position);
+        engine_->post(EV_POSITION, data);
+      } else {
+        engine_->post(EV_POSITION);
+      }
     }
   }
 

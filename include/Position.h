@@ -70,7 +70,7 @@ struct Position {
     if (is_close) {
       pos_detail.close_pending -= traded;
       pos_detail.volume -= traded;
-    } else if (is_close) {
+    } else {
       pos_detail.open_pending -= traded;
       pos_detail.volume += traded;
     }
@@ -140,6 +140,7 @@ class PositionManager {
     }
 
     pos_map_.emplace(pos.ticker, pos);
+    spdlog::debug("[PositionManager::init_position]");
   }
 
   void update_pending(const std::string& ticker, Direction direction, Offset offset,
