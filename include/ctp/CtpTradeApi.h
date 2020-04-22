@@ -155,6 +155,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   std::map<std::string, Position> pos_cache_;
 
+  std::map<std::string, std::string> sysid_map_;  // order_id -> sys_id
+
   std::mutex query_mutex_;
 };
 

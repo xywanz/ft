@@ -21,6 +21,7 @@
 #include "MdManager.h"
 #include "Order.h"
 #include "Position.h"
+#include "RiskManagement/RiskManager.h"
 #include "Trade.h"
 
 namespace ft {
@@ -190,8 +191,11 @@ class TradingSystem {
   mutable std::mutex account_mutex_;
   mutable std::mutex order_mutex_;
   mutable std::mutex tick_mutex_;
+  mutable std::mutex risk_mgr_mutex_;
 
   bool is_login_ = false;
+
+  RiskManager risk_mgr_;
 };
 
 }  // namespace ft

@@ -313,7 +313,6 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
   order.volume = ctp_order->VolumeTotalOriginal;
   order.insert_time = ctp_order->InsertTime;
   order.type = order_type(ctp_order->OrderPriceType);
-
   if (ctp_order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected)
     order.status = OrderStatus::REJECTED;
   else if (ctp_order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected)

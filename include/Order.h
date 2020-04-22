@@ -43,8 +43,8 @@ struct Order {
   int             volume = 0;
 
   // rsp or local data
-  int             volume_traded = 0;
   OrderStatus     status;
+  int             volume_traded = 0;
   std::string     insert_time;
   std::bitset<8>  flags;
 };

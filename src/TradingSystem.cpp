@@ -12,6 +12,7 @@
 
 #include "ctp/CtpApi.h"
 #include "LoginParams.h"
+#include "RiskManagement/NoSelfTrade.h"
 
 namespace ft {
 
@@ -32,8 +33,9 @@ TradingSystem::TradingSystem(FrontType front_type)
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_unmount_strategy));
-
   engine_->run(false);
+
+  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(this, &pos_mgr_));
 }
 
 TradingSystem::~TradingSystem() {
@@ -86,6 +88,10 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
   order.status = OrderStatus::SUBMITTING;
 
   {
+    std::unique_lock<std::mutex> risk_mgr_lock(risk_mgr_mutex_);
+    if (!risk_mgr_.check(&order))
+      return false;
+
     // 这里加锁是怕成交回执或订单回执在order插入到map前就到了且被处理了
     std::unique_lock<std::mutex> lock(order_mutex_);
     order.order_id = api_->send_order(&order);
@@ -96,11 +102,11 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
                     to_string(direction), to_string(offset));
       return false;
     }
-
     orders_.emplace(order.order_id, order);
-  }
+    lock.unlock();
 
-  pos_mgr_.update_pending(ticker, direction, offset, volume);
+    pos_mgr_.update_pending(ticker, direction, offset, volume);
+  }
 
   spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
