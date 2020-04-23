@@ -3,7 +3,6 @@
 #include "TradingSystem.h"
 
 #include <cassert>
-#include <iostream>
 #include <set>
 #include <Strategy.h>
 #include <vector>
@@ -33,19 +32,16 @@ TradingSystem::TradingSystem(FrontType front_type)
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_unmount_strategy));
-  engine_->run(false);
 
   risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(this, &pos_mgr_));
 }
 
 TradingSystem::~TradingSystem() {
-  close();
 }
 
 void TradingSystem::close() {
-    api_.reset();
-    if (engine_)
-      engine_->stop();
+  api_->logout();
+  engine_->stop();
 }
 
 bool TradingSystem::login(const LoginParams& params) {
@@ -56,6 +52,8 @@ bool TradingSystem::login(const LoginParams& params) {
 
   is_login_ = true;
   spdlog::info("[Trader] login. Login as {}", params.investor_id());
+
+  engine_->run(false);
 
   if (!api_->query_account())
     return false;

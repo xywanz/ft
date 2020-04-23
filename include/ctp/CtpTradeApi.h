@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstring>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <fmt/format.h>
 #include <ThostFtdcTraderApi.h>
 
+#include "ctp/CtpCommon.h"
 #include "LoginParams.h"
 #include "GeneralApi.h"
 #include "Order.h"
@@ -28,6 +30,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   ~CtpTradeApi();
 
   bool login(const LoginParams& params);
+
+  bool logout();
 
   std::string send_order(const Order* order);
 
@@ -82,6 +86,12 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
           int req_id,
           bool is_last) override;
 
+  void OnRspUserLogout(
+          CThostFtdcUserLogoutField *user_logout,
+          CThostFtdcRspInfoField *rsp_info,
+          int req_id,
+          bool is_last) override;
+
   // 拒绝报单
   void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
                         CThostFtdcRspInfoField *rsp_info,
@@ -132,7 +142,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
  private:
   GeneralApi* general_api_;
-  CThostFtdcTraderApi* ctp_api_ = nullptr;
+  std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> ctp_api_;
 
   std::string front_addr_;
   std::string broker_id_;

@@ -25,8 +25,8 @@ CtpTradeApi::CtpTradeApi(GeneralApi* general_api)
 }
 
 CtpTradeApi::~CtpTradeApi() {
-  if (ctp_api_)
-    ctp_api_->Release();
+  is_error_ = true;
+  logout();
 }
 
 bool CtpTradeApi::login(const LoginParams& params) {
@@ -41,7 +41,7 @@ bool CtpTradeApi::login(const LoginParams& params) {
     return false;
   }
 
-  ctp_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
+  ctp_api_.reset(CThostFtdcTraderApi::CreateFtdcTraderApi());
   if (!ctp_api_) {
     spdlog::error("[CTP] login. Failed to create CTP API");
     return false;
@@ -127,6 +127,21 @@ bool CtpTradeApi::login(const LoginParams& params) {
       spdlog::error("[CTP] login. Failed to ReqSettlementInfoConfirm");
       return false;
     }
+  }
+
+  return true;
+}
+
+bool CtpTradeApi::logout() {
+  if (is_login_) {
+    CThostFtdcUserLogoutField req;
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
+    if (ctp_api_->ReqUserLogout(&req, next_req_id()) != 0)
+      return false;
+
+    while (is_login_)
+      continue;
   }
 
   return true;
@@ -220,6 +235,16 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
   } else {
     is_error_ = true;
   }
+}
+
+void CtpTradeApi::OnRspUserLogout(
+       CThostFtdcUserLogoutField *user_logout,
+       CThostFtdcRspInfoField *rsp_info,
+       int req_id,
+       bool is_last) {
+  is_login_ = false;
+  spdlog::debug("[CTP] OnRspUserLogout. Broker ID: {}, Investor ID: {}",
+                user_logout->BrokerID, user_logout->UserID);
 }
 
 std::string CtpTradeApi::send_order(const Order* order) {

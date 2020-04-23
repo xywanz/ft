@@ -18,8 +18,7 @@ CtpMdApi::CtpMdApi(GeneralApi* general_api)
 
 CtpMdApi::~CtpMdApi() {
   is_error_ = true;
-  if (ctp_api_)
-    ctp_api_->Release();
+  logout();
 }
 
 bool CtpMdApi::login(const LoginParams& params) {
@@ -35,9 +34,10 @@ bool CtpMdApi::login(const LoginParams& params) {
   }
 
   front_addr_ = params.md_server_addr();
+  broker_id_ = params.broker_id();
   investor_id_ = params.investor_id();
 
-  ctp_api_ = CThostFtdcMdApi::CreateFtdcMdApi();
+  ctp_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!ctp_api_) {
     spdlog::error("[CTP MD] Failed to create CTP MD API");
     return false;
@@ -93,6 +93,21 @@ bool CtpMdApi::login(const LoginParams& params) {
   return true;
 }
 
+bool CtpMdApi::logout() {
+  if (is_login_) {
+    CThostFtdcUserLogoutField req;
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
+    if (ctp_api_->ReqUserLogout(&req, next_req_id()) != 0)
+      return false;
+
+    while (is_login_)
+      continue;
+  }
+
+  return true;
+}
+
 void CtpMdApi::OnFrontConnected() {
   is_connected_ = true;
   spdlog::debug("[CTP MD] OnFrontConnected. Connected to the front {}", front_addr_);
@@ -128,16 +143,21 @@ void CtpMdApi::OnRspUserLogin(
 }
 
 void CtpMdApi::OnRspUserLogout(
-                      CThostFtdcUserLogoutField *uesr_logout,
+                      CThostFtdcUserLogoutField *user_logout,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
+  is_login_ = false;
+  spdlog::debug("[CTP MD] OnRspUserLogout. Broker ID: {}, Investor ID: {}",
+                user_logout->BrokerID, user_logout->UserID);
 }
 
 void CtpMdApi::OnRspError(
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
+  is_login_ = false;
+  spdlog::debug("[CTP MD] OnRspError");
 }
 
 void CtpMdApi::OnRspSubMarketData(

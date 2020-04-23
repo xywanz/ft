@@ -6,11 +6,13 @@
 #include <atomic>
 #include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include <ThostFtdcMdApi.h>
 
+#include "ctp/CtpCommon.h"
 #include "Common.h"
 #include "GeneralApi.h"
 #include "LoginParams.h"
@@ -26,6 +28,8 @@ class CtpMdApi : public CThostFtdcMdSpi {
   // need front_addr, broker_id, investor_id and passwd
   bool login(const LoginParams& params);
 
+  bool logout();
+
   void OnFrontConnected();
 
   void OnFrontDisconnected(int reason) override;
@@ -37,7 +41,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
                       int req_id,
                       bool is_last) override;
 
-  void OnRspUserLogout(CThostFtdcUserLogoutField *uesr_logout,
+  void OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
                        CThostFtdcRspInfoField *rsp_info,
                        int req_id,
                        bool is_last) override;
@@ -77,9 +81,10 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
  private:
   GeneralApi* general_api_ = nullptr;
-  CThostFtdcMdApi* ctp_api_ = nullptr;
+  std::unique_ptr<CThostFtdcMdApi, CtpApiDeleter> ctp_api_;
 
   std::string front_addr_;
+  std::string broker_id_;
   std::string investor_id_;
 
   std::atomic<int> next_req_id_ = 0;

@@ -3,8 +3,6 @@
 #ifndef FT_INCLUDE_CTP_CTPAPI_H_
 #define FT_INCLUDE_CTP_CTPAPI_H_
 
-#include <codecvt>
-#include <locale>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,6 +33,18 @@ class CtpApi : public GeneralApi {
     }
 
     return true;
+  }
+
+  bool logout() override {
+    bool ret = true;
+
+    if (!md_api_->logout())
+      ret = false;
+
+    if (!trade_api_->logout())
+      ret = false;
+
+    return ret;
   }
 
   std::string send_order(const Order* order) override {

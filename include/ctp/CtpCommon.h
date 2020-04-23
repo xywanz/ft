@@ -12,6 +12,14 @@
 
 namespace ft {
 
+struct CtpApiDeleter {
+  template<class T>
+  void operator()(T* p) {
+    p->RegisterSpi(nullptr);
+    p->Release();
+  }
+};
+
 inline bool is_error_rsp(CThostFtdcRspInfoField *rsp_info) {
   if (rsp_info && rsp_info->ErrorID != 0)
     return true;
