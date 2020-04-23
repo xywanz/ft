@@ -1,0 +1,305 @@
+// Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+
+#include "StrategyEngine.h"
+
+#include <cassert>
+#include <set>
+#include <Strategy.h>
+#include <vector>
+
+#include <spdlog/spdlog.h>
+
+#include "ctp/CtpApi.h"
+#include "LoginParams.h"
+#include "RiskManagement/NoSelfTrade.h"
+
+namespace ft {
+
+StrategyEngine::StrategyEngine(FrontType front_type)
+  : engine_(new EventEngine) {
+  switch (front_type) {
+  case FrontType::CTP:
+    api_.reset(new CtpApi(engine_.get()));
+    break;
+  default:
+    assert(false);
+  }
+
+  engine_->set_handler(EV_ACCOUNT, MEM_HANDLER(StrategyEngine::on_account));
+  engine_->set_handler(EV_POSITION, MEM_HANDLER(StrategyEngine::on_position));
+  engine_->set_handler(EV_ORDER, MEM_HANDLER(StrategyEngine::on_order));
+  engine_->set_handler(EV_TRADE, MEM_HANDLER(StrategyEngine::on_trade));
+  engine_->set_handler(EV_TICK, MEM_HANDLER(StrategyEngine::on_tick));
+  engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_mount_strategy));
+  engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_unmount_strategy));
+
+  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(this, &pos_mgr_));
+}
+
+StrategyEngine::~StrategyEngine() {
+}
+
+void StrategyEngine::close() {
+  api_->logout();
+  engine_->stop();
+}
+
+bool StrategyEngine::login(const LoginParams& params) {
+  if (!api_->login(params)) {
+    spdlog::error("[StrategyEngine] login. Failed to login");
+    return false;
+  }
+
+  is_login_ = true;
+  spdlog::info("[StrategyEngine] login. Login as {}", params.investor_id());
+
+  engine_->run(false);
+
+  if (!api_->query_account())
+    return false;
+
+  // query all positions
+  initial_positions_.clear();
+  pos_mgr_.clear();
+  if (!api_->query_position("", "")) {
+    spdlog::error("[StrategyEngine] login. Failed to query positions");
+    return false;
+  }
+
+  while (!is_process_pos_done_)
+    continue;
+
+  for (auto& pos : initial_positions_)
+    pos_mgr_.init_position(*pos);
+  initial_positions_.clear();
+
+  for (auto& ticker : params.subscribed_list())
+    md_center_.emplace(ticker, MdManager(ticker));
+
+  return true;
+}
+
+bool StrategyEngine::send_order(const std::string& ticker, int volume,
+                                Direction direction, Offset offset,
+                                OrderType type, double price) {
+  Order order(ticker, direction, offset, volume, type, price);
+  order.status = OrderStatus::SUBMITTING;
+
+  if (!risk_mgr_.check(&order))
+    return false;
+
+  order.order_id = api_->send_order(&order);
+  if (order.order_id.empty()) {
+    spdlog::error("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
+                  "Direction: {}, Offset: {}",
+                  ticker, volume, to_string(type), price,
+                  to_string(direction), to_string(offset));
+    return false;
+  }
+  orders_.emplace(order.order_id, order);
+  pos_mgr_.update_pending(ticker, direction, offset, volume);
+
+  spdlog::debug("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
+                "Direction: {}, Offset: {}",
+                ticker, volume, to_string(type), price,
+                to_string(direction), to_string(offset));
+
+  return true;
+}
+
+bool StrategyEngine::cancel_order(const std::string& order_id) {
+  auto iter = orders_.find(order_id);
+  if (iter == orders_.end()) {
+    spdlog::error("[StrategyEngine] CancelOrder failed: order not found");
+    return false;
+  }
+
+  auto& order = iter->second;
+  if (order.flags.test(kCancelBit))
+    return true;
+
+  order.flags.set(kCancelBit);
+  if (!api_->cancel_order(order_id)) {
+    order.flags.reset(kCancelBit);
+    spdlog::error("[StrategyEngine] cancel_order. Failed: unknown error");
+    return false;
+  }
+
+  spdlog::debug("[StrategyEngine] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
+                order_id, order.ticker, order.volume - order.volume_traded);
+  return true;
+}
+
+void StrategyEngine::mount_strategy(const std::string& ticker,
+                                    Strategy* strategy) {
+  strategy->set_ctx(new QuantitativeTradingContext(ticker, this));
+  engine_->post(EV_MOUNT_STRATEGY, strategy);
+}
+
+void StrategyEngine::on_mount_strategy(cppex::Any* data) {
+  auto strategy_unique_ptr = data->fetch<Strategy>();
+  auto* strategy = strategy_unique_ptr.release();
+  auto& list = strategies_[strategy->get_ctx()->this_ticker()];
+  list.emplace_back(std::move(strategy));
+
+  strategy->on_init(strategy->get_ctx());
+}
+
+void StrategyEngine::unmount_strategy(Strategy* strategy) {
+  engine_->post(EV_UMOUNT_STRATEGY, strategy);
+}
+
+void StrategyEngine::on_unmount_strategy(cppex::Any* data) {
+  auto* strategy = data->fetch<Strategy>().release();
+
+  auto ctx = strategy->get_ctx();
+  if (!ctx)
+    return;
+
+  auto iter = strategies_.find(ctx->this_ticker());
+  if (iter == strategies_.end())
+    return;
+
+  auto& list = iter->second;
+  for (auto iter = list.begin(); iter != list.end(); ++iter) {
+    if (*iter == strategy) {
+      strategy->on_exit(ctx);
+      strategy->set_ctx(nullptr);
+      list.erase(iter);
+      return;
+    }
+  }
+}
+
+void StrategyEngine::on_tick(cppex::Any* data) {
+  auto* tick = data->fetch<MarketData>().release();
+
+  md_center_[tick->ticker].on_tick(tick);
+  ticks_[tick->ticker].emplace_back(tick);
+
+  pos_mgr_.update_pnl(tick->ticker, tick->last_price);
+
+  auto iter = strategies_.find(tick->ticker);
+  if (iter != strategies_.end()) {
+    auto& strategy_list = iter->second;
+    for (auto& strategy : strategy_list)
+      strategy->on_tick(strategy->get_ctx());
+  }
+}
+
+void StrategyEngine::on_position(cppex::Any* data) {
+  if (is_process_pos_done_)
+    return;
+
+  if (!data) {
+    is_process_pos_done_ = true;
+    return;
+  }
+
+  auto position = data->fetch<Position>();
+  auto& lp = position->long_pos;
+  auto& sp = position->short_pos;
+  spdlog::info("[StrategyEngine] on_position. Query position success. Ticker: {}, "
+               "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
+               "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
+               position->ticker,
+               lp.volume, lp.cost_price, lp.frozen, lp.pnl,
+               sp.volume, sp.cost_price, sp.frozen, sp.pnl);
+
+  if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
+    return;
+
+  initial_positions_.emplace_back(std::move(position));
+}
+
+void StrategyEngine::on_account(cppex::Any* data) {
+  auto* account = data->cast<Account>();
+  account_ = *account;
+  spdlog::info("[StrategyEngine] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
+               account_.account_id, account_.balance, account_.frozen);
+}
+
+void StrategyEngine::on_order(cppex::Any* data) {
+  auto* rtn_order = data->cast<Order>();
+  if (orders_.find(rtn_order->order_id) == orders_.end()) {
+    spdlog::error("[StrategyEngine] on_order. Order not found. Ticker: {}, Order ID: {}, "
+                  "Direction: {}, Offset: {}, Volume: {}",
+                  rtn_order->ticker, rtn_order->order_id,
+                  to_string(rtn_order->direction), to_string(rtn_order->offset),
+                  rtn_order->volume);
+    return;
+  }
+
+  switch (rtn_order->status) {
+  case OrderStatus::SUBMITTING:
+    break;
+  case OrderStatus::REJECTED:
+  case OrderStatus::CANCELED:
+    handle_canceled(rtn_order);
+    break;
+  case OrderStatus::NO_TRADED:
+    handle_submitted(rtn_order);
+    break;
+  case OrderStatus::PART_TRADED:
+    handle_part_traded(rtn_order);
+    break;
+  case OrderStatus::ALL_TRADED:
+    handle_all_traded(rtn_order);
+    break;
+  case OrderStatus::CANCEL_REJECTED:
+    handle_cancel_rejected(rtn_order);
+    break;
+  default:
+    assert(false);
+  }
+
+  spdlog::info("[StrategyEngine] on_order. Ticker: {}, Order ID: {}, Direction: {}, "
+               "Offset: {}, Traded: {}, Origin Volume: {}, Status: {}",
+               rtn_order->ticker, rtn_order->order_id, to_string(rtn_order->direction),
+               to_string(rtn_order->offset), rtn_order->volume_traded, rtn_order->volume,
+               to_string(rtn_order->status));
+}
+
+// TODO(Kevin): fix incorrect calculation and missing data
+void StrategyEngine::on_trade(cppex::Any* data) {
+  auto* trade = data->cast<Trade>();
+  spdlog::debug("[StrategyEngine] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
+                "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
+                trade->ticker, trade->order_id, trade->trade_id,
+                to_string(trade->direction), to_string(trade->offset),
+                trade->price, trade->volume);
+
+  trade_record_[trade->ticker].emplace_back(*trade);
+  pos_mgr_.update_traded(trade->ticker, trade->direction, trade->offset,
+                         trade->volume, trade->price);
+}
+
+void StrategyEngine::handle_canceled(const Order* rtn_order) {
+  orders_.erase(rtn_order->order_id);
+
+  auto left_vol = rtn_order->volume - rtn_order->volume_traded;
+  pos_mgr_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
+}
+
+void StrategyEngine::handle_submitted(const Order* rtn_order) {
+  auto& order = orders_[rtn_order->order_id];
+  order.status = OrderStatus::NO_TRADED;
+}
+
+void StrategyEngine::handle_part_traded(const Order* rtn_order) {
+  auto& order = orders_[rtn_order->order_id];
+  if (rtn_order->volume_traded > order.volume_traded)
+    order.volume_traded = rtn_order->volume_traded;
+  order.status = OrderStatus::PART_TRADED;
+}
+
+void StrategyEngine::handle_all_traded(const Order* rtn_order) {
+  orders_.erase(rtn_order->order_id);
+}
+
+void StrategyEngine::handle_cancel_rejected(const Order* rtn_order) {
+    auto& order = orders_[rtn_order->order_id];
+    order.flags.reset(kCancelBit);
+}
+
+}  // namespace ft

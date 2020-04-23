@@ -6,40 +6,40 @@
 #include <algorithm>
 #include <string>
 
-#include "TradingSystem.h"
+#include "StrategyEngine.h"
 
 namespace ft {
 
 class QuantitativeTradingContext {
  public:
-  explicit QuantitativeTradingContext(const std::string& ticker, TradingSystem* trader)
+  explicit QuantitativeTradingContext(const std::string& ticker, StrategyEngine* se)
     : ticker_(ticker),
-      ts_(trader) {
+      se_(se) {
   }
 
   bool buy_open(int volume, OrderType type, double price) {
-    return ts_->buy_open(ticker_, volume, type, price);
+    return se_->buy_open(ticker_, volume, type, price);
   }
 
   bool sell_close(int volume, OrderType type, double price) {
-    return ts_->sell_close(ticker_, volume, type, price);
+    return se_->sell_close(ticker_, volume, type, price);
   }
 
   bool sell_open(int volume, OrderType type, double price) {
-    return ts_->sell_open(ticker_, volume, type, price);
+    return se_->sell_open(ticker_, volume, type, price);
   }
 
   bool buy_close(int volume, OrderType type, double price)  {
-    return ts_->buy_close(ticker_, volume, type, price);
+    return se_->buy_close(ticker_, volume, type, price);
   }
 
   int64_t buy(int64_t volume, double price, bool allow_part_traded = false) {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    const auto pos = get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
+    const auto* pos = get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
     int64_t sell_pending = 0;
     sell_pending += sp.close_pending;
@@ -69,9 +69,9 @@ class QuantitativeTradingContext {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
-    const auto pos = get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
+    const auto* pos = get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
     int64_t buy_pending = 0;
     buy_pending += sp.close_pending;
@@ -98,15 +98,15 @@ class QuantitativeTradingContext {
   }
 
   bool cancel_order(const std::string& order_id) {
-    return ts_->cancel_order(order_id);
+    return se_->cancel_order(order_id);
   }
 
-  Position get_position() const {
-    return ts_->get_position(ticker_);
+  const Position* get_position() const {
+    return se_->get_position(ticker_);
   }
 
   const MarketData* get_tick(std::size_t offset = 0) const {
-    return ts_->get_tick(ticker_, offset);
+    return se_->get_tick(ticker_, offset);
   }
 
   const std::string& this_ticker() const {
@@ -115,7 +115,7 @@ class QuantitativeTradingContext {
 
  private:
   std::string ticker_;
-  TradingSystem* ts_;
+  StrategyEngine* se_;
 };
 
 }  // namespace ft

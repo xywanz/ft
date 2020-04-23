@@ -19,6 +19,8 @@ class Strategy {
 
   virtual void on_tick(QuantitativeTradingContext* ctx) {}
 
+  virtual void on_order(const Order* order) {}
+
   virtual void on_exit(QuantitativeTradingContext* ctx) {}
 
   bool is_mounted() const {
@@ -26,7 +28,7 @@ class Strategy {
   }
 
  private:
-  friend class TradingSystem;
+  friend class StrategyEngine;
   void set_ctx(QuantitativeTradingContext* ctx) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (is_mounted_)

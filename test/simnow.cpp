@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Strategy.h"
+#include "StrategyEngine.h"
 #include "TradingSystem.h"
 
 const char* kSimnowTradeAddr[] = {
@@ -33,9 +34,9 @@ class MyStrategy : public ft::Strategy {
   void on_init(ft::QuantitativeTradingContext* ctx) override {
     spdlog::info("[MyStrategy::on_init]");
 
-    const auto pos = ctx->get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
+    const auto* pos = ctx->get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
     if (lp.volume > 0) {
       ctx->sell(lp.volume, 3300);
@@ -54,9 +55,9 @@ class MyStrategy : public ft::Strategy {
     if (price_ <= 1e-6)
       price_ = tick->last_price;
 
-    const auto pos = ctx->get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
+    const auto* pos = ctx->get_position();
+    const auto& lp = pos->long_pos;
+    const auto& sp = pos->short_pos;
 
     spdlog::info(
       "[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
@@ -88,6 +89,7 @@ class MyStrategy : public ft::Strategy {
   int trades_ = 0;
 };
 
+
 int main() {
   std::size_t front_index = getarg(0UL, "--front");
   int log_level = getarg(2, "--loglevel");
@@ -95,7 +97,7 @@ int main() {
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
   ft::ContractTable::init("./contracts.csv");
-  ft::TradingSystem ts(ft::FrontType::CTP);
+  ft::StrategyEngine se(ft::FrontType::CTP);
   ft::LoginParams params;
   const std::string ticker = "rb2009.SHFE";
 
@@ -111,14 +113,13 @@ int main() {
   params.set_app_id(kAppID);
   params.set_subscribed_list({ticker});
 
-  if (!ts.login(params))
-    return -1;
+  if (!se.login(params))
+    exit(-1);
 
-  MyStrategy strategy;
-  ts.mount_strategy("rb2009.SHFE", &strategy);
+  MyStrategy* strategy = new MyStrategy;
+  se.mount_strategy("rb2009.SHFE", strategy);
 
   while (1) {
     sleep(60);
-    // ts.show_positions();
   }
 }

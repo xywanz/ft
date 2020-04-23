@@ -28,7 +28,7 @@ class JustOneDirectionRule : public RiskRuleInterface {
   }
 
  private:
-  PositionManager* pos_mgr_;
+  PositionManagerSp* pos_mgr_;
 };
 
 }  // namespace ft

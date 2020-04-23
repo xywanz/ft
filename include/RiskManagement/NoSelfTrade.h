@@ -10,7 +10,7 @@
 
 #include "Position.h"
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingSystem.h"
+#include "StrategyEngine.h"
 
 namespace ft {
 
@@ -19,19 +19,19 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  NoSelfTradeRule(TradingSystem* ts, PositionManager* pos_mgr)
-    : ts_(ts),
+  NoSelfTradeRule(StrategyEngine* se, PositionManagerSp* pos_mgr)
+    : se_(se),
       pos_mgr_(pos_mgr) {}
 
   bool check(const Order* order) override {
     const auto pos = pos_mgr_->get_position(order->ticker);
     Direction opp_d = opp_direction(order->direction);  // 对手方
     const Order* pending_order;
-    std::vector<Order> order_list;
-    ts_->get_order_list(&order_list, order->ticker);
+    std::vector<const Order*> order_list;
+    se_->get_order_list(&order_list, order->ticker);
 
-    for (const auto& o : order_list) {
-      pending_order = &o;
+    for (auto p : order_list) {
+      pending_order = p;
       if (pending_order->direction != opp_d)
         continue;
 
@@ -61,8 +61,8 @@ class NoSelfTradeRule : public RiskRuleInterface {
   }
 
  private:
-  TradingSystem* ts_;
-  PositionManager* pos_mgr_;
+  StrategyEngine* se_;
+  PositionManagerSp* pos_mgr_;
 };
 
 }  // namespace ft

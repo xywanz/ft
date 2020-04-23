@@ -30,10 +30,6 @@ TradingSystem::TradingSystem(FrontType front_type)
   engine_->set_handler(EV_ORDER, MEM_HANDLER(TradingSystem::on_order));
   engine_->set_handler(EV_TRADE, MEM_HANDLER(TradingSystem::on_trade));
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
-  engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_mount_strategy));
-  engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(TradingSystem::on_unmount_strategy));
-
-  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(this, &pos_mgr_));
 }
 
 TradingSystem::~TradingSystem() {
@@ -46,12 +42,12 @@ void TradingSystem::close() {
 
 bool TradingSystem::login(const LoginParams& params) {
   if (!api_->login(params)) {
-    spdlog::error("[Trader] login. Failed to login");
+    spdlog::error("[TradingSystem] login. Failed to login");
     return false;
   }
 
   is_login_ = true;
-  spdlog::info("[Trader] login. Login as {}", params.investor_id());
+  spdlog::info("[TradingSystem] login. Login as {}", params.investor_id());
 
   engine_->run(false);
 
@@ -62,7 +58,7 @@ bool TradingSystem::login(const LoginParams& params) {
   initial_positions_.clear();
   pos_mgr_.clear();
   if (!api_->query_position("", "")) {
-    spdlog::error("[Trader] login. Failed to query positions");
+    spdlog::error("[TradingSystem] login. Failed to query positions");
     return false;
   }
 
@@ -80,8 +76,8 @@ bool TradingSystem::login(const LoginParams& params) {
 }
 
 bool TradingSystem::send_order(const std::string& ticker, int volume,
-                        Direction direction, Offset offset,
-                        OrderType type, double price) {
+                               Direction direction, Offset offset,
+                               OrderType type, double price) {
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
@@ -94,7 +90,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
     std::unique_lock<std::mutex> lock(order_mutex_);
     order.order_id = api_->send_order(&order);
     if (order.order_id.empty()) {
-      spdlog::error("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
+      spdlog::error("[TradingSystem] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                     "Direction: {}, Offset: {}",
                     ticker, volume, to_string(type), price,
                     to_string(direction), to_string(offset));
@@ -106,7 +102,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
     pos_mgr_.update_pending(ticker, direction, offset, volume);
   }
 
-  spdlog::debug("[Trader] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
+  spdlog::debug("[TradingSystem] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
                 ticker, volume, to_string(type), price,
                 to_string(direction), to_string(offset));
@@ -118,7 +114,7 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = orders_.find(order_id);
   if (iter == orders_.end()) {
-    spdlog::error("[Trader] CancelOrder failed: order not found");
+    spdlog::error("[TradingSystem] CancelOrder failed: order not found");
     return false;
   }
 
@@ -129,11 +125,11 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
   order.flags.set(kCancelBit);
   if (!api_->cancel_order(order_id)) {
     order.flags.reset(kCancelBit);
-    spdlog::error("[Trader] cancel_order. Failed: unknown error");
+    spdlog::error("[TradingSystem] cancel_order. Failed: unknown error");
     return false;
   }
 
-  spdlog::debug("[Trader] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
+  spdlog::debug("[TradingSystem] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
                 order_id, order.ticker, order.volume - order.volume_traded);
   return true;
 }
@@ -147,53 +143,12 @@ void TradingSystem::show_positions() {
       continue;
     auto& lp = pos.long_pos;
     auto& sp = pos.short_pos;
-    spdlog::info("[Trader] [Position] Ticker: {}, "
+    spdlog::info("[TradingSystem] [Position] Ticker: {}, "
                  "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
                  "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
                  pos.ticker,
                  lp.volume, lp.open_pending, lp.close_pending, lp.cost_price, lp.pnl,
                  sp.volume, sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
-  }
-}
-
-void TradingSystem::mount_strategy(const std::string& ticker,
-                                   Strategy* strategy) {
-  strategy->set_ctx(new QuantitativeTradingContext(ticker, this));
-  engine_->post(EV_MOUNT_STRATEGY, strategy);
-}
-
-void TradingSystem::on_mount_strategy(cppex::Any* data) {
-  auto strategy_unique_ptr = data->fetch<Strategy>();
-  auto* strategy = strategy_unique_ptr.release();
-  auto& list = strategies_[strategy->get_ctx()->this_ticker()];
-  list.emplace_back(std::move(strategy));
-
-  strategy->on_init(strategy->get_ctx());
-}
-
-void TradingSystem::unmount_strategy(Strategy* strategy) {
-  engine_->post(EV_UMOUNT_STRATEGY, strategy);
-}
-
-void TradingSystem::on_unmount_strategy(cppex::Any* data) {
-  auto* strategy = data->fetch<Strategy>().release();
-
-  auto ctx = strategy->get_ctx();
-  if (!ctx)
-    return;
-
-  auto iter = strategies_.find(ctx->this_ticker());
-  if (iter == strategies_.end())
-    return;
-
-  auto& list = iter->second;
-  for (auto iter = list.begin(); iter != list.end(); ++iter) {
-    if (*iter == strategy) {
-      strategy->on_exit(ctx);
-      strategy->set_ctx(nullptr);
-      list.erase(iter);
-      return;
-    }
   }
 }
 
@@ -206,13 +161,6 @@ void TradingSystem::on_tick(cppex::Any* data) {
   lock.unlock();
 
   pos_mgr_.update_pnl(tick->ticker, tick->last_price);
-
-  auto iter = strategies_.find(tick->ticker);
-  if (iter != strategies_.end()) {
-    auto& strategy_list = iter->second;
-    for (auto& strategy : strategy_list)
-      strategy->on_tick(strategy->get_ctx());
-  }
 }
 
 void TradingSystem::on_position(cppex::Any* data) {
@@ -227,7 +175,7 @@ void TradingSystem::on_position(cppex::Any* data) {
   auto position = data->fetch<Position>();
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
-  spdlog::info("[Trader] on_position. Query position success. Ticker: {}, "
+  spdlog::info("[TradingSystem] on_position. Query position success. Ticker: {}, "
                "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
                "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
                position->ticker,
@@ -244,7 +192,7 @@ void TradingSystem::on_account(cppex::Any* data) {
   std::unique_lock<std::mutex> lock(account_mutex_);
   auto* account = data->cast<Account>();
   account_ = *account;
-  spdlog::info("[Trader] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
+  spdlog::info("[TradingSystem] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
                account_.account_id, account_.balance, account_.frozen);
 }
 
@@ -254,7 +202,7 @@ void TradingSystem::on_order(cppex::Any* data) {
     std::unique_lock<std::mutex> lock(order_mutex_);
     if (orders_.find(rtn_order->order_id) == orders_.end()) {
       lock.unlock();
-      spdlog::error("[Trader] on_order. Order not found. Ticker: {}, Order ID: {}, "
+      spdlog::error("[TradingSystem] on_order. Order not found. Ticker: {}, Order ID: {}, "
                     "Direction: {}, Offset: {}, Volume: {}",
                     rtn_order->ticker, rtn_order->order_id,
                     to_string(rtn_order->direction), to_string(rtn_order->offset),
@@ -286,7 +234,7 @@ void TradingSystem::on_order(cppex::Any* data) {
     assert(false);
   }
 
-  spdlog::info("[Trader] on_order. Ticker: {}, Order ID: {}, Direction: {}, "
+  spdlog::info("[TradingSystem] on_order. Ticker: {}, Order ID: {}, Direction: {}, "
                "Offset: {}, Traded: {}, Origin Volume: {}, Status: {}",
                rtn_order->ticker, rtn_order->order_id, to_string(rtn_order->direction),
                to_string(rtn_order->offset), rtn_order->volume_traded, rtn_order->volume,
@@ -296,7 +244,7 @@ void TradingSystem::on_order(cppex::Any* data) {
 // TODO(Kevin): fix incorrect calculation and missing data
 void TradingSystem::on_trade(cppex::Any* data) {
   auto* trade = data->cast<Trade>();
-  spdlog::debug("[Trader] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
+  spdlog::debug("[TradingSystem] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
                 "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
                 to_string(trade->direction), to_string(trade->offset),

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include <cppex/ThreadPolicy.h>
 #include <spdlog/spdlog.h>
 
 #include "Contract.h"
@@ -128,12 +129,13 @@ struct Position {
  * 即启动时查询一次仓位，等待仓位全部初始化完毕后，才可进行交易，之后的仓位更新
  * 操作全权交由PosManager负责，不再从API查询。
  */
+template<class ThreadPolicy>
 class PositionManager {
  public:
   PositionManager() {}
 
   void init_position(const Position& pos) {
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     if (find(pos.ticker)) {
       spdlog::warn("[PositionManager::init_position] Failed to init pos: position already exists");
       return;
@@ -148,7 +150,7 @@ class PositionManager {
     if (changed == 0)
       return;
 
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     auto& pos = find_or_create_pos(ticker);
     pos.update_pending(direction, offset, changed);
   }
@@ -158,13 +160,13 @@ class PositionManager {
     if (traded == 0)
       return;
 
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     auto& pos = find_or_create_pos(ticker);
     pos.update_traded(direction, offset, traded, traded_price);
   }
 
   void update_pnl(const std::string& ticker, double last_price) {
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     auto* pos = find(ticker);
     if (pos)
       pos->update_pnl(last_price);
@@ -173,21 +175,35 @@ class PositionManager {
   Position get_position(const std::string& ticker) const {
     static const Position empty_pos;
 
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     const auto* pos = find(ticker);
     return pos ? *pos : empty_pos;
   }
 
+  const Position* get_position_unsafe(const std::string& ticker) const {
+    static const Position empty_pos;
+
+    const auto* pos = find(ticker);
+    return pos ? pos : &empty_pos;
+  }
+
   void get_pos_ticker_list(std::vector<std::string>* out) const {
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     for (const auto& [ticker, pos] : pos_map_) {
       if (!is_empty_pos(pos))
         out->emplace_back(ticker);
     }
   }
 
+  void get_pos_ticker_list_unsafe(std::vector<const std::string*>* out) const {
+    for (const auto& [ticker, pos] : pos_map_) {
+      if (!is_empty_pos(pos))
+        out->emplace_back(&ticker);
+    }
+  }
+
   void clear() {
-    std::unique_lock<std::mutex> lock(pos_mutex_);
+    std::lock_guard<ThreadPolicy> lock(thread_policy_);
     pos_map_.clear();
   }
 
@@ -222,8 +238,12 @@ class PositionManager {
 
  private:
   std::map<std::string, Position> pos_map_;
-  mutable std::mutex pos_mutex_;
+  mutable ThreadPolicy thread_policy_;
 };
+
+
+using PositionManagerSp = PositionManager<cppex::SingleThreadModel>;
+using PositionManagerMp = PositionManager<cppex::ObjectLevelModel<std::mutex>>;
 
 }  // namespace ft
 
