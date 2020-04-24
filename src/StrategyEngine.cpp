@@ -33,7 +33,7 @@ StrategyEngine::StrategyEngine(FrontType front_type)
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_mount_strategy));
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_unmount_strategy));
 
-  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(this, &pos_mgr_));
+  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&trading_view_));
 }
 
 StrategyEngine::~StrategyEngine() {
@@ -59,8 +59,6 @@ bool StrategyEngine::login(const LoginParams& params) {
     return false;
 
   // query all positions
-  initial_positions_.clear();
-  pos_mgr_.clear();
   if (!api_->query_position("", "")) {
     spdlog::error("[StrategyEngine] login. Failed to query positions");
     return false;
@@ -68,10 +66,6 @@ bool StrategyEngine::login(const LoginParams& params) {
 
   while (!is_process_pos_done_)
     continue;
-
-  for (auto& pos : initial_positions_)
-    pos_mgr_.init_position(*pos);
-  initial_positions_.clear();
 
   for (auto& ticker : params.subscribed_list())
     md_center_.emplace(ticker, MdManager(ticker));
@@ -96,8 +90,9 @@ bool StrategyEngine::send_order(const std::string& ticker, int volume,
                   to_string(direction), to_string(offset));
     return false;
   }
-  orders_.emplace(order.order_id, order);
-  pos_mgr_.update_pending(ticker, direction, offset, volume);
+
+  trading_view_.new_order(&order);
+  trading_view_.update_pos_pending(ticker, direction, offset, volume);
 
   spdlog::debug("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
@@ -108,25 +103,19 @@ bool StrategyEngine::send_order(const std::string& ticker, int volume,
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
-  auto iter = orders_.find(order_id);
-  if (iter == orders_.end()) {
+  const Order* order = trading_view_.get_order_by_id(order_id);
+  if (!order) {
     spdlog::error("[StrategyEngine] CancelOrder failed: order not found");
     return false;
   }
 
-  auto& order = iter->second;
-  if (order.flags.test(kCancelBit))
-    return true;
-
-  order.flags.set(kCancelBit);
   if (!api_->cancel_order(order_id)) {
-    order.flags.reset(kCancelBit);
     spdlog::error("[StrategyEngine] cancel_order. Failed: unknown error");
     return false;
   }
 
   spdlog::debug("[StrategyEngine] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
-                order_id, order.ticker, order.volume - order.volume_traded);
+                order_id, order->ticker, order->volume - order->volume_traded);
   return true;
 }
 
@@ -177,7 +166,7 @@ void StrategyEngine::on_tick(cppex::Any* data) {
   md_center_[tick->ticker].on_tick(tick);
   ticks_[tick->ticker].emplace_back(tick);
 
-  pos_mgr_.update_pnl(tick->ticker, tick->last_price);
+  trading_view_.update_pos_pnl(tick->ticker, tick->last_price);
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {
@@ -196,7 +185,7 @@ void StrategyEngine::on_position(cppex::Any* data) {
     return;
   }
 
-  auto position = data->fetch<Position>();
+  const auto* position = data->cast<Position>();
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
   spdlog::info("[StrategyEngine] on_position. Query position success. Ticker: {}, "
@@ -209,58 +198,16 @@ void StrategyEngine::on_position(cppex::Any* data) {
   if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
     return;
 
-  initial_positions_.emplace_back(std::move(position));
+  trading_view_.on_query_position(position);
 }
 
 void StrategyEngine::on_account(cppex::Any* data) {
   auto* account = data->cast<Account>();
-  account_ = *account;
+  trading_view_.on_query_account(account);
   spdlog::info("[StrategyEngine] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
-               account_.account_id, account_.balance, account_.frozen);
+               account->account_id, account->balance, account->frozen);
 }
 
-void StrategyEngine::on_order(cppex::Any* data) {
-  auto* rtn_order = data->cast<Order>();
-  if (orders_.find(rtn_order->order_id) == orders_.end()) {
-    spdlog::error("[StrategyEngine] on_order. Order not found. Ticker: {}, Order ID: {}, "
-                  "Direction: {}, Offset: {}, Volume: {}",
-                  rtn_order->ticker, rtn_order->order_id,
-                  to_string(rtn_order->direction), to_string(rtn_order->offset),
-                  rtn_order->volume);
-    return;
-  }
-
-  switch (rtn_order->status) {
-  case OrderStatus::SUBMITTING:
-    break;
-  case OrderStatus::REJECTED:
-  case OrderStatus::CANCELED:
-    handle_canceled(rtn_order);
-    break;
-  case OrderStatus::NO_TRADED:
-    handle_submitted(rtn_order);
-    break;
-  case OrderStatus::PART_TRADED:
-    handle_part_traded(rtn_order);
-    break;
-  case OrderStatus::ALL_TRADED:
-    handle_all_traded(rtn_order);
-    break;
-  case OrderStatus::CANCEL_REJECTED:
-    handle_cancel_rejected(rtn_order);
-    break;
-  default:
-    assert(false);
-  }
-
-  spdlog::info("[StrategyEngine] on_order. Ticker: {}, Order ID: {}, Direction: {}, "
-               "Offset: {}, Traded: {}, Origin Volume: {}, Status: {}",
-               rtn_order->ticker, rtn_order->order_id, to_string(rtn_order->direction),
-               to_string(rtn_order->offset), rtn_order->volume_traded, rtn_order->volume,
-               to_string(rtn_order->status));
-}
-
-// TODO(Kevin): fix incorrect calculation and missing data
 void StrategyEngine::on_trade(cppex::Any* data) {
   auto* trade = data->cast<Trade>();
   spdlog::debug("[StrategyEngine] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
@@ -269,37 +216,14 @@ void StrategyEngine::on_trade(cppex::Any* data) {
                 to_string(trade->direction), to_string(trade->offset),
                 trade->price, trade->volume);
 
-  trade_record_[trade->ticker].emplace_back(*trade);
-  pos_mgr_.update_traded(trade->ticker, trade->direction, trade->offset,
-                         trade->volume, trade->price);
+  trading_view_.new_trade(trade);
+  trading_view_.update_pos_traded(trade->ticker, trade->direction, trade->offset,
+                                  trade->volume, trade->price);
 }
 
-void StrategyEngine::handle_canceled(const Order* rtn_order) {
-  orders_.erase(rtn_order->order_id);
-
-  auto left_vol = rtn_order->volume - rtn_order->volume_traded;
-  pos_mgr_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
-}
-
-void StrategyEngine::handle_submitted(const Order* rtn_order) {
-  auto& order = orders_[rtn_order->order_id];
-  order.status = OrderStatus::NO_TRADED;
-}
-
-void StrategyEngine::handle_part_traded(const Order* rtn_order) {
-  auto& order = orders_[rtn_order->order_id];
-  if (rtn_order->volume_traded > order.volume_traded)
-    order.volume_traded = rtn_order->volume_traded;
-  order.status = OrderStatus::PART_TRADED;
-}
-
-void StrategyEngine::handle_all_traded(const Order* rtn_order) {
-  orders_.erase(rtn_order->order_id);
-}
-
-void StrategyEngine::handle_cancel_rejected(const Order* rtn_order) {
-    auto& order = orders_[rtn_order->order_id];
-    order.flags.reset(kCancelBit);
+void StrategyEngine::on_order(cppex::Any* data) {
+  const auto* order = data->cast<Order>();
+  trading_view_.update_order(order);
 }
 
 }  // namespace ft

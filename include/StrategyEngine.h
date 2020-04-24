@@ -12,17 +12,14 @@
 #include <utility>
 #include <vector>
 
-#include "Account.h"
 #include "Common.h"
 #include "Contract.h"
 #include "EventEngine.h"
 #include "GeneralApi.h"
 #include "MarketData.h"
 #include "MdManager.h"
-#include "Order.h"
-#include "Position.h"
 #include "RiskManagement/RiskManager.h"
-#include "Trade.h"
+#include "TradingView.h"
 
 namespace ft {
 
@@ -69,40 +66,24 @@ class StrategyEngine {
 
   void get_order_id_list(std::vector<const std::string*>* out,
                          const std::string& ticker = "") const {
-    if (ticker.empty()) {
-      for (const auto& [order_id, order] : orders_)
-        out->emplace_back(&order_id);
-    } else {
-      for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(&order_id);
-      }
-    }
+    trading_view_.get_order_id_list(out, ticker);
   }
 
   void get_order_list(std::vector<const Order*>* out,
                       const std::string& ticker = "") const {
-    if (ticker.empty()) {
-      for (const auto& [order_id, order] : orders_)
-        out->emplace_back(&order);
-    } else {
-      for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(&order);
-      }
-    }
+    trading_view_.get_order_list(out, ticker);
   }
 
   const Account* get_account() const {
-    return &account_;
+    return trading_view_.get_account();
   }
 
   const Position* get_position(const std::string& ticker) const {
-    return pos_mgr_.get_position_unsafe(ticker);
+    return trading_view_.get_position(ticker);
   }
 
   void get_pos_ticker_list(std::vector<const std::string*>* out) const {
-    pos_mgr_.get_pos_ticker_list_unsafe(out);
+    trading_view_.get_pos_ticker_list(out);
   }
 
   const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
@@ -158,12 +139,6 @@ class StrategyEngine {
                          Direction direction, Offset offset,
                          OrderType type, double price);
 
-  void handle_canceled(const Order* rtn_order);
-  void handle_submitted(const Order* rtn_order);
-  void handle_part_traded(const Order* rtn_order);
-  void handle_all_traded(const Order* rtn_order);
-  void handle_cancel_rejected(const Order* rtn_order);
-
  private:
   enum EventType {
     EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
@@ -173,20 +148,15 @@ class StrategyEngine {
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
-  std::atomic<bool> is_process_pos_done_ = false;
-  std::vector<std::unique_ptr<Position>> initial_positions_;
-
-  Account account_;
-  PositionManagerSp pos_mgr_;
-  std::map<std::string, std::vector<Trade>> trade_record_;
-  std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;
   std::map<std::string, std::list<Strategy*>> strategies_;
   std::map<std::string, std::vector<MarketData*>> ticks_;
 
-  bool is_login_ = false;
-
+  TradingView trading_view_;
   RiskManager risk_mgr_;
+
+  bool is_login_ = false;
+  std::atomic<bool> is_process_pos_done_ = false;
 };
 
 }  // namespace ft

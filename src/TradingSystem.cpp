@@ -119,12 +119,7 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
   }
 
   auto& order = iter->second;
-  if (order.flags.test(kCancelBit))
-    return true;
-
-  order.flags.set(kCancelBit);
   if (!api_->cancel_order(order_id)) {
-    order.flags.reset(kCancelBit);
     spdlog::error("[TradingSystem] cancel_order. Failed: unknown error");
     return false;
   }
@@ -134,23 +129,23 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
   return true;
 }
 
-void TradingSystem::show_positions() {
-  std::vector<std::string> pos_ticker_list;
-  pos_mgr_.get_pos_ticker_list(&pos_ticker_list);
-  for (const auto& ticker : pos_ticker_list) {
-    const auto pos = pos_mgr_.get_position(ticker);
-    if (pos.ticker.empty())
-      continue;
-    auto& lp = pos.long_pos;
-    auto& sp = pos.short_pos;
-    spdlog::info("[TradingSystem] [Position] Ticker: {}, "
-                 "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
-                 "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
-                 pos.ticker,
-                 lp.volume, lp.open_pending, lp.close_pending, lp.cost_price, lp.pnl,
-                 sp.volume, sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
-  }
-}
+// void TradingSystem::show_positions() {
+//   std::vector<std::string> pos_ticker_list;
+//   pos_mgr_.get_pos_ticker_list(&pos_ticker_list);
+//   for (const auto& ticker : pos_ticker_list) {
+//     const auto pos = pos_mgr_.get_position(ticker);
+//     if (pos.ticker.empty())
+//       continue;
+//     auto& lp = pos.long_pos;
+//     auto& sp = pos.short_pos;
+//     spdlog::info("[TradingSystem] [Position] Ticker: {}, "
+//                  "LP: {}, LOP: {}, LCP: {}, LongPrice: {:.2f}, LongPNL: {:.2f}, "
+//                  "SP: {}, SOP: {}, SCP: {}, ShortPrice: {:.2f}, ShortPNL: {:.2f}",
+//                  pos.ticker,
+//                  lp.volume, lp.open_pending, lp.close_pending, lp.cost_price, lp.pnl,
+//                  sp.volume, sp.open_pending, sp.close_pending, sp.cost_price, sp.pnl);
+//   }
+// }
 
 void TradingSystem::on_tick(cppex::Any* data) {
   auto* tick = data->fetch<MarketData>().release();
@@ -287,7 +282,6 @@ void TradingSystem::handle_all_traded(const Order* rtn_order) {
 void TradingSystem::handle_cancel_rejected(const Order* rtn_order) {
     std::unique_lock<std::mutex> lock(order_mutex_);
     auto& order = orders_[rtn_order->order_id];
-    order.flags.reset(kCancelBit);
 }
 
 }  // namespace ft

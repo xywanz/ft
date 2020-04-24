@@ -4,7 +4,6 @@
 #define FT_INCLUDE_ORDER_H_
 
 #include <string>
-#include <bitset>
 
 #include "Common.h"
 
@@ -46,7 +45,6 @@ struct Order {
   OrderStatus     status;
   int             volume_traded = 0;
   std::string     insert_time;
-  std::bitset<8>  flags;
 };
 
 }  // namespace ft

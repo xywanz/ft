@@ -53,7 +53,8 @@ enum class ProductType {
 };
 
 enum class OrderStatus {
-  SUBMITTING = 0,
+  CREATED = 0,
+  SUBMITTING,
   REJECTED,
   NO_TRADED,
   PART_TRADED,

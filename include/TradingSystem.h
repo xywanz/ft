@@ -61,7 +61,7 @@ class TradingSystem {
       cancel_order(order_id);
   }
 
-  void show_positions();
+  // void show_positions();
 
   void get_order_id_list(std::vector<std::string>* out, const std::string& ticker = "") const {
     std::unique_lock<std::mutex> lock(order_mutex_);
@@ -92,14 +92,6 @@ class TradingSystem {
   Account get_account() const {
     std::unique_lock<std::mutex> lock(account_mutex_);
     return account_;
-  }
-
-  Position get_position(const std::string& ticker) const {
-    return pos_mgr_.get_position(ticker);
-  }
-
-  void get_pos_ticker_list(std::vector<std::string>* out) const {
-    pos_mgr_.get_pos_ticker_list(out);
   }
 
   const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
@@ -166,7 +158,7 @@ class TradingSystem {
   std::vector<std::unique_ptr<Position>> initial_positions_;
 
   Account account_;
-  PositionManagerMp pos_mgr_;
+  PositionManager pos_mgr_;
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;

@@ -21,6 +21,8 @@ class Strategy {
 
   virtual void on_order(const Order* order) {}
 
+  virtual void on_trade(const Trade* trade) {}
+
   virtual void on_exit(QuantitativeTradingContext* ctx) {}
 
   bool is_mounted() const {
