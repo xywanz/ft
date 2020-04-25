@@ -36,12 +36,12 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
   void OnHeartBeatWarning(int time_lapse) override;
 
-  void OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
+  void OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) override;
 
-  void OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
+  void OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
                        CThostFtdcRspInfoField *rsp_info,
                        int req_id,
                        bool is_last) override;
@@ -50,27 +50,27 @@ class CtpMdApi : public CThostFtdcMdSpi {
                   int req_id,
                   bool is_last) override;
 
-  void OnRspSubMarketData(CThostFtdcSpecificInstrumentField *specific_instrument,
+  void OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
                           CThostFtdcRspInfoField *rsp_info,
                           int req_id,
                           bool is_last) override;
 
-  void OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *specific_instrument,
+  void OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
                             CThostFtdcRspInfoField *rsp_info,
                             int req_id,
                             bool is_last) override;
 
-  void OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *specific_instrument,
+  void OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
                            CThostFtdcRspInfoField *rsp_info,
                            int req_id,
                            bool is_last) override;
 
-  void OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *specific_instrument,
+  void OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
                              CThostFtdcRspInfoField *rsp_info,
                              int req_id,
                              bool is_last) override;
 
-  void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *depth_market_data) override;
+  void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) override;
 
   void OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) override;
 

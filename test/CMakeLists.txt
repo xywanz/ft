@@ -1,9 +1,21 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-add_executable(simnow
-    simnow.cpp)
-target_link_libraries(simnow ft cppex pthread)
+include_directories(.)
 
-add_executable(misc
-misc.cpp)
-target_link_libraries(misc ft cppex pthread)
+add_executable(simnow_example
+    SimnowExample.cpp)
+target_link_libraries(simnow_example ft cppex yaml-cpp pthread)
+
+add_executable(strategy_loader
+    StrategyLoader.cpp)
+target_link_libraries(strategy_loader dl pthread cppex yaml-cpp ft)
+
+add_library(grid_strategy SHARED
+    GridStrategy.cpp)
+target_link_libraries(grid_strategy ft)
+
+add_executable(contract_collector ContractCollector.cpp)
+target_link_libraries(contract_collector ft cppex yaml-cpp pthread)
+
+add_executable(data_collector DataCollector.cpp)
+target_link_libraries(data_collector ft cppex yaml-cpp pthread)

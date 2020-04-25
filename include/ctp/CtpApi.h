@@ -55,18 +55,20 @@ class CtpApi : public GeneralApi {
     return trade_api_->cancel_order(order_id);
   }
 
-  bool query_contract(const std::string& symbol,
-                            const std::string& exchange) override {
-    return trade_api_->query_contract(symbol, exchange);
+  bool query_contract(const std::string& ticker) override {
+    return trade_api_->query_contract(ticker);
   }
 
-  bool query_position(const std::string& symbol,
-                             const std::string& exchange) override {
-    return trade_api_->query_position(symbol, exchange);
+  bool query_position(const std::string& ticker) override {
+    return trade_api_->query_position(ticker);
   }
 
   bool query_account() override {
     return trade_api_->query_account();
+  }
+
+  bool query_margin_rate(const std::string& ticker) override {
+    return trade_api_->query_margin_rate(ticker);
   }
 
  private:

@@ -27,20 +27,24 @@ struct Contract {
   double        price_tick;
 };
 
-inline void load_contracts(const std::string& file, std::vector<Contract>* contracts) {
+inline bool load_contracts(const std::string& file, std::vector<Contract>* contracts) {
   std::ifstream ifs(file);
   std::string line;
   std::vector<std::string> fields;
   Contract contract;
 
-  std::getline(ifs, line);  // skip header
+  if (!ifs)
+    return false;
 
+  std::getline(ifs, line);  // skip header
   while (std::getline(ifs, line)) {
     fields.clear();
     split(line, ",", fields);
     if (fields.empty() || fields[0].front() == '\n')
       continue;
-    assert(fields.size() == 5);
+
+    if (fields.size() != 5)
+      return false;
 
     contract.ticker = std::move(fields[0]);
     ticker_split(contract.ticker, &contract.symbol, &contract.exchange);
@@ -50,6 +54,8 @@ inline void load_contracts(const std::string& file, std::vector<Contract>* contr
     contract.price_tick = std::stod(fields[4]);
     contracts->emplace_back(std::move(contract));
   }
+
+  return true;
 }
 
 inline void store_contracts(const std::string& file,
@@ -76,14 +82,18 @@ class ContractTable {
     static bool is_inited = false;
 
     if (!is_inited) {
-      load_contracts(file, &contracts);
+      if (!load_contracts(file, &contracts))
+        return false;
+
+      for (auto& contract : contracts) {
+        ticker2contract.emplace(contract.ticker, &contract);
+        symbol2contract.emplace(contract.symbol, &contract);
+      }
+
       is_inited = true;
     }
 
-    for (auto& contract : contracts) {
-      ticker2contract.emplace(contract.ticker, &contract);
-      symbol2contract.emplace(contract.symbol, &contract);
-    }
+    return true;
   }
 
   static const Contract* get_by_ticker(const std::string& ticker) {

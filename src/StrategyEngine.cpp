@@ -1,14 +1,14 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "StrategyEngine.h"
+#include "AlgoTrade/StrategyEngine.h"
 
 #include <cassert>
 #include <set>
-#include <Strategy.h>
 #include <vector>
 
 #include <spdlog/spdlog.h>
 
+#include "AlgoTrade/Strategy.h"
 #include "ctp/CtpApi.h"
 #include "LoginParams.h"
 #include "RiskManagement/NoSelfTrade.h"
@@ -59,7 +59,7 @@ bool StrategyEngine::login(const LoginParams& params) {
     return false;
 
   // query all positions
-  if (!api_->query_position("", "")) {
+  if (!api_->query_position("")) {
     spdlog::error("[StrategyEngine] login. Failed to query positions");
     return false;
   }
@@ -121,17 +121,18 @@ bool StrategyEngine::cancel_order(const std::string& order_id) {
 
 void StrategyEngine::mount_strategy(const std::string& ticker,
                                     Strategy* strategy) {
-  strategy->set_ctx(new QuantitativeTradingContext(ticker, this));
+  strategy->set_ctx(new AlgoTradeContext(ticker, this));
   engine_->post(EV_MOUNT_STRATEGY, strategy);
 }
 
 void StrategyEngine::on_mount_strategy(cppex::Any* data) {
-  auto strategy_unique_ptr = data->fetch<Strategy>();
-  auto* strategy = strategy_unique_ptr.release();
+  auto* strategy = data->fetch<Strategy>().release();
   auto& list = strategies_[strategy->get_ctx()->this_ticker()];
-  list.emplace_back(std::move(strategy));
 
-  strategy->on_init(strategy->get_ctx());
+  if (strategy->on_init(strategy->get_ctx()))
+    list.emplace_back(strategy);
+  else
+    engine_->post(EV_MOUNT_STRATEGY, strategy);
 }
 
 void StrategyEngine::unmount_strategy(Strategy* strategy) {
@@ -224,6 +225,12 @@ void StrategyEngine::on_trade(cppex::Any* data) {
 void StrategyEngine::on_order(cppex::Any* data) {
   const auto* order = data->cast<Order>();
   trading_view_.update_order(order);
+
+  // TODO(kevin): 对策略发的单加个ID，只把订单回执返回给发该单的策略
+  for (auto& [ticker, strategy_list] : strategies_) {
+    for (auto strategy : strategy_list)
+      strategy->on_order(strategy->get_ctx(), order);
+  }
 }
 
 }  // namespace ft

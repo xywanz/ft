@@ -39,11 +39,11 @@ struct Order {
   Direction       direction;
   Offset          offset;
   double          price = 0;
-  int             volume = 0;
+  int64_t         volume = 0;
 
   // rsp or local data
   OrderStatus     status;
-  int             volume_traded = 0;
+  int64_t         volume_traded = 0;
   std::string     insert_time;
 };
 

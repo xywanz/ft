@@ -70,6 +70,11 @@ class EventEngine {
       continue;
   }
 
+  bool empty() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return event_queue_.empty();
+  }
+
  private:
   struct Event {
     template<class T>

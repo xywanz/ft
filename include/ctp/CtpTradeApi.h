@@ -37,14 +37,15 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool cancel_order(const std::string& order_id);
 
-  bool query_contract(const std::string& symbol,
-                             const std::string& exchange);
+  bool query_contract(const std::string& ticker);
 
-  bool query_position(const std::string& symbol,
-                             const std::string& exchange);
+  bool query_position(const std::string& ticker);
 
   bool query_account();
 
+  bool query_margin_rate(const std::string& ticker);
+
+  bool query_commision_rate();
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -64,44 +65,37 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   void OnHeartBeatWarning(int time_lapse) override;
 
   // 客户端认证响应
-  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenticate_field,
+  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth_rsp,
                          CThostFtdcRspInfoField *rsp_info,
-                         int req_id,
-                         bool is_last) override;
+                         int req_id, bool is_last) override;
 
   // 登录请求响应
   void OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
                       CThostFtdcRspInfoField *rsp_info,
-                      int req_id,
-                      bool is_last) override;
+                      int req_id, bool is_last) override;
 
-  void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement_info,
+  void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement,
                               CThostFtdcRspInfoField *rsp_info,
-                              int req_id,
-                              bool is_last) override;
+                              int req_id, bool is_last) override;
 
   void OnRspSettlementInfoConfirm(
-          CThostFtdcSettlementInfoConfirmField *settlement_info_confirm,
+          CThostFtdcSettlementInfoConfirmField *confirm,
           CThostFtdcRspInfoField *rsp_info,
-          int req_id,
-          bool is_last) override;
+          int req_id, bool is_last) override;
 
   void OnRspUserLogout(
           CThostFtdcUserLogoutField *user_logout,
           CThostFtdcRspInfoField *rsp_info,
-          int req_id,
-          bool is_last) override;
+          int req_id, bool is_last) override;
 
   // 拒绝报单
   void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
                         CThostFtdcRspInfoField *rsp_info,
-                        int req_id,
-                        bool is_last) override;
+                        int req_id, bool is_last) override;
 
   void OnRspOrderAction(CThostFtdcInputOrderActionField *action,
                         CThostFtdcRspInfoField *rsp_info,
-                        int req_id,
-                        bool is_last) override;
+                        int req_id, bool is_last) override;
 
   void OnRtnOrder(CThostFtdcOrderField *ctp_order) override;
 
@@ -110,20 +104,21 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
                           CThostFtdcRspInfoField *rsp_info,
-                          int req_id,
-                          bool is_last) override;
+                          int req_id, bool is_last) override;
 
   void OnRspQryInvestorPosition(
           CThostFtdcInvestorPositionField *position,
           CThostFtdcRspInfoField *rsp_info,
-          int req_id,
-          bool is_last) override;
+          int req_id, bool is_last) override;
 
   void OnRspQryTradingAccount(
           CThostFtdcTradingAccountField *trading_account,
           CThostFtdcRspInfoField *rsp_info,
-          int req_id,
-          bool is_last) override;
+          int req_id, bool is_last) override;
+
+  void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField* margin_rate,
+                                    CThostFtdcRspInfoField* rsp_info,
+                                    int req_id, bool is_last);
 
  private:
   static std::string get_order_id(const char* instrument,
@@ -159,9 +154,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<bool> is_login_ = false;
   std::atomic<bool> is_query_settlement_ = false;
   std::atomic<bool> is_settlement_confirmed_ = false;
-  std::atomic<bool> is_qry_contract_done_ = false;
-  std::atomic<bool> is_qry_account_done_ = false;
-  std::atomic<bool> is_qry_position_done_ = false;
+  std::atomic<bool> is_query_done_ = false;
 
   std::map<std::string, Position> pos_cache_;
 

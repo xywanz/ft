@@ -8,19 +8,7 @@
 
 #include "ctp/CtpApi.h"
 #include "EventEngine.h"
-
-const char* kSimnowMdAddr[] = {
-  "tcp://180.168.146.187:10131",
-  "tcp://180.168.146.187:10110",
-  "tcp://180.168.146.187:10111",
-  "tcp://218.202.237.33:10112"
-};
-
-const char* kBrokerID = "9999";
-const char* kInvestorID = "122899";
-const char* kPasswd = "lsk4129691";
-const char* kAuthCode = "0000000000000000";
-const char* kAppID = "simnow_client_test";
+#include "TestCommon.h"
 
 class DataCollector {
  public:
@@ -113,27 +101,23 @@ class DataCollector {
 
 
 int main() {
-  std::size_t front_index = getarg(0UL, "--front");
-  int log_level = getarg(0, "--loglevel");
   std::string path = getarg("./", "--path");
+  std::string login_config_file = getarg("../config/login.yaml", "--login-config");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
 
-  spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
-  ft::ContractTable::init("./contracts.csv");
+  ft::LoginParams params;
+  if (!load_login_params(login_config_file, &params)) {
+    spdlog::error("Invalid file of login config");
+    exit(-1);
+  }
+  params.set_front_addr("");
+
+  if (!ft::ContractTable::init(contracts_file)) {
+    spdlog::error("Invalid file of contract list");
+    exit(-1);
+  }
 
   auto* collector = new DataCollector;
-  ft::LoginParams params;
-
-  if (front_index >= sizeof(kSimnowMdAddr) / sizeof(kSimnowMdAddr[0]))
-    exit(-1);
-
-  params.set_md_server_addr(kSimnowMdAddr[front_index]);
-  params.set_broker_id(kBrokerID);
-  params.set_investor_id(kInvestorID);
-  params.set_passwd(kPasswd);
-  params.set_auth_code(kAuthCode);
-  params.set_app_id(kAppID);
-  params.set_subscribed_list({"rb2009.SHFE"});
-
   if (!collector->login(params)) {
     exit(-1);
   }

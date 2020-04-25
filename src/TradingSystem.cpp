@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <set>
-#include <Strategy.h>
 #include <vector>
 
 #include <spdlog/spdlog.h>
@@ -57,7 +56,7 @@ bool TradingSystem::login(const LoginParams& params) {
   // query all positions
   initial_positions_.clear();
   pos_mgr_.clear();
-  if (!api_->query_position("", "")) {
+  if (!api_->query_position("")) {
     spdlog::error("[TradingSystem] login. Failed to query positions");
     return false;
   }

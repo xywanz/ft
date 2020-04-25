@@ -125,7 +125,7 @@ void CtpMdApi::OnHeartBeatWarning(int time_lapse) {
 }
 
 void CtpMdApi::OnRspUserLogin(
-                      CThostFtdcRspUserLoginField *rsp_user_login,
+                      CThostFtdcRspUserLoginField *login_rsp,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
@@ -143,13 +143,13 @@ void CtpMdApi::OnRspUserLogin(
 }
 
 void CtpMdApi::OnRspUserLogout(
-                      CThostFtdcUserLogoutField *user_logout,
-                      CThostFtdcRspInfoField *rsp_info,
-                      int req_id,
-                      bool is_last) {
+                  CThostFtdcUserLogoutField *logout_rsp,
+                  CThostFtdcRspInfoField *rsp_info,
+                  int req_id,
+                  bool is_last) {
   is_login_ = false;
   spdlog::debug("[CTP MD] OnRspUserLogout. Broker ID: {}, Investor ID: {}",
-                user_logout->BrokerID, user_logout->UserID);
+                logout_rsp->BrokerID, logout_rsp->UserID);
 }
 
 void CtpMdApi::OnRspError(
@@ -161,21 +161,21 @@ void CtpMdApi::OnRspError(
 }
 
 void CtpMdApi::OnRspSubMarketData(
-                      CThostFtdcSpecificInstrumentField *specific_instrument,
+                      CThostFtdcSpecificInstrumentField *instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
-  if (is_error_rsp(rsp_info) || !specific_instrument) {
+  if (is_error_rsp(rsp_info) || !instrument) {
     spdlog::error("[CTP MD] OnRspSubMarketData. Failed to subscribe. Error Msg: {}",
                   rsp_info->ErrorMsg);
     return;
   }
 
-  auto* contract = ContractTable::get_by_symbol(specific_instrument->InstrumentID);
+  auto* contract = ContractTable::get_by_symbol(instrument->InstrumentID);
   if (!contract) {
     spdlog::error("[CTP MD] OnRspSubMarketData. ExchangeID not found in contract list. "
                   "Maybe you should update the contract list. Symbol: {}",
-                  specific_instrument->InstrumentID);
+                  instrument->InstrumentID);
     return;
   }
   symbol2exchange_.emplace(contract->symbol, contract->exchange);
@@ -185,28 +185,27 @@ void CtpMdApi::OnRspSubMarketData(
 }
 
 void CtpMdApi::OnRspUnSubMarketData(
-                      CThostFtdcSpecificInstrumentField *specific_instrument,
+                      CThostFtdcSpecificInstrumentField *instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
 void CtpMdApi::OnRspSubForQuoteRsp(
-                      CThostFtdcSpecificInstrumentField *specific_instrument,
+                      CThostFtdcSpecificInstrumentField *instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
 void CtpMdApi::OnRspUnSubForQuoteRsp(
-                      CThostFtdcSpecificInstrumentField *specific_instrument,
+                      CThostFtdcSpecificInstrumentField *instrument,
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
 }
 
-void CtpMdApi::OnRtnDepthMarketData(
-                      CThostFtdcDepthMarketDataField *md) {
+void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   if (!md) {
     spdlog::error("[CTP MD] OnRtnDepthMarketData. Null pointer of market data");
     return;

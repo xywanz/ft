@@ -9,26 +9,14 @@
 #include "ctp/CtpApi.h"
 #include "Contract.h"
 #include "EventEngine.h"
+#include "TestCommon.h"
 
-const char* kSimnowTradeAddr[] = {
-  "tcp://180.168.146.187:10130",
-  "tcp://180.168.146.187:10100",
-  "tcp://180.168.146.187:10101",
-  "tcp://218.202.237.33:10102"
-};
-
-const char* kBrokerID = "9999";
-const char* kInvestorID = "122899";
-const char* kPasswd = "lsk4129691";
-const char* kAuthCode = "0000000000000000";
-const char* kAppID = "simnow_client_test";
-
-class TradeInfoCollector {
+class ContractCollector {
  public:
-  TradeInfoCollector()
+  ContractCollector()
     : engine_(new ft::EventEngine) {
     api_ = new ft::CtpApi(engine_);
-    engine_->set_handler(ft::EV_CONTRACT, MEM_HANDLER(TradeInfoCollector::on_contract));
+    engine_->set_handler(ft::EV_CONTRACT, MEM_HANDLER(ContractCollector::on_contract));
 
     engine_->run(false);
   }
@@ -46,8 +34,10 @@ class TradeInfoCollector {
     if (!is_login_)
       return false;
 
-    if (!api_->query_contract("", ""))
+    if (!api_->query_contract(""))
       return false;
+
+    engine_->stop();
 
     store_contracts(file, contracts_);
     return true;
@@ -67,29 +57,22 @@ class TradeInfoCollector {
 
 
 int main() {
-  std::size_t front_index = getarg(0UL, "--front");
-  int log_level = getarg(0, "--loglevel");
+  std::string login_config_file = getarg("../config/login.yaml", "--login-config");
+  std::string path = getarg("../config/contracts.csv", "--output-path");
 
-  spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
-
-  auto collector = new TradeInfoCollector;
   ft::LoginParams params;
-
-  if (front_index >= sizeof(kSimnowTradeAddr) / sizeof(kSimnowTradeAddr[0]))
+  if (!load_login_params(login_config_file, &params)) {
+    spdlog::error("Invalid file of login config");
     exit(-1);
+  }
+  params.set_md_server_addr("");
 
-  params.set_front_addr(kSimnowTradeAddr[front_index]);
-  params.set_broker_id(kBrokerID);
-  params.set_investor_id(kInvestorID);
-  params.set_passwd(kPasswd);
-  params.set_auth_code(kAuthCode);
-  params.set_app_id(kAppID);
-
+  auto* collector = new ContractCollector;
   if (!collector->login(params)) {
     exit(-1);
   }
 
-  if (!collector->dump_contracts("contracts.csv")) {
+  if (!collector->dump_contracts(path)) {
     spdlog::error("Failed to export contracts");
     exit(-1);
   }

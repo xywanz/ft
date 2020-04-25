@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "Context.h"
+#include "AlgoTrade/Context.h"
 
 namespace ft {
 
@@ -15,15 +15,17 @@ class Strategy {
  public:
   virtual ~Strategy() {}
 
-  virtual void on_init(QuantitativeTradingContext* ctx) {}
+  virtual bool on_init(AlgoTradeContext* ctx) {
+    return true;
+  }
 
-  virtual void on_tick(QuantitativeTradingContext* ctx) {}
+  virtual void on_tick(AlgoTradeContext* ctx) {}
 
-  virtual void on_order(const Order* order) {}
+  virtual void on_order(AlgoTradeContext* ctx, const Order* order) {}
 
-  virtual void on_trade(const Trade* trade) {}
+  virtual void on_trade(AlgoTradeContext* ctx, const Trade* trade) {}
 
-  virtual void on_exit(QuantitativeTradingContext* ctx) {}
+  virtual void on_exit(AlgoTradeContext* ctx) {}
 
   bool is_mounted() const {
     return is_mounted_;
@@ -31,7 +33,7 @@ class Strategy {
 
  private:
   friend class StrategyEngine;
-  void set_ctx(QuantitativeTradingContext* ctx) {
+  void set_ctx(AlgoTradeContext* ctx) {
     std::unique_lock<std::mutex> lock(mutex_);
     if (is_mounted_)
       return;
@@ -46,7 +48,7 @@ class Strategy {
  private:
   bool is_mounted_ = false;
   std::mutex mutex_;
-  std::unique_ptr<QuantitativeTradingContext> ctx_;
+  std::unique_ptr<AlgoTradeContext> ctx_;
 };
 
 }  // namespace ft

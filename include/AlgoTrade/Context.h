@@ -6,13 +6,13 @@
 #include <algorithm>
 #include <string>
 
-#include "StrategyEngine.h"
+#include "AlgoTrade/StrategyEngine.h"
 
 namespace ft {
 
-class QuantitativeTradingContext {
+class AlgoTradeContext {
  public:
-  explicit QuantitativeTradingContext(const std::string& ticker, StrategyEngine* se)
+  explicit AlgoTradeContext(const std::string& ticker, StrategyEngine* se)
     : ticker_(ticker),
       se_(se) {
   }

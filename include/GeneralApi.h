@@ -49,17 +49,23 @@ class GeneralApi {
     return false;
   }
 
-  virtual bool query_contract(const std::string& symbol,
-                                     const std::string& exchange) {
+  virtual bool query_contract(const std::string& ticker) {
     return false;
   }
 
-  virtual bool query_position(const std::string& symbol,
-                                     const std::string& exchange) {
+  virtual bool query_position(const std::string& ticker) {
     return false;
   }
 
   virtual bool query_account() {
+    return false;
+  }
+
+  virtual bool query_margin_rate(const std::string& ticker) {
+    return false;
+  }
+
+  virtual bool query_commision_rate(const std::string& ticker) {
     return false;
   }
 

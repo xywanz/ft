@@ -10,7 +10,6 @@
 
 #include "Position.h"
 #include "RiskManagement/RiskRuleInterface.h"
-#include "StrategyEngine.h"
 #include "TradingView.h"
 
 namespace ft {

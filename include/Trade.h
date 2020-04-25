@@ -15,11 +15,11 @@ struct Trade {
   std::string     ticker;
   std::string     order_id;
   std::string     trade_time;
+  int64_t         trade_id;
   Direction       direction;
   Offset          offset;
-  int             trade_id;
   double          price;
-  int             volume;
+  int64_t         volume;
 };
 
 }  // namespace ft
