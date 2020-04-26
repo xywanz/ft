@@ -1,31 +1,16 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CONTRACT_H_
-#define FT_INCLUDE_CONTRACT_H_
+#ifndef FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_
+#define FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_
 
-#include <cassert>
-#include <fstream>
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
+#include <utility>
 
-#include <cppex/string.h>
-#include <fmt/format.h>
-
-#include "Common.h"
+#include "Base/DataStruct.h"
 
 namespace ft {
-
-struct Contract {
-  std::string   symbol;
-  std::string   exchange;
-  std::string   ticker;
-  std::string   name;
-  ProductType   product_type;
-  int           size;
-  double        price_tick;
-};
 
 inline bool load_contracts(const std::string& file, std::vector<Contract>* contracts) {
   std::ifstream ifs(file);
@@ -118,4 +103,4 @@ class ContractTable {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CONTRACT_H_
+#endif  // FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_

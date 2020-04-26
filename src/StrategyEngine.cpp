@@ -9,8 +9,8 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/Strategy.h"
-#include "ctp/CtpApi.h"
-#include "LoginParams.h"
+#include "Api/Ctp/CtpApi.h"
+#include "Base/DataStruct.h"
 #include "RiskManagement/NoSelfTrade.h"
 
 namespace ft {

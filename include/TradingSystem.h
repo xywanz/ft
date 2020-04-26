@@ -12,17 +12,12 @@
 #include <utility>
 #include <vector>
 
-#include "Account.h"
-#include "Common.h"
-#include "Contract.h"
+#include "Base/DataStruct.h"
 #include "EventEngine.h"
 #include "GeneralApi.h"
-#include "MarketData.h"
 #include "MdManager.h"
-#include "Order.h"
-#include "Position.h"
 #include "RiskManagement/RiskManager.h"
-#include "Trade.h"
+#include "TradingManagement/Portfolio.h"
 
 namespace ft {
 
@@ -158,7 +153,7 @@ class TradingSystem {
   std::vector<std::unique_ptr<Position>> initial_positions_;
 
   Account account_;
-  PositionManager pos_mgr_;
+  Portfolio portfolio_;
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
   std::map<std::string, MdManager> md_center_;

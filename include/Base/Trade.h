@@ -1,11 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADE_H_
-#define FT_INCLUDE_TRADE_H_
+#ifndef FT_INCLUDE_BASE_TRADE_H_
+#define FT_INCLUDE_BASE_TRADE_H_
 
 #include <string>
 
-#include "Common.h"
+#include "Order.h"
 
 namespace ft {
 
@@ -24,4 +24,4 @@ struct Trade {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADE_H_
+#endif  // FT_INCLUDE_BASE_TRADE_H_

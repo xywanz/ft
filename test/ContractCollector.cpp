@@ -6,10 +6,11 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpApi.h"
-#include "Contract.h"
+#include "Api/Ctp/CtpApi.h"
+#include "Base/DataStruct.h"
 #include "EventEngine.h"
 #include "TestCommon.h"
+#include "TradingManagement/ContractTable.h"
 
 class ContractCollector {
  public:

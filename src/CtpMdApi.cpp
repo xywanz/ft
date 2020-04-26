@@ -1,14 +1,15 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ctp/CtpMdApi.h"
+#include "Api/Ctp/CtpMdApi.h"
 
 #include <spdlog/spdlog.h>
 
 #include <ThostFtdcUserApiDataType.h>
 #include <ThostFtdcUserApiStruct.h>
 
-#include "ctp/CtpCommon.h"
-#include "MarketData.h"
+#include "Api/Ctp/CtpCommon.h"
+#include "Base/DataStruct.h"
+#include "TradingManagement/ContractTable.h"
 
 namespace ft {
 

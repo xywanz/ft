@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ctp/CtpTradeApi.h"
+#include "Api/Ctp/CtpTradeApi.h"
 
 #include <cassert>
 #include <cstring>
@@ -11,12 +11,10 @@
 #include <ThostFtdcUserApiStruct.h>
 #include <ThostFtdcTraderApi.h>
 
-#include "Account.h"
-#include "ctp/CtpCommon.h"
-#include "ctp/FieldMapper.h"
-#include "Contract.h"
-#include "Position.h"
-#include "Trade.h"
+#include "Api/Ctp/CtpCommon.h"
+#include "Api/Ctp/FieldMapper.h"
+#include "Base/DataStruct.h"
+#include "TradingManagement/ContractTable.h"
 
 namespace ft {
 

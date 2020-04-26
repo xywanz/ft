@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_CTPTRADEAPI_H_
-#define FT_INCLUDE_CTP_CTPTRADEAPI_H_
+#ifndef FT_INCLUDE_API_CTP_CTPTRADEAPI_H_
+#define FT_INCLUDE_API_CTP_CTPTRADEAPI_H_
 
 #include <atomic>
 #include <cassert>
@@ -15,11 +15,9 @@
 #include <fmt/format.h>
 #include <ThostFtdcTraderApi.h>
 
-#include "ctp/CtpCommon.h"
-#include "LoginParams.h"
+#include "Api/Ctp/CtpCommon.h"
+#include "Base/DataStruct.h"
 #include "GeneralApi.h"
-#include "Order.h"
-#include "Position.h"
 
 namespace ft {
 
@@ -165,4 +163,4 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_CTPTRADEAPI_H_
+#endif  // FT_INCLUDE_API_CTP_CTPTRADEAPI_H_

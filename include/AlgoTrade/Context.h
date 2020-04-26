@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CONTEXT_H_
-#define FT_INCLUDE_CONTEXT_H_
+#ifndef FT_INCLUDE_ALGOTRADE_CONTEXT_H_
+#define FT_INCLUDE_ALGOTRADE_CONTEXT_H_
 
 #include <algorithm>
 #include <string>
@@ -17,19 +17,19 @@ class AlgoTradeContext {
       se_(se) {
   }
 
-  bool buy_open(int volume, OrderType type, double price) {
+  bool buy_open(int volume, double price, OrderType type = OrderType::FOK) {
     return se_->buy_open(ticker_, volume, type, price);
   }
 
-  bool sell_close(int volume, OrderType type, double price) {
+  bool sell_close(int volume, double price, OrderType type = OrderType::FOK) {
     return se_->sell_close(ticker_, volume, type, price);
   }
 
-  bool sell_open(int volume, OrderType type, double price) {
+  bool sell_open(int volume, double price, OrderType type = OrderType::FOK) {
     return se_->sell_open(ticker_, volume, type, price);
   }
 
-  bool buy_close(int volume, OrderType type, double price)  {
+  bool buy_close(int volume, double price, OrderType type = OrderType::FOK)  {
     return se_->buy_close(ticker_, volume, type, price);
   }
 
@@ -52,13 +52,13 @@ class AlgoTradeContext {
     auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
     if (sp.volume > 0) {
       int64_t to_close = std::min(sp.volume, volume);
-      if (!buy_close(to_close, type, price))
+      if (!buy_close(to_close, price, type))
         return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (!buy_open(volume, type, price))
+      if (!buy_open(volume, price, type))
         return original_volume - volume;
     }
 
@@ -84,13 +84,13 @@ class AlgoTradeContext {
     auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
     if (lp.volume > 0) {
       int64_t to_close = std::min(lp.volume, volume);
-      if (!sell_close(to_close, type, price))
+      if (!sell_close(to_close, price, type))
         return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (!sell_open(volume, type, price))
+      if (!sell_open(volume, price, type))
         return original_volume - volume;
     }
 

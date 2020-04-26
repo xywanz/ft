@@ -3,7 +3,6 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/Strategy.h"
-#include "AlgoTrade/StrategyEngine.h"
 
 class GridStrategy : public ft::Strategy {
  public:

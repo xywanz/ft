@@ -1,17 +1,14 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGVIEW_H_
-#define FT_INCLUDE_TRADINGVIEW_H_
+#ifndef FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_
+#define FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "Account.h"
-#include "Common.h"
-#include "Order.h"
-#include "Position.h"
-#include "Trade.h"
+#include "Base/DataStruct.h"
+#include "TradingManagement/Portfolio.h"
 
 namespace ft {
 
@@ -22,7 +19,7 @@ class TradingView {
   }
 
   void on_query_position(const Position* pos) {
-    pos_mgr_.init_position(*pos);
+    portfolio_.init_position(*pos);
   }
 
   void update_account(int64_t balance_changed) {
@@ -30,17 +27,17 @@ class TradingView {
   }
 
   void update_pos_pnl(const std::string& ticker, double price) {
-    pos_mgr_.update_pnl(ticker, price);
+    portfolio_.update_pnl(ticker, price);
   }
 
   void update_pos_traded(const std::string& ticker, Direction direction,
                          Offset offset, int64_t traded, double traded_price) {
-    pos_mgr_.update_traded(ticker, direction, offset, traded, traded_price);
+    portfolio_.update_traded(ticker, direction, offset, traded, traded_price);
   }
 
   void update_pos_pending(const std::string& ticker, Direction direction,
                           Offset offset, int64_t changed) {
-    pos_mgr_.update_pending(ticker, direction, offset, changed);
+    portfolio_.update_pending(ticker, direction, offset, changed);
   }
 
   void new_order(const Order* order) {
@@ -91,11 +88,11 @@ class TradingView {
   }
 
   void get_pos_ticker_list(std::vector<const std::string*>* out) const {
-    pos_mgr_.get_pos_ticker_list_unsafe(out);
+    portfolio_.get_pos_ticker_list_unsafe(out);
   }
 
   const Position* get_position(const std::string& ticker) const {
-    return pos_mgr_.get_position_unsafe(ticker);
+    return portfolio_.get_position_unsafe(ticker);
   }
 
  private:
@@ -107,11 +104,11 @@ class TradingView {
 
  private:
   Account account_;
-  PositionManager pos_mgr_;
+  Portfolio portfolio_;
   std::map<std::string, Order> orders_;
   std::map<std::string, Trade> trade_record_;
 };
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGVIEW_H_
+#endif  // FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_

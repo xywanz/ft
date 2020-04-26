@@ -6,9 +6,10 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpApi.h"
+#include "Api/Ctp/CtpApi.h"
 #include "EventEngine.h"
 #include "TestCommon.h"
+#include "TradingManagement/ContractTable.h"
 
 class DataCollector {
  public:

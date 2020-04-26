@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_CTPCOMMON_H_
-#define FT_INCLUDE_CTP_CTPCOMMON_H_
+#ifndef FT_INCLUDE_API_CTP_CTPCOMMON_H_
+#define FT_INCLUDE_API_CTP_CTPCOMMON_H_
 
 #include <codecvt>
 #include <locale>
@@ -49,4 +49,4 @@ inline std::string gb2312_to_utf8(const std::string &gb2312)
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_CTPCOMMON_H_
+#endif  // FT_INCLUDE_API_CTP_CTPCOMMON_H_

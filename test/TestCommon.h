@@ -8,7 +8,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "LoginParams.h"
+#include "Base/DataStruct.h"
 
 inline bool load_login_params(const std::string& file, ft::LoginParams* params) {
   std::ifstream ifs(file);

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_STRATEGYENGINE_H_
-#define FT_INCLUDE_STRATEGYENGINE_H_
+#ifndef FT_INCLUDE_ALGOTRADE_STRATEGYENGINE_H_
+#define FT_INCLUDE_ALGOTRADE_STRATEGYENGINE_H_
 
 #include <list>
 #include <map>
@@ -12,14 +12,13 @@
 #include <utility>
 #include <vector>
 
-#include "Common.h"
-#include "Contract.h"
+#include "Base/DataStruct.h"
+#include "cppex/Any.h"
 #include "EventEngine.h"
 #include "GeneralApi.h"
-#include "MarketData.h"
 #include "MdManager.h"
 #include "RiskManagement/RiskManager.h"
-#include "TradingView.h"
+#include "TradingManagement/TradingView.h"
 
 namespace ft {
 
@@ -161,4 +160,4 @@ class StrategyEngine {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_STRATEGYENGINE_H_
+#endif  // FT_INCLUDE_ALGOTRADE_STRATEGYENGINE_H_

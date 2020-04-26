@@ -14,7 +14,7 @@ namespace ft {
 class JustOneDirectionRule : public RiskRuleInterface {
  public:
   bool check(const Order* order) override {
-    const auto pos = pos_mgr_->get_position(order->ticker);
+    const auto pos = portfolio_->get_position(order->ticker);
     const PositionDetail* opp_pos_detail;
     if (order->direction == Direction::BUY)
       opp_pos_detail = &pos.short_pos;
@@ -28,7 +28,7 @@ class JustOneDirectionRule : public RiskRuleInterface {
   }
 
  private:
-  PositionManagerSp* pos_mgr_;
+  Portfolio* portfolio_;
 };
 
 }  // namespace ft

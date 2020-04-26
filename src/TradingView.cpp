@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "TradingView.h"
+#include "TradingManagement/TradingView.h"
 
 namespace ft {
 
@@ -47,7 +47,7 @@ void TradingView::handle_canceled(const Order* rtn_order) {
   orders_.erase(rtn_order->order_id);
 
   auto left_vol = rtn_order->volume - rtn_order->volume_traded;
-  pos_mgr_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
+  portfolio_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
 }
 
 void TradingView::handle_submitted(const Order* rtn_order) {

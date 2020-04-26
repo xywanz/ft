@@ -1,46 +1,41 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_POSITION_H_
-#define FT_INCLUDE_POSITION_H_
+#ifndef FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_
+#define FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_
 
-#include <atomic>
 #include <map>
-#include <mutex>
 #include <string>
 #include <vector>
 
 #include <spdlog/spdlog.h>
 
-#include "Contract.h"
-#include "Common.h"
+#include "Base/Position.h"
+#include "TradingManagement/ContractTable.h"
 
 namespace ft {
 
-struct PositionDetail {
-  int64_t yd_volume = 0;
-  int64_t volume = 0;
-  int64_t frozen = 0;
-  int64_t open_pending = 0;
-  int64_t close_pending = 0;
-  double cost_price = 0;
-  double pnl = 0;
-};
+/* 最新版本线程不安全！！！下面的评论无效，因PosMgr的函数都是小函数，故由外部保证线程安全
+//  * 线程安全
+//  * 虽说线程安全，使用上还是要注意，init_position要在其他任何仓位操作之前完成。
+//  * 即启动时查询一次仓位，等待仓位全部初始化完毕后，才可进行交易，之后的仓位更新
+//  * 操作全权交由Portfolio负责，不再从API查询。
+ */
+class Portfolio {
+ public:
+  Portfolio() {}
 
-struct Position {
-  Position() {}
+  void init_position(const Position& pos) {
+    if (find(pos.ticker)) {
+      spdlog::warn("[PositionManager::init_position] Failed to init pos: position already exists");
+      return;
+    }
 
-  explicit Position(const std::string& _ticker)
-    : ticker(_ticker) {
-    ticker_split(ticker, &symbol, &exchange);
+    pos_map_.emplace(pos.ticker, pos);
+    spdlog::debug("[PositionManager::init_position]");
   }
 
-  Position(const std::string& _symbol, const std::string& _exchange)
-    : symbol(_symbol),
-      exchange(_exchange),
-      ticker(to_ticker(_symbol, _exchange)) {}
-
-
-  void update_pending(Direction direction, Offset offset, int changed) {
+  void update_pending(const std::string& ticker, Direction direction,
+                      Offset offset, int changed) {
     if (changed == 0)
       return;
 
@@ -48,7 +43,8 @@ struct Position {
     if (is_close)
       direction = opp_direction(direction);
 
-    auto& pos_detail = direction == Direction::BUY ? long_pos : short_pos;
+    auto& pos = find_or_create_pos(ticker);
+    auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
     if (is_close)
       pos_detail.close_pending += changed;
     else
@@ -58,7 +54,8 @@ struct Position {
     assert(pos_detail.close_pending >= 0);
   }
 
-  void update_traded(Direction direction, Offset offset, int traded, double traded_price) {
+  void update_traded(const std::string& ticker, Direction direction, Offset offset,
+                     int traded, double traded_price) {
     if (traded == 0)
       return;
 
@@ -66,7 +63,8 @@ struct Position {
     if (is_close)
       direction = opp_direction(direction);
 
-    auto& pos_detail = direction == Direction::BUY ? long_pos : short_pos;
+    auto& pos = find_or_create_pos(ticker);
+    auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
     if (is_close) {
       pos_detail.close_pending -= traded;
       pos_detail.volume -= traded;
@@ -101,69 +99,22 @@ struct Position {
       pos_detail.cost_price = 0;
   }
 
-  void update_pnl(double last_price) {
-    auto contract = ContractTable::get_by_ticker(ticker);
-    if (!contract || contract->size <= 0)
-      return;
-
-    if (long_pos.volume > 0)
-      long_pos.pnl = long_pos.volume * contract->size * (last_price - long_pos.cost_price);
-
-    if (short_pos.volume > 0)
-      short_pos.pnl = short_pos.volume * contract->size * (short_pos.cost_price - last_price);
-  }
-
-  std::string symbol;
-  std::string exchange;
-  std::string ticker;
-
-  PositionDetail long_pos;
-  PositionDetail short_pos;
-};
-
-
-/* 最新版本线程不安全！！！下面的评论无效，因PosMgr的函数都是小函数，故由外部保证线程安全
-//  * 线程安全
-//  * 虽说线程安全，使用上还是要注意，init_position要在其他任何仓位操作之前完成。
-//  * 即启动时查询一次仓位，等待仓位全部初始化完毕后，才可进行交易，之后的仓位更新
-//  * 操作全权交由PosManager负责，不再从API查询。
- */
-class PositionManager {
- public:
-  PositionManager() {}
-
-  void init_position(const Position& pos) {
-    if (find(pos.ticker)) {
-      spdlog::warn("[PositionManager::init_position] Failed to init pos: position already exists");
-      return;
-    }
-
-    pos_map_.emplace(pos.ticker, pos);
-    spdlog::debug("[PositionManager::init_position]");
-  }
-
-  void update_pending(const std::string& ticker, Direction direction, Offset offset,
-                      int changed) {
-    if (changed == 0)
-      return;
-
-    auto& pos = find_or_create_pos(ticker);
-    pos.update_pending(direction, offset, changed);
-  }
-
-  void update_traded(const std::string& ticker, Direction direction, Offset offset,
-                     int traded, double traded_price) {
-    if (traded == 0)
-      return;
-
-    auto& pos = find_or_create_pos(ticker);
-    pos.update_traded(direction, offset, traded, traded_price);
-  }
-
   void update_pnl(const std::string& ticker, double last_price) {
     auto* pos = find(ticker);
-    if (pos)
-      pos->update_pnl(last_price);
+    if (pos) {
+      const auto* contract = ContractTable::get_by_ticker(ticker);
+      if (!contract || contract->size <= 0)
+        return;
+
+      auto& lp = pos->long_pos;
+      auto& sp = pos->short_pos;
+
+      if (lp.volume > 0)
+        lp.pnl = lp.volume * contract->size * (last_price - lp.cost_price);
+
+      if (sp.volume > 0)
+        sp.pnl = sp.volume * contract->size * (sp.cost_price - last_price);
+    }
   }
 
   const Position* get_position_unsafe(const std::string& ticker) const {
@@ -210,7 +161,7 @@ class PositionManager {
   }
 
   const Position* find(const std::string& ticker) const {
-    return const_cast<PositionManager*>(this)->find(ticker);
+    return const_cast<Portfolio*>(this)->find(ticker);
   }
 
  private:
@@ -219,4 +170,4 @@ class PositionManager {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_POSITION_H_
+#endif  // FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_

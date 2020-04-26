@@ -1,13 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_FIELDMAPPER_H_
-#define FT_INCLUDE_CTP_FIELDMAPPER_H_
+#ifndef FT_INCLUDE_API_CTP_FIELDMAPPER_H_
+#define FT_INCLUDE_API_CTP_FIELDMAPPER_H_
 
 #include <map>
 
 #include <ThostFtdcUserApiDataType.h>
 
-#include "Order.h"
+#include "Base/DataStruct.h"
 
 namespace ft {
 
@@ -115,4 +115,4 @@ inline OrderStatus order_status(char ctp_type) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_FIELDMAPPER_H_
+#endif  // FT_INCLUDE_API_CTP_FIELDMAPPER_H_

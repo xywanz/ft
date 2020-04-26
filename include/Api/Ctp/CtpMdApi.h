@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_CTPMDAPI_H_
-#define FT_INCLUDE_CTP_CTPMDAPI_H_
+#ifndef FT_INCLUDE_API_CTP_CTPMDAPI_H_
+#define FT_INCLUDE_API_CTP_CTPMDAPI_H_
 
 #include <atomic>
 #include <limits>
@@ -12,10 +12,9 @@
 
 #include <ThostFtdcMdApi.h>
 
-#include "ctp/CtpCommon.h"
-#include "Common.h"
+#include "Api/Ctp/CtpCommon.h"
+#include "Base/DataStruct.h"
 #include "GeneralApi.h"
-#include "LoginParams.h"
 
 namespace ft {
 
@@ -109,4 +108,4 @@ inline PriceType adjust_price(PriceType price) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_CTPMDAPI_H_
+#endif  // FT_INCLUDE_API_CTP_CTPMDAPI_H_

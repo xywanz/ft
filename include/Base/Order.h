@@ -1,22 +1,33 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_COMMON_H_
-#define FT_INCLUDE_COMMON_H_
+#ifndef FT_INCLUDE_BASE_ORDER_H_
+#define FT_INCLUDE_BASE_ORDER_H_
 
-#include <atomic>
 #include <map>
-#include <memory>
 #include <string>
 
-#include <fmt/format.h>
+#include "Base/Common.h"
 
 namespace ft {
 
-inline const std::string kSHFE = "SHFE";
-inline const std::string kINE = "INE";
-inline const std::string kCFFEX = "CFFEX";
-inline const std::string kCZCE = "CZCE";
-inline const std::string kDCE = "DCE";
+enum class OrderStatus {
+  CREATED = 0,
+  SUBMITTING,
+  REJECTED,
+  NO_TRADED,
+  PART_TRADED,
+  ALL_TRADED,
+  CANCELED,
+  CANCEL_REJECTED
+};
+
+enum class OrderType {
+  LIMIT = 0,      // 市价
+  MARKET,         //
+  FAK,            //
+  FOK,            //
+  BEST,           // 最优价
+};
 
 enum class Direction {
   BUY = 0,
@@ -39,58 +50,44 @@ enum class CombHedgeFlag {
   HEDGE,
 };
 
-enum class OrderType {
-  LIMIT = 0,      // 市价
-  MARKET,         //
-  FAK,            //
-  FOK,            //
-  BEST,           // 最优价
+struct Order {
+  Order() {}
+
+  Order(const std::string& _ticker,
+        Direction _direction,
+        Offset _offset,
+        int _volume,
+        OrderType _type,
+        double _price)
+    : ticker(_ticker),
+      direction(_direction),
+      offset(_offset),
+      volume(_volume),
+      type(_type),
+      price(_price) {
+    ticker_split(_ticker, &symbol, &exchange);
+  }
+
+  // req data
+  std::string     symbol;
+  std::string     exchange;
+  std::string     ticker;
+  std::string     order_id;
+  OrderType       type;
+  Direction       direction;
+  Offset          offset;
+  double          price = 0;
+  int64_t         volume = 0;
+
+  // rsp or local data
+  OrderStatus     status;
+  int64_t         volume_traded = 0;
+  std::string     insert_time;
 };
 
-enum class ProductType {
-  FUTURES = 0,
-  OPTIONS
-};
-
-enum class OrderStatus {
-  CREATED = 0,
-  SUBMITTING,
-  REJECTED,
-  NO_TRADED,
-  PART_TRADED,
-  ALL_TRADED,
-  CANCELED,
-  CANCEL_REJECTED
-};
-
-enum class FrontType {
-  CTP
-};
-
-// such as rb2009.SHFE
-inline std::string to_ticker(const std::string& symbol, const std::string& exchange) {
-  return fmt::format("{}.{}", symbol, exchange);
-}
-
-inline void ticker_split(const std::string& ticker,
-                         std::string* symbol,
-                         std::string* exchange) {
-  if (ticker.empty())
-    return;
-
-  auto pos = ticker.find_first_of('.');
-  *symbol = ticker.substr(0, pos);
-  if (pos != std::string::npos && pos + 1 < ticker.size())
-    *exchange = ticker.substr(pos + 1);
-}
 
 inline Direction opp_direction(Direction d) {
   return d == Direction::BUY ? Direction::SELL : Direction::BUY;
-}
-
-template<class RealType>
-bool is_equal(const RealType& lhs, const RealType& rhs, RealType error = RealType(1e-5)) {
-  return rhs - error <= lhs && lhs <= rhs + error;
 }
 
 inline bool is_offset_open(Offset offset) {
@@ -147,24 +144,6 @@ inline const std::string& to_string(Offset off) {
   return off_str.find(off)->second;
 }
 
-inline const std::string& to_string(ProductType product) {
-  static const std::map<ProductType, std::string> product_str = {
-    {ProductType::FUTURES, "Futures"},
-    {ProductType::OPTIONS, "Options"}
-  };
-
-  return product_str.find(product)->second;
-}
-
-inline ProductType string2product(const std::string& product) {
-  static const std::map<std::string, ProductType> product_map = {
-    {"Futures", ProductType::FUTURES},
-    {"Options", ProductType::OPTIONS}
-  };
-
-  return product_map.find(product)->second;
-}
-
 }  // namespace ft
 
-#endif  // FT_INCLUDE_COMMON_H_
+#endif  // FT_INCLUDE_BASE_ORDER_H_

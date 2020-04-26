@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/StrategyEngine.h"
-#include "LoginParams.h"
+#include "Base/DataStruct.h"
 #include "TestCommon.h"
 
 

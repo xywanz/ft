@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "Common.h"
-#include "MarketData.h"
+#include "Base/DataStruct.h"
 
 namespace ft {
 

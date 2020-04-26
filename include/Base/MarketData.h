@@ -1,11 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_MARKETDATA_H_
-#define FT_INCLUDE_MARKETDATA_H_
+#ifndef FT_INCLUDE_BASE_MARKETDATA_H_
+#define FT_INCLUDE_BASE_MARKETDATA_H_
 
 #include <string>
-
-#include "Common.h"
 
 namespace ft {
 
@@ -40,4 +38,4 @@ struct MarketData {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_MARKETDATA_H_
+#endif  // FT_INCLUDE_BASE_MARKETDATA_H_

@@ -1,14 +1,14 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CTP_CTPAPI_H_
-#define FT_INCLUDE_CTP_CTPAPI_H_
+#ifndef FT_INCLUDE_API_CTP_CTPAPI_H_
+#define FT_INCLUDE_API_CTP_CTPAPI_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "ctp/CtpMdApi.h"
-#include "ctp/CtpTradeApi.h"
+#include "Api/Ctp/CtpMdApi.h"
+#include "Api/Ctp/CtpTradeApi.h"
 #include "GeneralApi.h"
 
 namespace ft {
@@ -78,4 +78,4 @@ class CtpApi : public GeneralApi {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CTP_CTPAPI_H_
+#endif  // FT_INCLUDE_API_CTP_CTPAPI_H_

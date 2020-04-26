@@ -1,11 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_ACCOUNT_H_
-#define FT_INCLUDE_ACCOUNT_H_
+#ifndef FT_INCLUDE_BASE_ACCOUNT_H_
+#define FT_INCLUDE_BASE_ACCOUNT_H_
 
 #include <string>
-
-#include "Common.h"
 
 namespace ft {
 
@@ -17,4 +15,4 @@ struct Account {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_ACCOUNT_H_
+#endif  // FT_INCLUDE_BASE_ACCOUNT_H_

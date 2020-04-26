@@ -8,8 +8,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "ctp/CtpApi.h"
-#include "LoginParams.h"
+#include "Api/Ctp/CtpApi.h"
+#include "Base/DataStruct.h"
 #include "RiskManagement/NoSelfTrade.h"
 
 namespace ft {
@@ -55,7 +55,7 @@ bool TradingSystem::login(const LoginParams& params) {
 
   // query all positions
   initial_positions_.clear();
-  pos_mgr_.clear();
+  portfolio_.clear();
   if (!api_->query_position("")) {
     spdlog::error("[TradingSystem] login. Failed to query positions");
     return false;
@@ -65,7 +65,7 @@ bool TradingSystem::login(const LoginParams& params) {
     continue;
 
   for (auto& pos : initial_positions_)
-    pos_mgr_.init_position(*pos);
+    portfolio_.init_position(*pos);
   initial_positions_.clear();
 
   for (auto& ticker : params.subscribed_list())
@@ -98,7 +98,7 @@ bool TradingSystem::send_order(const std::string& ticker, int volume,
     orders_.emplace(order.order_id, order);
     lock.unlock();
 
-    pos_mgr_.update_pending(ticker, direction, offset, volume);
+    portfolio_.update_pending(ticker, direction, offset, volume);
   }
 
   spdlog::debug("[TradingSystem] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
@@ -130,9 +130,9 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
 
 // void TradingSystem::show_positions() {
 //   std::vector<std::string> pos_ticker_list;
-//   pos_mgr_.get_pos_ticker_list(&pos_ticker_list);
+//   portfolio_.get_pos_ticker_list(&pos_ticker_list);
 //   for (const auto& ticker : pos_ticker_list) {
-//     const auto pos = pos_mgr_.get_position(ticker);
+//     const auto pos = portfolio_.get_position(ticker);
 //     if (pos.ticker.empty())
 //       continue;
 //     auto& lp = pos.long_pos;
@@ -154,7 +154,7 @@ void TradingSystem::on_tick(cppex::Any* data) {
   ticks_[tick->ticker].emplace_back(tick);
   lock.unlock();
 
-  pos_mgr_.update_pnl(tick->ticker, tick->last_price);
+  portfolio_.update_pnl(tick->ticker, tick->last_price);
 }
 
 void TradingSystem::on_position(cppex::Any* data) {
@@ -245,7 +245,7 @@ void TradingSystem::on_trade(cppex::Any* data) {
                 trade->price, trade->volume);
 
   trade_record_[trade->ticker].emplace_back(*trade);
-  pos_mgr_.update_traded(trade->ticker, trade->direction, trade->offset,
+  portfolio_.update_traded(trade->ticker, trade->direction, trade->offset,
                          trade->volume, trade->price);
 }
 
@@ -256,7 +256,7 @@ void TradingSystem::handle_canceled(const Order* rtn_order) {
   }
 
   auto left_vol = rtn_order->volume - rtn_order->volume_traded;
-  pos_mgr_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
+  portfolio_.update_pending(rtn_order->ticker, rtn_order->direction, rtn_order->offset, -left_vol);
 }
 
 void TradingSystem::handle_submitted(const Order* rtn_order) {

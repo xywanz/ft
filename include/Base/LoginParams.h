@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_LOGINPARAMS_H_
-#define FT_INCLUDE_LOGINPARAMS_H_
+#ifndef FT_INCLUDE_BASE_LOGINPARAMS_H_
+#define FT_INCLUDE_BASE_LOGINPARAMS_H_
 
 #include <string>
 #include <vector>
@@ -88,4 +88,4 @@ class LoginParams {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_LOGINPARAMS_H_
+#endif  // FT_INCLUDE_BASE_LOGINPARAMS_H_

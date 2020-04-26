@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_STRATEGY_H_
-#define FT_INCLUDE_STRATEGY_H_
+#ifndef FT_INCLUDE_ALGOTRADE_STRATEGY_H_
+#define FT_INCLUDE_ALGOTRADE_STRATEGY_H_
 
 #include <memory>
 #include <string>

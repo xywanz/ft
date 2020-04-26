@@ -8,9 +8,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "Position.h"
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingView.h"
+#include "TradingManagement/TradingView.h"
 
 namespace ft {
 
