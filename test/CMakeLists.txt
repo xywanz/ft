@@ -1,7 +1,5 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-include_directories(.)
-
 add_executable(simnow_example
     SimnowExample.cpp)
 target_link_libraries(simnow_example ft cppex yaml-cpp pthread)

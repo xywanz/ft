@@ -4,19 +4,22 @@ cmake_minimum_required(VERSION 3.0)
 
 project(ft)
 
-include(../Common.cmake)
-
 include_directories(
     include
-    ../thirdparty/v6.3.15_20190220_api_tradeapi_se_linux64
-    ../thirdparty/spdlog/include
-    ../thirdparty/yaml-cpp/include
+    ${CMAKE_SOURCE_DIR}/dependencies/v6.3.15_20190220_api_tradeapi_se_linux64
+    ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
+    ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/include
+    ${CMAKE_SOURCE_DIR}/dependencies/fmt/include
+    ${CMAKE_SOURCE_DIR}/dependencies/getopt
+    ${CMAKE_SOURCE_DIR}/dependencies/cppex/include
 )
 
 link_directories(
-    ../thirdparty/v6.3.15_20190220_api_tradeapi_se_linux64
-    ../thirdparty/spdlog
-    ../thirdparty/yaml-cpp
+    ${CMAKE_SOURCE_DIR}/dependencies/v6.3.15_20190220_api_tradeapi_se_linux64
+    ${CMAKE_SOURCE_DIR}/dependencies/spdlog/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/fmt/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/cppex/lib
 )
 
 set(CMAKE_CXX_STANDARD 17)
