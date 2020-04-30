@@ -14,9 +14,9 @@
 
 #include "Base/DataStruct.h"
 #include "cppex/Any.h"
-#include "EventEngine.h"
+#include "Base/EventEngine.h"
 #include "GeneralApi.h"
-#include "MdManager.h"
+#include "MarketData/TickDatabase.h"
 #include "RiskManagement/RiskManager.h"
 #include "TradingManagement/TradingView.h"
 
@@ -85,15 +85,11 @@ class StrategyEngine {
     trading_view_.get_pos_ticker_list(out);
   }
 
-  const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
-    auto iter = ticks_.find(ticker);
-    if (iter == ticks_.end())
+  const TickDatabase* get_tickdb(const std::string& ticker) const {
+    auto iter = tick_datahub_.find(ticker);
+    if (iter == tick_datahub_.end())
       return nullptr;
-
-    auto& vec = iter->second;
-    if (offset >= vec.size())
-      return nullptr;
-    return *(vec.rbegin() + offset);
+    return &iter->second;
   }
 
   // callback
@@ -101,6 +97,8 @@ class StrategyEngine {
   void on_mount_strategy(cppex::Any* data);
 
   void on_unmount_strategy(cppex::Any* data);
+
+  void on_sync(cppex::Any*);
 
   /*
    * 接收查询到的汇总仓位数据
@@ -142,14 +140,14 @@ class StrategyEngine {
   enum EventType {
     EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
     EV_UMOUNT_STRATEGY,
+    EV_SYNC
   };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
-  std::map<std::string, MdManager> md_center_;
+  std::map<std::string, TickDatabase> tick_datahub_;
   std::map<std::string, std::list<Strategy*>> strategies_;
-  std::map<std::string, std::vector<MarketData*>> ticks_;
 
   TradingView trading_view_;
   RiskManager risk_mgr_;

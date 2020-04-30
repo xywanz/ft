@@ -1,16 +1,16 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "MdManager.h"
+#include "MarketData/TickDatabase.h"
 
 #include <cassert>
 
 namespace ft {
 
-MdManager::MdManager(const std::string& ticker)
+TickDatabase::TickDatabase(const std::string& ticker)
   : ticker_(ticker) {
 }
 
-void MdManager::on_tick(const MarketData* data) {
+void TickDatabase::on_tick(const TickData* data) {
   tick_data_.emplace_back(*data);
 }
 

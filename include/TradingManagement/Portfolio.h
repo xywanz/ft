@@ -50,8 +50,15 @@ class Portfolio {
     else
       pos_detail.open_pending += changed;
 
-    assert(pos_detail.open_pending >= 0);
-    assert(pos_detail.close_pending >= 0);
+    if (pos_detail.open_pending < 0) {
+      pos_detail.open_pending = 0;
+      spdlog::warn("[Portfolio::update_pending] correct open_pending");
+    }
+
+    if (pos_detail.close_pending < 0) {
+      pos_detail.close_pending = 0;
+      spdlog::warn("[Portfolio::update_pending] correct close_pending");
+    }
   }
 
   void update_traded(const std::string& ticker, Direction direction, Offset offset,
@@ -78,8 +85,16 @@ class Portfolio {
     // 如果close_pending小于0，也有可能是之前启动时的挂单成交了，
     // 这次重启时未重启获取挂单数量导致的
     assert(pos_detail.volume >= 0);
-    assert(pos_detail.open_pending >= 0);
-    assert(pos_detail.close_pending >= 0);
+
+    if (pos_detail.open_pending < 0) {
+      pos_detail.open_pending = 0;
+      spdlog::warn("[Portfolio::update_traded] correct open_pending");
+    }
+
+    if (pos_detail.close_pending < 0) {
+      pos_detail.close_pending = 0;
+      spdlog::warn("[Portfolio::update_traded] correct close_pending");
+    }
 
     const auto* contract = ContractTable::get_by_ticker(ticker);
     if (!contract) {

@@ -8,7 +8,7 @@
 
 #include "Api/Ctp/CtpApi.h"
 #include "Base/DataStruct.h"
-#include "EventEngine.h"
+#include "Base/EventEngine.h"
 #include "TestCommon.h"
 #include "TradingManagement/ContractTable.h"
 
@@ -35,7 +35,7 @@ class ContractCollector {
     if (!is_login_)
       return false;
 
-    if (!api_->query_contract(""))
+    if (!api_->query_contracts())
       return false;
 
     engine_->stop();

@@ -13,9 +13,9 @@
 #include <vector>
 
 #include "Base/DataStruct.h"
-#include "EventEngine.h"
+#include "Base/EventEngine.h"
 #include "GeneralApi.h"
-#include "MdManager.h"
+#include "MarketData/TickDatabase.h"
 #include "RiskManagement/RiskManager.h"
 #include "TradingManagement/Portfolio.h"
 
@@ -89,7 +89,7 @@ class TradingSystem {
     return account_;
   }
 
-  const MarketData* get_tick(const std::string& ticker, std::size_t offset) const {
+  const TickData* get_tick(const std::string& ticker, std::size_t offset) const {
     std::unique_lock<std::mutex> lock(tick_mutex_);
     auto iter = ticks_.find(ticker);
     if (iter == ticks_.end())
@@ -156,8 +156,8 @@ class TradingSystem {
   Portfolio portfolio_;
   std::map<std::string, std::vector<Trade>> trade_record_;
   std::map<std::string, Order> orders_;  // order_id->order
-  std::map<std::string, MdManager> md_center_;
-  std::map<std::string, std::vector<MarketData*>> ticks_;
+  std::map<std::string, TickDatabase> tick_datahub_;
+  std::map<std::string, std::vector<TickData*>> ticks_;
 
   mutable std::mutex account_mutex_;
   mutable std::mutex order_mutex_;

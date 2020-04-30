@@ -28,7 +28,7 @@ inline bool load_contracts(const std::string& file, std::vector<Contract>* contr
     if (fields.empty() || fields[0].front() == '\n')
       continue;
 
-    if (fields.size() != 5)
+    if (fields.size() != 11)
       return false;
 
     contract.ticker = std::move(fields[0]);
@@ -37,6 +37,12 @@ inline bool load_contracts(const std::string& file, std::vector<Contract>* contr
     contract.product_type = string2product(fields[2]);
     contract.size = std::stoi(fields[3]);
     contract.price_tick = std::stod(fields[4]);
+    contract.max_market_order_volume = std::stoi(fields[5]);
+    contract.min_market_order_volume = std::stoi(fields[6]);
+    contract.max_limit_order_volume = std::stoi(fields[7]);
+    contract.min_limit_order_volume = std::stoi(fields[8]);
+    contract.delivery_year = std::stoi(fields[9]);
+    contract.delivery_month = std::stoi(fields[10]);
     contracts->emplace_back(std::move(contract));
   }
 
@@ -46,15 +52,18 @@ inline bool load_contracts(const std::string& file, std::vector<Contract>* contr
 inline void store_contracts(const std::string& file,
                             const std::vector<Contract>& contracts) {
   std::ofstream ofs(file, std::ios_base::trunc);
-  std::string line = fmt::format("ticker,name,product_type,size,price_tick\n");
+  std::string line = fmt::format(
+          "ticker,name,product_type,size,price_tick,max_market_order_volume,"
+          "min_market_order_volume,max_limit_order_volume,min_limit_order_volume,"
+          "delivery_year,delivery_month\n");
   ofs << line;
   for (const auto& contract : contracts) {
-    line = fmt::format("{},{},{},{},{}\n",
-                       contract.ticker,
-                       contract.name,
-                       to_string(contract.product_type),
-                       contract.size,
-                       contract.price_tick);
+    line = fmt::format("{},{},{},{},{},{},{},{},{},{},{}\n",
+                       contract.ticker, contract.name, to_string(contract.product_type),
+                       contract.size, contract.price_tick, contract.max_market_order_volume,
+                       contract.min_market_order_volume, contract.max_limit_order_volume,
+                       contract.min_limit_order_volume, contract.delivery_year,
+                       contract.delivery_month);
     ofs << line;
   }
 

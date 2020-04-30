@@ -12,25 +12,26 @@ namespace ft {
 
 class AlgoTradeContext {
  public:
-  explicit AlgoTradeContext(const std::string& ticker, StrategyEngine* se)
+  explicit AlgoTradeContext(const std::string& ticker, StrategyEngine* engine)
     : ticker_(ticker),
-      se_(se) {
+      engine_(engine) {
+    db_ = engine_->get_tickdb(ticker);
   }
 
   bool buy_open(int volume, double price, OrderType type = OrderType::FOK) {
-    return se_->buy_open(ticker_, volume, type, price);
+    return engine_->buy_open(ticker_, volume, type, price);
   }
 
   bool sell_close(int volume, double price, OrderType type = OrderType::FOK) {
-    return se_->sell_close(ticker_, volume, type, price);
+    return engine_->sell_close(ticker_, volume, type, price);
   }
 
   bool sell_open(int volume, double price, OrderType type = OrderType::FOK) {
-    return se_->sell_open(ticker_, volume, type, price);
+    return engine_->sell_open(ticker_, volume, type, price);
   }
 
   bool buy_close(int volume, double price, OrderType type = OrderType::FOK)  {
-    return se_->buy_close(ticker_, volume, type, price);
+    return engine_->buy_close(ticker_, volume, type, price);
   }
 
   int64_t buy(int64_t volume, double price, bool allow_part_traded = false) {
@@ -98,15 +99,19 @@ class AlgoTradeContext {
   }
 
   bool cancel_order(const std::string& order_id) {
-    return se_->cancel_order(order_id);
+    return engine_->cancel_order(order_id);
+  }
+
+  void cancel_all() {
+    engine_->cancel_all(ticker_);
   }
 
   const Position* get_position() const {
-    return se_->get_position(ticker_);
+    return engine_->get_position(ticker_);
   }
 
-  const MarketData* get_tick(std::size_t offset = 0) const {
-    return se_->get_tick(ticker_, offset);
+  const TickData* get_tick(std::size_t offset = 0) const {
+    return db_->get_tick(offset);
   }
 
   const std::string& this_ticker() const {
@@ -115,9 +120,10 @@ class AlgoTradeContext {
 
  private:
   std::string ticker_;
-  StrategyEngine* se_;
+  StrategyEngine* engine_;
+  const TickDatabase* db_;
 };
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CONTEXT_H_
+#endif  // FT_INCLUDE_ALGOTRADE_CONTEXT_H_

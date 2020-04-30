@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_BASE_MARKETDATA_H_
-#define FT_INCLUDE_BASE_MARKETDATA_H_
+#ifndef FT_INCLUDE_BASE_TICKDATA_H_
+#define FT_INCLUDE_BASE_TICKDATA_H_
 
 #include <string>
 
@@ -9,7 +9,7 @@ namespace ft {
 
 static const std::size_t kMarketLevel = 10;
 
-struct MarketData {
+struct TickData {
   std::string symbol;
   std::string exchange;
   std::string ticker;
@@ -38,4 +38,4 @@ struct MarketData {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_BASE_MARKETDATA_H_
+#endif  // FT_INCLUDE_BASE_TICKDATA_H_

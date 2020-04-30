@@ -56,7 +56,7 @@ bool TradingSystem::login(const LoginParams& params) {
   // query all positions
   initial_positions_.clear();
   portfolio_.clear();
-  if (!api_->query_position("")) {
+  if (!api_->query_positions()) {
     spdlog::error("[TradingSystem] login. Failed to query positions");
     return false;
   }
@@ -69,7 +69,7 @@ bool TradingSystem::login(const LoginParams& params) {
   initial_positions_.clear();
 
   for (auto& ticker : params.subscribed_list())
-    md_center_.emplace(ticker, MdManager(ticker));
+    tick_datahub_.emplace(ticker, TickDatabase(ticker));
 
   return true;
 }
@@ -147,10 +147,17 @@ bool TradingSystem::cancel_order(const std::string& order_id) {
 // }
 
 void TradingSystem::on_tick(cppex::Any* data) {
-  auto* tick = data->fetch<MarketData>().release();
+  auto* tick = data->fetch<TickData>().release();
 
   std::unique_lock<std::mutex> lock(tick_mutex_);
-  md_center_[tick->ticker].on_tick(tick);
+  auto db_iter = tick_datahub_.find(tick->ticker);
+  if (db_iter == tick_datahub_.end()) {
+    auto res = tick_datahub_.emplace(tick->ticker, TickDatabase(tick->ticker));
+    res.first->second.on_tick(tick);
+  } else {
+    db_iter->second.on_tick(tick);
+  }
+
   ticks_[tick->ticker].emplace_back(tick);
   lock.unlock();
 

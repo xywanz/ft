@@ -15,9 +15,11 @@ int main() {
   std::string login_config_file = getarg("../config/login.yaml", "--login-config");
   std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
+  std::string log_level = getarg("info", "--loglevel");
+
+  spdlog::set_level(spdlog::level::from_str(log_level));
 
   ft::LoginParams params;
-
   if (!load_login_params(login_config_file, &params)) {
     spdlog::error("Invalid file of login config");
     exit(-1);

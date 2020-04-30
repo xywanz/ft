@@ -220,7 +220,7 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
-  MarketData tick;
+  TickData tick;
   tick.symbol = md->InstrumentID;
   tick.exchange = iter->second;
   tick.ticker = to_ticker(tick.symbol, tick.exchange);

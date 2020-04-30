@@ -7,9 +7,9 @@ namespace ft {
 void TradingView::update_order(const Order* rtn_order) {
   if (orders_.find(rtn_order->order_id) == orders_.end()) {
     spdlog::warn("[TradingView::update_order] Order not found. Ticker: {}, "
-                 "Order ID: {}, Direction: {}, Offset: {}, Volume: {}",
+                 "Order ID: {}, Direction: {}, Offset: {}, Volume: {}, Status: {}",
                  rtn_order->ticker, rtn_order->order_id, to_string(rtn_order->direction),
-                 to_string(rtn_order->offset), rtn_order->volume);
+                 to_string(rtn_order->offset), rtn_order->volume, to_string(rtn_order->status));
     return;
   }
 

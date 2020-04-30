@@ -28,6 +28,14 @@ struct Contract {
   ProductType   product_type;
   int           size;
   double        price_tick;
+
+  int           max_market_order_volume;
+  int           min_market_order_volume;
+  int           max_limit_order_volume;
+  int           min_limit_order_volume;
+
+  int           delivery_year;
+  int           delivery_month;
 };
 
 

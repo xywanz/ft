@@ -32,6 +32,7 @@ StrategyEngine::StrategyEngine(FrontType front_type)
   engine_->set_handler(EV_TICK, MEM_HANDLER(StrategyEngine::on_tick));
   engine_->set_handler(EV_MOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_mount_strategy));
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_unmount_strategy));
+  engine_->set_handler(EV_SYNC, MEM_HANDLER(StrategyEngine::on_sync));
 
   risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&trading_view_));
 }
@@ -46,29 +47,33 @@ void StrategyEngine::close() {
 
 bool StrategyEngine::login(const LoginParams& params) {
   if (!api_->login(params)) {
-    spdlog::error("[StrategyEngine] login. Failed to login");
+    spdlog::error("[StrategyEngine::login] Failed to login");
     return false;
   }
 
   is_login_ = true;
-  spdlog::info("[StrategyEngine] login. Login as {}", params.investor_id());
+  spdlog::info("[StrategyEngine::login] Login as {}", params.investor_id());
 
   engine_->run(false);
 
-  if (!api_->query_account())
-    return false;
-
-  // query all positions
-  if (!api_->query_position("")) {
-    spdlog::error("[StrategyEngine] login. Failed to query positions");
+  if (!api_->query_account()) {
+    spdlog::error("[StrategyEngine::login] Failed to query account");
     return false;
   }
 
+  // query all positions
+  is_process_pos_done_ = false;
+  if (!api_->query_positions()) {
+    spdlog::error("[StrategyEngine::login] Failed to query positions");
+    return false;
+  }
+
+  engine_->post(EV_SYNC);
   while (!is_process_pos_done_)
     continue;
 
   for (auto& ticker : params.subscribed_list())
-    md_center_.emplace(ticker, MdManager(ticker));
+    tick_datahub_.emplace(ticker, TickDatabase(ticker));
 
   return true;
 }
@@ -161,11 +166,20 @@ void StrategyEngine::on_unmount_strategy(cppex::Any* data) {
   }
 }
 
-void StrategyEngine::on_tick(cppex::Any* data) {
-  auto* tick = data->fetch<MarketData>().release();
+void StrategyEngine::on_sync(cppex::Any*) {
+  is_process_pos_done_ = true;
+}
 
-  md_center_[tick->ticker].on_tick(tick);
-  ticks_[tick->ticker].emplace_back(tick);
+void StrategyEngine::on_tick(cppex::Any* data) {
+  auto* tick = data->fetch<TickData>().release();
+
+  auto db_iter = tick_datahub_.find(tick->ticker);
+  if (db_iter == tick_datahub_.end()) {
+    auto res = tick_datahub_.emplace(tick->ticker, TickDatabase(tick->ticker));
+    res.first->second.on_tick(tick);
+  } else {
+    db_iter->second.on_tick(tick);
+  }
 
   trading_view_.update_pos_pnl(tick->ticker, tick->last_price);
 
@@ -180,11 +194,6 @@ void StrategyEngine::on_tick(cppex::Any* data) {
 void StrategyEngine::on_position(cppex::Any* data) {
   if (is_process_pos_done_)
     return;
-
-  if (!data) {
-    is_process_pos_done_ = true;
-    return;
-  }
 
   const auto* position = data->cast<Position>();
   auto& lp = position->long_pos;

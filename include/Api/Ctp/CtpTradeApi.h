@@ -41,6 +41,10 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool query_account();
 
+  bool query_orders();
+
+  bool query_trades();
+
   bool query_margin_rate(const std::string& ticker);
 
   bool query_commision_rate();
@@ -113,6 +117,14 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
           CThostFtdcTradingAccountField *trading_account,
           CThostFtdcRspInfoField *rsp_info,
           int req_id, bool is_last) override;
+
+  void OnRspQryOrder(CThostFtdcOrderField *order,
+                     CThostFtdcRspInfoField *rsp_info,
+                     int req_id, bool is_last) override;
+
+  void OnRspQryTrade(CThostFtdcTradeField *trade,
+                     CThostFtdcRspInfoField *rsp_info,
+                     int req_id, bool is_last) override;
 
   void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField* margin_rate,
                                     CThostFtdcRspInfoField* rsp_info,

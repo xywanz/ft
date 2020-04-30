@@ -127,6 +127,10 @@ bool CtpTradeApi::login(const LoginParams& params) {
     }
   }
 
+  if (!query_orders())
+    return false;
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   return true;
 }
 
@@ -405,7 +409,8 @@ void CtpTradeApi::OnRspOrderAction(
   if (action->InvestorID != investor_id_)
     return;
 
-  spdlog::error("[CTP] OnRspOrderAction. Rejected.");
+  spdlog::error("[CTP] OnRspOrderAction. Rejected. Reason: {}",
+                gb2312_to_utf8(rsp_info->ErrorMsg));
 
   Order order;
   order.order_id = get_order_id(action->InstrumentID, action->ExchangeID, action->OrderRef);
@@ -464,8 +469,12 @@ void CtpTradeApi::OnRspQryInstrument(
   contract.product_type = product_type(instrument->ProductClass);
   contract.size = instrument->VolumeMultiple;
   contract.price_tick = instrument->PriceTick;
-
-
+  contract.max_market_order_volume = instrument->MaxMarketOrderVolume;
+  contract.min_market_order_volume = instrument->MinMarketOrderVolume;
+  contract.max_limit_order_volume = instrument->MaxLimitOrderVolume;
+  contract.min_limit_order_volume = instrument->MinLimitOrderVolume;
+  contract.delivery_year = instrument->DeliveryYear;
+  contract.delivery_month = instrument->DeliveryMonth;
 
   general_api_->on_contract(&contract);
 
@@ -548,8 +557,6 @@ void CtpTradeApi::OnRspQryInvestorPosition(
   if (is_last) {
     for (auto& [key, pos] : pos_cache_)
       general_api_->on_position(&pos);
-    // 查询结束回调空指针作为结束信号
-    general_api_->on_position(nullptr);
     pos_cache_.clear();
     is_query_done_ = true;
   }
@@ -601,6 +608,83 @@ void CtpTradeApi::OnRspQryTradingAccount(
 
   general_api_->on_account(&account);
   is_query_done_ = true;
+}
+
+bool CtpTradeApi::query_orders() {
+  std::unique_lock<std::mutex> lock(query_mutex_);
+
+  CThostFtdcQryOrderField req;
+  memset(&req, 0, sizeof(req));
+  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+
+  is_query_done_ = false;
+  if (ctp_api_->ReqQryOrder(&req, next_req_id()) != 0)
+    return false;
+
+  return true;
+}
+
+void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order,
+                                CThostFtdcRspInfoField *rsp_info,
+                                int req_id, bool is_last) {
+  // TODO(kevin)
+
+  if (rsp_info) {
+    is_error_ = true;
+    return;
+  }
+
+  if (order && (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing ||
+                order->OrderStatus == THOST_FTDC_OST_PartTradedQueueing)) {
+    spdlog::info("[CtpTradeApi::OnRspQryOrder] Cancel all orders on startup. Ticker: {}.{}, "
+                 "OrderRef: {}, OriginalVolume: {}, Traded: {}, StatusMsg: {}",
+                 order->InstrumentID, order->ExchangeID, order->OrderSysID,
+                 order->VolumeTotalOriginal, order->VolumeTraded,
+                 gb2312_to_utf8(order->StatusMsg));
+
+    CThostFtdcInputOrderActionField req;
+    memset(&req, 0, sizeof(req));
+
+    strncpy(req.InstrumentID, order->InstrumentID, sizeof(req.InstrumentID));
+    strncpy(req.ExchangeID, order->ExchangeID, sizeof(req.ExchangeID));
+    strncpy(req.OrderSysID, order->OrderSysID, sizeof(req.OrderSysID));
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+    req.ActionFlag = THOST_FTDC_AF_Delete;
+
+    ctp_api_->ReqOrderAction(&req, next_req_id());
+  }
+
+  if (is_last)
+    is_query_done_ = true;
+}
+
+bool CtpTradeApi::query_trades() {
+  std::unique_lock<std::mutex> lock(query_mutex_);
+
+  CThostFtdcQryTradeField req;
+  memset(&req, 0, sizeof(req));
+  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+
+  is_query_done_ = false;
+  if (ctp_api_->ReqQryTrade(&req, next_req_id()) != 0)
+    return false;
+
+  return true;
+}
+
+void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
+                                CThostFtdcRspInfoField *rsp_info,
+                                int req_id, bool is_last) {
+  // TODO(kevin)
+
+  if (rsp_info)
+    is_error_ = true;
+
+  if (is_last)
+    is_query_done_ = true;
 }
 
 bool CtpTradeApi::query_margin_rate(const std::string& ticker) {

@@ -1,8 +1,8 @@
 
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_EVENTENGINE_H_
-#define FT_INCLUDE_EVENTENGINE_H_
+#ifndef FT_INCLUDE_BASE_EVENTENGINE_H_
+#define FT_INCLUDE_BASE_EVENTENGINE_H_
 
 #include <condition_variable>
 #include <functional>
@@ -136,4 +136,4 @@ class EventEngine {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_EVENTENGINE_H_
+#endif  // FT_INCLUDE_BASE_EVENTENGINE_H_

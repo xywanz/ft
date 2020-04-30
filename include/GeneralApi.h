@@ -7,7 +7,7 @@
 #include <string>
 
 #include "Base/DataStruct.h"
-#include "EventEngine.h"
+#include "Base/EventEngine.h"
 namespace ft {
 
 enum EventType : int {
@@ -47,7 +47,15 @@ class GeneralApi {
     return false;
   }
 
+  virtual bool query_contracts() {
+    return false;
+  }
+
   virtual bool query_position(const std::string& ticker) {
+    return false;
+  }
+
+  virtual bool query_positions() {
     return false;
   }
 
@@ -71,12 +79,8 @@ class GeneralApi {
    */
   void on_position(const Position* position) {
     if (engine_) {
-      if (position) {
-        auto* data = new Position(*position);
-        engine_->post(EV_POSITION, data);
-      } else {
-        engine_->post(EV_POSITION);
-      }
+      auto* data = new Position(*position);
+      engine_->post(EV_POSITION, data);
     }
   }
 
@@ -123,9 +127,9 @@ class GeneralApi {
    * 接受行情数据
    * 每一个tick都会回调
    */
-  void on_tick(const MarketData* tick) {
+  void on_tick(const TickData* tick) {
     if (engine_) {
-      auto* data = new MarketData(*tick);
+      auto* data = new TickData(*tick);
       engine_->post(EV_TICK, data);
     }
   }

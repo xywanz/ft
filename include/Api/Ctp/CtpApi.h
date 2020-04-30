@@ -59,8 +59,16 @@ class CtpApi : public GeneralApi {
     return trade_api_->query_contract(ticker);
   }
 
+  bool query_contracts() override {
+    return query_contract("");
+  }
+
   bool query_position(const std::string& ticker) override {
     return trade_api_->query_position(ticker);
+  }
+
+  bool query_positions() override {
+    return query_position("");
   }
 
   bool query_account() override {

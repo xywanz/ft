@@ -7,7 +7,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Api/Ctp/CtpApi.h"
-#include "EventEngine.h"
+#include "Base/EventEngine.h"
 #include "TestCommon.h"
 #include "TradingManagement/ContractTable.h"
 
@@ -43,7 +43,7 @@ class DataCollector {
   }
 
   void on_tick(cppex::Any* data) {
-    auto* tick = data->cast<ft::MarketData>();
+    auto* tick = data->cast<ft::TickData>();
     auto iter = ofs_map_.find(tick->ticker);
     if (iter == ofs_map_.end()) {
       std::string file = fmt::format("{}/{}-{}.csv", path_, tick->ticker, tick->date);
