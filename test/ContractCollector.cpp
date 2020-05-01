@@ -62,7 +62,7 @@ class ContractCollector {
 
 
 int main() {
-  std::string login_config_file = getarg("../config/login.yaml", "--login-config");
+  std::string login_config_file = getarg("../config/login.yml", "--login-config");
   std::string path = getarg("../config/contracts.csv", "--output-path");
 
   ft::LoginParams params;

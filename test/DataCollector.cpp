@@ -107,7 +107,7 @@ class DataCollector {
 
 int main() {
   std::string path = getarg("./", "--path");
-  std::string login_config_file = getarg("../config/login.yaml", "--login-config");
+  std::string login_config_file = getarg("../config/login.yml", "--login-config");
   std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
 
   ft::LoginParams params;

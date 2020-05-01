@@ -15,9 +15,7 @@ class Strategy {
  public:
   virtual ~Strategy() {}
 
-  virtual bool on_init(AlgoTradeContext* ctx) {
-    return true;
-  }
+  virtual bool on_init(AlgoTradeContext* ctx) { return true; }
 
   virtual void on_tick(AlgoTradeContext* ctx) {}
 

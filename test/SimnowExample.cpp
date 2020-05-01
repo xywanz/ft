@@ -101,7 +101,7 @@ class MyStrategy : public ft::Strategy {
 
 int main() {
   int log_level = getarg(2, "--loglevel");
-  std::string login_config_file = getarg("../config/login.yaml", "--login-config");
+  std::string login_config_file = getarg("../config/login.yml", "--login-config");
   std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
 
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));

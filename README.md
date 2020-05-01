@@ -43,4 +43,17 @@ target_link_libraries(MyStrategy ft)
 ### 1.5 Use it in other ways
 Create a StrategyEngine and called StrategyEngine::mount to mount your strategy. It's suggest to compile your strategies to dynamic libraries, and implement a framework using StrategyEngine, then load them dynamicly. If so, you can focus on making your strategies.
 
+### 1.6 Configurations
+```yml
+api: ctp  # api name.
+front_addr: tcp://180.168.146.187:10130
+md_server_addr: tcp://180.168.146.187:10131
+broker_id: 9999
+investor_id: 123456
+passwd: 12345678
+auth_code: 0000000000000000
+app_id: simnow_client_test
+ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
+```
+
 ## 2. ...
