@@ -8,7 +8,7 @@ ft is a fast trading system for algo trading based on C++, which focuses on buil
 ```c++
 // MyStrategy.cpp
 
-#include <AlgoTrade/Strategy>
+#include <AlgoTrade/Strategy.h>
 
 class MyStrategy {
  public:
