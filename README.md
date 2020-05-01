@@ -10,7 +10,7 @@ ft is a fast trading system for algo trading based on C++, which focuses on buil
 
 #include <AlgoTrade/Strategy.h>
 
-class MyStrategy {
+class MyStrategy : public ft::Strategy {
  public:
   bool on_init(AlgoTradingContext* ctx) override {
      // called when strategy mounted
