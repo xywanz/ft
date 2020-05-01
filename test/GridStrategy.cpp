@@ -3,15 +3,18 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/Strategy.h"
+#include "MarketData/Candlestick.h"
 
 class GridStrategy : public ft::Strategy {
  public:
   bool on_init(ft::AlgoTradeContext* ctx) override {
-    spdlog::info("[MyStrategy::on_init]");
+    spdlog::info("[GridStrategy::on_init]");
 
     const auto* tick = ctx->get_tick();
     if (!tick)
       return false;
+
+    ctx->load_candle_chart();
 
     const auto* pos = ctx->get_position();
     const auto& lp = pos->long_pos;
@@ -19,12 +22,12 @@ class GridStrategy : public ft::Strategy {
 
     if (lp.volume > 0) {
       ctx->sell(lp.volume, tick->bid[0]);
-      spdlog::info("Close all long pos");
+      spdlog::info("[GridStrategy::on_init] Close all long pos");
     }
 
     if (sp.volume > 0) {
       ctx->buy(sp.volume, tick->ask[0]);
-      spdlog::info("Close all short pos");
+      spdlog::info("[GridStrategy::on_init] Close all short pos");
     }
 
     return true;
@@ -32,6 +35,13 @@ class GridStrategy : public ft::Strategy {
 
   void on_tick(ft::AlgoTradeContext* ctx) override {
     const auto* tick = ctx->get_tick();
+
+    const auto* bar = ctx->get_bar(cur_bar_);
+    if (bar) {
+      ++cur_bar_;
+      spdlog::info("[GridStrategy::on_tick] New 1m bar. open: {}, close: {}, "
+                   "high: {}, low: {}", bar->open, bar->close, bar->high, bar->low);
+    }
 
     if (last_grid_price_ < 1e-6)
       last_grid_price_ = tick->last_price;
@@ -41,7 +51,7 @@ class GridStrategy : public ft::Strategy {
     const auto& sp = pos->short_pos;
 
     spdlog::info(
-      "[MyStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
+      "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
       ctx->get_tick()->last_price, last_grid_price_, lp.volume, sp.volume, trade_counts_);
 
     if (tick->last_price - last_grid_price_ > grid_height_ - 1e-6) {
@@ -69,7 +79,7 @@ class GridStrategy : public ft::Strategy {
   }
 
   void on_exit(ft::AlgoTradeContext* ctx) override {
-    spdlog::info("[MyStrategy::on_exit]");
+    spdlog::info("[GridStrategy::on_exit]");
 
     const auto* pos = ctx->get_position();
     const auto& lp = pos->long_pos;
@@ -91,6 +101,8 @@ class GridStrategy : public ft::Strategy {
   double grid_height_ = 10.0;
   int trade_volume_each_ = 100;
   int trade_counts_ = 0;
+  ft::Candlestick candle_chart_;
+  std::size_t cur_bar_ = 1;
 };
 
 extern "C" void* create_strategy() {

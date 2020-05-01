@@ -14,7 +14,7 @@
 #include "Api/Ctp/CtpCommon.h"
 #include "Api/Ctp/FieldMapper.h"
 #include "Base/DataStruct.h"
-#include "TradingManagement/ContractTable.h"
+#include "TradingInfo/ContractTable.h"
 
 namespace ft {
 

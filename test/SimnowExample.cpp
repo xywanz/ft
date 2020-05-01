@@ -107,7 +107,6 @@ int main() {
   spdlog::set_level(static_cast<spdlog::level::level_enum>(log_level));
 
   ft::LoginParams params;
-
   if (!load_login_params(login_config_file, &params)) {
     spdlog::error("Invalid file of login config");
     exit(-1);
@@ -118,7 +117,7 @@ int main() {
     exit(-1);
   }
 
-  ft::StrategyEngine engine(ft::FrontType::CTP);
+  ft::StrategyEngine engine;
 
   if (!engine.login(params))
     exit(-1);

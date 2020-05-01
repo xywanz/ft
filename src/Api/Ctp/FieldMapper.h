@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_API_CTP_FIELDMAPPER_H_
-#define FT_INCLUDE_API_CTP_FIELDMAPPER_H_
+#ifndef FT_SRC_API_CTP_FIELDMAPPER_H_
+#define FT_SRC_API_CTP_FIELDMAPPER_H_
 
 #include <map>
 
@@ -115,4 +115,4 @@ inline OrderStatus order_status(char ctp_type) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_API_CTP_FIELDMAPPER_H_
+#endif  // FT_SRC_API_CTP_FIELDMAPPER_H_

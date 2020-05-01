@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_
-#define FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_
+#ifndef FT_INCLUDE_TRADINGINFO_PORTFOLIO_H_
+#define FT_INCLUDE_TRADINGINFO_PORTFOLIO_H_
 
 #include <map>
 #include <string>
@@ -10,7 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "Base/Position.h"
-#include "TradingManagement/ContractTable.h"
+#include "TradingInfo/ContractTable.h"
 
 namespace ft {
 
@@ -185,4 +185,4 @@ class Portfolio {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGMANAGEMENT_PORTFOLIO_H_
+#endif  // FT_INCLUDE_TRADINGINFO_PORTFOLIO_H_

@@ -30,7 +30,7 @@ int main() {
     exit(-1);
   }
 
-  ft::StrategyEngine engine(ft::FrontType::CTP);
+  ft::StrategyEngine engine;
 
   engine.login(params);
 

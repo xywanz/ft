@@ -8,27 +8,19 @@
 
 #include <spdlog/spdlog.h>
 
-#include "Api/Ctp/CtpApi.h"
 #include "Base/DataStruct.h"
 #include "RiskManagement/NoSelfTrade.h"
 
 namespace ft {
 
-TradingSystem::TradingSystem(FrontType front_type)
+TradingSystem::TradingSystem()
   : engine_(new EventEngine) {
-  switch (front_type) {
-  case FrontType::CTP:
-    api_.reset(new CtpApi(engine_.get()));
-    break;
-  default:
-    assert(false);
-  }
-
   engine_->set_handler(EV_ACCOUNT, MEM_HANDLER(TradingSystem::on_account));
   engine_->set_handler(EV_POSITION, MEM_HANDLER(TradingSystem::on_position));
   engine_->set_handler(EV_ORDER, MEM_HANDLER(TradingSystem::on_order));
   engine_->set_handler(EV_TRADE, MEM_HANDLER(TradingSystem::on_trade));
   engine_->set_handler(EV_TICK, MEM_HANDLER(TradingSystem::on_tick));
+  engine_->run(false);
 }
 
 TradingSystem::~TradingSystem() {
@@ -40,15 +32,19 @@ void TradingSystem::close() {
 }
 
 bool TradingSystem::login(const LoginParams& params) {
+  api_.reset(create_api(params.api(), engine_.get()));
+  if (!api_) {
+    spdlog::error("[TradingSystem::login] Unknown api");
+    return false;
+  }
+
   if (!api_->login(params)) {
-    spdlog::error("[TradingSystem] login. Failed to login");
+    spdlog::error("[TradingSystem::login] Failed to login");
     return false;
   }
 
   is_login_ = true;
   spdlog::info("[TradingSystem] login. Login as {}", params.investor_id());
-
-  engine_->run(false);
 
   if (!api_->query_account())
     return false;

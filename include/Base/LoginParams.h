@@ -10,6 +10,14 @@ namespace ft {
 
 class LoginParams {
  public:
+  const std::string& api() const {
+    return api_;
+  }
+
+  void set_api(const std::string& name) {
+    api_ = name;
+  }
+
   const std::string& front_addr() const {
     return front_addr_;
   }
@@ -75,6 +83,7 @@ class LoginParams {
   }
 
  private:
+  std::string api_;
   std::string front_addr_;
   std::string md_server_addr_;
   std::string broker_id_;

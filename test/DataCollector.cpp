@@ -6,23 +6,27 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "Api/Ctp/CtpApi.h"
 #include "Base/EventEngine.h"
+#include "GeneralApi.h"
 #include "TestCommon.h"
-#include "TradingManagement/ContractTable.h"
+#include "TradingInfo/ContractTable.h"
 
 class DataCollector {
  public:
   DataCollector()
     : engine_(new ft::EventEngine) {
-    api_.reset(new ft::CtpApi(engine_.get()));
-
     engine_->set_handler(ft::EV_TICK, MEM_HANDLER(DataCollector::on_tick));
   }
 
   bool login(const ft::LoginParams& params) {
+    api_.reset(create_api(params.api(), engine_.get()));
+    if (!api_) {
+      spdlog::error("[DataCollector::login] Unknown API");
+      return false;
+    }
+
     if (!api_->login(params)) {
-      spdlog::error("[DataCollector] login. Failed to login into md server");
+      spdlog::error("[DataCollector::login] Failed to login into md server");
       return false;
     }
     is_login_ = true;

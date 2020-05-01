@@ -1,18 +1,18 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_
-#define FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_
+#ifndef FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_
+#define FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "Base/DataStruct.h"
-#include "TradingManagement/Portfolio.h"
+#include "TradingInfo/Portfolio.h"
 
 namespace ft {
 
-class TradingView {
+class TradingPanel {
  public:
   void on_query_account(const Account* account) {
     account_ = *account;
@@ -96,13 +96,6 @@ class TradingView {
   }
 
  private:
-  void handle_canceled(const Order* rtn_order);
-  void handle_submitted(const Order* rtn_order);
-  void handle_part_traded(const Order* rtn_order);
-  void handle_all_traded(const Order* rtn_order);
-  void handle_cancel_rejected(const Order* rtn_order);
-
- private:
   Account account_;
   Portfolio portfolio_;
   std::map<std::string, Order> orders_;
@@ -111,4 +104,4 @@ class TradingView {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGMANAGEMENT_TRADINGVIEW_H_
+#endif  // FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_

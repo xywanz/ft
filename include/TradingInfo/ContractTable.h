@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_
-#define FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_
+#ifndef FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_
+#define FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_
 
 #include <map>
 #include <string>
@@ -112,4 +112,4 @@ class ContractTable {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGMANAGEMENT_CONTRACTTABLE_H_
+#endif  // FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_

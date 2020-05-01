@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingManagement/TradingView.h"
+#include "TradingInfo/TradingPanel.h"
 
 namespace ft {
 
@@ -18,14 +18,14 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  explicit NoSelfTradeRule(const TradingView* trading_view)
-    : trading_view_(trading_view) {}
+  explicit NoSelfTradeRule(const TradingPanel* panel_)
+    : panel_(panel_) {}
 
   bool check(const Order* order) override {
     Direction opp_d = opp_direction(order->direction);  // 对手方
     const Order* pending_order;
     std::vector<const Order*> order_list;
-    trading_view_->get_order_list(&order_list, order->ticker);
+    panel_->get_order_list(&order_list, order->ticker);
 
     for (auto p : order_list) {
       pending_order = p;
@@ -58,7 +58,7 @@ class NoSelfTradeRule : public RiskRuleInterface {
   }
 
  private:
-  const TradingView* trading_view_;
+  const TradingPanel* panel_;
 };
 
 }  // namespace ft

@@ -6,25 +6,29 @@
 #include <getopt.hpp>
 #include <spdlog/spdlog.h>
 
-#include "Api/Ctp/CtpApi.h"
 #include "Base/DataStruct.h"
 #include "Base/EventEngine.h"
+#include "GeneralApi.h"
 #include "TestCommon.h"
-#include "TradingManagement/ContractTable.h"
+#include "TradingInfo/ContractTable.h"
 
 class ContractCollector {
  public:
   ContractCollector()
     : engine_(new ft::EventEngine) {
-    api_ = new ft::CtpApi(engine_);
     engine_->set_handler(ft::EV_CONTRACT, MEM_HANDLER(ContractCollector::on_contract));
-
     engine_->run(false);
   }
 
   bool login(const ft::LoginParams& params) {
+    api_.reset(create_api(params.api(), engine_.get()));
+    if (!api_) {
+      spdlog::error("[ContractCollector::login] Unknown API");
+      return false;
+    }
+
     if (!api_->login(params)) {
-      spdlog::error("[TradeInfoCollector] login. Failed to login into trading server");
+      spdlog::error("[TradeInfoCollector::login] Failed to login into trading server");
       return false;
     }
     is_login_ = true;
@@ -50,8 +54,8 @@ class ContractCollector {
   }
 
  private:
-  ft::EventEngine* engine_;
-  ft::GeneralApi* api_;
+  std::unique_ptr<ft::EventEngine> engine_;
+  std::unique_ptr<ft::GeneralApi> api_;
   std::vector<ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;
 };

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_API_CTP_CTPMDAPI_H_
-#define FT_INCLUDE_API_CTP_CTPMDAPI_H_
+#ifndef FT_SRC_API_CTP_CTPMDAPI_H_
+#define FT_SRC_API_CTP_CTPMDAPI_H_
 
 #include <atomic>
 #include <limits>
@@ -108,4 +108,4 @@ inline PriceType adjust_price(PriceType price) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_API_CTP_CTPMDAPI_H_
+#endif  // FT_SRC_API_CTP_CTPMDAPI_H_

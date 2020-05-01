@@ -9,22 +9,13 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/Strategy.h"
-#include "Api/Ctp/CtpApi.h"
 #include "Base/DataStruct.h"
 #include "RiskManagement/NoSelfTrade.h"
 
 namespace ft {
 
-StrategyEngine::StrategyEngine(FrontType front_type)
+StrategyEngine::StrategyEngine()
   : engine_(new EventEngine) {
-  switch (front_type) {
-  case FrontType::CTP:
-    api_.reset(new CtpApi(engine_.get()));
-    break;
-  default:
-    assert(false);
-  }
-
   engine_->set_handler(EV_ACCOUNT, MEM_HANDLER(StrategyEngine::on_account));
   engine_->set_handler(EV_POSITION, MEM_HANDLER(StrategyEngine::on_position));
   engine_->set_handler(EV_ORDER, MEM_HANDLER(StrategyEngine::on_order));
@@ -34,7 +25,7 @@ StrategyEngine::StrategyEngine(FrontType front_type)
   engine_->set_handler(EV_UMOUNT_STRATEGY, MEM_HANDLER(StrategyEngine::on_unmount_strategy));
   engine_->set_handler(EV_SYNC, MEM_HANDLER(StrategyEngine::on_sync));
 
-  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&trading_view_));
+  risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&panel_));
 }
 
 StrategyEngine::~StrategyEngine() {
@@ -46,6 +37,12 @@ void StrategyEngine::close() {
 }
 
 bool StrategyEngine::login(const LoginParams& params) {
+  api_.reset(create_api("ctp", engine_.get()));
+  if (!api_) {
+    spdlog::error("[StrategyEngine::login] Unknown api");
+    return false;
+  }
+
   if (!api_->login(params)) {
     spdlog::error("[StrategyEngine::login] Failed to login");
     return false;
@@ -78,14 +75,14 @@ bool StrategyEngine::login(const LoginParams& params) {
   return true;
 }
 
-bool StrategyEngine::send_order(const std::string& ticker, int volume,
-                                Direction direction, Offset offset,
-                                OrderType type, double price) {
+std::string StrategyEngine::send_order(const std::string& ticker, int volume,
+                                       Direction direction, Offset offset,
+                                       OrderType type, double price) {
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
   if (!risk_mgr_.check(&order))
-    return false;
+    return "";
 
   order.order_id = api_->send_order(&order);
   if (order.order_id.empty()) {
@@ -93,22 +90,22 @@ bool StrategyEngine::send_order(const std::string& ticker, int volume,
                   "Direction: {}, Offset: {}",
                   ticker, volume, to_string(type), price,
                   to_string(direction), to_string(offset));
-    return false;
+    return "";
   }
 
-  trading_view_.new_order(&order);
-  trading_view_.update_pos_pending(ticker, direction, offset, volume);
+  panel_.new_order(&order);
+  panel_.update_pos_pending(ticker, direction, offset, volume);
 
   spdlog::debug("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
                 "Direction: {}, Offset: {}",
                 ticker, volume, to_string(type), price,
                 to_string(direction), to_string(offset));
 
-  return true;
+  return order.order_id;
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
-  const Order* order = trading_view_.get_order_by_id(order_id);
+  const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
     spdlog::error("[StrategyEngine] CancelOrder failed: order not found");
     return false;
@@ -181,7 +178,11 @@ void StrategyEngine::on_tick(cppex::Any* data) {
     db_iter->second.on_tick(tick);
   }
 
-  trading_view_.update_pos_pnl(tick->ticker, tick->last_price);
+  auto candle_iter = candle_charts_.find(tick->ticker);
+  if (candle_iter != candle_charts_.end())
+    candle_iter->second.on_tick(tick);
+
+  panel_.update_pos_pnl(tick->ticker, tick->last_price);
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {
@@ -208,12 +209,12 @@ void StrategyEngine::on_position(cppex::Any* data) {
   if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
     return;
 
-  trading_view_.on_query_position(position);
+  panel_.on_query_position(position);
 }
 
 void StrategyEngine::on_account(cppex::Any* data) {
   auto* account = data->cast<Account>();
-  trading_view_.on_query_account(account);
+  panel_.on_query_account(account);
   spdlog::info("[StrategyEngine] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
                account->account_id, account->balance, account->frozen);
 }
@@ -226,14 +227,14 @@ void StrategyEngine::on_trade(cppex::Any* data) {
                 to_string(trade->direction), to_string(trade->offset),
                 trade->price, trade->volume);
 
-  trading_view_.new_trade(trade);
-  trading_view_.update_pos_traded(trade->ticker, trade->direction, trade->offset,
+  panel_.new_trade(trade);
+  panel_.update_pos_traded(trade->ticker, trade->direction, trade->offset,
                                   trade->volume, trade->price);
 }
 
 void StrategyEngine::on_order(cppex::Any* data) {
   const auto* order = data->cast<Order>();
-  trading_view_.update_order(order);
+  panel_.update_order(order);
 
   // TODO(kevin): 对策略发的单加个ID，只把订单回执返回给发该单的策略
   for (auto& [ticker, strategy_list] : strategies_) {

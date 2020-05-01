@@ -16,9 +16,10 @@
 #include "cppex/Any.h"
 #include "Base/EventEngine.h"
 #include "GeneralApi.h"
+#include "MarketData/Candlestick.h"
 #include "MarketData/TickDatabase.h"
 #include "RiskManagement/RiskManager.h"
-#include "TradingManagement/TradingView.h"
+#include "TradingInfo/TradingPanel.h"
 
 namespace ft {
 
@@ -26,7 +27,7 @@ class Strategy;
 
 class StrategyEngine {
  public:
-  explicit StrategyEngine(FrontType front_type);
+  explicit StrategyEngine();
 
   ~StrategyEngine();
 
@@ -34,19 +35,19 @@ class StrategyEngine {
 
   bool login(const LoginParams& params);
 
-  bool buy_open(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string buy_open(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
   }
 
-  bool sell_close(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string sell_close(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price);
   }
 
-  bool sell_open(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string sell_open(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
   }
 
-  bool buy_close(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string buy_close(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price);
   }
 
@@ -65,24 +66,24 @@ class StrategyEngine {
 
   void get_order_id_list(std::vector<const std::string*>* out,
                          const std::string& ticker = "") const {
-    trading_view_.get_order_id_list(out, ticker);
+    panel_.get_order_id_list(out, ticker);
   }
 
   void get_order_list(std::vector<const Order*>* out,
                       const std::string& ticker = "") const {
-    trading_view_.get_order_list(out, ticker);
+    panel_.get_order_list(out, ticker);
   }
 
   const Account* get_account() const {
-    return trading_view_.get_account();
+    return panel_.get_account();
   }
 
   const Position* get_position(const std::string& ticker) const {
-    return trading_view_.get_position(ticker);
+    return panel_.get_position(ticker);
   }
 
   void get_pos_ticker_list(std::vector<const std::string*>* out) const {
-    trading_view_.get_pos_ticker_list(out);
+    panel_.get_pos_ticker_list(out);
   }
 
   const TickDatabase* get_tickdb(const std::string& ticker) const {
@@ -90,6 +91,14 @@ class StrategyEngine {
     if (iter == tick_datahub_.end())
       return nullptr;
     return &iter->second;
+  }
+
+  const Candlestick* load_candle_chart(const std::string& ticker) {
+    auto iter = candle_charts_.find(ticker);
+    if (iter != candle_charts_.end())
+      return &iter->second;
+    auto res = candle_charts_.emplace(ticker, Candlestick());
+    return &res.first->second;
   }
 
   // callback
@@ -132,7 +141,7 @@ class StrategyEngine {
   void on_tick(cppex::Any* data);
 
  private:
-  bool send_order(const std::string& ticker, int volume,
+  std::string send_order(const std::string& ticker, int volume,
                          Direction direction, Offset offset,
                          OrderType type, double price);
 
@@ -148,8 +157,9 @@ class StrategyEngine {
 
   std::map<std::string, TickDatabase> tick_datahub_;
   std::map<std::string, std::list<Strategy*>> strategies_;
+  std::map<std::string, Candlestick> candle_charts_;
 
-  TradingView trading_view_;
+  TradingPanel panel_;
   RiskManager risk_mgr_;
 
   bool is_login_ = false;

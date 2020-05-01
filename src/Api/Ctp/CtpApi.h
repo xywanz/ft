@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_API_CTP_CTPAPI_H_
-#define FT_INCLUDE_API_CTP_CTPAPI_H_
+#ifndef FT_SRC_API_CTP_CTPAPI_H_
+#define FT_SRC_API_CTP_CTPAPI_H_
 
 #include <memory>
 #include <string>
@@ -86,4 +86,4 @@ class CtpApi : public GeneralApi {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_API_CTP_CTPAPI_H_
+#endif  // FT_SRC_API_CTP_CTPAPI_H_

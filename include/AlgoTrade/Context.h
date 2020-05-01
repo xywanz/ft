@@ -18,23 +18,23 @@ class AlgoTradeContext {
     db_ = engine_->get_tickdb(ticker);
   }
 
-  bool buy_open(int volume, double price, OrderType type = OrderType::FOK) {
+  std::string buy_open(int volume, double price, OrderType type = OrderType::FAK) {
     return engine_->buy_open(ticker_, volume, type, price);
   }
 
-  bool sell_close(int volume, double price, OrderType type = OrderType::FOK) {
+  std::string sell_close(int volume, double price, OrderType type = OrderType::FAK) {
     return engine_->sell_close(ticker_, volume, type, price);
   }
 
-  bool sell_open(int volume, double price, OrderType type = OrderType::FOK) {
+  std::string sell_open(int volume, double price, OrderType type = OrderType::FAK) {
     return engine_->sell_open(ticker_, volume, type, price);
   }
 
-  bool buy_close(int volume, double price, OrderType type = OrderType::FOK)  {
+  std::string buy_close(int volume, double price, OrderType type = OrderType::FAK)  {
     return engine_->buy_close(ticker_, volume, type, price);
   }
 
-  int64_t buy(int64_t volume, double price, bool allow_part_traded = false) {
+  int64_t buy(int64_t volume, double price, OrderType type = OrderType::FAK) {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
@@ -50,23 +50,22 @@ class AlgoTradeContext {
       return -sell_pending;
 
     int64_t original_volume = volume;
-    auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
     if (sp.volume > 0) {
       int64_t to_close = std::min(sp.volume, volume);
-      if (!buy_close(to_close, price, type))
+      if (buy_close(to_close, price, type) == "")
         return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (!buy_open(volume, price, type))
+      if (buy_open(volume, price, type) == "")
         return original_volume - volume;
     }
 
     return original_volume;
   }
 
-  int64_t sell(int64_t volume, double price, bool allow_part_traded = false) {
+  int64_t sell(int64_t volume, double price, OrderType type = OrderType::FAK) {
     if (volume <= 0 || price <= 1e-6)
       return false;
 
@@ -82,16 +81,15 @@ class AlgoTradeContext {
       return -buy_pending;
 
     int64_t original_volume = volume;
-    auto type = allow_part_traded ? OrderType::FAK : OrderType::FOK;
     if (lp.volume > 0) {
       int64_t to_close = std::min(lp.volume, volume);
-      if (!sell_close(to_close, price, type))
+      if (sell_close(to_close, price, type) == "")
         return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (!sell_open(volume, price, type))
+      if (sell_open(volume, price, type) == "")
         return original_volume - volume;
     }
 
@@ -104,6 +102,18 @@ class AlgoTradeContext {
 
   void cancel_all() {
     engine_->cancel_all(ticker_);
+  }
+
+  void load_candle_chart() {
+    candle_chart_ = engine_->load_candle_chart(ticker_);
+  }
+
+  const Bar* get_bar(std::size_t offset) const {
+    if (!candle_chart_) {
+      spdlog::error("[AlgoTradeContext::get_bar] Candle chart not loaded");
+      return nullptr;
+    }
+    return candle_chart_->get_bar(offset);
   }
 
   const Position* get_position() const {
@@ -120,8 +130,9 @@ class AlgoTradeContext {
 
  private:
   std::string ticker_;
-  StrategyEngine* engine_;
-  const TickDatabase* db_;
+  StrategyEngine* engine_ = nullptr;
+  const TickDatabase* db_ = nullptr;
+  const Candlestick* candle_chart_ = nullptr;
 };
 
 }  // namespace ft

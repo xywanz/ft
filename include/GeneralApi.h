@@ -1,13 +1,14 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_GENERALAPI_H_
-#define FT_INCLUDE_GENERALAPI_H_
+#ifndef FT_INCLUDE_API_GENERALAPI_H_
+#define FT_INCLUDE_API_GENERALAPI_H_
 
 #include <memory>
 #include <string>
 
 #include "Base/DataStruct.h"
 #include "Base/EventEngine.h"
+
 namespace ft {
 
 enum EventType : int {
@@ -19,6 +20,7 @@ enum EventType : int {
   EV_CONTRACT,
   EV_USER_EVENT_START
 };
+
 class GeneralApi {
  public:
   explicit GeneralApi(EventEngine* engine)
@@ -138,6 +140,10 @@ class GeneralApi {
   EventEngine* engine_;
 };
 
+
+GeneralApi* create_api(const std::string& name, EventEngine* engine);
+void destroy_api(GeneralApi* api);
+
 }  // namespace ft
 
-#endif  // FT_INCLUDE_GENERALAPI_H_
+#endif  // FT_INCLUDE_API_GENERALAPI_H_

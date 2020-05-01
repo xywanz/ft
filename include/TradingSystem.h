@@ -17,13 +17,13 @@
 #include "GeneralApi.h"
 #include "MarketData/TickDatabase.h"
 #include "RiskManagement/RiskManager.h"
-#include "TradingManagement/Portfolio.h"
+#include "TradingInfo/Portfolio.h"
 
 namespace ft {
 
 class TradingSystem {
  public:
-  explicit TradingSystem(FrontType front_type);
+  explicit TradingSystem();
 
   ~TradingSystem();
 
