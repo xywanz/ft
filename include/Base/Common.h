@@ -11,10 +11,6 @@
 
 namespace ft {
 
-enum class FrontType {
-  CTP
-};
-
 inline const std::string kSHFE = "SHFE";
 inline const std::string kINE = "INE";
 inline const std::string kCFFEX = "CFFEX";

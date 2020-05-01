@@ -11,6 +11,7 @@
 #include "AlgoTrade/Strategy.h"
 #include "Base/DataStruct.h"
 #include "RiskManagement/NoSelfTrade.h"
+#include "RiskManagement/VelocityLimit.h"
 
 namespace ft {
 
@@ -26,6 +27,7 @@ StrategyEngine::StrategyEngine()
   engine_->set_handler(EV_SYNC, MEM_HANDLER(StrategyEngine::on_sync));
 
   risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&panel_));
+  risk_mgr_.add_rule(std::make_shared<VelocityLimit>(1000, 10, 200));
 }
 
 StrategyEngine::~StrategyEngine() {
