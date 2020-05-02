@@ -73,18 +73,12 @@ bool StrategyEngine::login(const LoginParams& params) {
   for (auto& ticker : params.subscribed_list())
     tick_datahub_.emplace(ticker, TickDatabase(ticker));
 
-  is_login_ = true;
   return true;
 }
 
 std::string StrategyEngine::send_order(const std::string& ticker, int volume,
                                        Direction direction, Offset offset,
                                        OrderType type, double price) {
-  if (!is_login_) {
-    spdlog::error("[StrategyEngine::send_order] Failed. Login first.");
-    return "";
-  }
-
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
@@ -114,11 +108,6 @@ std::string StrategyEngine::send_order(const std::string& ticker, int volume,
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
-  if (!is_login_) {
-    spdlog::error("[StrategyEngine::cancel_order] Failed. Login first.");
-    return "";
-  }
-
   const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
     spdlog::error("[StrategyEngine] CancelOrder failed: order not found");

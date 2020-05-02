@@ -145,6 +145,27 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     return next_order_ref_++;
   }
 
+  void done() {
+    is_done_ = true;
+  }
+
+  void error() {
+    is_error_ = true;
+  }
+
+  void reset_sync() {
+    is_done_ = false;
+  }
+
+  bool wait_sync() {
+    while (!is_done_) {
+      if (is_error_)
+        return false;
+    }
+
+    return true;
+  }
+
  private:
   GeneralApi* general_api_;
   std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> ctp_api_;
@@ -160,15 +181,10 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   std::atomic<bool> is_error_ = false;
   std::atomic<bool> is_connected_ = false;
-  std::atomic<bool> is_authenticated_ = false;
-  std::atomic<bool> is_login_ = false;
-  std::atomic<bool> is_query_settlement_ = false;
-  std::atomic<bool> is_settlement_confirmed_ = false;
-  std::atomic<bool> is_query_done_ = false;
+  std::atomic<bool> is_done_ = false;
+  std::atomic<bool> is_logon_ = false;
 
   std::map<std::string, Position> pos_cache_;
-
-  std::map<std::string, std::string> sysid_map_;  // order_id -> sys_id
 
   std::mutex query_mutex_;
 };

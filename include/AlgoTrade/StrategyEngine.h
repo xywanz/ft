@@ -146,7 +146,6 @@ class StrategyEngine {
   TradingPanel panel_;
   RiskManager risk_mgr_;
 
-  bool is_login_ = false;
   std::atomic<bool> is_process_pos_done_ = false;
 };
 
