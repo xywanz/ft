@@ -172,6 +172,7 @@ void StrategyEngine::on_sync(cppex::Any*) {
 void StrategyEngine::on_tick(cppex::Any* data) {
   auto* tick = data->fetch<TickData>().release();
 
+  TickDatabase* db;
   auto db_iter = tick_datahub_.find(tick->ticker);
   if (db_iter == tick_datahub_.end()) {
     auto res = tick_datahub_.emplace(tick->ticker, TickDatabase(tick->ticker));
@@ -182,9 +183,9 @@ void StrategyEngine::on_tick(cppex::Any* data) {
 
   auto candle_iter = candle_charts_.find(tick->ticker);
   if (candle_iter != candle_charts_.end())
-    candle_iter->second.on_tick(tick);
+    candle_iter->second.on_tick();
 
-  panel_.update_pos_pnl(tick->ticker, tick->last_price);
+  panel_.update_float_pnl(tick->ticker, tick->last_price);
 
   auto iter = strategies_.find(tick->ticker);
   if (iter != strategies_.end()) {

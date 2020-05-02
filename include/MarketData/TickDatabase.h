@@ -16,10 +16,14 @@ class TickDatabase {
 
   void on_tick(const TickData* data);
 
-  const TickData* get_tick(std::size_t offset) const  {
+  const TickData* get_tick(std::size_t offset = 0) const  {
     if (offset >= tick_data_.size())
       return nullptr;
     return &*(tick_data_.rbegin() + offset);
+  }
+
+  std::size_t get_tick_count() const {
+    return tick_data_.size();
   }
 
  private:

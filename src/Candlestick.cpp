@@ -4,8 +4,19 @@
 
 namespace ft {
 
+void Candlestick::on_init(const TickDatabase* db) {
+  db_ = db;
+
+  for (std::size_t offset = db_->get_tick_count(); offset > 0; --offset)
+    update(db_->get_tick(offset - 1));
+}
+
 // 没有考虑乱序问题，只要下一个周期的数据到了，那么宣告这个周期已经结束
-void Candlestick::on_tick(const TickData* tick) {
+void Candlestick::on_tick() {
+  update(db_->get_tick());
+}
+
+void Candlestick::update(const TickData* tick) {
   if (tick->time_sec < td_start_sec_) {
     return;
   }

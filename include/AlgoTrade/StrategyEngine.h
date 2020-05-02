@@ -71,11 +71,17 @@ class StrategyEngine {
     return &iter->second;
   }
 
-  const Candlestick* load_candle_chart(const std::string& ticker) {
+  const Candlestick* load_candlestick(const std::string& ticker) {
+    auto db_iter = tick_datahub_.find(ticker);
+    if (db_iter == tick_datahub_.end())
+      return nullptr;
+
     auto iter = candle_charts_.find(ticker);
     if (iter != candle_charts_.end())
       return &iter->second;
+
     auto res = candle_charts_.emplace(ticker, Candlestick());
+    res.first->second.on_init(&db_iter->second);
     return &res.first->second;
   }
 

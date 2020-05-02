@@ -14,7 +14,7 @@ class GridStrategy : public ft::Strategy {
     if (!tick)
       return false;
 
-    ctx->load_candle_chart();
+    ctx->load_candlestick();
 
     const auto* pos = ctx->get_position();
     const auto& lp = pos->long_pos;

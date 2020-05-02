@@ -4,19 +4,28 @@
 
 namespace ft {
 
-void MA::on_init(const TickDatabase* db) {
-  uint64_t i = 0;
-  const TickData* md;
+void MA::on_init(const Candlestick* candlestick) {
+  candlestick_ = candlestick;
 
   // 计算当日历史行情
-  while ((md = db->get_tick(i)) != nullptr) {
-    ++i;
-    on_tick(db);
-  }
+  for (std::size_t offset = candlestick_->get_bar_count(); offset > 0 ; --offset)
+    update(candlestick_->get_bar(offset - 1));
 }
 
-void MA::on_tick(const TickDatabase* db) {
-  
+void MA::on_bar() {
+  update(candlestick_->get_bar());
+}
+
+void MA::update(const Bar* bar) {
+  ++bar_count_;
+  sum_ += bar->close;
+
+  if (bar_count_ < period_)
+    return;
+
+  if (bar_count_ > period_)
+    sum_ -= candlestick_->get_bar(period_)->close;
+  ma_.emplace_back(sum_ / period_);
 }
 
 }  // namespace ft

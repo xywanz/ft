@@ -26,7 +26,7 @@ class TradingPanel {
     account_.balance += balance_changed;
   }
 
-  void update_pos_pnl(const std::string& ticker, double price) {
+  void update_float_pnl(const std::string& ticker, double price) {
     portfolio_.update_float_pnl(ticker, price);
   }
 
