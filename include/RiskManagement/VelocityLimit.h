@@ -72,6 +72,8 @@ class VelocityLimit : public RiskRuleInterface {
       volume_count_ += order->volume;
       volume_tm_record_.emplace_back(std::pair{current_ms, order->volume});
     }
+
+    return true;
   }
 
  private:

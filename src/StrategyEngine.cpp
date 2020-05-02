@@ -50,7 +50,6 @@ bool StrategyEngine::login(const LoginParams& params) {
     return false;
   }
 
-  is_login_ = true;
   spdlog::info("[StrategyEngine::login] Login as {}", params.investor_id());
 
   engine_->run(false);
@@ -74,17 +73,25 @@ bool StrategyEngine::login(const LoginParams& params) {
   for (auto& ticker : params.subscribed_list())
     tick_datahub_.emplace(ticker, TickDatabase(ticker));
 
+  is_login_ = true;
   return true;
 }
 
 std::string StrategyEngine::send_order(const std::string& ticker, int volume,
                                        Direction direction, Offset offset,
                                        OrderType type, double price) {
+  if (!is_login_) {
+    spdlog::error("[StrategyEngine::send_order] Failed. Login first.");
+    return "";
+  }
+
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
-  if (!risk_mgr_.check(&order))
+  if (!risk_mgr_.check(&order)) {
+    spdlog::error("[StrategyEngine::send_order] RiskMgr check failed");
     return "";
+  }
 
   order.order_id = api_->send_order(&order);
   if (order.order_id.empty()) {
@@ -107,6 +114,11 @@ std::string StrategyEngine::send_order(const std::string& ticker, int volume,
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
+  if (!is_login_) {
+    spdlog::error("[StrategyEngine::cancel_order] Failed. Login first.");
+    return "";
+  }
+
   const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
     spdlog::error("[StrategyEngine] CancelOrder failed: order not found");

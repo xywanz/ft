@@ -28,7 +28,7 @@ void TradingPanel::update_order(const Order* rtn_order) {
     orders_.erase(rtn_order->order_id);
     break;
   default:
-    assert(false);
+    break;
   }
 
   spdlog::info("[TradingPanel::update_order] Ticker: {}, Order ID: {}, Direction: {}, "
