@@ -12,7 +12,6 @@
 #include <ThostFtdcTraderApi.h>
 
 #include "Api/Ctp/CtpCommon.h"
-#include "Api/Ctp/FieldMapper.h"
 #include "Base/DataStruct.h"
 #include "TradingInfo/ContractTable.h"
 

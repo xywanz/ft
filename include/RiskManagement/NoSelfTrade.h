@@ -19,7 +19,7 @@ namespace ft {
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
   explicit NoSelfTradeRule(const TradingPanel* panel_)
-    : panel_(panel_) {}
+    : panel_(panel) {}
 
   bool check(const Order* order) override {
     Direction opp_d = opp_direction(order->direction);  // 对手方
