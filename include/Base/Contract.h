@@ -26,13 +26,13 @@ struct Contract {
   std::string   ticker;
   std::string   name;
   ProductType   product_type;
-  int           size;
+  int64_t      size;
   double        price_tick;
 
-  int           max_market_order_volume;
-  int           min_market_order_volume;
-  int           max_limit_order_volume;
-  int           min_limit_order_volume;
+  int64_t      max_market_order_volume;
+  int64_t      min_market_order_volume;
+  int64_t      max_limit_order_volume;
+  int64_t      min_limit_order_volume;
 
   int           delivery_year;
   int           delivery_month;

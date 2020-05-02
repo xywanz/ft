@@ -51,8 +51,10 @@ class GridStrategy : public ft::Strategy {
     const auto& sp = pos->short_pos;
 
     spdlog::info(
-      "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
-      ctx->get_tick()->last_price, last_grid_price_, lp.volume, sp.volume, trade_counts_);
+      "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
+      "short: {}, trades: {}, realized_pnl: {:.2f}, float_pnl: {:.2f}",
+      ctx->get_tick()->last_price, last_grid_price_, lp.volume, sp.volume,
+      trade_counts_, ctx->get_realized_pnl(), ctx->get_float_pnl());
 
     if (tick->last_price - last_grid_price_ > grid_height_ - 1e-6) {
       ctx->sell(trade_volume_each_, tick->bid[0]);

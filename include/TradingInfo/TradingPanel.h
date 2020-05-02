@@ -27,7 +27,7 @@ class TradingPanel {
   }
 
   void update_pos_pnl(const std::string& ticker, double price) {
-    portfolio_.update_pnl(ticker, price);
+    portfolio_.update_float_pnl(ticker, price);
   }
 
   void update_pos_traded(const std::string& ticker, Direction direction,
@@ -85,6 +85,14 @@ class TradingPanel {
 
   const Account* get_account() const {
     return &account_;
+  }
+
+  double get_realized_pnl() const {
+    return portfolio_.get_realized_pnl();
+  }
+
+  double get_float_pnl() const {
+    return portfolio_.get_float_pnl();
   }
 
   void get_pos_ticker_list(std::vector<const std::string*>* out) const {

@@ -22,7 +22,7 @@ struct PositionDetail {
   int64_t open_pending = 0;
   int64_t close_pending = 0;
   double cost_price = 0;
-  double pnl = 0;
+  double float_pnl = 0;
 };
 
 struct Position {

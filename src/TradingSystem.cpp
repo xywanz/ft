@@ -157,7 +157,7 @@ void TradingSystem::on_tick(cppex::Any* data) {
   ticks_[tick->ticker].emplace_back(tick);
   lock.unlock();
 
-  portfolio_.update_pnl(tick->ticker, tick->last_price);
+  portfolio_.update_float_pnl(tick->ticker, tick->last_price);
 }
 
 void TradingSystem::on_position(cppex::Any* data) {
@@ -176,8 +176,8 @@ void TradingSystem::on_position(cppex::Any* data) {
                "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
                "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
                position->ticker,
-               lp.volume, lp.cost_price, lp.frozen, lp.pnl,
-               sp.volume, sp.cost_price, sp.frozen, sp.pnl);
+               lp.volume, lp.cost_price, lp.frozen, lp.float_pnl,
+               sp.volume, sp.cost_price, sp.frozen, sp.float_pnl);
 
   if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
     return;

@@ -27,7 +27,7 @@ class Strategy;
 
 class StrategyEngine {
  public:
-  explicit StrategyEngine();
+  StrategyEngine();
 
   ~StrategyEngine();
 
@@ -55,7 +55,7 @@ class StrategyEngine {
 
   void cancel_all(const std::string& ticker = "") {
     std::vector<const std::string*> order_id_list;
-    get_order_id_list(&order_id_list, ticker);
+    panel_.get_order_id_list(&order_id_list, ticker);
     for (const auto& order_id : order_id_list)
       cancel_order(*order_id);
   }
@@ -63,28 +63,6 @@ class StrategyEngine {
   void mount_strategy(const std::string& ticker, Strategy* strategy);
 
   void unmount_strategy(Strategy* strategy);
-
-  void get_order_id_list(std::vector<const std::string*>* out,
-                         const std::string& ticker = "") const {
-    panel_.get_order_id_list(out, ticker);
-  }
-
-  void get_order_list(std::vector<const Order*>* out,
-                      const std::string& ticker = "") const {
-    panel_.get_order_list(out, ticker);
-  }
-
-  const Account* get_account() const {
-    return panel_.get_account();
-  }
-
-  const Position* get_position(const std::string& ticker) const {
-    return panel_.get_position(ticker);
-  }
-
-  void get_pos_ticker_list(std::vector<const std::string*>* out) const {
-    panel_.get_pos_ticker_list(out);
-  }
 
   const TickDatabase* get_tickdb(const std::string& ticker) const {
     auto iter = tick_datahub_.find(ticker);

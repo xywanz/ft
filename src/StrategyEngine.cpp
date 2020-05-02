@@ -125,7 +125,7 @@ bool StrategyEngine::cancel_order(const std::string& order_id) {
 
 void StrategyEngine::mount_strategy(const std::string& ticker,
                                     Strategy* strategy) {
-  strategy->set_ctx(new AlgoTradeContext(ticker, this));
+  strategy->set_ctx(new AlgoTradeContext(ticker, this, &panel_));
   engine_->post(EV_MOUNT_STRATEGY, strategy);
 }
 
@@ -205,8 +205,8 @@ void StrategyEngine::on_position(cppex::Any* data) {
                "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
                "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
                position->ticker,
-               lp.volume, lp.cost_price, lp.frozen, lp.pnl,
-               sp.volume, sp.cost_price, sp.frozen, sp.pnl);
+               lp.volume, lp.cost_price, lp.frozen, lp.float_pnl,
+               sp.volume, sp.cost_price, sp.frozen, sp.float_pnl);
 
   if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
     return;

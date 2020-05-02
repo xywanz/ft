@@ -12,8 +12,11 @@ namespace ft {
 
 class AlgoTradeContext {
  public:
-  explicit AlgoTradeContext(const std::string& ticker, StrategyEngine* engine)
+  explicit AlgoTradeContext(const std::string& ticker,
+                            StrategyEngine* engine,
+                            const TradingPanel* panel)
     : ticker_(ticker),
+      panel_(panel),
       engine_(engine) {
     db_ = engine_->get_tickdb(ticker);
   }
@@ -104,6 +107,14 @@ class AlgoTradeContext {
     engine_->cancel_all(ticker_);
   }
 
+  double get_realized_pnl() const {
+    return panel_->get_realized_pnl();
+  }
+
+  double get_float_pnl() const {
+    return panel_->get_float_pnl();
+  }
+
   void load_candle_chart() {
     candle_chart_ = engine_->load_candle_chart(ticker_);
   }
@@ -117,7 +128,7 @@ class AlgoTradeContext {
   }
 
   const Position* get_position() const {
-    return engine_->get_position(ticker_);
+    return panel_->get_position(ticker_);
   }
 
   const TickData* get_tick(std::size_t offset = 0) const {
@@ -131,6 +142,7 @@ class AlgoTradeContext {
  private:
   std::string ticker_;
   StrategyEngine* engine_ = nullptr;
+  const TradingPanel* panel_ = nullptr;
   const TickDatabase* db_ = nullptr;
   const Candlestick* candle_chart_ = nullptr;
 };

@@ -62,8 +62,8 @@ class Portfolio {
   }
 
   void update_traded(const std::string& ticker, Direction direction, Offset offset,
-                     int traded, double traded_price) {
-    if (traded == 0)
+                     int64_t traded, double traded_price) {
+    if (traded <= 0)
       return;
 
     bool is_close = is_offset_close(offset);
@@ -102,19 +102,24 @@ class Portfolio {
       return;
     }
 
-    double cost = contract->size * (pos_detail.volume - traded) * pos_detail.cost_price;
-    if (is_close)
-      cost -= contract->size * traded * traded_price;
-    else
-      cost += contract->size * traded * traded_price;
-
-    if (pos_detail.volume > 0 && contract->size > 0)
-      pos_detail.cost_price = cost / (pos_detail.volume * contract->size);
-    else
+    if (contract->size <= 0 || pos_detail.volume == 0) {
       pos_detail.cost_price = 0;
+      return;
+    }
+
+    if (is_close) {  // 如果是平仓则计算已实现的盈亏
+      if (direction == Direction::BUY)
+        realized_pnl_ = contract->size * traded * (traded_price - pos_detail.cost_price);
+      else
+        realized_pnl_ = contract->size * traded * (pos_detail.cost_price - traded_price);
+    } else {  // 如果是开仓则计算当前持仓的成本价
+      double cost = contract->size * (pos_detail.volume - traded) * pos_detail.cost_price +
+                    contract->size * traded * traded_price;
+      pos_detail.cost_price = cost / (pos_detail.volume * contract->size);
+    }
   }
 
-  void update_pnl(const std::string& ticker, double last_price) {
+  void update_float_pnl(const std::string& ticker, double last_price) {
     auto* pos = find(ticker);
     if (pos) {
       const auto* contract = ContractTable::get_by_ticker(ticker);
@@ -125,10 +130,10 @@ class Portfolio {
       auto& sp = pos->short_pos;
 
       if (lp.volume > 0)
-        lp.pnl = lp.volume * contract->size * (last_price - lp.cost_price);
+        lp.float_pnl = lp.volume * contract->size * (last_price - lp.cost_price);
 
       if (sp.volume > 0)
-        sp.pnl = sp.volume * contract->size * (sp.cost_price - last_price);
+        sp.float_pnl = sp.volume * contract->size * (sp.cost_price - last_price);
     }
   }
 
@@ -144,6 +149,17 @@ class Portfolio {
       if (!is_empty_pos(pos))
         out->emplace_back(&ticker);
     }
+  }
+
+  double get_realized_pnl() const {
+    return realized_pnl_;
+  }
+
+  double get_float_pnl() const {
+    double float_pnl = 0;
+    for (auto& pair : pos_map_)
+      float_pnl += pair.second.long_pos.float_pnl + pair.second.short_pos.float_pnl;
+    return float_pnl;
   }
 
   void clear() {
@@ -181,6 +197,7 @@ class Portfolio {
 
  private:
   std::map<std::string, Position> pos_map_;
+  double realized_pnl_ = 0;
 };
 
 }  // namespace ft

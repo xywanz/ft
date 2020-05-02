@@ -543,7 +543,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
       pos_detail.frozen += position->ShortFrozen;
 
     pos_detail.volume = position->Position;
-    pos_detail.pnl = position->PositionProfit;
+    pos_detail.float_pnl = position->PositionProfit;
 
     auto contract = ContractTable::get_by_ticker(pos.ticker);
     if (!contract)
