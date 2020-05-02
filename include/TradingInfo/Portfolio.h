@@ -102,8 +102,9 @@ class Portfolio {
       return;
     }
 
-    if (contract->size <= 0 || pos_detail.volume == 0) {
+    if (contract->size <= 0) {
       pos_detail.cost_price = 0;
+      pos_detail.float_pnl = 0;
       return;
     }
 
@@ -112,10 +113,15 @@ class Portfolio {
         realized_pnl_ = contract->size * traded * (traded_price - pos_detail.cost_price);
       else
         realized_pnl_ = contract->size * traded * (pos_detail.cost_price - traded_price);
-    } else {  // 如果是开仓则计算当前持仓的成本价
+    } else if (pos_detail.volume > 0) {  // 如果是开仓则计算当前持仓的成本价
       double cost = contract->size * (pos_detail.volume - traded) * pos_detail.cost_price +
                     contract->size * traded * traded_price;
       pos_detail.cost_price = cost / (pos_detail.volume * contract->size);
+    }
+
+    if (pos_detail.volume == 0) {
+      pos_detail.float_pnl = 0;
+      pos_detail.cost_price = 0;
     }
   }
 
