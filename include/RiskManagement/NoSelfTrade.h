@@ -18,7 +18,7 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  explicit NoSelfTradeRule(const TradingPanel* panel_)
+  explicit NoSelfTradeRule(const TradingPanel* panel)
     : panel_(panel) {}
 
   bool check(const Order* order) override {
