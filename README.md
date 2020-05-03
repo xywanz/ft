@@ -64,9 +64,9 @@ mkdir build && cd build
 cmake .. && make
 
 ### run
-./contract_collector  # build contract table first. Must! After that, you can see contract.csv in ../config/
+./contract_collector  # build contract table first. Must! After that, you can see contracts.csv in ../config/
 vim ../config/login.yml  # config your broker id, investor id and password
-./strategy_loader -l libgrid_strategy.so # run demo of grid strategy
+./strategy_loader -l libgrid_strategy.so  # run demo of grid strategy
 ```
 
 ## 2. ...
