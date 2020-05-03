@@ -56,11 +56,17 @@ app_id: simnow_client_test
 ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
 ```
 
-### 1.7 How to build examples
+### 1.7 How to build and run examples
 ```bash
+### build
 cd ft  # enter root directory of the project ft
 mkdir build && cd build
 cmake .. && make
+
+### run
+./contract_collector  # build contract table first. Must! After that, you can see contract.csv in ../config/
+vim ../config/login.yml  # config your broker id, investor id and password
+./strategy_loader -l libgrid_strategy.so # run demo of grid strategy
 ```
 
 ## 2. ...
