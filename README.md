@@ -56,4 +56,11 @@ app_id: simnow_client_test
 ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
 ```
 
+### 1.7 How to build examples
+```bash
+cd ft  # enter root directory of the project ft
+mkdir build && cd build
+cmake .. && make
+```
+
 ## 2. ...
