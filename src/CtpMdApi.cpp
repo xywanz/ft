@@ -30,7 +30,7 @@ bool CtpMdApi::login(const LoginParams& params) {
       params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
       params.passwd().empty() ||
       params.md_server_addr().empty()) {
-    spdlog::error("[CTP MD] Invalid login params");
+    spdlog::error("[CtpMdApi::login] Failed. Invalid login params");
     return false;
   }
 
@@ -40,7 +40,7 @@ bool CtpMdApi::login(const LoginParams& params) {
 
   ctp_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!ctp_api_) {
-    spdlog::error("[CTP MD] Failed to create CTP MD API");
+    spdlog::error("[CtpMdApi::login] Failed to create CTP MD API");
     return false;
   }
 
@@ -62,7 +62,7 @@ bool CtpMdApi::login(const LoginParams& params) {
   strncpy(login_req.UserID, params.investor_id().c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, params.passwd().c_str(), sizeof(login_req.Password));
   if (ctp_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CTP MD] Invalid user-login field");
+    spdlog::error("[CtpMdApi::login] Invalid user-login field");
     return false;
   }
 
@@ -87,7 +87,7 @@ bool CtpMdApi::login(const LoginParams& params) {
     sub_list.emplace_back(const_cast<char*>(p.c_str()));
 
   if (ctp_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
-    spdlog::error("[CTP MD] Failed to subscribe");
+    spdlog::error("[CtpMdApi::login] Failed to subscribe");
     return false;
   }
 
@@ -111,18 +111,17 @@ bool CtpMdApi::logout() {
 
 void CtpMdApi::OnFrontConnected() {
   is_connected_ = true;
-  spdlog::debug("[CTP MD] OnFrontConnected. Connected to the front {}", front_addr_);
+  spdlog::debug("[CtpMdApi::OnFrontConnected] Connected to {}", front_addr_);
 }
 
 void CtpMdApi::OnFrontDisconnected(int reason) {
   is_error_ = true;
   is_connected_ = false;
-  spdlog::error("[CTP MD] OnFrontDisconnected. Disconnected from the front {}",
-                front_addr_);
+  spdlog::error("[CtpMdApi::OnFrontDisconnected] Disconnected from {}", front_addr_);
 }
 
 void CtpMdApi::OnHeartBeatWarning(int time_lapse) {
-  spdlog::warn("[CTP MD] OnHeartBeatWarning. No packet received for a period of time");
+  spdlog::warn("[CtpMdApi::OnHeartBeatWarning] Warn. No packet received for a period of time");
 }
 
 void CtpMdApi::OnRspUserLogin(
@@ -134,13 +133,14 @@ void CtpMdApi::OnRspUserLogin(
     return;
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CTP MD] OnRspUserLogin. Error ID: {}", rsp_info->ErrorID);
+    spdlog::error("[CtpMdApi::OnRspUserLogin] Failed. ErrorMsg: {}",
+                  gb2312_to_utf8(rsp_info->ErrorMsg));
     is_error_ = true;
     return;
   }
 
+  spdlog::debug("[CtpMdApi::OnRspUserLogin] Success. Login as {}", investor_id_);
   is_login_ = true;
-  spdlog::debug("[CTP MD] OnRspUserLogin. Login as {}", investor_id_);
 }
 
 void CtpMdApi::OnRspUserLogout(
@@ -148,17 +148,17 @@ void CtpMdApi::OnRspUserLogout(
                   CThostFtdcRspInfoField *rsp_info,
                   int req_id,
                   bool is_last) {
-  is_login_ = false;
-  spdlog::debug("[CTP MD] OnRspUserLogout. Broker ID: {}, Investor ID: {}",
+  spdlog::debug("[CtpMdApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
                 logout_rsp->BrokerID, logout_rsp->UserID);
+  is_login_ = false;
 }
 
 void CtpMdApi::OnRspError(
                       CThostFtdcRspInfoField *rsp_info,
                       int req_id,
                       bool is_last) {
+  spdlog::debug("[CtpMdApi::OnRspError] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
   is_login_ = false;
-  spdlog::debug("[CTP MD] OnRspError");
 }
 
 void CtpMdApi::OnRspSubMarketData(
@@ -167,22 +167,21 @@ void CtpMdApi::OnRspSubMarketData(
                       int req_id,
                       bool is_last) {
   if (is_error_rsp(rsp_info) || !instrument) {
-    spdlog::error("[CTP MD] OnRspSubMarketData. Failed to subscribe. Error Msg: {}",
-                  rsp_info->ErrorMsg);
+    spdlog::error("[CtpMdApi::OnRspSubMarketData] Failed. Error Msg: {}",
+                  gb2312_to_utf8(rsp_info->ErrorMsg));
     return;
   }
 
   auto* contract = ContractTable::get_by_symbol(instrument->InstrumentID);
   if (!contract) {
-    spdlog::error("[CTP MD] OnRspSubMarketData. ExchangeID not found in contract list. "
+    spdlog::error("[CtpMdApi::OnRspSubMarketData] Failed. ExchangeID not found in contract list. "
                   "Maybe you should update the contract list. Symbol: {}",
                   instrument->InstrumentID);
     return;
   }
   symbol2exchange_.emplace(contract->symbol, contract->exchange);
 
-  spdlog::debug("[CTP MD] OnRspSubMarketData. Successfully subscribe. Ticker: {}",
-                contract->ticker);
+  spdlog::debug("[CtpMdApi::OnRspSubMarketData] Success. Ticker: {}", contract->ticker);
 }
 
 void CtpMdApi::OnRspUnSubMarketData(
@@ -208,13 +207,13 @@ void CtpMdApi::OnRspUnSubForQuoteRsp(
 
 void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   if (!md) {
-    spdlog::error("[CTP MD] OnRtnDepthMarketData. Null pointer of market data");
+    spdlog::error("[CtpMdApi::OnRtnDepthMarketData] Failed. md is nullptr");
     return;
   }
 
   auto iter = symbol2exchange_.find(md->InstrumentID);
   if (iter == symbol2exchange_.end()) {
-    spdlog::warn("[CTP MD] OnRtnDepthMarketData. ExchangeID not found in contract list. "
+    spdlog::warn("[CtpMdApi::OnRtnDepthMarketData] Failed. ExchangeID not found in contract list. "
                  "Maybe you should update the contract list. Symbol: {}",
                  md->InstrumentID);
     return;
@@ -264,7 +263,7 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   tick.bid_volume[3] = md->BidVolume4;
   tick.bid_volume[4] = md->BidVolume5;
 
-  spdlog::debug("[CTP MD] OnRtnDepthMarketData. Ticker: {}, Time MS: {}, "
+  spdlog::debug("[CtpMdApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
                 "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
                tick.ticker, tick.time_ms, tick.last_price, tick.volume,
                tick.turnover, tick.open_interest);

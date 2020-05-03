@@ -41,7 +41,7 @@ void StrategyEngine::close() {
 bool StrategyEngine::login(const LoginParams& params) {
   api_.reset(create_api("ctp", engine_.get()));
   if (!api_) {
-    spdlog::error("[StrategyEngine::login] Unknown api");
+    spdlog::error("[StrategyEngine::login] Failed. Unknown api");
     return false;
   }
 
@@ -50,7 +50,7 @@ bool StrategyEngine::login(const LoginParams& params) {
     return false;
   }
 
-  spdlog::info("[StrategyEngine::login] Login as {}", params.investor_id());
+  spdlog::info("[StrategyEngine::login] Success. Login as {}", params.investor_id());
 
   engine_->run(false);
 
@@ -89,38 +89,31 @@ std::string StrategyEngine::send_order(const std::string& ticker, int volume,
 
   order.order_id = api_->send_order(&order);
   if (order.order_id.empty()) {
-    spdlog::error("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
-                  "Direction: {}, Offset: {}",
-                  ticker, volume, to_string(type), price,
-                  to_string(direction), to_string(offset));
+    PRINT_ORDER(spdlog::error, &order, "Failed to send_order.");
     return "";
   }
 
   panel_.new_order(&order);
   panel_.update_pos_pending(ticker, direction, offset, volume);
 
-  spdlog::debug("[StrategyEngine] send_order. Ticker: {}, Volume: {}, Type: {}, Price: {:.2f}, "
-                "Direction: {}, Offset: {}",
-                ticker, volume, to_string(type), price,
-                to_string(direction), to_string(offset));
-
+  PRINT_ORDER(spdlog::debug, &order, "Success.");
   return order.order_id;
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
   const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
-    spdlog::error("[StrategyEngine] CancelOrder failed: order not found");
+    spdlog::error("[StrategyEngine::cancel_order] Failed. Order not found. OrderID: {}",
+                  order_id);
     return false;
   }
 
   if (!api_->cancel_order(order_id)) {
-    spdlog::error("[StrategyEngine] cancel_order. Failed: unknown error");
+    spdlog::error("[StrategyEngine::cancel_order] Failed");
     return false;
   }
 
-  spdlog::debug("[StrategyEngine] cancel_order. OrderID: {}, Ticker: {}, LeftVolume: {}",
-                order_id, order->ticker, order->volume - order->volume_traded);
+  PRINT_ORDER(spdlog::debug, order, "Canceling.");
   return true;
 }
 
@@ -203,7 +196,7 @@ void StrategyEngine::on_position(cppex::Any* data) {
   const auto* position = data->cast<Position>();
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
-  spdlog::info("[StrategyEngine] on_position. Query position success. Ticker: {}, "
+  spdlog::info("[StrategyEngine::on_position] Ticker: {}, "
                "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
                "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
                position->ticker,
@@ -219,13 +212,13 @@ void StrategyEngine::on_position(cppex::Any* data) {
 void StrategyEngine::on_account(cppex::Any* data) {
   auto* account = data->cast<Account>();
   panel_.on_query_account(account);
-  spdlog::info("[StrategyEngine] on_account. Account ID: {}, Balance: {}, Fronzen: {}",
+  spdlog::info("[StrategyEngine::on_account] Account ID: {}, Balance: {}, Fronzen: {}",
                account->account_id, account->balance, account->frozen);
 }
 
 void StrategyEngine::on_trade(cppex::Any* data) {
   auto* trade = data->cast<Trade>();
-  spdlog::debug("[StrategyEngine] on_trade. Ticker: {}, Order ID: {}, Trade ID: {}, "
+  spdlog::debug("[StrategyEngine::on_trade] Ticker: {}, Order ID: {}, Trade ID: {}, "
                 "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
                 trade->ticker, trade->order_id, trade->trade_id,
                 to_string(trade->direction), to_string(trade->offset),

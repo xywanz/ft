@@ -39,6 +39,13 @@ bool is_equal(const RealType& lhs, const RealType& rhs, RealType error = RealTyp
   return rhs - error <= lhs && lhs <= rhs + error;
 }
 
+#define PRINT_ORDER(logfn, ptr, msg) logfn( \
+          "[{}] " msg " <Order: \\{Ticker: {}, OrderID: {}, Direction: {}, " \
+          "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, Status: {}\\}>", \
+          __func__, (ptr)->ticker, (ptr)->order_id, to_string((ptr)->direction), \
+          to_string((ptr)->offset), to_string((ptr)->type), (ptr)->volume_traded, \
+          (ptr)->volume, (ptr)->price, to_string((ptr)->status))
+
 }  // namespace ft
 
 #endif  // FT_INCLUDE_BASE_COMMON_H_
