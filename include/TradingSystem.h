@@ -17,13 +17,13 @@
 #include "GeneralApi.h"
 #include "MarketData/TickDatabase.h"
 #include "RiskManagement/RiskManager.h"
-#include "TradingInfo/Portfolio.h"
+#include "TradingInfo/TradingPanel.h"
 
 namespace ft {
 
 class TradingSystem {
  public:
-  explicit TradingSystem();
+  TradingSystem();
 
   ~TradingSystem();
 
@@ -31,75 +31,25 @@ class TradingSystem {
 
   bool login(const LoginParams& params);
 
-  bool buy_open(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string buy_open(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
   }
 
-  bool sell_close(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string sell_close(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price);
   }
 
-  bool sell_open(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string sell_open(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
   }
 
-  bool buy_close(const std::string& ticker, int volume, OrderType type, double price) {
+  std::string buy_close(const std::string& ticker, int volume, OrderType type, double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price);
   }
 
   bool cancel_order(const std::string& order_id);
 
-  void cancel_all(const std::string& ticker = "") {
-    std::vector<std::string> order_id_list;
-    get_order_id_list(&order_id_list, ticker);
-    for (const auto& order_id : order_id_list)
-      cancel_order(order_id);
-  }
-
   // void show_positions();
-
-  void get_order_id_list(std::vector<std::string>* out, const std::string& ticker = "") const {
-    std::unique_lock<std::mutex> lock(order_mutex_);
-    if (ticker.empty()) {
-      for (const auto& [order_id, order] : orders_)
-        out->emplace_back(order_id);
-    } else {
-      for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(order_id);
-      }
-    }
-  }
-
-  void get_order_list(std::vector<Order>* out, const std::string& ticker = "") const {
-    std::unique_lock<std::mutex> lock(order_mutex_);
-    if (ticker.empty()) {
-      for (const auto& [order_id, order] : orders_)
-        out->emplace_back(order);
-    } else {
-      for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(order);
-      }
-    }
-  }
-
-  Account get_account() const {
-    std::unique_lock<std::mutex> lock(account_mutex_);
-    return account_;
-  }
-
-  const TickData* get_tick(const std::string& ticker, std::size_t offset) const {
-    std::unique_lock<std::mutex> lock(tick_mutex_);
-    auto iter = ticks_.find(ticker);
-    if (iter == ticks_.end())
-      return nullptr;
-
-    auto& vec = iter->second;
-    if (offset >= vec.size())
-      return nullptr;
-    return *(vec.rbegin() + offset);
-  }
 
   // callback
 
@@ -134,39 +84,27 @@ class TradingSystem {
    */
   void on_tick(cppex::Any* data);
 
+  void on_sync(cppex::Any*);
+
  private:
-  bool send_order(const std::string& ticker, int volume,
+  std::string send_order(const std::string& ticker, int volume,
                          Direction direction, Offset offset,
                          OrderType type, double price);
 
-  void handle_canceled(const Order* rtn_order);
-  void handle_submitted(const Order* rtn_order);
-  void handle_part_traded(const Order* rtn_order);
-  void handle_all_traded(const Order* rtn_order);
-  void handle_cancel_rejected(const Order* rtn_order);
-
  private:
+  enum EventType {
+    EV_SYNC = EV_USER_EVENT_START,
+  };
+
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
-  std::atomic<bool> is_process_pos_done_ = false;
-  std::vector<std::unique_ptr<Position>> initial_positions_;
-
-  Account account_;
-  Portfolio portfolio_;
-  std::map<std::string, std::vector<Trade>> trade_record_;
-  std::map<std::string, Order> orders_;  // order_id->order
-  std::map<std::string, TickDatabase> tick_datahub_;
-  std::map<std::string, std::vector<TickData*>> ticks_;
-
-  mutable std::mutex account_mutex_;
-  mutable std::mutex order_mutex_;
-  mutable std::mutex tick_mutex_;
-  mutable std::mutex risk_mgr_mutex_;
-
-  bool is_login_ = false;
-
   RiskManager risk_mgr_;
+  TradingPanel panel_;
+  std::map<std::string, TickDatabase> tick_datahub_;
+
+  std::atomic<bool> is_process_pos_done_ = false;
+  mutable std::mutex mutex_;
 };
 
 }  // namespace ft

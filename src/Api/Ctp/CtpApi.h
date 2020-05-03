@@ -35,16 +35,9 @@ class CtpApi : public GeneralApi {
     return true;
   }
 
-  bool logout() override {
-    bool ret = true;
-
-    if (!md_api_->logout())
-      ret = false;
-
-    if (!trade_api_->logout())
-      ret = false;
-
-    return ret;
+  void logout() override {
+    md_api_->logout();
+    trade_api_->logout();
   }
 
   std::string send_order(const Order* order) override {

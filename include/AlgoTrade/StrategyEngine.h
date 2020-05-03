@@ -140,8 +140,8 @@ class StrategyEngine {
   std::unique_ptr<GeneralApi> api_ = nullptr;
 
   std::map<std::string, TickDatabase> tick_datahub_;
-  std::map<std::string, std::list<Strategy*>> strategies_;
   std::map<std::string, Candlestick> candle_charts_;
+  std::map<std::string, std::list<Strategy*>> strategies_;
 
   TradingPanel panel_;
   RiskManager risk_mgr_;

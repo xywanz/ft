@@ -34,9 +34,7 @@ class GeneralApi {
     return false;
   }
 
-  virtual bool logout() {
-    return false;
-  }
+  virtual void logout() {}
 
   virtual std::string send_order(const Order* order) {
     return "";
