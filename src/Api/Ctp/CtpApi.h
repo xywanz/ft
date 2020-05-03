@@ -83,6 +83,7 @@ class CtpApi : public GeneralApi {
   std::unique_ptr<CtpTradeApi>  trade_api_;
   std::unique_ptr<CtpMdApi>     md_api_;
 };
+REGISTER_API("ctp", CtpApi);
 
 }  // namespace ft
 

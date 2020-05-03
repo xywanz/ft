@@ -1,8 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_API_GENERALAPI_H_
-#define FT_INCLUDE_API_GENERALAPI_H_
+#ifndef FT_INCLUDE_GENERALAPI_H_
+#define FT_INCLUDE_GENERALAPI_H_
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -141,9 +142,22 @@ class GeneralApi {
 };
 
 
+#define REGISTER_API(name, type) \
+inline GeneralApi* __create_##type(EventEngine* engine) { \
+  return new type(engine); \
+} \
+bool __is_##type##_registered = [] { \
+  auto& type_map = __get_api_map();\
+  auto res = type_map.emplace(name, __create_##type); \
+  return res.second; \
+} ()
+
+using __API_CREATE_FUNC = std::function<GeneralApi*(EventEngine* engine)>;
+std::map<std::string, __API_CREATE_FUNC>& __get_api_map();
+
 GeneralApi* create_api(const std::string& name, EventEngine* engine);
 void destroy_api(GeneralApi* api);
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_API_GENERALAPI_H_
+#endif  // FT_INCLUDE_GENERALAPI_H_
