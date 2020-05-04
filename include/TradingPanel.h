@@ -1,26 +1,21 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_
-#define FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_
+#ifndef FT_INCLUDE_TRADINGPANEL_H_
+#define FT_INCLUDE_TRADINGPANEL_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
 #include "Base/DataStruct.h"
-#include "TradingInfo/Portfolio.h"
 
 namespace ft {
 
 class TradingPanel {
  public:
-  void on_query_account(const Account* account) {
-    account_ = *account;
-  }
+  void process_account(const Account* account) { account_ = *account; }
 
-  void on_query_position(const Position* pos) {
-    portfolio_.init_position(*pos);
-  }
+  void process_position(const Position* pos) { portfolio_.init_position(*pos); }
 
   void update_account(int64_t balance_changed) {
     account_.balance += balance_changed;
@@ -40,20 +35,19 @@ class TradingPanel {
     portfolio_.update_pending(ticker, direction, offset, changed);
   }
 
-  void new_order(const Order* order) {
+  void process_new_order(const Order* order) {
     orders_.emplace(order->order_id, *order);
   }
 
   void update_order(const Order* rtn_order);
 
-  void new_trade(const Trade* trade) {
+  void process_new_trade(const Trade* trade) {
     trade_record_.emplace(trade->ticker, *trade);
   }
 
   const Order* get_order_by_id(const std::string& order_id) {
     auto iter = orders_.find(order_id);
-    if (iter == orders_.end())
-      return nullptr;
+    if (iter == orders_.end()) return nullptr;
     return &iter->second;
   }
 
@@ -64,8 +58,7 @@ class TradingPanel {
         out->emplace_back(&order_id);
     } else {
       for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(&order_id);
+        if (order.ticker == ticker) out->emplace_back(&order_id);
       }
     }
   }
@@ -73,27 +66,19 @@ class TradingPanel {
   void get_order_list(std::vector<const Order*>* out,
                       const std::string& ticker = "") const {
     if (ticker.empty()) {
-      for (const auto& [order_id, order] : orders_)
-        out->emplace_back(&order);
+      for (const auto& [order_id, order] : orders_) out->emplace_back(&order);
     } else {
       for (const auto& [order_id, order] : orders_) {
-        if (order.ticker == ticker)
-          out->emplace_back(&order);
+        if (order.ticker == ticker) out->emplace_back(&order);
       }
     }
   }
 
-  const Account* get_account() const {
-    return &account_;
-  }
+  const Account* get_account() const { return &account_; }
 
-  double get_realized_pnl() const {
-    return portfolio_.get_realized_pnl();
-  }
+  double get_realized_pnl() const { return portfolio_.get_realized_pnl(); }
 
-  double get_float_pnl() const {
-    return portfolio_.get_float_pnl();
-  }
+  double get_float_pnl() const { return portfolio_.get_float_pnl(); }
 
   void get_pos_ticker_list(std::vector<const std::string*>* out) const {
     portfolio_.get_pos_ticker_list_unsafe(out);
@@ -112,4 +97,4 @@ class TradingPanel {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGINFO_TRADINGPANEL_H_
+#endif  // FT_INCLUDE_TRADINGPANEL_H_

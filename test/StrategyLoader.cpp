@@ -1,19 +1,21 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <dlfcn.h>
-#include <fstream>
-
-#include <getopt.hpp>
 #include <spdlog/spdlog.h>
+
+#include <fstream>
+#include <getopt.hpp>
 
 #include "AlgoTrade/StrategyEngine.h"
 #include "Base/DataStruct.h"
+#include "ContractTable.h"
 #include "TestCommon.h"
 
-
 int main() {
-  std::string login_config_file = getarg("../config/login.yml", "--login-config");
-  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
+  std::string login_config_file =
+      getarg("../config/login.yml", "--login-config");
+  std::string contracts_file =
+      getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
 
@@ -41,7 +43,8 @@ int main() {
   }
 
   char* error;
-  auto create_strategy = reinterpret_cast<void*(*)()>(dlsym(handle, "create_strategy"));
+  auto create_strategy =
+      reinterpret_cast<void* (*)()>(dlsym(handle, "create_strategy"));
   if ((error = dlerror()) != nullptr) {
     spdlog::error("create_strategy not found. error: {}", error);
     exit(-1);

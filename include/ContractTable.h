@@ -1,35 +1,33 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_
-#define FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_
+#ifndef FT_INCLUDE_CONTRACTTABLE_H_
+#define FT_INCLUDE_CONTRACTTABLE_H_
 
 #include <map>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "Base/DataStruct.h"
 
 namespace ft {
 
-inline bool load_contracts(const std::string& file, std::vector<Contract>* contracts) {
+inline bool load_contracts(const std::string& file,
+                           std::vector<Contract>* contracts) {
   std::ifstream ifs(file);
   std::string line;
   std::vector<std::string> fields;
   Contract contract;
 
-  if (!ifs)
-    return false;
+  if (!ifs) return false;
 
   std::getline(ifs, line);  // skip header
   while (std::getline(ifs, line)) {
     fields.clear();
     split(line, ",", fields);
-    if (fields.empty() || fields[0].front() == '\n')
-      continue;
+    if (fields.empty() || fields[0].front() == '\n') continue;
 
-    if (fields.size() != 11)
-      return false;
+    if (fields.size() != 11) return false;
 
     contract.ticker = std::move(fields[0]);
     ticker_split(contract.ticker, &contract.symbol, &contract.exchange);
@@ -53,17 +51,17 @@ inline void store_contracts(const std::string& file,
                             const std::vector<Contract>& contracts) {
   std::ofstream ofs(file, std::ios_base::trunc);
   std::string line = fmt::format(
-          "ticker,name,product_type,size,price_tick,max_market_order_volume,"
-          "min_market_order_volume,max_limit_order_volume,min_limit_order_volume,"
-          "delivery_year,delivery_month\n");
+      "ticker,name,product_type,size,price_tick,max_market_order_volume,"
+      "min_market_order_volume,max_limit_order_volume,min_limit_order_volume,"
+      "delivery_year,delivery_month\n");
   ofs << line;
   for (const auto& contract : contracts) {
-    line = fmt::format("{},{},{},{},{},{},{},{},{},{},{}\n",
-                       contract.ticker, contract.name, to_string(contract.product_type),
-                       contract.size, contract.price_tick, contract.max_market_order_volume,
-                       contract.min_market_order_volume, contract.max_limit_order_volume,
-                       contract.min_limit_order_volume, contract.delivery_year,
-                       contract.delivery_month);
+    line = fmt::format(
+        "{},{},{},{},{},{},{},{},{},{},{}\n", contract.ticker, contract.name,
+        to_string(contract.product_type), contract.size, contract.price_tick,
+        contract.max_market_order_volume, contract.min_market_order_volume,
+        contract.max_limit_order_volume, contract.min_limit_order_volume,
+        contract.delivery_year, contract.delivery_month);
     ofs << line;
   }
 
@@ -76,8 +74,7 @@ class ContractTable {
     static bool is_inited = false;
 
     if (!is_inited) {
-      if (!load_contracts(file, &contracts))
-        return false;
+      if (!load_contracts(file, &contracts)) return false;
 
       for (auto& contract : contracts) {
         ticker2contract.emplace(contract.ticker, &contract);
@@ -92,15 +89,13 @@ class ContractTable {
 
   static const Contract* get_by_ticker(const std::string& ticker) {
     auto iter = ticker2contract.find(ticker);
-    if (iter == ticker2contract.end())
-      return nullptr;
+    if (iter == ticker2contract.end()) return nullptr;
     return iter->second;
   }
 
   static const Contract* get_by_symbol(const std::string& symbol) {
     auto iter = symbol2contract.find(symbol);
-    if (iter == symbol2contract.end())
-      return nullptr;
+    if (iter == symbol2contract.end()) return nullptr;
     return iter->second;
   }
 
@@ -112,4 +107,4 @@ class ContractTable {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGINFO_CONTRACTTABLE_H_
+#endif  // FT_INCLUDE_CONTRACTTABLE_H_

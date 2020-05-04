@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "Base/DataStruct.h"
-#include "MarketData/TickDatabase.h"
+#include "MarketData/TickDB.h"
 
 namespace ft {
 
@@ -22,25 +22,22 @@ class Candlestick {
  public:
   Candlestick() {}
 
-  void on_init(const TickDatabase* db);
+  void on_init(const TickDB* db);
 
   void on_tick();
 
   const Bar* get_bar(std::size_t offset = 0) const {
-    if (offset >= bars_.size())
-      return nullptr;
+    if (offset >= bars_.size()) return nullptr;
     return &*(bars_.rbegin() + offset);
   }
 
-  std::size_t get_bar_count() const {
-    return bars_.size();
-  }
+  std::size_t get_bar_count() const { return bars_.size(); }
 
  private:
   void update(const TickData* tick);
 
  private:
-  const TickDatabase* db_ = nullptr;
+  const TickDB* db_ = nullptr;
 
   std::vector<Bar> bars_;
   uint64_t period_sec_ = 60;

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_GENERALAPI_H_
-#define FT_INCLUDE_GENERALAPI_H_
+#ifndef FT_INCLUDE_GATEWAY_H_
+#define FT_INCLUDE_GATEWAY_H_
 
 #include <map>
 #include <memory>
@@ -22,57 +22,35 @@ enum EventType : int {
   EV_USER_EVENT_START
 };
 
-class GeneralApi {
+class Gateway {
  public:
-  explicit GeneralApi(EventEngine* engine)
-    : engine_(engine) {
-  }
+  explicit Gateway(EventEngine* engine) : engine_(engine) {}
 
-  virtual ~GeneralApi() {}
+  virtual ~Gateway() {}
 
-  virtual bool login(const LoginParams& params) {
-    return false;
-  }
+  virtual bool login(const LoginParams& params) { return false; }
 
   virtual void logout() {}
 
-  virtual std::string send_order(const Order* order) {
-    return "";
-  }
+  virtual std::string send_order(const Order* order) { return ""; }
 
-  virtual bool cancel_order(const std::string& order_id) {
-    return false;
-  }
+  virtual bool cancel_order(const std::string& order_id) { return false; }
 
-  virtual bool query_contract(const std::string& ticker) {
-    return false;
-  }
+  virtual bool query_contract(const std::string& ticker) { return false; }
 
-  virtual bool query_contracts() {
-    return false;
-  }
+  virtual bool query_contracts() { return false; }
 
-  virtual bool query_position(const std::string& ticker) {
-    return false;
-  }
+  virtual bool query_position(const std::string& ticker) { return false; }
 
-  virtual bool query_positions() {
-    return false;
-  }
+  virtual bool query_positions() { return false; }
 
-  virtual bool query_account() {
-    return false;
-  }
+  virtual bool query_account() { return false; }
 
-  virtual bool query_margin_rate(const std::string& ticker) {
-    return false;
-  }
+  virtual bool query_margin_rate(const std::string& ticker) { return false; }
 
-  virtual bool query_commision_rate(const std::string& ticker) {
-    return false;
-  }
+  virtual bool query_commision_rate(const std::string& ticker) { return false; }
 
-    /*
+  /*
    * 接收查询到的汇总仓位数据
    * 当gateway触发了一次仓位查询时，需要把仓位缓存并根据{ticker-direction}
    * 进行汇总，每个{ticker-direction}对应一个Position对象，本次查询完成后，
@@ -139,23 +117,21 @@ class GeneralApi {
   EventEngine* engine_;
 };
 
+using __GATEWAY_CREATE_FUNC = std::function<Gateway*(EventEngine*)>;
+std::map<std::string, __GATEWAY_CREATE_FUNC>& __get_api_map();
+Gateway* create_gateway(const std::string& name, EventEngine* engine);
+void destroy_gateway(Gateway* api);
 
-#define REGISTER_API(name, type) \
-inline GeneralApi* __create_##type(EventEngine* engine) { \
-  return new type(engine); \
-} \
-bool __is_##type##_registered = [] { \
-  auto& type_map = __get_api_map();\
-  auto res = type_map.emplace(name, __create_##type); \
-  return res.second; \
-} ()
-
-using __API_CREATE_FUNC = std::function<GeneralApi*(EventEngine* engine)>;
-std::map<std::string, __API_CREATE_FUNC>& __get_api_map();
-
-GeneralApi* create_api(const std::string& name, EventEngine* engine);
-void destroy_api(GeneralApi* api);
+#define REGISTER_GATEWAY(name, type)                                        \
+  static inline ::ft::Gateway* __create_##type(::ft::EventEngine* engine) { \
+    return new type(engine);                                                \
+  }                                                                         \
+  static inline bool __is_##type##_registered = [] {                        \
+    auto& type_map = ::ft::__get_api_map();                                 \
+    auto res = type_map.emplace(name, __create_##type);                     \
+    return res.second;                                                      \
+  }()
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_GENERALAPI_H_
+#endif  // FT_INCLUDE_GATEWAY_H_

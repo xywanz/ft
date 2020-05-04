@@ -3,17 +3,17 @@
 #ifndef FT_TEST_TESTCOMMON_H_
 #define FT_TEST_TESTCOMMON_H_
 
+#include <yaml-cpp/yaml.h>
+
 #include <fstream>
 #include <string>
 
-#include <yaml-cpp/yaml.h>
-
 #include "Base/DataStruct.h"
 
-inline bool load_login_params(const std::string& file, ft::LoginParams* params) {
+inline bool load_login_params(const std::string& file,
+                              ft::LoginParams* params) {
   std::ifstream ifs(file);
-  if (!ifs)
-    return false;
+  if (!ifs) return false;
 
   YAML::Node config = YAML::LoadFile(file);
   params->set_api(config["api"].as<std::string>());

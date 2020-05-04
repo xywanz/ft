@@ -14,10 +14,10 @@
 
 #include "Base/DataStruct.h"
 #include "Base/EventEngine.h"
-#include "GeneralApi.h"
-#include "MarketData/TickDatabase.h"
+#include "Gateway.h"
+#include "MarketData/TickDB.h"
 #include "RiskManagement/RiskManager.h"
-#include "TradingInfo/TradingPanel.h"
+#include "TradingPanel.h"
 
 namespace ft {
 
@@ -31,20 +31,28 @@ class TradingSystem {
 
   bool login(const LoginParams& params);
 
-  std::string buy_open(const std::string& ticker, int volume, OrderType type, double price) {
-    return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
+  std::string buy_open(const std::string& ticker, int volume, OrderType type,
+                       double price) {
+    return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type,
+                      price);
   }
 
-  std::string sell_close(const std::string& ticker, int volume, OrderType type, double price) {
-    return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price);
+  std::string sell_close(const std::string& ticker, int volume, OrderType type,
+                         double price) {
+    return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY,
+                      type, price);
   }
 
-  std::string sell_open(const std::string& ticker, int volume, OrderType type, double price) {
-    return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
+  std::string sell_open(const std::string& ticker, int volume, OrderType type,
+                        double price) {
+    return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type,
+                      price);
   }
 
-  std::string buy_close(const std::string& ticker, int volume, OrderType type, double price) {
-    return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price);
+  std::string buy_close(const std::string& ticker, int volume, OrderType type,
+                        double price) {
+    return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
+                      price);
   }
 
   bool cancel_order(const std::string& order_id);
@@ -88,8 +96,8 @@ class TradingSystem {
 
  private:
   std::string send_order(const std::string& ticker, int volume,
-                         Direction direction, Offset offset,
-                         OrderType type, double price);
+                         Direction direction, Offset offset, OrderType type,
+                         double price);
 
  private:
   enum EventType {
@@ -97,11 +105,11 @@ class TradingSystem {
   };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
-  std::unique_ptr<GeneralApi> api_ = nullptr;
+  std::unique_ptr<Gateway> api_ = nullptr;
 
   RiskManager risk_mgr_;
   TradingPanel panel_;
-  std::map<std::string, TickDatabase> tick_datahub_;
+  std::map<std::string, TickDB> tick_center_;
 
   std::atomic<bool> is_process_pos_done_ = false;
   mutable std::mutex mutex_;

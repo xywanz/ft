@@ -3,13 +3,13 @@
 #ifndef FT_INCLUDE_RISKMANAGEMENT_NOSELFTRADE_H_
 #define FT_INCLUDE_RISKMANAGEMENT_NOSELFTRADE_H_
 
+#include <spdlog/spdlog.h>
+
 #include <string>
 #include <vector>
 
-#include <spdlog/spdlog.h>
-
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingInfo/TradingPanel.h"
+#include "TradingPanel.h"
 
 namespace ft {
 
@@ -18,8 +18,7 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  explicit NoSelfTradeRule(const TradingPanel* panel)
-    : panel_(panel) {}
+  explicit NoSelfTradeRule(const TradingPanel* panel) : panel_(panel) {}
 
   bool check(const Order* order) override {
     Direction opp_d = opp_direction(order->direction);  // 对手方
@@ -29,31 +28,28 @@ class NoSelfTradeRule : public RiskRuleInterface {
 
     for (auto p : order_list) {
       pending_order = p;
-      if (pending_order->direction != opp_d)
-        continue;
+      if (pending_order->direction != opp_d) continue;
 
       // 存在市价单直接拒绝
-      if (pending_order->type == OrderType::MARKET)
-        goto catch_order;
+      if (pending_order->type == OrderType::MARKET) goto catch_order;
 
       if (order->direction == Direction::BUY) {
-        if (order->price >= pending_order->price + 1e-5)
-          goto catch_order;
+        if (order->price >= pending_order->price + 1e-5) goto catch_order;
       } else {
-        if (order->price <= pending_order->price - 1e-5)
-          goto catch_order;
+        if (order->price <= pending_order->price - 1e-5) goto catch_order;
       }
     }
 
     return true;
 
   catch_order:
-    spdlog::error("[RiskMgr] Self trade! Ticker: {}. This Order: "
-                  "[Direction: {}, Type: {}, Price: {:.2f}]. "
-                  "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
-                  order->ticker, to_string(order->direction), to_string(order->type),
-                  order->price, to_string(pending_order->direction),
-                  to_string(pending_order->type), pending_order->price);
+    spdlog::error(
+        "[RiskMgr] Self trade! Ticker: {}. This Order: "
+        "[Direction: {}, Type: {}, Price: {:.2f}]. "
+        "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
+        order->ticker, to_string(order->direction), to_string(order->type),
+        order->price, to_string(pending_order->direction),
+        to_string(pending_order->type), pending_order->price);
     return false;
   }
 

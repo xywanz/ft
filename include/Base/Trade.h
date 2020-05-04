@@ -10,16 +10,16 @@
 namespace ft {
 
 struct Trade {
-  std::string     symbol;
-  std::string     exchange;
-  std::string     ticker;
-  std::string     order_id;
-  std::string     trade_time;
-  int64_t         trade_id;
-  Direction       direction;
-  Offset          offset;
-  double          price;
-  int64_t         volume;
+  std::string symbol;
+  std::string exchange;
+  std::string ticker;
+  std::string order_id;
+  std::string trade_time;
+  int64_t trade_id;
+  Direction direction;
+  Offset offset;
+  double price;
+  int64_t volume;
 };
 
 }  // namespace ft

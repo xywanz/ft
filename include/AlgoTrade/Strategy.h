@@ -25,23 +25,18 @@ class Strategy {
 
   virtual void on_exit(AlgoTradeContext* ctx) {}
 
-  bool is_mounted() const {
-    return is_mounted_;
-  }
+  bool is_mounted() const { return is_mounted_; }
 
  private:
   friend class StrategyEngine;
   void set_ctx(AlgoTradeContext* ctx) {
     std::unique_lock<std::mutex> lock(mutex_);
-    if (is_mounted_)
-      return;
+    if (is_mounted_) return;
     ctx_.reset(ctx);
     is_mounted_ = ctx ? true : false;
   }
 
-  auto get_ctx() const {
-    return ctx_.get();
-  }
+  auto get_ctx() const { return ctx_.get(); }
 
  private:
   bool is_mounted_ = false;
@@ -51,4 +46,4 @@ class Strategy {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_STRATEGY_H_
+#endif  // FT_INCLUDE_ALGOTRADE_STRATEGY_H_

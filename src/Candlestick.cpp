@@ -4,7 +4,7 @@
 
 namespace ft {
 
-void Candlestick::on_init(const TickDatabase* db) {
+void Candlestick::on_init(const TickDB* db) {
   db_ = db;
 
   for (std::size_t offset = db_->get_tick_count(); offset > 0; --offset)
@@ -12,9 +12,7 @@ void Candlestick::on_init(const TickDatabase* db) {
 }
 
 // 没有考虑乱序问题，只要下一个周期的数据到了，那么宣告这个周期已经结束
-void Candlestick::on_tick() {
-  update(db_->get_tick());
-}
+void Candlestick::on_tick() { update(db_->get_tick()); }
 
 void Candlestick::update(const TickData* tick) {
   if (tick->time_sec < td_start_sec_) {
@@ -22,7 +20,8 @@ void Candlestick::update(const TickData* tick) {
   }
 
   if (nextp_start_sec_ == 0 || tick->time_sec >= nextp_start_sec_) {
-    if (nextp_start_sec_ != 0 && tick->time_sec - nextp_start_sec_ >= 2 * period_sec_) {
+    if (nextp_start_sec_ != 0 &&
+        tick->time_sec - nextp_start_sec_ >= 2 * period_sec_) {
       // 如果长时间没成交，那么没有行情推送，需要对之前的进行进行更新
       uint64_t gap = (tick->time_sec - nextp_start_sec_) / period_sec_ - 1;
       for (uint64_t i = 0; i < gap; ++i) {

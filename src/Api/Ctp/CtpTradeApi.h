@@ -3,6 +3,9 @@
 #ifndef FT_SRC_API_CTP_CTPTRADEAPI_H_
 #define FT_SRC_API_CTP_CTPTRADEAPI_H_
 
+#include <ThostFtdcTraderApi.h>
+#include <fmt/format.h>
+
 #include <atomic>
 #include <cassert>
 #include <cstring>
@@ -12,32 +15,29 @@
 #include <string>
 #include <vector>
 
-#include <fmt/format.h>
-#include <ThostFtdcTraderApi.h>
-
 #include "Api/Ctp/CtpCommon.h"
 #include "Base/DataStruct.h"
-#include "GeneralApi.h"
+#include "Gateway.h"
 
 namespace ft {
 
 class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  explicit CtpTradeApi(GeneralApi* api);
+  explicit CtpTradeApi(Gateway *gateway);
 
   ~CtpTradeApi();
 
-  bool login(const LoginParams& params);
+  bool login(const LoginParams &params);
 
   bool logout();
 
-  std::string send_order(const Order* order);
+  std::string send_order(const Order *order);
 
-  bool cancel_order(const std::string& order_id);
+  bool cancel_order(const std::string &order_id);
 
-  bool query_contract(const std::string& ticker);
+  bool query_contract(const std::string &ticker);
 
-  bool query_position(const std::string& ticker);
+  bool query_position(const std::string &ticker);
 
   bool query_account();
 
@@ -45,7 +45,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool query_trades();
 
-  bool query_margin_rate(const std::string& ticker);
+  bool query_margin_rate(const std::string &ticker);
 
   bool query_commision_rate();
 
@@ -68,36 +68,34 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   // 客户端认证响应
   void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth_rsp,
-                         CThostFtdcRspInfoField *rsp_info,
-                         int req_id, bool is_last) override;
+                         CThostFtdcRspInfoField *rsp_info, int req_id,
+                         bool is_last) override;
 
   // 登录请求响应
   void OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
-                      CThostFtdcRspInfoField *rsp_info,
-                      int req_id, bool is_last) override;
+                      CThostFtdcRspInfoField *rsp_info, int req_id,
+                      bool is_last) override;
 
   void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement,
-                              CThostFtdcRspInfoField *rsp_info,
-                              int req_id, bool is_last) override;
+                              CThostFtdcRspInfoField *rsp_info, int req_id,
+                              bool is_last) override;
 
-  void OnRspSettlementInfoConfirm(
-          CThostFtdcSettlementInfoConfirmField *confirm,
-          CThostFtdcRspInfoField *rsp_info,
-          int req_id, bool is_last) override;
+  void OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *confirm,
+                                  CThostFtdcRspInfoField *rsp_info, int req_id,
+                                  bool is_last) override;
 
-  void OnRspUserLogout(
-          CThostFtdcUserLogoutField *user_logout,
-          CThostFtdcRspInfoField *rsp_info,
-          int req_id, bool is_last) override;
+  void OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
+                       CThostFtdcRspInfoField *rsp_info, int req_id,
+                       bool is_last) override;
 
   // 拒绝报单
   void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
-                        CThostFtdcRspInfoField *rsp_info,
-                        int req_id, bool is_last) override;
+                        CThostFtdcRspInfoField *rsp_info, int req_id,
+                        bool is_last) override;
 
   void OnRspOrderAction(CThostFtdcInputOrderActionField *action,
-                        CThostFtdcRspInfoField *rsp_info,
-                        int req_id, bool is_last) override;
+                        CThostFtdcRspInfoField *rsp_info, int req_id,
+                        bool is_last) override;
 
   void OnRtnOrder(CThostFtdcOrderField *ctp_order) override;
 
@@ -105,69 +103,55 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   void OnRtnTrade(CThostFtdcTradeField *trade) override;
 
   void OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
-                          CThostFtdcRspInfoField *rsp_info,
-                          int req_id, bool is_last) override;
+                          CThostFtdcRspInfoField *rsp_info, int req_id,
+                          bool is_last) override;
 
-  void OnRspQryInvestorPosition(
-          CThostFtdcInvestorPositionField *position,
-          CThostFtdcRspInfoField *rsp_info,
-          int req_id, bool is_last) override;
+  void OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *position,
+                                CThostFtdcRspInfoField *rsp_info, int req_id,
+                                bool is_last) override;
 
-  void OnRspQryTradingAccount(
-          CThostFtdcTradingAccountField *trading_account,
-          CThostFtdcRspInfoField *rsp_info,
-          int req_id, bool is_last) override;
+  void OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_account,
+                              CThostFtdcRspInfoField *rsp_info, int req_id,
+                              bool is_last) override;
 
   void OnRspQryOrder(CThostFtdcOrderField *order,
-                     CThostFtdcRspInfoField *rsp_info,
-                     int req_id, bool is_last) override;
+                     CThostFtdcRspInfoField *rsp_info, int req_id,
+                     bool is_last) override;
 
   void OnRspQryTrade(CThostFtdcTradeField *trade,
-                     CThostFtdcRspInfoField *rsp_info,
-                     int req_id, bool is_last) override;
+                     CThostFtdcRspInfoField *rsp_info, int req_id,
+                     bool is_last) override;
 
-  void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField* margin_rate,
-                                    CThostFtdcRspInfoField* rsp_info,
-                                    int req_id, bool is_last);
+  void OnRspQryInstrumentMarginRate(
+      CThostFtdcInstrumentMarginRateField *margin_rate,
+      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last);
 
  private:
-  static std::string get_order_id(const char* instrument,
-                                  const char* exchange,
-                                  const char* order_ref) {
+  static std::string get_order_id(const char *instrument, const char *exchange,
+                                  const char *order_ref) {
     return fmt::format("{}.{}.{}", instrument, exchange, order_ref);
   }
 
-  int next_req_id() {
-    return next_req_id_++;
-  }
+  int next_req_id() { return next_req_id_++; }
 
-  int next_order_ref() {
-    return next_order_ref_++;
-  }
+  int next_order_ref() { return next_order_ref_++; }
 
-  void done() {
-    is_done_ = true;
-  }
+  void done() { is_done_ = true; }
 
-  void error() {
-    is_error_ = true;
-  }
+  void error() { is_error_ = true; }
 
-  void reset_sync() {
-    is_done_ = false;
-  }
+  void reset_sync() { is_done_ = false; }
 
   bool wait_sync() {
     while (!is_done_) {
-      if (is_error_)
-        return false;
+      if (is_error_) return false;
     }
 
     return true;
   }
 
  private:
-  GeneralApi* general_api_;
+  Gateway *gateway_;
   std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> ctp_api_;
 
   std::string front_addr_;

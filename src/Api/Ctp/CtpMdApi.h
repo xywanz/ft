@@ -3,6 +3,8 @@
 #ifndef FT_SRC_API_CTP_CTPMDAPI_H_
 #define FT_SRC_API_CTP_CTPMDAPI_H_
 
+#include <ThostFtdcMdApi.h>
+
 #include <atomic>
 #include <limits>
 #include <map>
@@ -10,22 +12,20 @@
 #include <string>
 #include <vector>
 
-#include <ThostFtdcMdApi.h>
-
 #include "Api/Ctp/CtpCommon.h"
 #include "Base/DataStruct.h"
-#include "GeneralApi.h"
+#include "Gateway.h"
 
 namespace ft {
 
 class CtpMdApi : public CThostFtdcMdSpi {
  public:
-  explicit CtpMdApi(GeneralApi* general_api);
+  explicit CtpMdApi(Gateway *gateway);
 
   ~CtpMdApi();
 
   // need front_addr, broker_id, investor_id and passwd
-  bool login(const LoginParams& params);
+  bool login(const LoginParams &params);
 
   bool logout();
 
@@ -36,37 +36,30 @@ class CtpMdApi : public CThostFtdcMdSpi {
   void OnHeartBeatWarning(int time_lapse) override;
 
   void OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
-                      CThostFtdcRspInfoField *rsp_info,
-                      int req_id,
+                      CThostFtdcRspInfoField *rsp_info, int req_id,
                       bool is_last) override;
 
   void OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
-                       CThostFtdcRspInfoField *rsp_info,
-                       int req_id,
+                       CThostFtdcRspInfoField *rsp_info, int req_id,
                        bool is_last) override;
 
-  void OnRspError(CThostFtdcRspInfoField *rsp_info,
-                  int req_id,
+  void OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id,
                   bool is_last) override;
 
   void OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
-                          CThostFtdcRspInfoField *rsp_info,
-                          int req_id,
+                          CThostFtdcRspInfoField *rsp_info, int req_id,
                           bool is_last) override;
 
   void OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
-                            CThostFtdcRspInfoField *rsp_info,
-                            int req_id,
+                            CThostFtdcRspInfoField *rsp_info, int req_id,
                             bool is_last) override;
 
   void OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
-                           CThostFtdcRspInfoField *rsp_info,
-                           int req_id,
+                           CThostFtdcRspInfoField *rsp_info, int req_id,
                            bool is_last) override;
 
   void OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
-                             CThostFtdcRspInfoField *rsp_info,
-                             int req_id,
+                             CThostFtdcRspInfoField *rsp_info, int req_id,
                              bool is_last) override;
 
   void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) override;
@@ -74,12 +67,10 @@ class CtpMdApi : public CThostFtdcMdSpi {
   void OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) override;
 
  private:
-  int next_req_id() {
-    return next_req_id_++;
-  }
+  int next_req_id() { return next_req_id_++; }
 
  private:
-  GeneralApi* general_api_ = nullptr;
+  Gateway *gateway_ = nullptr;
   std::unique_ptr<CThostFtdcMdApi, CtpApiDeleter> ctp_api_;
 
   std::string front_addr_;
@@ -97,8 +88,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
   std::map<std::string, std::string> symbol2exchange_;
 };
 
-
-template<class PriceType>
+template <class PriceType>
 inline PriceType adjust_price(PriceType price) {
   PriceType ret = price;
   if (price >= std::numeric_limits<PriceType>::max() - PriceType(1e-6))

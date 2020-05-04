@@ -4,6 +4,8 @@
 #ifndef FT_INCLUDE_BASE_EVENTENGINE_H_
 #define FT_INCLUDE_BASE_EVENTENGINE_H_
 
+#include <cppex/Any.h>
+
 #include <condition_variable>
 #include <functional>
 #include <memory>
@@ -13,8 +15,6 @@
 #include <thread>
 #include <utility>
 
-#include <cppex/Any.h>
-
 namespace ft {
 
 #define MEM_HANDLER(f) std::bind(std::mem_fn(&f), this, std::placeholders::_1)
@@ -23,16 +23,13 @@ class EventEngine {
  public:
   using HandleType = std::function<void(cppex::Any*)>;
 
-  ~EventEngine() {
-    stop();
-  }
+  ~EventEngine() { stop(); }
 
-  template<class T>
+  template <class T>
   void post(int event, T* ctx) {
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      if (!is_to_stop_)
-        event_queue_.emplace(event, ctx);
+      if (!is_to_stop_) event_queue_.emplace(event, ctx);
     }
     cv_.notify_one();
   }
@@ -40,15 +37,13 @@ class EventEngine {
   void post(int event) {
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      if (!is_to_stop_)
-        event_queue_.emplace(event);
+      if (!is_to_stop_) event_queue_.emplace(event);
     }
     cv_.notify_one();
   }
 
   bool set_handler(int event, HandleType&& handler) {
-    if (event < 0 || event >= kMaxHandlers)
-      return false;
+    if (event < 0 || event >= kMaxHandlers) return false;
     handlers_[event] = std::move(handler);
   }
 
@@ -66,8 +61,7 @@ class EventEngine {
   void stop() {
     is_to_stop_ = true;
     cv_.notify_one();
-    while (!is_stopped_)
-      continue;
+    while (!is_stopped_) continue;
   }
 
   bool empty() {
@@ -77,16 +71,10 @@ class EventEngine {
 
  private:
   struct Event {
-    template<class T>
-    Event(int _event, T* _data)
-      : event(_event),
-        data(_data) {
-    }
+    template <class T>
+    Event(int _event, T* _data) : event(_event), data(_data) {}
 
-    explicit Event(int _event)
-      : event(_event),
-        data() {
-    }
+    explicit Event(int _event) : event(_event), data() {}
 
     int event;
     cppex::Any data;
@@ -94,8 +82,7 @@ class EventEngine {
 
   void process_event(Event* ev) {
     int event = ev->event;
-    if (event < 0 || event >= kMaxHandlers || !handlers_[event])
-      return;
+    if (event < 0 || event >= kMaxHandlers || !handlers_[event]) return;
 
     if (ev->data.empty())
       handlers_[event](nullptr);

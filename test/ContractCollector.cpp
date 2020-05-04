@@ -1,34 +1,35 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <atomic>
-#include <iostream>
-
-#include <getopt.hpp>
 #include <spdlog/spdlog.h>
+
+#include <atomic>
+#include <getopt.hpp>
+#include <iostream>
 
 #include "Base/DataStruct.h"
 #include "Base/EventEngine.h"
-#include "GeneralApi.h"
+#include "ContractTable.h"
+#include "Gateway.h"
 #include "TestCommon.h"
-#include "TradingInfo/ContractTable.h"
 
 class ContractCollector {
  public:
-  ContractCollector()
-    : engine_(new ft::EventEngine) {
-    engine_->set_handler(ft::EV_CONTRACT, MEM_HANDLER(ContractCollector::on_contract));
+  ContractCollector() : engine_(new ft::EventEngine) {
+    engine_->set_handler(ft::EV_CONTRACT,
+                         MEM_HANDLER(ContractCollector::on_contract));
     engine_->run(false);
   }
 
   bool login(const ft::LoginParams& params) {
-    api_.reset(create_api(params.api(), engine_.get()));
-    if (!api_) {
+    gateway_.reset(create_gateway(params.api(), engine_.get()));
+    if (!gateway_) {
       spdlog::error("[ContractCollector::login] Unknown API");
       return false;
     }
 
-    if (!api_->login(params)) {
-      spdlog::error("[TradeInfoCollector::login] Failed to login into trading server");
+    if (!gateway_->login(params)) {
+      spdlog::error(
+          "[TradeInfoCollector::login] Failed to login into trading server");
       return false;
     }
     is_login_ = true;
@@ -36,11 +37,9 @@ class ContractCollector {
   }
 
   bool dump_contracts(const std::string& file) {
-    if (!is_login_)
-      return false;
+    if (!is_login_) return false;
 
-    if (!api_->query_contracts())
-      return false;
+    if (!gateway_->query_contracts()) return false;
 
     engine_->stop();
 
@@ -55,14 +54,14 @@ class ContractCollector {
 
  private:
   std::unique_ptr<ft::EventEngine> engine_;
-  std::unique_ptr<ft::GeneralApi> api_;
+  std::unique_ptr<ft::Gateway> gateway_;
   std::vector<ft::Contract> contracts_;
   std::atomic<bool> is_login_ = false;
 };
 
-
 int main() {
-  std::string login_config_file = getarg("../config/login.yml", "--login-config");
+  std::string login_config_file =
+      getarg("../config/login.yml", "--login-config");
   std::string path = getarg("../config/contracts.csv", "--output-path");
 
   ft::LoginParams params;

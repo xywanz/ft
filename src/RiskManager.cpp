@@ -10,8 +10,7 @@ void RiskManager::add_rule(std::shared_ptr<RiskRuleInterface> rule) {
 
 bool RiskManager::check(const Order* order) {
   for (auto& rule : rules_) {
-    if (!rule->check(order))
-      return false;
+    if (!rule->check(order)) return false;
   }
 
   return true;

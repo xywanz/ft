@@ -13,8 +13,7 @@ namespace ft {
 
 class MA : public IndicatorInterface {
  public:
-  explicit MA(uint64_t period)
-    : period_(period) {}
+  explicit MA(uint64_t period) : period_(period) {}
 
   void on_init(const Candlestick* candlestick) override;
 
@@ -37,7 +36,5 @@ class MA : public IndicatorInterface {
 };
 
 }  // namespace ft
-
-
 
 #endif  // FT_INCLUDE_INDICATOR_MA_H_

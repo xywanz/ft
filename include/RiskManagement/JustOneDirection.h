@@ -22,8 +22,7 @@ class JustOneDirectionRule : public RiskRuleInterface {
       opp_pos_detail = &pos.long_pos;
 
     return opp_pos_detail->open_pending == 0 &&
-           opp_pos_detail->close_pending == 0 &&
-           opp_pos_detail->volume == 0 &&
+           opp_pos_detail->close_pending == 0 && opp_pos_detail->volume == 0 &&
            opp_pos_detail->frozen == 0;
   }
 

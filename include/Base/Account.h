@@ -9,8 +9,8 @@ namespace ft {
 
 struct Account {
   std::string account_id;
-  double      balance;
-  double      frozen;
+  double balance;
+  double frozen;
 };
 
 }  // namespace ft
