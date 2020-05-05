@@ -26,6 +26,7 @@ class MyStrategy : public ft::Strategy {
     // called when strategy unmounted
   }
 };
+EXPORT_STRATEGY(MyStrategy)
 ```
 
 ### 1.3 How to build?
