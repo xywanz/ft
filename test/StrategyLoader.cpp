@@ -44,13 +44,13 @@ int main() {
 
   char* error;
   auto create_strategy =
-      reinterpret_cast<void* (*)()>(dlsym(handle, "create_strategy"));
+      reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "create_strategy"));
   if ((error = dlerror()) != nullptr) {
     spdlog::error("create_strategy not found. error: {}", error);
     exit(-1);
   }
 
-  auto strategy = reinterpret_cast<ft::Strategy*>(create_strategy());
+  auto strategy = create_strategy();
   engine.mount_strategy(params.subscribed_list()[0], strategy);
 
   while (1) {

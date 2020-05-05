@@ -98,15 +98,18 @@ class DataCollector {
 
   std::map<std::string, std::ofstream> ofs_map_;
 
-  std::string path_ = "./";
+  std::string path_ = ".";
 };
 
 int main() {
-  std::string path = getarg("./", "--path");
+  std::string path = getarg(".", "--path");
   std::string login_config_file =
       getarg("../config/login.yml", "--login-config");
   std::string contracts_file =
       getarg("../config/contracts.csv", "--contracts-file");
+  std::string log_level = getarg("info", "--loglevel");
+
+  spdlog::set_level(spdlog::level::from_str(log_level));
 
   ft::LoginParams params;
   if (!load_login_params(login_config_file, &params)) {

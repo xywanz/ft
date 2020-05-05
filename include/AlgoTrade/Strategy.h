@@ -44,6 +44,9 @@ class Strategy {
   std::unique_ptr<AlgoTradeContext> ctx_;
 };
 
+#define EXPORT_STRATEGY(type) \
+  extern "C" ft::Strategy* create_strategy() { return new type; }
+
 }  // namespace ft
 
 #endif  // FT_INCLUDE_ALGOTRADE_STRATEGY_H_

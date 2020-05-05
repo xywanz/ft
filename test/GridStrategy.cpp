@@ -108,4 +108,4 @@ class GridStrategy : public ft::Strategy {
   std::size_t cur_bar_ = 1;
 };
 
-extern "C" void* create_strategy() { return new GridStrategy; }
+EXPORT_STRATEGY(GridStrategy);

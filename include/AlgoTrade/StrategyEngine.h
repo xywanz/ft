@@ -68,7 +68,7 @@ class StrategyEngine {
     for (const auto& order_id : order_id_list) cancel_order(*order_id);
   }
 
-  void mount_strategy(const std::string& ticker, Strategy* strategy);
+  bool mount_strategy(const std::string& ticker, Strategy* strategy);
 
   void unmount_strategy(Strategy* strategy);
 
@@ -124,14 +124,14 @@ class StrategyEngine {
   };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
-  std::unique_ptr<Gateway> api_ = nullptr;
+  std::unique_ptr<Gateway> gateway_ = nullptr;
   std::map<std::string, std::list<Strategy*>> strategies_;
 
   DataCenter data_center_;
   TradingPanel panel_;
   RiskManager risk_mgr_;
 
-  std::atomic<bool> is_process_pos_done_ = false;
+  std::atomic<bool> is_logon_ = false;
 };
 
 }  // namespace ft

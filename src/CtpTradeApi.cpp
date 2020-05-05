@@ -166,6 +166,7 @@ bool CtpTradeApi::logout() {
 void CtpTradeApi::OnFrontConnected() {
   spdlog::debug("[CtpTradeApi::OnFrontConnected] Success. Connected to {}",
                 front_addr_);
+  is_error_ = false;
   is_connected_ = true;
 }
 

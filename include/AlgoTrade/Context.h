@@ -101,6 +101,10 @@ class AlgoTradeContext {
 
   void cancel_all() { engine_->cancel_all(ticker_); }
 
+  void unmount() {
+    engine_->unmount_strategy(stra)
+  }
+
   double get_realized_pnl() const { return panel_->get_realized_pnl(); }
 
   double get_float_pnl() const { return panel_->get_float_pnl(); }

@@ -36,18 +36,24 @@ StrategyEngine::StrategyEngine() : engine_(new EventEngine) {
 StrategyEngine::~StrategyEngine() {}
 
 void StrategyEngine::close() {
-  api_->logout();
+  is_logon_ = false;
+  for (auto& [ticker, strategy_list] : strategies_) {
+    for (auto strategy : strategy_list) unmount_strategy(strategy);
+  }
+  gateway_->logout();
   engine_->stop();
 }
 
 bool StrategyEngine::login(const LoginParams& params) {
-  api_.reset(create_gateway("ctp", engine_.get()));
-  if (!api_) {
-    spdlog::error("[StrategyEngine::login] Failed. Unknown api");
+  if (is_logon_) return true;
+
+  gateway_.reset(create_gateway("ctp", engine_.get()));
+  if (!gateway_) {
+    spdlog::error("[StrategyEngine::login] Failed. Unknown gateway");
     return false;
   }
 
-  if (!api_->login(params)) {
+  if (!gateway_->login(params)) {
     spdlog::error("[StrategyEngine::login] Failed to login");
     return false;
   }
@@ -57,20 +63,19 @@ bool StrategyEngine::login(const LoginParams& params) {
 
   engine_->run(false);
 
-  if (!api_->query_account()) {
+  if (!gateway_->query_account()) {
     spdlog::error("[StrategyEngine::login] Failed to query account");
     return false;
   }
 
   // query all positions
-  is_process_pos_done_ = false;
-  if (!api_->query_positions()) {
+  if (!gateway_->query_positions()) {
     spdlog::error("[StrategyEngine::login] Failed to query positions");
     return false;
   }
 
   engine_->post(EV_SYNC);
-  while (!is_process_pos_done_) continue;
+  while (!is_logon_) continue;
 
   return true;
 }
@@ -78,6 +83,11 @@ bool StrategyEngine::login(const LoginParams& params) {
 std::string StrategyEngine::send_order(const std::string& ticker, int volume,
                                        Direction direction, Offset offset,
                                        OrderType type, double price) {
+  if (!is_logon_) {
+    spdlog::error("[StrategyEngine::send_order] Failed. Not logon");
+    return "";
+  }
+
   Order order(ticker, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
@@ -86,7 +96,7 @@ std::string StrategyEngine::send_order(const std::string& ticker, int volume,
     return "";
   }
 
-  order.order_id = api_->send_order(&order);
+  order.order_id = gateway_->send_order(&order);
   if (order.order_id.empty()) {
     PRINT_ORDER(spdlog::error, &order, "Failed to send_order.");
     return "";
@@ -100,6 +110,11 @@ std::string StrategyEngine::send_order(const std::string& ticker, int volume,
 }
 
 bool StrategyEngine::cancel_order(const std::string& order_id) {
+  if (!is_logon_) {
+    spdlog::error("[StrategyEngine::send_order] Failed. Not logon");
+    return false;
+  }
+
   const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
     spdlog::error(
@@ -108,7 +123,7 @@ bool StrategyEngine::cancel_order(const std::string& order_id) {
     return false;
   }
 
-  if (!api_->cancel_order(order_id)) {
+  if (!gateway_->cancel_order(order_id)) {
     spdlog::error("[StrategyEngine::cancel_order] Failed");
     return false;
   }
@@ -117,10 +132,16 @@ bool StrategyEngine::cancel_order(const std::string& order_id) {
   return true;
 }
 
-void StrategyEngine::mount_strategy(const std::string& ticker,
+bool StrategyEngine::mount_strategy(const std::string& ticker,
                                     Strategy* strategy) {
+  if (!is_logon_) {
+    spdlog::error("[StrategyEngine::mount_strategy] Not logon");
+    return false;
+  }
+
   strategy->set_ctx(new AlgoTradeContext(ticker, this, &data_center_, &panel_));
   engine_->post(EV_MOUNT_STRATEGY, strategy);
+  return true;
 }
 
 void StrategyEngine::process_mount_strategy(cppex::Any* data) {
@@ -157,7 +178,7 @@ void StrategyEngine::process_unmount_strategy(cppex::Any* data) {
   }
 }
 
-void StrategyEngine::process_sync(cppex::Any*) { is_process_pos_done_ = true; }
+void StrategyEngine::process_sync(cppex::Any*) { is_logon_ = true; }
 
 void StrategyEngine::process_tick(cppex::Any* data) {
   auto* tick = data->fetch<TickData>().release();
@@ -173,7 +194,7 @@ void StrategyEngine::process_tick(cppex::Any* data) {
 }
 
 void StrategyEngine::process_position(cppex::Any* data) {
-  if (is_process_pos_done_) return;
+  if (is_logon_) return;
 
   const auto* position = data->cast<Position>();
   auto& lp = position->long_pos;
