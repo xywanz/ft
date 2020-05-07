@@ -53,22 +53,18 @@ enum class CombHedgeFlag {
 struct Order {
   Order() {}
 
-  Order(const std::string& _ticker, Direction _direction, Offset _offset,
+  Order(uint64_t _ticker_index, Direction _direction, Offset _offset,
         int _volume, OrderType _type, double _price)
-      : ticker(_ticker),
+      : ticker_index(_ticker_index),
         direction(_direction),
         offset(_offset),
         volume(_volume),
         type(_type),
-        price(_price) {
-    ticker_split(_ticker, &symbol, &exchange);
-  }
+        price(_price) {}
 
   // req data
-  std::string symbol;
-  std::string exchange;
-  std::string ticker;
-  std::string order_id;
+  uint64_t ticker_index;
+  uint64_t order_id;
   OrderType type;
   Direction direction;
   Offset offset;

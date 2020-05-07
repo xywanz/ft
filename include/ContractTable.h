@@ -76,7 +76,9 @@ class ContractTable {
     if (!is_inited) {
       if (!load_contracts(file, &contracts)) return false;
 
-      for (auto& contract : contracts) {
+      for (std::size_t i = 0; i < contracts.size(); ++i) {
+        auto& contract = contracts[i];
+        contract.index = i;
         ticker2contract.emplace(contract.ticker, &contract);
         symbol2contract.emplace(contract.symbol, &contract);
       }
@@ -97,6 +99,11 @@ class ContractTable {
     auto iter = symbol2contract.find(symbol);
     if (iter == symbol2contract.end()) return nullptr;
     return iter->second;
+  }
+
+  static const Contract* get_by_index(uint64_t ticker_index) {
+    if (ticker_index >= contracts.size()) return nullptr;
+    return &contracts[ticker_index];
   }
 
  private:

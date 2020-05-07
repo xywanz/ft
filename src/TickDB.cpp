@@ -6,7 +6,7 @@
 
 namespace ft {
 
-TickDB::TickDB(const std::string& ticker) : ticker_(ticker) {}
+TickDB::TickDB(uint64_t ticker_index) : ticker_index_(ticker_index) {}
 
 void TickDB::process_tick(const TickData* data) {
   tick_data_.emplace_back(*data);

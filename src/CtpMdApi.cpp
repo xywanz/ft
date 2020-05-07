@@ -170,7 +170,7 @@ void CtpMdApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
         instrument->InstrumentID);
     return;
   }
-  symbol2exchange_.emplace(contract->symbol, contract->exchange);
+  symbol2contract_.emplace(contract->symbol, contract);
 
   spdlog::debug("[CtpMdApi::OnRspSubMarketData] Success. Ticker: {}",
                 contract->ticker);
@@ -194,8 +194,8 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
-  auto iter = symbol2exchange_.find(md->InstrumentID);
-  if (iter == symbol2exchange_.end()) {
+  auto iter = symbol2contract_.find(md->InstrumentID);
+  if (iter == symbol2contract_.end()) {
     spdlog::warn(
         "[CtpMdApi::OnRtnDepthMarketData] Failed. ExchangeID not found in "
         "contract list. "
@@ -205,15 +205,13 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick;
-  tick.symbol = md->InstrumentID;
-  tick.exchange = iter->second;
-  tick.ticker = to_ticker(tick.symbol, tick.exchange);
+  tick.ticker_index = iter->second->index;
 
   struct tm _tm;
   strptime(md->UpdateTime, "%H:%M:%S", &_tm);
   tick.time_sec = _tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600;
   tick.time_ms = md->UpdateMillisec;
-  tick.date = md->ActionDay;
+  // tick.date = md->ActionDay;
 
   tick.volume = md->Volume;
   tick.turnover = md->Turnover;
@@ -251,8 +249,8 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   spdlog::debug(
       "[CtpMdApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
       "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
-      tick.ticker, tick.time_ms, tick.last_price, tick.volume, tick.turnover,
-      tick.open_interest);
+      iter->second->ticker, tick.time_ms, tick.last_price, tick.volume,
+      tick.turnover, tick.open_interest);
 
   gateway_->on_tick(&tick);
 }

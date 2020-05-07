@@ -33,6 +33,8 @@ struct Contract {
 
   int delivery_year;
   int delivery_month;
+
+  uint64_t index;  // local index
 };
 
 inline const std::string& to_string(ProductType product) {

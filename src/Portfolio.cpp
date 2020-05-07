@@ -7,25 +7,25 @@
 namespace ft {
 
 void Portfolio::init_position(const Position& pos) {
-  if (find(pos.ticker)) {
+  if (find(pos.ticker_index)) {
     spdlog::warn(
         "[Portfolio::init_position] Failed to init pos: position already "
         "exists");
     return;
   }
 
-  pos_map_.emplace(pos.ticker, pos);
+  pos_map_.emplace(pos.ticker_index, pos);
   spdlog::debug("[Portfolio::init_position]");
 }
 
-void Portfolio::update_pending(const std::string& ticker, Direction direction,
+void Portfolio::update_pending(uint64_t ticker_index, Direction direction,
                                Offset offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
   if (is_close) direction = opp_direction(direction);
 
-  auto& pos = find_or_create_pos(ticker);
+  auto& pos = find_or_create_pos(ticker_index);
   auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
   if (is_close)
     pos_detail.close_pending += changed;
@@ -43,7 +43,7 @@ void Portfolio::update_pending(const std::string& ticker, Direction direction,
   }
 }
 
-void Portfolio::update_traded(const std::string& ticker, Direction direction,
+void Portfolio::update_traded(uint64_t ticker_index, Direction direction,
                               Offset offset, int64_t traded,
                               double traded_price) {
   if (traded <= 0) return;
@@ -51,7 +51,7 @@ void Portfolio::update_traded(const std::string& ticker, Direction direction,
   bool is_close = is_offset_close(offset);
   if (is_close) direction = opp_direction(direction);
 
-  auto& pos = find_or_create_pos(ticker);
+  auto& pos = find_or_create_pos(ticker_index);
   auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
   if (is_close) {
     pos_detail.close_pending -= traded;
@@ -77,11 +77,9 @@ void Portfolio::update_traded(const std::string& ticker, Direction direction,
     spdlog::warn("[Portfolio::update_traded] correct close_pending");
   }
 
-  const auto* contract = ContractTable::get_by_ticker(ticker);
+  const auto* contract = ContractTable::get_by_index(ticker_index);
   if (!contract) {
-    spdlog::error(
-        "[Position::update_volume] on_trade. Contract not found. Ticker: {}",
-        ticker);
+    spdlog::error("[Position::update_traded] Contract not found");
     return;
   }
 
@@ -111,10 +109,10 @@ void Portfolio::update_traded(const std::string& ticker, Direction direction,
   }
 }
 
-void Portfolio::update_float_pnl(const std::string& ticker, double last_price) {
-  auto* pos = find(ticker);
+void Portfolio::update_float_pnl(uint64_t ticker_index, double last_price) {
+  auto* pos = find(ticker_index);
   if (pos) {
-    const auto* contract = ContractTable::get_by_ticker(ticker);
+    const auto* contract = ContractTable::get_by_index(ticker_index);
     if (!contract || contract->size <= 0) return;
 
     auto& lp = pos->long_pos;

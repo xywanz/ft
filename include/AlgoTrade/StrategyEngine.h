@@ -36,36 +36,36 @@ class StrategyEngine {
 
   bool login(const LoginParams& params);
 
-  std::string buy_open(const std::string& ticker, int volume, OrderType type,
-                       double price) {
+  uint64_t buy_open(const std::string& ticker, int volume, OrderType type,
+                    double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type,
                       price);
   }
 
-  std::string sell_close(const std::string& ticker, int volume, OrderType type,
-                         double price) {
+  uint64_t sell_close(const std::string& ticker, int volume, OrderType type,
+                      double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY,
                       type, price);
   }
 
-  std::string sell_open(const std::string& ticker, int volume, OrderType type,
-                        double price) {
+  uint64_t sell_open(const std::string& ticker, int volume, OrderType type,
+                     double price) {
     return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type,
                       price);
   }
 
-  std::string buy_close(const std::string& ticker, int volume, OrderType type,
-                        double price) {
+  uint64_t buy_close(const std::string& ticker, int volume, OrderType type,
+                     double price) {
     return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
                       price);
   }
 
-  bool cancel_order(const std::string& order_id);
+  bool cancel_order(uint64_t order_id);
 
   void cancel_all(const std::string& ticker = "") {
-    std::vector<const std::string*> order_id_list;
+    std::vector<uint64_t> order_id_list;
     panel_.get_order_id_list(&order_id_list, ticker);
-    for (const auto& order_id : order_id_list) cancel_order(*order_id);
+    for (const auto& order_id : order_id_list) cancel_order(order_id);
   }
 
   bool mount_strategy(const std::string& ticker, Strategy* strategy);
@@ -112,9 +112,9 @@ class StrategyEngine {
   void process_tick(cppex::Any* data);
 
  private:
-  std::string send_order(const std::string& ticker, int volume,
-                         Direction direction, Offset offset, OrderType type,
-                         double price);
+  uint64_t send_order(const std::string& ticker, int volume,
+                      Direction direction, Offset offset, OrderType type,
+                      double price);
 
  private:
   enum EventType {
@@ -125,7 +125,7 @@ class StrategyEngine {
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<Gateway> gateway_ = nullptr;
-  std::map<std::string, std::list<Strategy*>> strategies_;
+  std::map<uint64_t, std::list<Strategy*>> strategies_;
 
   DataCenter data_center_;
   TradingPanel panel_;

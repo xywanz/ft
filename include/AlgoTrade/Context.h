@@ -21,23 +21,22 @@ class AlgoTradeContext {
     db_ = data_center_->get_tickdb(ticker);
   }
 
-  std::string buy_open(int volume, double price,
-                       OrderType type = OrderType::FAK) {
+  uint64_t buy_open(int volume, double price, OrderType type = OrderType::FAK) {
     return engine_->buy_open(ticker_, volume, type, price);
   }
 
-  std::string sell_close(int volume, double price,
-                         OrderType type = OrderType::FAK) {
+  uint64_t sell_close(int volume, double price,
+                      OrderType type = OrderType::FAK) {
     return engine_->sell_close(ticker_, volume, type, price);
   }
 
-  std::string sell_open(int volume, double price,
-                        OrderType type = OrderType::FAK) {
+  uint64_t sell_open(int volume, double price,
+                     OrderType type = OrderType::FAK) {
     return engine_->sell_open(ticker_, volume, type, price);
   }
 
-  std::string buy_close(int volume, double price,
-                        OrderType type = OrderType::FAK) {
+  uint64_t buy_close(int volume, double price,
+                     OrderType type = OrderType::FAK) {
     return engine_->buy_close(ticker_, volume, type, price);
   }
 
@@ -57,12 +56,12 @@ class AlgoTradeContext {
     int64_t original_volume = volume;
     if (sp.volume > 0) {
       int64_t to_close = std::min(sp.volume, volume);
-      if (buy_close(to_close, price, type) == "") return 0;
+      if (buy_close(to_close, price, type) == 0) return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (buy_open(volume, price, type) == "") return original_volume - volume;
+      if (buy_open(volume, price, type) == 0) return original_volume - volume;
     }
 
     return original_volume;
@@ -84,26 +83,22 @@ class AlgoTradeContext {
     int64_t original_volume = volume;
     if (lp.volume > 0) {
       int64_t to_close = std::min(lp.volume, volume);
-      if (sell_close(to_close, price, type) == "") return 0;
+      if (sell_close(to_close, price, type) == 0) return 0;
       volume -= to_close;
     }
 
     if (volume > 0) {
-      if (sell_open(volume, price, type) == "") return original_volume - volume;
+      if (sell_open(volume, price, type) == 0) return original_volume - volume;
     }
 
     return original_volume;
   }
 
-  bool cancel_order(const std::string& order_id) {
+  bool cancel_order(uint64_t order_id) {
     return engine_->cancel_order(order_id);
   }
 
   void cancel_all() { engine_->cancel_all(ticker_); }
-
-  void unmount() {
-    engine_->unmount_strategy(stra)
-  }
 
   double get_realized_pnl() const { return panel_->get_realized_pnl(); }
 

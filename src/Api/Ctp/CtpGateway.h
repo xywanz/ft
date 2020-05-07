@@ -37,11 +37,11 @@ class CtpGateway : public Gateway {
     trade_api_->logout();
   }
 
-  std::string send_order(const Order* order) override {
+  uint64_t send_order(const Order* order) override {
     return trade_api_->send_order(order);
   }
 
-  bool cancel_order(const std::string& order_id) override {
+  bool cancel_order(uint64_t order_id) override {
     return trade_api_->cancel_order(order_id);
   }
 

@@ -6,7 +6,7 @@ namespace ft {
 
 void TradingPanel::update_order(const Order* rtn_order) {
   if (orders_.find(rtn_order->order_id) == orders_.end()) {
-    PRINT_ORDER(spdlog::warn, rtn_order, "Order not found.");
+    PRINT_ORDER(spdlog::warn, "", rtn_order, "Order not found.");
     return;
   }
 
@@ -14,7 +14,7 @@ void TradingPanel::update_order(const Order* rtn_order) {
     case OrderStatus::REJECTED:
     case OrderStatus::CANCELED:
       portfolio_.update_pending(
-          rtn_order->ticker, rtn_order->direction, rtn_order->offset,
+          rtn_order->ticker_index, rtn_order->direction, rtn_order->offset,
           -(rtn_order->volume - rtn_order->volume_traded));
       orders_.erase(rtn_order->order_id);
       break;
@@ -29,7 +29,7 @@ void TradingPanel::update_order(const Order* rtn_order) {
       break;
   }
 
-  PRINT_ORDER(spdlog::info, rtn_order, "Order status's updated.");
+  PRINT_ORDER(spdlog::info, "", rtn_order, "Order status's updated.");
 }
 
 }  // namespace ft

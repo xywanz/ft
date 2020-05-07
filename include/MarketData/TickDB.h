@@ -12,7 +12,7 @@ namespace ft {
 
 class TickDB {
  public:
-  explicit TickDB(const std::string& ticker);
+  explicit TickDB(uint64_t ticker_index);
 
   void process_tick(const TickData* data);
 
@@ -24,7 +24,7 @@ class TickDB {
   std::size_t get_tick_count() const { return tick_data_.size(); }
 
  private:
-  std::string ticker_;
+  uint64_t ticker_index_;
   std::vector<TickData> tick_data_;
 };
 

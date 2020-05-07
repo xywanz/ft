@@ -31,9 +31,9 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool logout();
 
-  std::string send_order(const Order *order);
+  uint64_t send_order(const Order *order);
 
-  bool cancel_order(const std::string &order_id);
+  bool cancel_order(uint64_t order_id);
 
   bool query_contract(const std::string &ticker);
 
@@ -127,9 +127,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last);
 
  private:
-  static std::string get_order_id(const char *instrument, const char *exchange,
-                                  const char *order_ref) {
-    return fmt::format("{}.{}.{}", instrument, exchange, order_ref);
+  static uint64_t get_order_id(uint64_t ticker_index, int order_ref) {
+    return (ticker_index << 32) | static_cast<uint64_t>(order_ref);
   }
 
   int next_req_id() { return next_req_id_++; }
@@ -168,7 +167,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<bool> is_done_ = false;
   std::atomic<bool> is_logon_ = false;
 
-  std::map<std::string, Position> pos_cache_;
+  std::map<uint64_t, Position> pos_cache_;
 
   std::mutex query_mutex_;
 };

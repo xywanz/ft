@@ -10,6 +10,7 @@
 
 #include "AlgoTrade/Strategy.h"
 #include "Base/DataStruct.h"
+#include "ContractTable.h"
 #include "RiskManagement/NoSelfTrade.h"
 #include "RiskManagement/VelocityLimit.h"
 
@@ -80,36 +81,43 @@ bool StrategyEngine::login(const LoginParams& params) {
   return true;
 }
 
-std::string StrategyEngine::send_order(const std::string& ticker, int volume,
-                                       Direction direction, Offset offset,
-                                       OrderType type, double price) {
+uint64_t StrategyEngine::send_order(const std::string& ticker, int volume,
+                                    Direction direction, Offset offset,
+                                    OrderType type, double price) {
   if (!is_logon_) {
     spdlog::error("[StrategyEngine::send_order] Failed. Not logon");
-    return "";
+    return 0;
   }
 
-  Order order(ticker, direction, offset, volume, type, price);
+  const auto* contract = ContractTable::get_by_ticker(ticker);
+  if (!contract) {
+    spdlog::error("[StrategyEngine::send_order] Contract not found");
+    return 0;
+  }
+
+  Order order(contract->index, direction, offset, volume, type, price);
   order.status = OrderStatus::SUBMITTING;
 
   if (!risk_mgr_.check(&order)) {
     spdlog::error("[StrategyEngine::send_order] RiskMgr check failed");
-    return "";
+    return 0;
   }
 
   order.order_id = gateway_->send_order(&order);
-  if (order.order_id.empty()) {
-    PRINT_ORDER(spdlog::error, &order, "Failed to send_order.");
-    return "";
+  if (order.order_id == 0) {
+    PRINT_ORDER(spdlog::error, contract->ticker, &order,
+                "Failed to send_order.");
+    return 0;
   }
 
   panel_.process_new_order(&order);
-  panel_.update_pos_pending(ticker, direction, offset, volume);
+  panel_.update_pos_pending(contract->index, direction, offset, volume);
 
-  PRINT_ORDER(spdlog::debug, &order, "Success.");
+  PRINT_ORDER(spdlog::debug, contract->ticker, &order, "Success.");
   return order.order_id;
 }
 
-bool StrategyEngine::cancel_order(const std::string& order_id) {
+bool StrategyEngine::cancel_order(uint64_t order_id) {
   if (!is_logon_) {
     spdlog::error("[StrategyEngine::send_order] Failed. Not logon");
     return false;
@@ -128,7 +136,7 @@ bool StrategyEngine::cancel_order(const std::string& order_id) {
     return false;
   }
 
-  PRINT_ORDER(spdlog::debug, order, "Canceling.");
+  // PRINT_ORDER(spdlog::debug, order, "Canceling.");
   return true;
 }
 
@@ -146,7 +154,11 @@ bool StrategyEngine::mount_strategy(const std::string& ticker,
 
 void StrategyEngine::process_mount_strategy(cppex::Any* data) {
   auto* strategy = data->fetch<Strategy>().release();
-  auto& list = strategies_[strategy->get_ctx()->this_ticker()];
+
+  const auto& ticker = strategy->get_ctx()->this_ticker();
+  const auto* contract = ContractTable::get_by_ticker(ticker);
+  assert(contract);
+  auto& list = strategies_[contract->index];
 
   if (strategy->on_init(strategy->get_ctx()))
     list.emplace_back(strategy);
@@ -164,7 +176,10 @@ void StrategyEngine::process_unmount_strategy(cppex::Any* data) {
   auto ctx = strategy->get_ctx();
   if (!ctx) return;
 
-  auto iter = strategies_.find(ctx->this_ticker());
+  const auto& ticker = strategy->get_ctx()->this_ticker();
+  const auto* contract = ContractTable::get_by_ticker(ticker);
+  assert(contract);
+  auto iter = strategies_.find(contract->index);
   if (iter == strategies_.end()) return;
 
   auto& list = iter->second;
@@ -183,10 +198,16 @@ void StrategyEngine::process_sync(cppex::Any*) { is_logon_ = true; }
 void StrategyEngine::process_tick(cppex::Any* data) {
   auto* tick = data->fetch<TickData>().release();
 
-  data_center_.process_tick(tick);
-  panel_.update_float_pnl(tick->ticker, tick->last_price);
+  const auto* contract = ContractTable::get_by_index(tick->ticker_index);
+  if (!contract) {
+    spdlog::error("[StrategyEngine::process_tick] Contract not found");
+    return;
+  }
 
-  auto iter = strategies_.find(tick->ticker);
+  data_center_.process_tick(tick);
+  panel_.update_float_pnl(contract->index, tick->last_price);
+
+  auto iter = strategies_.find(contract->index);
   if (iter != strategies_.end()) {
     auto& strategy_list = iter->second;
     for (auto& strategy : strategy_list) strategy->on_tick(strategy->get_ctx());
@@ -194,16 +215,21 @@ void StrategyEngine::process_tick(cppex::Any* data) {
 }
 
 void StrategyEngine::process_position(cppex::Any* data) {
-  if (is_logon_) return;
-
   const auto* position = data->cast<Position>();
+
+  const auto* contract = ContractTable::get_by_index(position->ticker_index);
+  if (!contract) {
+    spdlog::error("[StrategyEngine::process_position] Contract not found");
+    return;
+  }
+
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
   spdlog::info(
       "[StrategyEngine::process_position] Ticker: {}, "
       "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
       "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
-      position->ticker, lp.volume, lp.cost_price, lp.frozen, lp.float_pnl,
+      contract->ticker, lp.volume, lp.cost_price, lp.frozen, lp.float_pnl,
       sp.volume, sp.cost_price, sp.frozen, sp.float_pnl);
 
   if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
@@ -223,15 +249,22 @@ void StrategyEngine::process_account(cppex::Any* data) {
 
 void StrategyEngine::process_trade(cppex::Any* data) {
   auto* trade = data->cast<Trade>();
+
+  const auto* contract = ContractTable::get_by_index(trade->ticker_index);
+  if (!contract) {
+    spdlog::error("[StrategyEngine::process_trade] Contract not found");
+    return;
+  }
+
   spdlog::debug(
       "[StrategyEngine::process_trade] Ticker: {}, Order ID: {}, Trade ID: {}, "
       "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
-      trade->ticker, trade->order_id, trade->trade_id,
+      contract->ticker, trade->order_id, trade->trade_id,
       to_string(trade->direction), to_string(trade->offset), trade->price,
       trade->volume);
 
   panel_.process_new_trade(trade);
-  panel_.update_pos_traded(trade->ticker, trade->direction, trade->offset,
+  panel_.update_pos_traded(contract->index, trade->direction, trade->offset,
                            trade->volume, trade->price);
 }
 

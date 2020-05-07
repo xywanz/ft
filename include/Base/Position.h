@@ -28,19 +28,7 @@ struct PositionDetail {
 struct Position {
   Position() {}
 
-  explicit Position(const std::string& _ticker) : ticker(_ticker) {
-    ticker_split(ticker, &symbol, &exchange);
-  }
-
-  Position(const std::string& _symbol, const std::string& _exchange)
-      : symbol(_symbol),
-        exchange(_exchange),
-        ticker(to_ticker(_symbol, _exchange)) {}
-
-  std::string symbol;
-  std::string exchange;
-  std::string ticker;
-
+  std::size_t ticker_index;
   PositionDetail long_pos;
   PositionDetail short_pos;
 };

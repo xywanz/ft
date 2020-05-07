@@ -32,9 +32,9 @@ class Gateway {
 
   virtual void logout() {}
 
-  virtual std::string send_order(const Order* order) { return ""; }
+  virtual uint64_t send_order(const Order* order) { return 0; }
 
-  virtual bool cancel_order(const std::string& order_id) { return false; }
+  virtual bool cancel_order(uint64_t order_id) { return false; }
 
   virtual bool query_contract(const std::string& ticker) { return false; }
 

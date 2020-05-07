@@ -17,3 +17,6 @@ target_link_libraries(contract_collector ft cppex yaml-cpp pthread)
 
 add_executable(data_collector DataCollector.cpp)
 target_link_libraries(data_collector ft cppex yaml-cpp pthread)
+
+add_executable(redis_cli misc.cpp)
+target_link_libraries(redis_cli hiredis)

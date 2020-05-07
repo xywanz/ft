@@ -6,7 +6,7 @@ project(ft)
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(CTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/v6.3.15_20190220_api_tradeapi_se_linux64)
-    set(DEPENDENCIES fmt spdlog thostmduserapi_se thosttraderapi_se)
+    set(DEPENDENCIES fmt spdlog hiredis thostmduserapi_se thosttraderapi_se)
 else ()
     set(CTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/6.3.15_20190220_tradeapi64_se_windows)
     set(DEPENDENCIES fmtd thostmduserapi_se thosttraderapi_se)
@@ -21,6 +21,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/fmt/include
     ${CMAKE_SOURCE_DIR}/dependencies/getopt
     ${CMAKE_SOURCE_DIR}/dependencies/cppex/include
+    ${CMAKE_SOURCE_DIR}/dependencies/hiredis
 )
 
 link_directories(
@@ -29,6 +30,7 @@ link_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/lib
     ${CMAKE_SOURCE_DIR}/dependencies/fmt/lib
     ${CMAKE_SOURCE_DIR}/dependencies/cppex/lib
+    ${CMAKE_SOURCE_DIR}/dependencies/hiredis/lib
 )
 
 set(CMAKE_CXX_STANDARD 17)

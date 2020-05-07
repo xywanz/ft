@@ -85,7 +85,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
   std::vector<std::string> subscribed_list_;
 
-  std::map<std::string, std::string> symbol2exchange_;
+  std::map<std::string, const Contract *> symbol2contract_;
 };
 
 template <class PriceType>

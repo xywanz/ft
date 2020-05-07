@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "ContractTable.h"
 #include "RiskManagement/RiskRuleInterface.h"
 #include "TradingPanel.h"
 
@@ -21,10 +22,13 @@ class NoSelfTradeRule : public RiskRuleInterface {
   explicit NoSelfTradeRule(const TradingPanel* panel) : panel_(panel) {}
 
   bool check(const Order* order) override {
+    const auto* contract = ContractTable::get_by_index(order->ticker_index);
+    assert(contract);
+
     Direction opp_d = opp_direction(order->direction);  // 对手方
     const Order* pending_order;
     std::vector<const Order*> order_list;
-    panel_->get_order_list(&order_list, order->ticker);
+    panel_->get_order_list(&order_list, contract->ticker);
 
     for (auto p : order_list) {
       pending_order = p;
@@ -47,7 +51,7 @@ class NoSelfTradeRule : public RiskRuleInterface {
         "[RiskMgr] Self trade! Ticker: {}. This Order: "
         "[Direction: {}, Type: {}, Price: {:.2f}]. "
         "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
-        order->ticker, to_string(order->direction), to_string(order->type),
+        contract->ticker, to_string(order->direction), to_string(order->type),
         order->price, to_string(pending_order->direction),
         to_string(pending_order->type), pending_order->price);
     return false;

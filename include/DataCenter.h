@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Base/DataStruct.h"
+#include "ContractTable.h"
 #include "MarketData/Candlestick.h"
 #include "MarketData/TickDB.h"
 
@@ -21,20 +22,26 @@ class DataCenter {
   const Candlestick* load_candlestick(const std::string& ticker);
 
   const TickDB* get_tickdb(const std::string& ticker) const {
-    auto iter = tick_center_.find(ticker);
+    const auto* contract = ContractTable::get_by_ticker(ticker);
+    assert(contract);
+
+    auto iter = tick_center_.find(contract->index);
     if (iter == tick_center_.end()) return nullptr;
     return &iter->second;
   }
 
   const Candlestick* get_candlestick(const std::string& ticker) const {
-    auto iter = candlestick_center_.find(ticker);
+    const auto* contract = ContractTable::get_by_ticker(ticker);
+    assert(contract);
+
+    auto iter = candlestick_center_.find(contract->index);
     if (iter == candlestick_center_.end()) return nullptr;
     return &iter->second;
   }
 
  private:
-  std::map<std::string, TickDB> tick_center_;
-  std::map<std::string, Candlestick> candlestick_center_;
+  std::map<uint64_t, TickDB> tick_center_;
+  std::map<uint64_t, Candlestick> candlestick_center_;
 };
 
 }  // namespace ft

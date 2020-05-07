@@ -28,24 +28,24 @@ class Portfolio {
 
   void init_position(const Position& pos);
 
-  void update_pending(const std::string& ticker, Direction direction,
-                      Offset offset, int changed);
+  void update_pending(uint64_t ticker_index, Direction direction, Offset offset,
+                      int changed);
 
-  void update_traded(const std::string& ticker, Direction direction,
-                     Offset offset, int64_t traded, double traded_price);
+  void update_traded(uint64_t ticker_index, Direction direction, Offset offset,
+                     int64_t traded, double traded_price);
 
-  void update_float_pnl(const std::string& ticker, double last_price);
+  void update_float_pnl(uint64_t ticker_index, double last_price);
 
-  const Position* get_position_unsafe(const std::string& ticker) const {
+  const Position* get_position_unsafe(uint64_t ticker_index) const {
     static const Position empty_pos;
 
-    const auto* pos = find(ticker);
+    const auto* pos = find(ticker_index);
     return pos ? pos : &empty_pos;
   }
 
-  void get_pos_ticker_list_unsafe(std::vector<const std::string*>* out) const {
-    for (const auto& [ticker, pos] : pos_map_) {
-      if (!is_empty_pos(pos)) out->emplace_back(&ticker);
+  void get_pos_ticker_list(std::vector<uint64_t>* out) const {
+    for (const auto& [ticker_index, pos] : pos_map_) {
+      if (!is_empty_pos(pos)) out->emplace_back(ticker_index);
     }
   }
 
@@ -62,12 +62,9 @@ class Portfolio {
   void clear() { pos_map_.clear(); }
 
  private:
-  Position& find_or_create_pos(const std::string& ticker) {
-    auto& pos = pos_map_[ticker];
-    if (pos.ticker.empty()) {
-      pos.ticker = ticker;
-      ticker_split(pos.ticker, &pos.symbol, &pos.exchange);
-    }
+  Position& find_or_create_pos(uint64_t ticker_index) {
+    auto& pos = pos_map_[ticker_index];
+    pos.ticker_index = ticker_index;
     return pos;
   }
 
@@ -79,18 +76,18 @@ class Portfolio {
            sp.frozen == 0 && sp.volume == 0;
   }
 
-  Position* find(const std::string& ticker) {
-    auto iter = pos_map_.find(ticker);
+  Position* find(uint64_t ticker_index) {
+    auto iter = pos_map_.find(ticker_index);
     if (iter == pos_map_.end()) return nullptr;
     return &iter->second;
   }
 
-  const Position* find(const std::string& ticker) const {
-    return const_cast<Portfolio*>(this)->find(ticker);
+  const Position* find(uint64_t ticker_index) const {
+    return const_cast<Portfolio*>(this)->find(ticker_index);
   }
 
  private:
-  std::map<std::string, Position> pos_map_;
+  std::map<uint64_t, Position> pos_map_;
   double realized_pnl_ = 0;
 };
 

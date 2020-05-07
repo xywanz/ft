@@ -43,10 +43,12 @@ class DataCollector {
 
   void on_tick(cppex::Any* data) {
     auto* tick = data->cast<ft::TickData>();
-    auto iter = ofs_map_.find(tick->ticker);
+    const auto* contract = ft::ContractTable::get_by_index(tick->ticker_index);
+    assert(contract);
+    auto iter = ofs_map_.find(contract->ticker);
     if (iter == ofs_map_.end()) {
       std::string file =
-          fmt::format("{}/{}-{}.csv", path_, tick->ticker, tick->date);
+          fmt::format("{}/{}-{}.csv", path_, contract->ticker, tick->date);
       std::ofstream ofs(file, std::ios_base::app);
       if (!ofs) {
         spdlog::error("Failed to open file '{}'", file);

@@ -268,23 +268,29 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
   is_logon_ = false;
 }
 
-std::string CtpTradeApi::send_order(const Order *order) {
+uint64_t CtpTradeApi::send_order(const Order *order) {
   if (!is_logon_) {
     spdlog::error("[CtpTradeApi::send_order] Failed. Not logon");
-    return "";
+    return 0;
   }
 
+  const auto *contract = ContractTable::get_by_index(order->ticker_index);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::send_order] Contract not found");
+    return 0;
+  }
+
+  auto order_ref = next_order_ref();
   CThostFtdcInputOrderField ctp_order;
   memset(&ctp_order, 0, sizeof(ctp_order));
   strncpy(ctp_order.BrokerID, broker_id_.c_str(), sizeof(ctp_order.BrokerID));
   strncpy(ctp_order.InvestorID, investor_id_.c_str(),
           sizeof(ctp_order.InvestorID));
-  strncpy(ctp_order.ExchangeID, order->exchange.c_str(),
-          sizeof(ctp_order.ExchangeID));
-  strncpy(ctp_order.InstrumentID, order->symbol.c_str(),
+  strncpy(ctp_order.InstrumentID, contract->symbol.c_str(),
           sizeof(ctp_order.InstrumentID));
-  snprintf(ctp_order.OrderRef, sizeof(ctp_order.OrderRef), "%d",
-           next_order_ref());
+  strncpy(ctp_order.ExchangeID, contract->exchange.c_str(),
+          sizeof(ctp_order.ExchangeID));
+  snprintf(ctp_order.OrderRef, sizeof(ctp_order.OrderRef), "%d", order_ref);
   ctp_order.OrderPriceType = order_type(order->type);
   ctp_order.Direction = direction(order->direction);
   ctp_order.CombOffsetFlag[0] = offset(order->offset);
@@ -308,10 +314,9 @@ std::string CtpTradeApi::send_order(const Order *order) {
     ctp_order.VolumeCondition = THOST_FTDC_VC_AV;
   }
 
-  if (ctp_api_->ReqOrderInsert(&ctp_order, next_req_id()) != 0) return "";
+  if (ctp_api_->ReqOrderInsert(&ctp_order, next_req_id()) != 0) return 0;
 
-  return get_order_id(ctp_order.InstrumentID, ctp_order.ExchangeID,
-                      ctp_order.OrderRef);
+  return get_order_id(order->ticker_index, order_ref);
 }
 
 void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
@@ -324,12 +329,16 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
     return;
   }
 
+  const auto *contract = ContractTable::get_by_symbol(ctp_order->InstrumentID);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::OnRspOrderInsert] Contract not found");
+    return;
+  }
+
   Order order;
-  order.order_id = get_order_id(ctp_order->InstrumentID, ctp_order->ExchangeID,
-                                ctp_order->OrderRef);
-  order.symbol = ctp_order->InstrumentID;
-  order.exchange = ctp_order->ExchangeID;
-  order.ticker = to_ticker(order.symbol, order.exchange);
+  order.ticker_index = contract->index;
+  order.order_id =
+      get_order_id(order.ticker_index, std::stoi(ctp_order->OrderRef));
   order.direction = direction(ctp_order->Direction);
   order.offset = offset(ctp_order->CombOffsetFlag[0]);
   order.price = ctp_order->LimitPrice;
@@ -353,12 +362,16 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
     return;
   }
 
+  const auto *contract = ContractTable::get_by_symbol(ctp_order->InstrumentID);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::OnRspOrderInsert] Contract not found");
+    return;
+  }
+
   Order order;
-  order.order_id = get_order_id(ctp_order->InstrumentID, ctp_order->ExchangeID,
-                                ctp_order->OrderRef);
-  order.symbol = ctp_order->InstrumentID;
-  order.exchange = ctp_order->ExchangeID;
-  order.ticker = to_ticker(order.symbol, order.exchange);
+  order.ticker_index = contract->index;
+  order.order_id =
+      get_order_id(order.ticker_index, std::stoi(ctp_order->OrderRef));
   order.direction = direction(ctp_order->Direction);
   order.offset = offset(ctp_order->CombOffsetFlag[0]);
   order.price = ctp_order->LimitPrice;
@@ -377,9 +390,10 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *ctp_order) {
       "[CtpTradeApi::OnRtnOrder] Success. Order ID: {}, Instrument: {}, "
       "Exchange: {}, Direction: {}, Offset: {}, Origin Volume: {}, "
       "Traded: {}, Price: {:.2f}, Status: {}, Status Msg: {}",
-      order.order_id, order.symbol, order.exchange, to_string(order.direction),
-      to_string(order.offset), order.volume, order.volume_traded, order.price,
-      to_string(order.status), gb2312_to_utf8(ctp_order->StatusMsg));
+      order.order_id, contract->symbol, contract->exchange,
+      to_string(order.direction), to_string(order.offset), order.volume,
+      order.volume_traded, order.price, to_string(order.status),
+      gb2312_to_utf8(ctp_order->StatusMsg));
 
   gateway_->on_order(&order);
 }
@@ -391,14 +405,17 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
   }
 
+  const auto *contract = ContractTable::get_by_symbol(trade->InstrumentID);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::OnRtnTrade] Contract not found");
+    return;
+  }
+
   Trade td;
-  td.order_id =
-      get_order_id(trade->InstrumentID, trade->ExchangeID, trade->OrderRef);
-  td.symbol = trade->InstrumentID;
-  td.exchange = trade->ExchangeID;
-  td.ticker = to_ticker(td.symbol, td.exchange);
+  td.ticker_index = contract->index;
+  td.order_id = get_order_id(td.ticker_index, std::stoi(trade->OrderRef));
   td.trade_id = std::stoi(trade->TradeID);
-  td.trade_time = trade->TradeTime;
+  // td.trade_time = trade->TradeTime;
   td.direction = direction(trade->Direction);
   td.offset = offset(trade->OffsetFlag);
   td.price = trade->Price;
@@ -408,27 +425,29 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
       "[CtpTradeApi::OnRtnTrade] Success. Order ID: {}, Instrument: {}, "
       "Exchange: {}, Trade ID: {}, Trade Time: {}, Direction: {}, "
       "Offset: {}, Price: {:.2f}, Volume: {}",
-      td.order_id, td.symbol, td.exchange, td.trade_id, td.trade_time,
-      to_string(td.direction), to_string(td.offset), td.price, td.volume);
+      td.order_id, contract->symbol, contract->exchange, td.trade_id,
+      td.trade_time, to_string(td.direction), to_string(td.offset), td.price,
+      td.volume);
   gateway_->on_trade(&td);
 }
 
-bool CtpTradeApi::cancel_order(const std::string &order_id) {
+bool CtpTradeApi::cancel_order(uint64_t order_id) {
   if (!is_logon_) return false;
 
   CThostFtdcInputOrderActionField req;
   memset(&req, 0, sizeof(req));
 
-  auto fields = split<std::string>(order_id, ".");
-  if (fields.size() != 3) {
-    spdlog::error("[CtpTradeApi::cancel_order] Failed. Error order id: {}",
-                  order_id);
+  uint64_t ticker_index = (order_id >> 32) & 0xffffffff;
+  int order_ref = order_id & 0xffffffff;
+  const auto *contract = ContractTable::get_by_index(ticker_index);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::cancel_order] Contract not found");
     return false;
   }
 
-  strncpy(req.InstrumentID, fields[0].c_str(), sizeof(req.InstrumentID));
-  strncpy(req.ExchangeID, fields[1].c_str(), sizeof(req.ExchangeID));
-  strncpy(req.OrderRef, fields[2].c_str(), sizeof(req.OrderRef));
+  strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
+  snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   req.ActionFlag = THOST_FTDC_AF_Delete;
@@ -456,9 +475,16 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
   spdlog::error("[CtpTradeApi::OnRspOrderAction] Failed. Rejected. Reason: {}",
                 gb2312_to_utf8(rsp_info->ErrorMsg));
 
+  const auto *contract = ContractTable::get_by_symbol(action->InstrumentID);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::OnRspOrderAction] Contract not found");
+    return;
+  }
+
   Order order;
+  order.ticker_index = contract->index;
   order.order_id =
-      get_order_id(action->InstrumentID, action->ExchangeID, action->OrderRef);
+      get_order_id(order.ticker_index, std::stoi(action->OrderRef));
   order.status = OrderStatus::CANCEL_REJECTED;
 
   gateway_->on_order(&order);
@@ -568,17 +594,20 @@ void CtpTradeApi::OnRspQryInvestorPosition(
   }
 
   if (position) {
-    auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
-    auto &pos = pos_cache_[ticker];
-    if (pos.ticker.empty()) {
-      pos.symbol = position->InstrumentID;
-      pos.exchange = position->ExchangeID;
-      pos.ticker = ticker;
+    const auto *contract = ContractTable::get_by_symbol(position->InstrumentID);
+    if (!contract) {
+      spdlog::error(
+          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found");
+      return;
     }
+
+    auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
+    auto &pos = pos_cache_[contract->index];
+    pos.ticker_index = contract->index;
 
     bool is_long_pos = position->PosiDirection == THOST_FTDC_PD_Long;
     auto &pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
-    if (pos.exchange == kSHFE || pos.exchange == kINE)
+    if (contract->exchange == kSHFE || contract->exchange == kINE)
       pos_detail.yd_volume = position->YdPosition;
     else
       pos_detail.yd_volume = position->Position - position->TodayPosition;
@@ -591,19 +620,13 @@ void CtpTradeApi::OnRspQryInvestorPosition(
     pos_detail.volume = position->Position;
     pos_detail.float_pnl = position->PositionProfit;
 
-    auto contract = ContractTable::get_by_ticker(pos.ticker);
-    if (!contract)
-      spdlog::warn(
-          "[CtpTradeApi::OnRspQryInvestorPosition] Failed. "
-          "{} is not in contract list.",
-          pos.ticker);
-    else if (pos_detail.volume > 0 && contract->size > 0)
+    if (pos_detail.volume > 0 && contract->size > 0)
       pos_detail.cost_price =
           position->PositionCost / (pos_detail.volume * contract->size);
   }
 
   if (is_last) {
-    for (auto &[key, pos] : pos_cache_) gateway_->on_position(&pos);
+    for (auto &[ticker_index, pos] : pos_cache_) gateway_->on_position(&pos);
     pos_cache_.clear();
     done();
   }
@@ -622,7 +645,8 @@ bool CtpTradeApi::query_account() {
   reset_sync();
   if (ctp_api_->ReqQryTradingAccount(&req, next_req_id()) != 0) {
     spdlog::error(
-        "[CtpTradeApi::query_account] Failed. Failed to ReqQryTradingAccount");
+        "[CtpTradeApi::query_account] Failed. Failed to "
+        "ReqQryTradingAccount");
     return false;
   }
 
@@ -648,7 +672,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
       trading_account->FrozenMargin);
 
   Account account;
-  account.account_id = trading_account->AccountID;
+  account.account_id = std::stoul(trading_account->AccountID);
   account.balance = trading_account->Balance;
   account.frozen = trading_account->FrozenCash + trading_account->FrozenMargin +
                    trading_account->FrozenCommission;

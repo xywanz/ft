@@ -10,11 +10,9 @@ namespace ft {
 static const std::size_t kMarketLevel = 10;
 
 struct TickData {
-  std::string symbol;
-  std::string exchange;
-  std::string ticker;
-
-  std::string date;
+  uint64_t ticker_index;
+  // std::string date;
+  uint64_t date;
   uint64_t time_sec;
   uint64_t time_ms;
 
