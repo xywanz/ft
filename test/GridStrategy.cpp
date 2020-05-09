@@ -12,12 +12,11 @@ class GridStrategy : public ft::Strategy {
 
     const auto* tick = ctx->get_tick();
     if (!tick) return false;
-
     ctx->load_candlestick();
 
-    const auto* pos = ctx->get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = ctx->get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     if (lp.volume > 0) {
       ctx->sell(lp.volume, tick->bid[0]);
@@ -46,9 +45,9 @@ class GridStrategy : public ft::Strategy {
 
     if (last_grid_price_ < 1e-6) last_grid_price_ = tick->last_price;
 
-    const auto* pos = ctx->get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = ctx->get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     spdlog::info(
         "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
@@ -84,9 +83,9 @@ class GridStrategy : public ft::Strategy {
   void on_exit(ft::AlgoTradeContext* ctx) override {
     spdlog::info("[GridStrategy::on_exit]");
 
-    const auto* pos = ctx->get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = ctx->get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     if (lp.volume > 0) {
       ctx->sell(lp.volume, 3300);

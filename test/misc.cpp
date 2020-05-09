@@ -1,13 +1,32 @@
-#include <hiredis.h>
+#include <unistd.h>
+
+#include <thread>
+
+#include "IPC/redis.h"
+
+struct A {
+  int a = 100;
+};
 
 int main() {
-  auto* c = redisConnect("127.0.0.1", 6379);
-  if (!c || c->err)
-    exit(-1);
+  ft::RedisSession sess("127.0.0.1", 6379);
 
-  auto* reply = (redisReply*)redisCommand(c, "SET %s %d", "a", 1);
-  freeReplyObject(reply);
+  std::thread([]() {
+    ft::RedisSession sess("127.0.0.1", 6379);
+    while (true) {
+      A a;
+      a.a = 188;
+      sess.publish("a", &a, sizeof(A));
+      sleep(1);
+    }
+  }).detach();
 
-  reply = (redisReply*)redisCommand(c, "GET %s", "a");
-  printf("%s\n", reply->str);
+  sess.subscribe({"a"});
+  redisReply* reply;
+  while (true) {
+    reply = sess.get_sub_reply();
+    A* a = (A*)reply->element[2]->str;
+    fmt::print("{}: {}\n", (char*)reply->element[1]->str, a->a);
+    freeReplyObject(reply);
+  }
 }

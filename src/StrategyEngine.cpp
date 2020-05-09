@@ -105,15 +105,28 @@ uint64_t StrategyEngine::send_order(const std::string& ticker, int volume,
 
   order.order_id = gateway_->send_order(&order);
   if (order.order_id == 0) {
-    PRINT_ORDER(spdlog::error, contract->ticker, &order,
-                "Failed to send_order.");
+    spdlog::error(
+        "[StrategyEngine::send_order] Failed to send_order."
+        " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
+        "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
+        "Status: {}>",
+        contract->ticker, order.order_id, to_string(order.direction),
+        to_string(order.offset), to_string(order.type), 0, order.volume,
+        order.price, to_string(order.status));
     return 0;
   }
 
   panel_.process_new_order(&order);
   panel_.update_pos_pending(contract->index, direction, offset, volume);
 
-  PRINT_ORDER(spdlog::debug, contract->ticker, &order, "Success.");
+  spdlog::debug(
+      "[StrategyEngine::send_order] Success."
+      " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
+      "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
+      "Status: {}>",
+      contract->ticker, order.order_id, to_string(order.direction),
+      to_string(order.offset), to_string(order.type), 0, order.volume,
+      order.price, to_string(order.status));
   return order.order_id;
 }
 
@@ -136,7 +149,14 @@ bool StrategyEngine::cancel_order(uint64_t order_id) {
     return false;
   }
 
-  // PRINT_ORDER(spdlog::debug, order, "Canceling.");
+  spdlog::debug(
+      "[StrategyEngine::cancel_order] Canceling."
+      " Order: <OrderID: {}, Direction: {}, "
+      "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
+      "Status: {}>",
+      order->order_id, to_string(order->direction), to_string(order->offset),
+      to_string(order->type), order->volume_traded, order->volume, order->price,
+      to_string(order->status));
   return true;
 }
 
@@ -196,7 +216,7 @@ void StrategyEngine::process_unmount_strategy(cppex::Any* data) {
 void StrategyEngine::process_sync(cppex::Any*) { is_logon_ = true; }
 
 void StrategyEngine::process_tick(cppex::Any* data) {
-  auto* tick = data->fetch<TickData>().release();
+  auto* tick = data->cast<TickData>();
 
   const auto* contract = ContractTable::get_by_index(tick->ticker_index);
   if (!contract) {

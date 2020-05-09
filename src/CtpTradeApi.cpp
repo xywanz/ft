@@ -623,6 +623,11 @@ void CtpTradeApi::OnRspQryInvestorPosition(
     if (pos_detail.volume > 0 && contract->size > 0)
       pos_detail.cost_price =
           position->PositionCost / (pos_detail.volume * contract->size);
+
+    spdlog::debug(
+        "[CtpTradeApi::OnRspQryInvestorPosition] ticker: {}, long: {}, short: "
+        "{}",
+        contract->ticker, pos.long_pos.volume, pos.short_pos.volume);
   }
 
   if (is_last) {
@@ -717,7 +722,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order,
     spdlog::info(
         "[CtpTradeApi::OnRspQryOrder] Cancel all orders on startup. Ticker: "
         "{}.{}, "
-        "OrderRef: {}, OriginalVolume: {}, Traded: {}, StatusMsg: {}",
+        "OrderSysID: {}, OriginalVolume: {}, Traded: {}, StatusMsg: {}",
         order->InstrumentID, order->ExchangeID, order->OrderSysID,
         order->VolumeTotalOriginal, order->VolumeTraded,
         gb2312_to_utf8(order->StatusMsg));

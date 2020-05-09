@@ -26,9 +26,7 @@ struct PositionDetail {
 };
 
 struct Position {
-  Position() {}
-
-  std::size_t ticker_index;
+  uint64_t ticker_index;
   PositionDetail long_pos;
   PositionDetail short_pos;
 };

@@ -37,7 +37,7 @@ class Portfolio {
   void update_float_pnl(uint64_t ticker_index, double last_price);
 
   const Position* get_position_unsafe(uint64_t ticker_index) const {
-    static const Position empty_pos;
+    static const Position empty_pos{};
 
     const auto* pos = find(ticker_index);
     return pos ? pos : &empty_pos;

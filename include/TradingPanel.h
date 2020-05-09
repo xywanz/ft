@@ -9,14 +9,17 @@
 
 #include "Base/DataStruct.h"
 #include "ContractTable.h"
+#include "PositionManager.h"
 
 namespace ft {
 
 class TradingPanel {
  public:
+  TradingPanel();
+
   void process_account(const Account* account) { account_ = *account; }
 
-  void process_position(const Position* pos) { portfolio_.init_position(*pos); }
+  void process_position(const Position* pos) { portfolio_.set_position(pos); }
 
   void update_account(int64_t balance_changed) {
     account_.balance += balance_changed;
@@ -91,25 +94,16 @@ class TradingPanel {
 
   double get_float_pnl() const { return portfolio_.get_float_pnl(); }
 
-  void get_pos_ticker_list(std::vector<uint64_t>* out) const {
-    portfolio_.get_pos_ticker_list(out);
-  }
+  void get_pos_ticker_list(std::vector<uint64_t>* out) const {}
 
-  const Position* get_position(const std::string& ticker) const {
-    static const Position empty_pos;
-
-    const auto* contract = ContractTable::get_by_ticker(ticker);
-    if (!contract) {
-      spdlog::error("[TradingPanel::get_order_list] Contract not found");
-      return &empty_pos;
-    }
-
-    return portfolio_.get_position_unsafe(contract->index);
+  const Position get_position(const std::string& ticker) const {
+    return portfolio_.get_position(ticker);
   }
 
  private:
   Account account_;
-  Portfolio portfolio_;
+  // Portfolio portfolio_;
+  PositionManager portfolio_;
   std::map<uint64_t, Order> orders_;
   std::map<uint64_t, Trade> trade_record_;
 };

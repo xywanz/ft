@@ -43,9 +43,9 @@ class AlgoTradeContext {
   int64_t buy(int64_t volume, double price, OrderType type = OrderType::FAK) {
     if (volume <= 0 || price <= 1e-6) return false;
 
-    const auto* pos = get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     int64_t sell_pending = 0;
     sell_pending += sp.close_pending;
@@ -70,9 +70,9 @@ class AlgoTradeContext {
   int64_t sell(int64_t volume, double price, OrderType type = OrderType::FAK) {
     if (volume <= 0 || price <= 1e-6) return false;
 
-    const auto* pos = get_position();
-    const auto& lp = pos->long_pos;
-    const auto& sp = pos->short_pos;
+    const auto pos = get_position();
+    const auto& lp = pos.long_pos;
+    const auto& sp = pos.short_pos;
 
     int64_t buy_pending = 0;
     buy_pending += sp.close_pending;
@@ -116,7 +116,7 @@ class AlgoTradeContext {
     return candlestick_->get_bar(offset);
   }
 
-  const Position* get_position() const { return panel_->get_position(ticker_); }
+  const Position get_position() const { return panel_->get_position(ticker_); }
 
   const TickData* get_tick(std::size_t offset = 0) const {
     return db_->get_tick(offset);
