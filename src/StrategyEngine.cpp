@@ -181,7 +181,7 @@ void StrategyEngine::process_unmount_strategy(cppex::Any* data) {
 void StrategyEngine::process_sync(cppex::Any*) { is_logon_ = true; }
 
 void StrategyEngine::process_tick(cppex::Any* data) {
-  auto* tick = data->fetch<TickData>();
+  auto* tick = data->cast<TickData>();
 
   data_center_.process_tick(tick);
   panel_.update_float_pnl(tick->ticker, tick->last_price);
