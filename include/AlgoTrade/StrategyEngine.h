@@ -16,6 +16,7 @@
 #include "Base/EventEngine.h"
 #include "DataCenter.h"
 #include "Gateway.h"
+#include "IPC/redis.h"
 #include "MarketData/Candlestick.h"
 #include "MarketData/TickDB.h"
 #include "RiskManagement/RiskManager.h"
@@ -24,41 +25,21 @@
 
 namespace ft {
 
-class Strategy;
-
 class StrategyEngine {
  public:
   StrategyEngine();
 
   ~StrategyEngine();
 
-  void close();
-
   bool login(const LoginParams& params);
 
-  uint64_t buy_open(const std::string& ticker, int volume, OrderType type,
-                    double price) {
-    return send_order(ticker, volume, Direction::BUY, Offset::OPEN, type,
-                      price);
-  }
+  void run();
 
-  uint64_t sell_close(const std::string& ticker, int volume, OrderType type,
-                      double price) {
-    return send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY,
-                      type, price);
-  }
+  void close();
 
-  uint64_t sell_open(const std::string& ticker, int volume, OrderType type,
-                     double price) {
-    return send_order(ticker, volume, Direction::SELL, Offset::OPEN, type,
-                      price);
-  }
-
-  uint64_t buy_close(const std::string& ticker, int volume, OrderType type,
-                     double price) {
-    return send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
-                      price);
-  }
+ private:
+  uint64_t send_order(uint64_t ticker_index, int volume, Direction direction,
+                      Offset offset, OrderType type, double price);
 
   bool cancel_order(uint64_t order_id);
 
@@ -68,15 +49,7 @@ class StrategyEngine {
     for (const auto& order_id : order_id_list) cancel_order(order_id);
   }
 
-  bool mount_strategy(const std::string& ticker, Strategy* strategy);
-
-  void unmount_strategy(Strategy* strategy);
-
   // callback
-
-  void process_mount_strategy(cppex::Any* data);
-
-  void process_unmount_strategy(cppex::Any* data);
 
   void process_sync(cppex::Any*);
 
@@ -112,26 +85,19 @@ class StrategyEngine {
   void process_tick(cppex::Any* data);
 
  private:
-  uint64_t send_order(const std::string& ticker, int volume,
-                      Direction direction, Offset offset, OrderType type,
-                      double price);
-
- private:
-  enum EventType {
-    EV_MOUNT_STRATEGY = EV_USER_EVENT_START,
-    EV_UMOUNT_STRATEGY,
-    EV_SYNC
-  };
+  enum EventType { EV_SYNC = EV_USER_EVENT_START };
 
   std::unique_ptr<EventEngine> engine_ = nullptr;
   std::unique_ptr<Gateway> gateway_ = nullptr;
-  std::map<uint64_t, std::list<Strategy*>> strategies_;
 
-  DataCenter data_center_;
   TradingPanel panel_;
   RiskManager risk_mgr_;
+  RedisSession redis_tick_;
+  RedisSession redis_order_;
 
   std::atomic<bool> is_logon_ = false;
+
+  std::mutex mutex_;  // 锁住仓位和订单
 };
 
 }  // namespace ft

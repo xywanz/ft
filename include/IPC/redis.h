@@ -6,6 +6,7 @@
 #include <async.h>
 #include <fmt/format.h>
 #include <hiredis.h>
+#include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <memory>
@@ -14,6 +15,8 @@
 #include <vector>
 
 namespace ft {
+
+using RedisReply = std::shared_ptr<redisReply>;
 
 struct RedisReplyDestructor {
   void operator()(redisReply* p) { freeReplyObject(p); }
@@ -45,8 +48,7 @@ class RedisSession {
     freeReplyObject(reply);
   }
 
-  std::unique_ptr<redisReply, RedisReplyDestructor> get(
-      const std::string& key) const {
+  RedisReply get(const std::string& key) const {
     const char* argv[2];
     size_t argvlen[2];
 
@@ -59,11 +61,10 @@ class RedisSession {
     auto* reply =
         reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
     assert(reply);
-    return std::unique_ptr<redisReply, RedisReplyDestructor>(reply);
+    return RedisReply(reply, RedisReplyDestructor());
   }
 
-  std::unique_ptr<redisReply, RedisReplyDestructor> keys(
-      const std::string& pattern) const {
+  RedisReply keys(const std::string& pattern) const {
     const char* argv[2];
     size_t argvlen[2];
 
@@ -76,7 +77,7 @@ class RedisSession {
     auto* reply =
         reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
     assert(reply);
-    return std::unique_ptr<redisReply, RedisReplyDestructor>(reply);
+    return RedisReply(reply, RedisReplyDestructor());
   }
 
   void subscribe(const std::vector<std::string>& topics) {
@@ -92,11 +93,11 @@ class RedisSession {
     freeReplyObject(reply);
   }
 
-  std::unique_ptr<redisReply, RedisReplyDestructor> get_sub_reply() {
+  RedisReply get_sub_reply() {
     redisReply* reply;
     auto status = redisGetReply(ctx_, reinterpret_cast<void**>(&reply));
     assert(status == REDIS_OK);
-    return std::unique_ptr<redisReply, RedisReplyDestructor>(reply);
+    return RedisReply(reply, RedisReplyDestructor());
   }
 
   void publish(const std::string& topic, const void* p, size_t size) {

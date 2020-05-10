@@ -51,17 +51,6 @@ enum class CombHedgeFlag {
 };
 
 struct Order {
-  Order() {}
-
-  Order(uint64_t _ticker_index, Direction _direction, Offset _offset,
-        int _volume, OrderType _type, double _price)
-      : ticker_index(_ticker_index),
-        direction(_direction),
-        offset(_offset),
-        volume(_volume),
-        type(_type),
-        price(_price) {}
-
   // req data
   uint64_t ticker_index;
   uint64_t order_id;
@@ -74,7 +63,7 @@ struct Order {
   // rsp or local data
   OrderStatus status;
   int64_t volume_traded = 0;
-  std::string insert_time;
+  uint64_t insert_time;
 };
 
 inline Direction opp_direction(Direction d) {

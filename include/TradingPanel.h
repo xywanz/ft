@@ -102,7 +102,6 @@ class TradingPanel {
 
  private:
   Account account_;
-  // Portfolio portfolio_;
   PositionManager portfolio_;
   std::map<uint64_t, Order> orders_;
   std::map<uint64_t, Trade> trade_record_;

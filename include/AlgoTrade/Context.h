@@ -5,132 +5,73 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "AlgoTrade/StrategyEngine.h"
+#include "IPC/redis.h"
+#include "PositionManager.h"
 
 namespace ft {
 
 class AlgoTradeContext {
  public:
-  explicit AlgoTradeContext(const std::string& ticker, StrategyEngine* engine,
-                            DataCenter* data_center, const TradingPanel* panel)
-      : ticker_(ticker),
-        panel_(panel),
-        engine_(engine),
-        data_center_(data_center) {
-    db_ = data_center_->get_tickdb(ticker);
+  AlgoTradeContext()
+      : redis_order_("127.0.0.1", 6379), portfolio_("127.0.0.1", 6379) {}
+
+  void buy_open(const std::string& ticker, int volume, double price,
+                OrderType type = OrderType::FAK) {
+    send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
   }
 
-  uint64_t buy_open(int volume, double price, OrderType type = OrderType::FAK) {
-    return engine_->buy_open(ticker_, volume, type, price);
+  void buy_close(const std::string& ticker, int volume, double price,
+                 OrderType type = OrderType::FAK) {
+    send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
+               price);
   }
 
-  uint64_t sell_close(int volume, double price,
-                      OrderType type = OrderType::FAK) {
-    return engine_->sell_close(ticker_, volume, type, price);
+  void sell_open(const std::string& ticker, int volume, double price,
+                 OrderType type = OrderType::FAK) {
+    send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
   }
 
-  uint64_t sell_open(int volume, double price,
-                     OrderType type = OrderType::FAK) {
-    return engine_->sell_open(ticker_, volume, type, price);
+  void sell_close(const std::string& ticker, int volume, double price,
+                  OrderType type = OrderType::FAK) {
+    send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
+               price);
   }
 
-  uint64_t buy_close(int volume, double price,
-                     OrderType type = OrderType::FAK) {
-    return engine_->buy_close(ticker_, volume, type, price);
+  void cancel_order(uint64_t order_id) {
+    redis_order_.publish("cancel_order", &order_id, sizeof(order_id));
   }
 
-  int64_t buy(int64_t volume, double price, OrderType type = OrderType::FAK) {
-    if (volume <= 0 || price <= 1e-6) return false;
-
-    const auto pos = get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
-
-    int64_t sell_pending = 0;
-    sell_pending += sp.close_pending;
-    sell_pending += lp.close_pending;
-
-    if (sell_pending > 0) return -sell_pending;
-
-    int64_t original_volume = volume;
-    if (sp.volume > 0) {
-      int64_t to_close = std::min(sp.volume, volume);
-      if (buy_close(to_close, price, type) == 0) return 0;
-      volume -= to_close;
-    }
-
-    if (volume > 0) {
-      if (buy_open(volume, price, type) == 0) return original_volume - volume;
-    }
-
-    return original_volume;
+  Position get_position(const std::string& ticker) const {
+    return portfolio_.get_position(ticker);
   }
 
-  int64_t sell(int64_t volume, double price, OrderType type = OrderType::FAK) {
-    if (volume <= 0 || price <= 1e-6) return false;
+  double get_realized_pnl() const { return portfolio_.get_realized_pnl(); }
 
-    const auto pos = get_position();
-    const auto& lp = pos.long_pos;
-    const auto& sp = pos.short_pos;
-
-    int64_t buy_pending = 0;
-    buy_pending += sp.close_pending;
-    buy_pending += lp.open_pending;
-
-    if (buy_pending > 0) return -buy_pending;
-
-    int64_t original_volume = volume;
-    if (lp.volume > 0) {
-      int64_t to_close = std::min(lp.volume, volume);
-      if (sell_close(to_close, price, type) == 0) return 0;
-      volume -= to_close;
-    }
-
-    if (volume > 0) {
-      if (sell_open(volume, price, type) == 0) return original_volume - volume;
-    }
-
-    return original_volume;
-  }
-
-  bool cancel_order(uint64_t order_id) {
-    return engine_->cancel_order(order_id);
-  }
-
-  void cancel_all() { engine_->cancel_all(ticker_); }
-
-  double get_realized_pnl() const { return panel_->get_realized_pnl(); }
-
-  double get_float_pnl() const { return panel_->get_float_pnl(); }
-
-  void load_candlestick() {
-    candlestick_ = data_center_->load_candlestick(ticker_);
-  }
-
-  const Bar* get_bar(std::size_t offset) const {
-    if (!candlestick_) {
-      spdlog::error("[AlgoTradeContext::get_bar] Candle chart not loaded");
-      return nullptr;
-    }
-    return candlestick_->get_bar(offset);
-  }
-
-  const Position get_position() const { return panel_->get_position(ticker_); }
-
-  const TickData* get_tick(std::size_t offset = 0) const {
-    return db_->get_tick(offset);
-  }
-
-  const std::string& this_ticker() const { return ticker_; }
+  double get_float_pnl() const { return portfolio_.get_float_pnl(); }
 
  private:
-  std::string ticker_;
-  StrategyEngine* engine_ = nullptr;
-  DataCenter* data_center_ = nullptr;
-  const TradingPanel* panel_ = nullptr;
-  const TickDB* db_ = nullptr;
-  const Candlestick* candlestick_ = nullptr;
+  void send_order(const std::string& ticker, int volume, Direction direction,
+                  Offset offset, OrderType type, double price) {
+    auto contract = ContractTable::get_by_ticker(ticker);
+    assert(contract);
+
+    Order order;
+    order.ticker_index = contract->index;
+    order.volume = volume;
+    order.direction = direction;
+    order.offset = offset;
+    order.type = type;
+    order.price = price;
+
+    redis_order_.publish("send_order", &order, sizeof(order));
+  }
+
+ private:
+  RedisSession redis_order_;
+  PositionManager portfolio_;
 };
 
 }  // namespace ft

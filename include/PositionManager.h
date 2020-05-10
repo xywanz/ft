@@ -58,7 +58,7 @@ class PositionManager {
   }
 
  private:
-  RedisSession redis_sess_;
+  RedisSession redis_;
   std::map<uint64_t, Position> pos_map_;
   double realized_pnl_ = 0;
 };

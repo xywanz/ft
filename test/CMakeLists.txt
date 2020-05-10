@@ -16,3 +16,7 @@ target_link_libraries(data_collector ft cppex yaml-cpp pthread)
 
 add_executable(redis_cli misc.cpp)
 target_link_libraries(redis_cli hiredis fmt pthread)
+
+add_executable(MSE
+    MSE.cpp)
+target_link_libraries(MSE dl pthread cppex yaml-cpp ft)

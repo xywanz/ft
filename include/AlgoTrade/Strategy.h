@@ -8,16 +8,27 @@
 #include <vector>
 
 #include "AlgoTrade/Context.h"
+#include "Base/DataStruct.h"
+#include "IPC/redis.h"
 
 namespace ft {
 
 class Strategy {
  public:
+  Strategy() : redis_tick_("127.0.0.1", 6379) {}
+
   virtual ~Strategy() {}
 
-  virtual bool on_init(AlgoTradeContext* ctx) { return true; }
+  void subscribe(const std::vector<std::string>& sub_list) {
+    std::vector<std::string> topics;
+    for (const auto& ticker : sub_list)
+      topics.emplace_back(fmt::format("md-{}", ticker));
+    redis_tick_.subscribe(topics);
+  }
 
-  virtual void on_tick(AlgoTradeContext* ctx) {}
+  virtual void on_init(AlgoTradeContext* ctx) {}
+
+  virtual void on_tick(AlgoTradeContext* ctx, const TickData* tick) {}
 
   virtual void on_order(AlgoTradeContext* ctx, const Order* order) {}
 
@@ -25,23 +36,18 @@ class Strategy {
 
   virtual void on_exit(AlgoTradeContext* ctx) {}
 
-  bool is_mounted() const { return is_mounted_; }
-
- private:
-  friend class StrategyEngine;
-  void set_ctx(AlgoTradeContext* ctx) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    if (is_mounted_) return;
-    ctx_.reset(ctx);
-    is_mounted_ = ctx ? true : false;
+  void run() {
+    on_init(&ctx_);
+    for (;;) {
+      auto reply = redis_tick_.get_sub_reply();
+      auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
+      on_tick(&ctx_, tick);
+    }
   }
 
-  auto get_ctx() const { return ctx_.get(); }
-
  private:
-  bool is_mounted_ = false;
-  std::mutex mutex_;
-  std::unique_ptr<AlgoTradeContext> ctx_;
+  AlgoTradeContext ctx_;
+  RedisSession redis_tick_;
 };
 
 #define EXPORT_STRATEGY(type) \

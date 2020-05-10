@@ -7,15 +7,14 @@
 namespace ft {
 
 PositionManager::PositionManager(const std::string& ip, int port)
-    : redis_sess_(ip, port) {}
+    : redis_(ip, port) {}
 
 Position PositionManager::get_position(const std::string& ticker) const {
   static const Position empty_pos{};
 
-  auto reply = redis_sess_.get(get_pos_key(ticker));
+  auto reply = redis_.get(get_pos_key(ticker));
 
-  if (reply->len == 0)
-    return empty_pos;
+  if (reply->len == 0) return empty_pos;
 
   assert(reply->len == sizeof(Position));
   Position pos;
@@ -24,9 +23,8 @@ Position PositionManager::get_position(const std::string& ticker) const {
 }
 
 double PositionManager::get_realized_pnl() const {
-  auto reply = redis_sess_.get(get_pnl_key());
-  if (reply->len == 0)
-    return 0;
+  auto reply = redis_.get(get_pnl_key());
+  if (reply->len == 0) return 0;
 
   assert(reply->len == sizeof(realized_pnl_));
   double ret = *reinterpret_cast<double*>(reply->str);
@@ -34,15 +32,16 @@ double PositionManager::get_realized_pnl() const {
 }
 
 double PositionManager::get_float_pnl() const {
-  double float_pnl = 0;
-  auto reply = redis_sess_.keys("pos-*");
-  for (size_t i = 0; i < reply->elements; ++i) {
-    auto key = reinterpret_cast<const char*>(reply->element[i]->str);
-    auto pos_reply = redis_sess_.get(key);
-    auto pos = reinterpret_cast<const Position*>(pos_reply->str);
-    float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
-  }
-  return float_pnl;
+  // double float_pnl = 0;
+  // auto reply = redis_.keys("pos-*");
+  // for (size_t i = 0; i < reply->elements; ++i) {
+  //   auto key = reinterpret_cast<const char*>(reply->element[i]->str);
+  //   auto pos_reply = redis_.get(key);
+  //   auto pos = reinterpret_cast<const Position*>(pos_reply->str);
+  //   float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
+  // }
+  // return float_pnl;
+  return 0;
 }
 
 void PositionManager::set_position(const Position* pos) {
@@ -51,7 +50,7 @@ void PositionManager::set_position(const Position* pos) {
   const auto* contract = ContractTable::get_by_index(pos->ticker_index);
   assert(contract);
   auto key = get_pos_key(contract->ticker);
-  redis_sess_.set(key, pos, sizeof(Position));
+  redis_.set(key, pos, sizeof(Position));
 }
 
 void PositionManager::update_pending(uint64_t ticker_index, Direction direction,
@@ -80,7 +79,7 @@ void PositionManager::update_pending(uint64_t ticker_index, Direction direction,
 
   const auto* contract = ContractTable::get_by_index(pos.ticker_index);
   assert(contract);
-  redis_sess_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void PositionManager::update_traded(uint64_t ticker_index, Direction direction,
@@ -143,8 +142,8 @@ void PositionManager::update_traded(uint64_t ticker_index, Direction direction,
     pos_detail.cost_price = 0;
   }
 
-  redis_sess_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
-  redis_sess_.set(get_pnl_key(), &realized_pnl_, sizeof(realized_pnl_));
+  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(get_pnl_key(), &realized_pnl_, sizeof(realized_pnl_));
 }
 
 void PositionManager::update_float_pnl(uint64_t ticker_index,

@@ -6,14 +6,12 @@
 #include <fstream>
 #include <getopt.hpp>
 
-#include "AlgoTrade/StrategyEngine.h"
+#include "AlgoTrade/Strategy.h"
 #include "Base/DataStruct.h"
 #include "ContractTable.h"
 #include "TestCommon.h"
 
 int main() {
-  std::string login_config_file =
-      getarg("../config/login.yml", "--login-config");
   std::string contracts_file =
       getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
@@ -21,20 +19,10 @@ int main() {
 
   spdlog::set_level(spdlog::level::from_str(log_level));
 
-  ft::LoginParams params;
-  if (!load_login_params(login_config_file, &params)) {
-    spdlog::error("Invalid file of login config");
-    exit(-1);
-  }
-
   if (!ft::ContractTable::init(contracts_file)) {
     spdlog::error("Invalid file of contract list");
     exit(-1);
   }
-
-  ft::StrategyEngine engine;
-
-  engine.login(params);
 
   void* handle = dlopen(strategy_file.c_str(), RTLD_LAZY);
   if (!handle) {
@@ -51,9 +39,5 @@ int main() {
   }
 
   auto strategy = create_strategy();
-  engine.mount_strategy(params.subscribed_list()[0], strategy);
-
-  while (1) {
-    std::this_thread::sleep_for(std::chrono::seconds(60));
-  }
+  strategy->run();
 }

@@ -16,7 +16,10 @@
 
 namespace ft {
 
-StrategyEngine::StrategyEngine() : engine_(new EventEngine) {
+StrategyEngine::StrategyEngine()
+    : engine_(new EventEngine),
+      redis_tick_("127.0.0.1", 6379),
+      redis_order_("127.0.0.1", 6379) {
   engine_->set_handler(EV_ACCOUNT,
                        MEM_HANDLER(StrategyEngine::process_account));
   engine_->set_handler(EV_POSITION,
@@ -24,10 +27,6 @@ StrategyEngine::StrategyEngine() : engine_(new EventEngine) {
   engine_->set_handler(EV_ORDER, MEM_HANDLER(StrategyEngine::process_order));
   engine_->set_handler(EV_TRADE, MEM_HANDLER(StrategyEngine::process_trade));
   engine_->set_handler(EV_TICK, MEM_HANDLER(StrategyEngine::process_tick));
-  engine_->set_handler(EV_MOUNT_STRATEGY,
-                       MEM_HANDLER(StrategyEngine::process_mount_strategy));
-  engine_->set_handler(EV_UMOUNT_STRATEGY,
-                       MEM_HANDLER(StrategyEngine::process_unmount_strategy));
   engine_->set_handler(EV_SYNC, MEM_HANDLER(StrategyEngine::process_sync));
 
   risk_mgr_.add_rule(std::make_shared<NoSelfTradeRule>(&panel_));
@@ -38,9 +37,6 @@ StrategyEngine::~StrategyEngine() {}
 
 void StrategyEngine::close() {
   is_logon_ = false;
-  for (auto& [ticker, strategy_list] : strategies_) {
-    for (auto strategy : strategy_list) unmount_strategy(strategy);
-  }
   gateway_->logout();
   engine_->stop();
 }
@@ -81,7 +77,23 @@ bool StrategyEngine::login(const LoginParams& params) {
   return true;
 }
 
-uint64_t StrategyEngine::send_order(const std::string& ticker, int volume,
+void StrategyEngine::run() {
+  redis_order_.subscribe({"send_order", "cancel_order"});
+
+  for (;;) {
+    auto reply = redis_order_.get_sub_reply();
+    std::string_view type = reinterpret_cast<const char*>(reply->element[1]);
+    if (type == "send_order") {
+      auto order = reinterpret_cast<const Order*>(reply->element[2]);
+      send_order(order->ticker_index, order->volume, order->direction,
+                 order->offset, order->type, order->price);
+    } else if (type == "cancel_order") {
+      cancel_order(*reinterpret_cast<uint64_t*>(reply->element[2]));
+    }
+  }
+}
+
+uint64_t StrategyEngine::send_order(uint64_t ticker_index, int volume,
                                     Direction direction, Offset offset,
                                     OrderType type, double price) {
   if (!is_logon_) {
@@ -89,15 +101,22 @@ uint64_t StrategyEngine::send_order(const std::string& ticker, int volume,
     return 0;
   }
 
-  const auto* contract = ContractTable::get_by_ticker(ticker);
+  const auto* contract = ContractTable::get_by_index(ticker_index);
   if (!contract) {
     spdlog::error("[StrategyEngine::send_order] Contract not found");
     return 0;
   }
 
-  Order order(contract->index, direction, offset, volume, type, price);
+  Order order;
+  order.ticker_index = ticker_index;
+  order.direction = direction;
+  order.offset = offset;
+  order.volume = volume;
+  order.type = type;
+  order.price = price;
   order.status = OrderStatus::SUBMITTING;
 
+  std::unique_lock<std::mutex> lock(mutex_);
   if (!risk_mgr_.check(&order)) {
     spdlog::error("[StrategyEngine::send_order] RiskMgr check failed");
     return 0;
@@ -136,6 +155,7 @@ bool StrategyEngine::cancel_order(uint64_t order_id) {
     return false;
   }
 
+  std::unique_lock<std::mutex> lock(mutex_);
   const Order* order = panel_.get_order_by_id(order_id);
   if (!order) {
     spdlog::error(
@@ -160,60 +180,10 @@ bool StrategyEngine::cancel_order(uint64_t order_id) {
   return true;
 }
 
-bool StrategyEngine::mount_strategy(const std::string& ticker,
-                                    Strategy* strategy) {
-  if (!is_logon_) {
-    spdlog::error("[StrategyEngine::mount_strategy] Not logon");
-    return false;
-  }
-
-  strategy->set_ctx(new AlgoTradeContext(ticker, this, &data_center_, &panel_));
-  engine_->post(EV_MOUNT_STRATEGY, strategy);
-  return true;
+void StrategyEngine::process_sync(cppex::Any*) {
+  is_logon_ = true;
+  spdlog::debug("[StrategyEngine::process_sync] done");
 }
-
-void StrategyEngine::process_mount_strategy(cppex::Any* data) {
-  auto* strategy = data->fetch<Strategy>().release();
-
-  const auto& ticker = strategy->get_ctx()->this_ticker();
-  const auto* contract = ContractTable::get_by_ticker(ticker);
-  assert(contract);
-  auto& list = strategies_[contract->index];
-
-  if (strategy->on_init(strategy->get_ctx()))
-    list.emplace_back(strategy);
-  else
-    engine_->post(EV_MOUNT_STRATEGY, strategy);
-}
-
-void StrategyEngine::unmount_strategy(Strategy* strategy) {
-  engine_->post(EV_UMOUNT_STRATEGY, strategy);
-}
-
-void StrategyEngine::process_unmount_strategy(cppex::Any* data) {
-  auto* strategy = data->fetch<Strategy>().release();
-
-  auto ctx = strategy->get_ctx();
-  if (!ctx) return;
-
-  const auto& ticker = strategy->get_ctx()->this_ticker();
-  const auto* contract = ContractTable::get_by_ticker(ticker);
-  assert(contract);
-  auto iter = strategies_.find(contract->index);
-  if (iter == strategies_.end()) return;
-
-  auto& list = iter->second;
-  for (auto iter = list.begin(); iter != list.end(); ++iter) {
-    if (*iter == strategy) {
-      strategy->on_exit(ctx);
-      strategy->set_ctx(nullptr);
-      list.erase(iter);
-      return;
-    }
-  }
-}
-
-void StrategyEngine::process_sync(cppex::Any*) { is_logon_ = true; }
 
 void StrategyEngine::process_tick(cppex::Any* data) {
   auto* tick = data->cast<TickData>();
@@ -224,14 +194,13 @@ void StrategyEngine::process_tick(cppex::Any* data) {
     return;
   }
 
-  data_center_.process_tick(tick);
+  std::unique_lock<std::mutex> lock(mutex_);
   panel_.update_float_pnl(contract->index, tick->last_price);
+  lock.unlock();
 
-  auto iter = strategies_.find(contract->index);
-  if (iter != strategies_.end()) {
-    auto& strategy_list = iter->second;
-    for (auto& strategy : strategy_list) strategy->on_tick(strategy->get_ctx());
-  }
+  redis_tick_.publish(fmt::format("md-{}", contract->ticker), tick,
+                      sizeof(TickData));
+  spdlog::debug("[StrategyEngine::process_tick]");
 }
 
 void StrategyEngine::process_position(cppex::Any* data) {
@@ -284,19 +253,19 @@ void StrategyEngine::process_trade(cppex::Any* data) {
       trade->volume);
 
   panel_.process_new_trade(trade);
+
+  std::unique_lock<std::mutex> lock(mutex_);
   panel_.update_pos_traded(contract->index, trade->direction, trade->offset,
                            trade->volume, trade->price);
 }
 
 void StrategyEngine::process_order(cppex::Any* data) {
   const auto* order = data->cast<Order>();
+
+  std::unique_lock<std::mutex> lock(mutex_);
   panel_.update_order(order);
 
   // TODO(kevin): 对策略发的单加个ID，只把订单回执返回给发该单的策略
-  for (auto& [ticker, strategy_list] : strategies_) {
-    for (auto strategy : strategy_list)
-      strategy->on_order(strategy->get_ctx(), order);
-  }
 }
 
 }  // namespace ft

@@ -24,9 +24,8 @@ int main() {
   sess.subscribe({"a"});
   redisReply* reply;
   while (true) {
-    reply = sess.get_sub_reply();
+    auto reply = sess.get_sub_reply();
     A* a = (A*)reply->element[2]->str;
     fmt::print("{}: {}\n", (char*)reply->element[1]->str, a->a);
-    freeReplyObject(reply);
   }
 }
