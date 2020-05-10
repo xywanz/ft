@@ -82,13 +82,14 @@ void StrategyEngine::run() {
 
   for (;;) {
     auto reply = redis_order_.get_sub_reply();
-    std::string_view type = reinterpret_cast<const char*>(reply->element[1]);
+    std::string_view type =
+        reinterpret_cast<const char*>(reply->element[1]->str);
     if (type == "send_order") {
-      auto order = reinterpret_cast<const Order*>(reply->element[2]);
+      auto order = reinterpret_cast<const Order*>(reply->element[2]->str);
       send_order(order->ticker_index, order->volume, order->direction,
                  order->offset, order->type, order->price);
     } else if (type == "cancel_order") {
-      cancel_order(*reinterpret_cast<uint64_t*>(reply->element[2]));
+      cancel_order(*reinterpret_cast<uint64_t*>(reply->element[2]->str));
     }
   }
 }
