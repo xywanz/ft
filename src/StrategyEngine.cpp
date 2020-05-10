@@ -195,9 +195,9 @@ void StrategyEngine::process_tick(cppex::Any* data) {
     return;
   }
 
-  std::unique_lock<std::mutex> lock(mutex_);
-  panel_.update_float_pnl(contract->index, tick->last_price);
-  lock.unlock();
+  // std::unique_lock<std::mutex> lock(mutex_);
+  // panel_.update_float_pnl(contract->index, tick->last_price);
+  // lock.unlock();
 
   redis_tick_.publish(fmt::format("md-{}", contract->ticker), tick,
                       sizeof(TickData));

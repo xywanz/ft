@@ -32,15 +32,15 @@ double PositionManager::get_realized_pnl() const {
 }
 
 double PositionManager::get_float_pnl() const {
-  double float_pnl = 0;
-  auto reply = redis_.keys("pos-*");
-  for (size_t i = 0; i < reply->elements; ++i) {
-    auto key = reinterpret_cast<const char*>(reply->element[i]->str);
-    auto pos_reply = redis_.get(key);
-    auto pos = reinterpret_cast<const Position*>(pos_reply->str);
-    float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
-  }
-  return float_pnl;
+  // double float_pnl = 0;
+  // auto reply = redis_.keys("pos-*");
+  // for (size_t i = 0; i < reply->elements; ++i) {
+  //   auto key = reinterpret_cast<const char*>(reply->element[i]->str);
+  //   auto pos_reply = redis_.get(key);
+  //   auto pos = reinterpret_cast<const Position*>(pos_reply->str);
+  //   float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
+  // }
+  // return float_pnl;
   return 0;
 }
 
