@@ -55,6 +55,12 @@ class AlgoTradeContext {
  private:
   void send_order(const std::string& ticker, int volume, Direction direction,
                   Offset offset, OrderType type, double price) {
+    spdlog::info(
+        "[AlgoTradeContext::send_order] ticker: {}, volume: {}, price: {}, "
+        "type: {}, direction: {}, offset: {}",
+        ticker, volume, price, to_string(type), to_string(direction),
+        to_string(offset));
+
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
