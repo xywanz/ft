@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "AlgoTrade/Protocol.h"
 #include "AlgoTrade/StrategyEngine.h"
 #include "IPC/redis.h"
 #include "PositionManager.h"
@@ -41,7 +42,11 @@ class AlgoTradeContext {
   }
 
   void cancel_order(uint64_t order_id) {
-    redis_order_.publish("cancel_order", &order_id, sizeof(order_id));
+    TraderCommand cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.type = CANCEL_ORDER;
+    cmd.cancel_req.order_id = order_id;
+    redis_order_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
   Position get_position(const std::string& ticker) const {
@@ -64,15 +69,17 @@ class AlgoTradeContext {
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
-    Order order;
-    order.ticker_index = contract->index;
-    order.volume = volume;
-    order.direction = direction;
-    order.offset = offset;
-    order.type = type;
-    order.price = price;
+    TraderCommand cmd;
+    memset(&cmd, 0, sizeof(cmd));
+    cmd.type = NEW_ORDER;
+    cmd.order_req.ticker_index = contract->index;
+    cmd.order_req.volume = volume;
+    cmd.order_req.direction = direction;
+    cmd.order_req.offset = offset;
+    cmd.order_req.type = type;
+    cmd.order_req.price = price;
 
-    redis_order_.publish("send_order", &order, sizeof(order));
+    redis_order_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
  private:

@@ -346,13 +346,14 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
   order.type = order_type(ctp_order->OrderPriceType);
   order.status = OrderStatus::REJECTED;
 
-  spdlog::debug(
+  spdlog::error(
       "[CtpTradeApi::OnRspOrderInsert] Rejected. Order ID: {}, Instrument: {}, "
       "Exchange: {}, Direction: {}, Offset: {}, Origin Volume: {}, "
-      "Traded: {}, Price: {:.2f}, Status: {}",
+      "Traded: {}, Price: {:.2f}, Status: {}, ErrorMsg: {}",
       order.order_id, contract->symbol, contract->exchange,
       to_string(order.direction), to_string(order.offset), order.volume,
-      order.volume_traded, order.price, to_string(order.status));
+      order.volume_traded, order.price, to_string(order.status),
+      gb2312_to_utf8(rsp_info->ErrorMsg));
 
   gateway_->on_order(&order);
 }

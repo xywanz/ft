@@ -17,6 +17,11 @@ namespace ft {
 
 enum class ProductType { FUTURES = 0, OPTIONS };
 
+enum SpecTickerIndex : uint64_t {
+  NONE_TICKER = 0,
+  ALL_TICKERS = UINT64_MAX
+};
+
 struct Contract {
   std::string symbol;
   std::string exchange;

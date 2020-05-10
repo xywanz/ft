@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 
+#include "AlgoTrade/Protocol.h"
 #include "AlgoTrade/Strategy.h"
 #include "Base/DataStruct.h"
 #include "ContractTable.h"
@@ -78,18 +79,24 @@ bool StrategyEngine::login(const LoginParams& params) {
 }
 
 void StrategyEngine::run() {
-  redis_order_.subscribe({"send_order", "cancel_order"});
+  redis_order_.subscribe({TRADER_CMD_TOPIC});
 
   for (;;) {
     auto reply = redis_order_.get_sub_reply();
-    std::string_view type =
-        reinterpret_cast<const char*>(reply->element[1]->str);
-    if (type == "send_order") {
-      auto order = reinterpret_cast<const Order*>(reply->element[2]->str);
-      send_order(order->ticker_index, order->volume, order->direction,
-                 order->offset, order->type, order->price);
-    } else if (type == "cancel_order") {
-      cancel_order(*reinterpret_cast<uint64_t*>(reply->element[2]->str));
+    auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
+    switch (cmd->type) {
+      case NEW_ORDER:
+        send_order(cmd->order_req.ticker_index, cmd->order_req.volume,
+                   cmd->order_req.direction, cmd->order_req.offset,
+                   cmd->order_req.type, cmd->order_req.price);
+        break;
+      case CANCEL_ORDER:
+        if (cmd->cancel_req.order_id != 0)
+          cancel_order(cmd->cancel_req.order_id);
+        break;
+      default:
+        spdlog::error("[StrategyEngine::run] Unknown cmd");
+        break;
     }
   }
 }
@@ -199,8 +206,7 @@ void StrategyEngine::process_tick(cppex::Any* data) {
   // panel_.update_float_pnl(contract->index, tick->last_price);
   // lock.unlock();
 
-  redis_tick_.publish(fmt::format("md-{}", contract->ticker), tick,
-                      sizeof(TickData));
+  redis_tick_.publish(get_md_topic(contract->ticker), tick, sizeof(TickData));
   spdlog::debug("[StrategyEngine::process_tick]");
 }
 
