@@ -21,6 +21,16 @@ struct OrderReq {
   double price = 0;
 };
 
+/*
+ * Gateway的开发需要遵循以下规则：
+ *
+ * 构造函数接受TradingEngineInterface的指针，当特定行为触发时，回调engine中的函数
+ * 具体规则参考TradingEngineInterface.h中的说明
+ *
+ * 实现Gateway基类中的虚函数，可全部实现可部分实现，根据需求而定
+ *
+ * 在Gateway.cpp中注册你的Gateway
+ */
 class Gateway {
  public:
   explicit Gateway(TradingEngineInterface* engine) : engine_(engine) {}
