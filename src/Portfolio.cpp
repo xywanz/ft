@@ -18,8 +18,8 @@ void Portfolio::init_position(const Position& pos) {
   spdlog::debug("[Portfolio::init_position]");
 }
 
-void Portfolio::update_pending(uint64_t ticker_index, Direction direction,
-                               Offset offset, int changed) {
+void Portfolio::update_pending(uint64_t ticker_index, uint64_t direction,
+                               uint64_t offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -43,8 +43,8 @@ void Portfolio::update_pending(uint64_t ticker_index, Direction direction,
   }
 }
 
-void Portfolio::update_traded(uint64_t ticker_index, Direction direction,
-                              Offset offset, int64_t traded,
+void Portfolio::update_traded(uint64_t ticker_index, uint64_t direction,
+                              uint64_t offset, int64_t traded,
                               double traded_price) {
   if (traded <= 0) return;
 

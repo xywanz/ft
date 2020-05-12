@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include "Base/DataStruct.h"
+#include "Core/Position.h"
 #include "IPC/redis.h"
 
 namespace ft {
@@ -26,10 +26,10 @@ class PositionManager {
 
   void set_position(const Position* pos);
 
-  void update_pending(uint64_t ticker_index, Direction direction, Offset offset,
-                      int changed);
+  void update_pending(uint64_t ticker_index, uint64_t direction,
+                      uint64_t offset, int changed);
 
-  void update_traded(uint64_t ticker_index, Direction direction, Offset offset,
+  void update_traded(uint64_t ticker_index, uint64_t direction, uint64_t offset,
                      int64_t traded, double traded_price);
 
   void update_float_pnl(uint64_t ticker_index, double last_price);

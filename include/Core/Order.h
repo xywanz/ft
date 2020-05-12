@@ -6,7 +6,7 @@
 #include <map>
 #include <string>
 
-#include "Base/Common.h"
+#include "Core/Constants.h"
 
 namespace ft {
 
@@ -21,71 +21,43 @@ enum class OrderStatus {
   CANCEL_REJECTED
 };
 
-enum class OrderType {
-  LIMIT = 0,  // 市价
-  MARKET,     //
-  FAK,        //
-  FOK,        //
-  BEST,       // 最优价
-};
-
-enum class Direction {
-  BUY = 0,
-  SELL,
-};
-
-enum class Offset {
-  OPEN = 0,
-  CLOSE,
-  CLOSE_TODAY,
-  CLOSE_YESTERDAY,
-  FORCE_CLOSE,
-  FORCE_OFF,
-  LOCAL_FORCE_CLOSE,
-};
-
-enum class CombHedgeFlag {
-  SPECULATION = 0,
-  ARBITRAGE,
-  HEDGE,
-};
-
 struct Order {
   // req data
   uint64_t ticker_index;
   uint64_t order_id;
-  OrderType type;
-  Direction direction;
-  Offset offset;
+  uint64_t type;
+  uint64_t direction;
+  uint64_t offset;
   double price = 0;
   int64_t volume = 0;
 
   // rsp or local data
   OrderStatus status;
-  int64_t volume_traded = 0;
+  int64_t traded_volume = 0;
+  int64_t canceled_volume = 0;
   uint64_t insert_time;
 };
 
-inline Direction opp_direction(Direction d) {
+inline uint64_t opp_direction(uint64_t d) {
   return d == Direction::BUY ? Direction::SELL : Direction::BUY;
 }
 
-inline bool is_offset_open(Offset offset) { return offset == Offset::OPEN; }
+inline bool is_offset_open(uint64_t offset) { return offset == Offset::OPEN; }
 
-inline bool is_offset_close(Offset offset) {
-  return offset == Offset::CLOSE || offset == Offset::CLOSE_TODAY ||
-         offset == Offset::CLOSE_YESTERDAY;
+inline bool is_offset_close(uint64_t offset) {
+  return offset &
+         (Offset::CLOSE | Offset::CLOSE_TODAY | Offset::CLOSE_YESTERDAY);
 }
 
-inline const std::string& to_string(Direction d) {
-  static const std::map<Direction, std::string> d_str = {
+inline const std::string& direction_str(uint64_t d) {
+  static const std::map<uint64_t, std::string> d_str = {
       {Direction::BUY, "Buy"}, {Direction::SELL, "Sell"}};
 
   return d_str.find(d)->second;
 }
 
-inline const std::string& to_string(OrderType t) {
-  static const std::map<OrderType, std::string> t_str = {
+inline const std::string& ordertype_str(uint64_t t) {
+  static const std::map<uint64_t, std::string> t_str = {
       {OrderType::LIMIT, "Limit"},
       {OrderType::MARKET, "Market"},
       {OrderType::BEST, "Best"}};
@@ -106,8 +78,8 @@ inline const std::string& to_string(OrderStatus s) {
   return s_str.find(s)->second;
 }
 
-inline const std::string& to_string(Offset off) {
-  static const std::map<Offset, std::string> off_str = {
+inline const std::string& offset_str(uint64_t off) {
+  static const std::map<uint64_t, std::string> off_str = {
       {Offset::OPEN, "Open"},
       {Offset::CLOSE, "Close"},
       {Offset::CLOSE_TODAY, "CloseToday"},

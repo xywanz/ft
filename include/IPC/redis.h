@@ -24,6 +24,8 @@ struct RedisReplyDestructor {
 
 class RedisSession {
  public:
+  RedisSession() {}
+
   RedisSession(const std::string& ip, int port) {
     ctx_ = redisConnect(ip.c_str(), port);
     assert(ctx_ && ctx_->err == 0);
@@ -120,7 +122,7 @@ class RedisSession {
   }
 
  private:
-  redisContext* ctx_;
+  redisContext* ctx_ = nullptr;
 };
 
 class AsyncRedisSession {

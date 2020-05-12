@@ -8,7 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "Base/DataStruct.h"
+#include "Core/Constants.h"
+#include "Core/Contract.h"
 
 namespace ft {
 

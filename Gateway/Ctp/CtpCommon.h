@@ -6,12 +6,17 @@
 #include <ThostFtdcUserApiDataType.h>
 
 #include <codecvt>
+#include <limits>
 #include <locale>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "Base/DataStruct.h"
+#include "ContractTable.h"
+#include "Core/Account.h"
+#include "Core/Contract.h"
+#include "Core/Order.h"
+#include "Core/Position.h"
 
 namespace ft {
 
@@ -47,8 +52,16 @@ inline std::string gb2312_to_utf8(const std::string& gb2312) {
   return "";
 }
 
-inline OrderType order_type(char ctp_type) {
-  static std::map<char, OrderType> ctp2ft = {
+template <class PriceType>
+inline PriceType adjust_price(PriceType price) {
+  PriceType ret = price;
+  if (price >= std::numeric_limits<PriceType>::max() - PriceType(1e-6))
+    ret = PriceType(0);
+  return ret;
+}
+
+inline uint64_t order_type(char ctp_type) {
+  static std::map<char, uint64_t> ctp2ft = {
       {THOST_FTDC_OPT_AnyPrice, OrderType::MARKET},
       {THOST_FTDC_OPT_LimitPrice, OrderType::LIMIT},
       {THOST_FTDC_OPT_BestPrice, OrderType::BEST}};
@@ -56,8 +69,8 @@ inline OrderType order_type(char ctp_type) {
   return ctp2ft[ctp_type];
 }
 
-inline char order_type(OrderType type) {
-  static std::map<OrderType, char> ft2ctp = {
+inline char order_type(uint64_t type) {
+  static std::map<uint64_t, char> ft2ctp = {
       {OrderType::MARKET, THOST_FTDC_OPT_AnyPrice},
       {OrderType::FAK, THOST_FTDC_OPT_LimitPrice},
       {OrderType::FOK, THOST_FTDC_OPT_LimitPrice},
@@ -67,8 +80,8 @@ inline char order_type(OrderType type) {
   return ft2ctp[type];
 }
 
-inline Direction direction(char ctp_type) {
-  static std::map<char, Direction> ctp2ft = {
+inline uint64_t direction(char ctp_type) {
+  static std::map<char, uint64_t> ctp2ft = {
       {THOST_FTDC_D_Buy, Direction::BUY},
       {THOST_FTDC_D_Sell, Direction::SELL},
       {THOST_FTDC_PD_Long, Direction::BUY},
@@ -77,36 +90,28 @@ inline Direction direction(char ctp_type) {
   return ctp2ft[ctp_type];
 }
 
-inline char direction(Direction type) {
-  static std::map<Direction, char> ft2ctp = {
+inline char direction(uint64_t type) {
+  static std::map<uint64_t, char> ft2ctp = {
       {Direction::BUY, THOST_FTDC_D_Buy}, {Direction::SELL, THOST_FTDC_D_Sell}};
 
   return ft2ctp[type];
 }
 
-inline Offset offset(char ctp_type) {
-  static std::map<char, Offset> ctp2ft = {
+inline uint64_t offset(char ctp_type) {
+  static std::map<char, uint64_t> ctp2ft = {
       {THOST_FTDC_OF_Open, Offset::OPEN},
       {THOST_FTDC_OF_Close, Offset::CLOSE},
-      {THOST_FTDC_OF_ForceClose, Offset::FORCE_CLOSE},
       {THOST_FTDC_OF_CloseToday, Offset::CLOSE_TODAY},
-      {THOST_FTDC_OF_CloseYesterday, Offset::CLOSE_YESTERDAY},
-      {THOST_FTDC_OF_ForceOff, Offset::FORCE_OFF},
-      {THOST_FTDC_OF_LocalForceClose, Offset::LOCAL_FORCE_CLOSE}};
-
+      {THOST_FTDC_OF_CloseYesterday, Offset::CLOSE_YESTERDAY}};
   return ctp2ft[ctp_type];
 }
 
-inline char offset(Offset type) {
-  static std::map<Offset, char> ft2ctp = {
+inline char offset(uint64_t type) {
+  static std::map<uint64_t, char> ft2ctp = {
       {Offset::OPEN, THOST_FTDC_OF_Open},
       {Offset::CLOSE, THOST_FTDC_OF_Close},
-      {Offset::FORCE_CLOSE, THOST_FTDC_OF_ForceClose},
       {Offset::CLOSE_TODAY, THOST_FTDC_OF_CloseToday},
-      {Offset::CLOSE_YESTERDAY, THOST_FTDC_OF_CloseYesterday},
-      {Offset::FORCE_OFF, THOST_FTDC_OF_ForceOff},
-      {Offset::LOCAL_FORCE_CLOSE, THOST_FTDC_OF_LocalForceClose}};
-
+      {Offset::CLOSE_YESTERDAY, THOST_FTDC_OF_CloseYesterday}};
   return ft2ctp[type];
 }
 

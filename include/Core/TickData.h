@@ -3,8 +3,6 @@
 #ifndef FT_INCLUDE_BASE_TICKDATA_H_
 #define FT_INCLUDE_BASE_TICKDATA_H_
 
-#include <string>
-
 namespace ft {
 
 static const std::size_t kMarketLevel = 10;

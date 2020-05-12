@@ -3,6 +3,8 @@
 #include "PositionManager.h"
 
 #include "ContractTable.h"
+#include "Core/Constants.h"
+#include "Core/Order.h"
 
 namespace ft {
 
@@ -53,8 +55,8 @@ void PositionManager::set_position(const Position* pos) {
   redis_.set(key, pos, sizeof(Position));
 }
 
-void PositionManager::update_pending(uint64_t ticker_index, Direction direction,
-                                     Offset offset, int changed) {
+void PositionManager::update_pending(uint64_t ticker_index, uint64_t direction,
+                                     uint64_t offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -82,8 +84,8 @@ void PositionManager::update_pending(uint64_t ticker_index, Direction direction,
   redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
-void PositionManager::update_traded(uint64_t ticker_index, Direction direction,
-                                    Offset offset, int64_t traded,
+void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
+                                    uint64_t offset, int64_t traded,
                                     double traded_price) {
   if (traded <= 0) return;
 

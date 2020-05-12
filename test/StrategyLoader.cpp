@@ -7,7 +7,6 @@
 #include <getopt.hpp>
 
 #include "AlgoTrade/Strategy.h"
-#include "Base/DataStruct.h"
 #include "ContractTable.h"
 #include "TestCommon.h"
 

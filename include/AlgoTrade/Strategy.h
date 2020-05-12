@@ -8,7 +8,8 @@
 #include <vector>
 
 #include "AlgoTrade/Context.h"
-#include "Base/DataStruct.h"
+#include "Core/Order.h"
+#include "Core/TickData.h"
 #include "IPC/redis.h"
 
 namespace ft {
@@ -31,8 +32,6 @@ class Strategy {
   virtual void on_tick(AlgoTradeContext* ctx, const TickData* tick) {}
 
   virtual void on_order(AlgoTradeContext* ctx, const Order* order) {}
-
-  virtual void on_trade(AlgoTradeContext* ctx, const Trade* trade) {}
 
   virtual void on_exit(AlgoTradeContext* ctx) {}
 

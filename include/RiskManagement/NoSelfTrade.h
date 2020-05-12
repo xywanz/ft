@@ -25,7 +25,7 @@ class NoSelfTradeRule : public RiskRuleInterface {
     const auto* contract = ContractTable::get_by_index(order->ticker_index);
     assert(contract);
 
-    Direction opp_d = opp_direction(order->direction);  // 对手方
+    uint64_t opp_d = opp_direction(order->direction);  // 对手方
     const Order* pending_order;
     std::vector<const Order*> order_list;
     panel_->get_order_list(&order_list, contract->ticker);
@@ -51,9 +51,10 @@ class NoSelfTradeRule : public RiskRuleInterface {
         "[RiskMgr] Self trade! Ticker: {}. This Order: "
         "[Direction: {}, Type: {}, Price: {:.2f}]. "
         "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
-        contract->ticker, to_string(order->direction), to_string(order->type),
-        order->price, to_string(pending_order->direction),
-        to_string(pending_order->type), pending_order->price);
+        contract->ticker, direction_str(order->direction),
+        ordertype_str(order->type), order->price,
+        direction_str(pending_order->direction),
+        ordertype_str(pending_order->type), pending_order->price);
     return false;
   }
 

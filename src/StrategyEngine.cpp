@@ -8,8 +8,8 @@
 #include <set>
 #include <vector>
 
-#include "AlgoTrade/Protocol.h"
 #include "AlgoTrade/Strategy.h"
+#include "AlgoTrade/TraderProtocol.h"
 #include "Base/DataStruct.h"
 #include "ContractTable.h"
 #include "RiskManagement/NoSelfTrade.h"
@@ -102,8 +102,8 @@ void StrategyEngine::run() {
 }
 
 uint64_t StrategyEngine::send_order(uint64_t ticker_index, int volume,
-                                    Direction direction, Offset offset,
-                                    OrderType type, double price) {
+                                    uint64_t direction, uint64_t offset,
+                                    uint64_t type, double price) {
   if (!is_logon_) {
     spdlog::error("[StrategyEngine::send_order] Failed. Not logon");
     return 0;
@@ -137,8 +137,8 @@ uint64_t StrategyEngine::send_order(uint64_t ticker_index, int volume,
         " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
         "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
         "Status: {}>",
-        contract->ticker, order.order_id, to_string(order.direction),
-        to_string(order.offset), to_string(order.type), 0, order.volume,
+        contract->ticker, order.order_id, direction_str(order.direction),
+        offset_str(order.offset), ordertype_str(order.type), 0, order.volume,
         order.price, to_string(order.status));
     return 0;
   }
@@ -151,8 +151,8 @@ uint64_t StrategyEngine::send_order(uint64_t ticker_index, int volume,
       " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
       "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
       "Status: {}>",
-      contract->ticker, order.order_id, to_string(order.direction),
-      to_string(order.offset), to_string(order.type), 0, order.volume,
+      contract->ticker, order.order_id, direction_str(order.direction),
+      offset_str(order.offset), ordertype_str(order.type), 0, order.volume,
       order.price, to_string(order.status));
   return order.order_id;
 }
@@ -182,8 +182,9 @@ bool StrategyEngine::cancel_order(uint64_t order_id) {
       " Order: <OrderID: {}, Direction: {}, "
       "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
       "Status: {}>",
-      order->order_id, to_string(order->direction), to_string(order->offset),
-      to_string(order->type), order->volume_traded, order->volume, order->price,
+      order->order_id, direction_str(order->direction),
+      offset_str(order->offset), ordertype_str(order->type),
+      order->traded_volume, order->volume, order->price,
       to_string(order->status));
   return true;
 }
@@ -256,7 +257,7 @@ void StrategyEngine::process_trade(cppex::Any* data) {
       "[StrategyEngine::process_trade] Ticker: {}, Order ID: {}, Trade ID: {}, "
       "Direction: {}, Offset: {}, Price: {:.2f}, Volume: {}",
       contract->ticker, trade->order_id, trade->trade_id,
-      to_string(trade->direction), to_string(trade->offset), trade->price,
+      direction_str(trade->direction), offset_str(trade->offset), trade->price,
       trade->volume);
 
   panel_.process_new_trade(trade);

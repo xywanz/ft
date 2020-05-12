@@ -38,8 +38,8 @@ class StrategyEngine {
   void close();
 
  private:
-  uint64_t send_order(uint64_t ticker_index, int volume, Direction direction,
-                      Offset offset, OrderType type, double price);
+  uint64_t send_order(uint64_t ticker_index, int volume, uint64_t direction,
+                      uint64_t offset, uint64_t type, double price);
 
   bool cancel_order(uint64_t order_id);
 

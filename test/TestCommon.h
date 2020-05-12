@@ -8,7 +8,7 @@
 #include <fstream>
 #include <string>
 
-#include "Base/DataStruct.h"
+#include "Core/LoginParams.h"
 
 inline bool load_login_params(const std::string& file,
                               ft::LoginParams* params) {

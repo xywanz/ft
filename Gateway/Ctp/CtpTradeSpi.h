@@ -1,53 +1,17 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_API_CTP_CTPTRADEAPI_H_
-#define FT_SRC_API_CTP_CTPTRADEAPI_H_
+#ifndef FT_SRC_API_CTP_CTPTRADESPI_H_
+#define FT_SRC_API_CTP_CTPTRADESPI_H_
 
 #include <ThostFtdcTraderApi.h>
-#include <fmt/format.h>
-
-#include <atomic>
-#include <cassert>
-#include <cstring>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <vector>
-
-#include "Api/Ctp/CtpCommon.h"
-#include "Base/DataStruct.h"
-#include "Gateway.h"
 
 namespace ft {
 
-class CtpTradeApi : public CThostFtdcTraderSpi {
+class CtpGateway;
+
+class CtpTradeSpi : public CThostFtdcTraderSpi {
  public:
-  explicit CtpTradeApi(Gateway *gateway);
-
-  ~CtpTradeApi();
-
-  bool login(const LoginParams &params);
-
-  bool logout();
-
-  uint64_t send_order(const Order *order);
-
-  bool cancel_order(uint64_t order_id);
-
-  bool query_contract(const std::string &ticker);
-
-  bool query_position(const std::string &ticker);
-
-  bool query_account();
-
-  bool query_orders();
-
-  bool query_trades();
-
-  bool query_margin_rate(const std::string &ticker);
-
-  bool query_commision_rate();
+  explicit CtpTradeSpi(CtpGateway *gateway);
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -67,12 +31,12 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   void OnHeartBeatWarning(int time_lapse) override;
 
   // 客户端认证响应
-  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth_rsp,
+  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth,
                          CThostFtdcRspInfoField *rsp_info, int req_id,
                          bool is_last) override;
 
   // 登录请求响应
-  void OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
+  void OnRspUserLogin(CThostFtdcRspUserLoginField *logon,
                       CThostFtdcRspInfoField *rsp_info, int req_id,
                       bool is_last) override;
 
@@ -127,49 +91,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last);
 
  private:
-  static uint64_t get_order_id(uint64_t ticker_index, int order_ref) {
-    return (ticker_index << 32) | static_cast<uint64_t>(order_ref);
-  }
-
-  int next_req_id() { return next_req_id_++; }
-
-  int next_order_ref() { return next_order_ref_++; }
-
-  void done() { is_done_ = true; }
-
-  void error() { is_error_ = true; }
-
-  void reset_sync() { is_done_ = false; }
-
-  bool wait_sync() {
-    while (!is_done_) {
-      if (is_error_) return false;
-    }
-
-    return true;
-  }
-
- private:
-  Gateway *gateway_;
-  std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> ctp_api_;
-
-  std::string front_addr_;
-  std::string broker_id_;
-  std::string investor_id_;
-  int front_id_ = 0;
-  int session_id_ = 0;
-
-  std::atomic<int> next_req_id_ = 0;
-  std::atomic<int> next_order_ref_ = 0;
-
-  std::atomic<bool> is_error_ = false;
-  std::atomic<bool> is_connected_ = false;
-  std::atomic<bool> is_done_ = false;
-  std::atomic<bool> is_logon_ = false;
-
-  std::map<uint64_t, Position> pos_cache_;
-
-  std::mutex query_mutex_;
+  CtpGateway *gateway_;
 };
 
 }  // namespace ft

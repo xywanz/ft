@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_ALGOTRADE_PROTOCOL_H_
-#define FT_INCLUDE_ALGOTRADE_PROTOCOL_H_
+#ifndef FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_
+#define FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_
 
 #include <fmt/format.h>
 
@@ -9,22 +9,20 @@
 #include <string>
 #include <vector>
 
-#include "Base/DataStruct.h"
-
 namespace ft {
 
 enum TraderCmdType { NEW_ORDER = 1, CANCEL_ORDER };
 
-struct OrderReq {
+struct TraderOrderReq {
   uint64_t ticker_index;
-  Direction direction;
-  Offset offset;
-  OrderType type;
+  uint64_t direction;
+  uint64_t offset;
+  uint64_t type;
   int64_t volume;
   double price;
 };
 
-struct CancelReq {
+struct TraderCancelReq {
   uint64_t ticker_index;
   uint64_t order_id;
 };
@@ -32,8 +30,8 @@ struct CancelReq {
 struct TraderCommand {
   uint32_t type;
   union {
-    OrderReq order_req;
-    CancelReq cancel_req;
+    TraderOrderReq order_req;
+    TraderCancelReq cancel_req;
   };
 };
 
@@ -45,4 +43,4 @@ inline std::string get_md_topic(const std::string& ticker) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_ALGOTRADE_PROTOCOL_H_
+#endif  // FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_

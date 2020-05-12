@@ -7,8 +7,10 @@
 #include <string>
 #include <vector>
 
-#include "AlgoTrade/Protocol.h"
-#include "AlgoTrade/StrategyEngine.h"
+#include "AlgoTrade/TraderProtocol.h"
+#include "ContractTable.h"
+#include "Core/Constants.h"
+#include "Core/Order.h"
 #include "IPC/redis.h"
 #include "PositionManager.h"
 
@@ -20,23 +22,23 @@ class AlgoTradeContext {
       : redis_order_("127.0.0.1", 6379), portfolio_("127.0.0.1", 6379) {}
 
   void buy_open(const std::string& ticker, int volume, double price,
-                OrderType type = OrderType::FAK) {
+                uint64_t type = OrderType::FAK) {
     send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
   }
 
   void buy_close(const std::string& ticker, int volume, double price,
-                 OrderType type = OrderType::FAK) {
+                 uint64_t type = OrderType::FAK) {
     send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
                price);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
-                 OrderType type = OrderType::FAK) {
+                 uint64_t type = OrderType::FAK) {
     send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
   }
 
   void sell_close(const std::string& ticker, int volume, double price,
-                  OrderType type = OrderType::FAK) {
+                  uint64_t type = OrderType::FAK) {
     send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
                price);
   }
@@ -58,13 +60,13 @@ class AlgoTradeContext {
   double get_float_pnl() const { return portfolio_.get_float_pnl(); }
 
  private:
-  void send_order(const std::string& ticker, int volume, Direction direction,
-                  Offset offset, OrderType type, double price) {
+  void send_order(const std::string& ticker, int volume, uint64_t direction,
+                  uint64_t offset, uint64_t type, double price) {
     spdlog::info(
         "[AlgoTradeContext::send_order] ticker: {}, volume: {}, price: {}, "
         "type: {}, direction: {}, offset: {}",
-        ticker, volume, price, to_string(type), to_string(direction),
-        to_string(offset));
+        ticker, volume, price, ordertype_str(type), direction_str(direction),
+        offset_str(offset));
 
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);

@@ -3,15 +3,7 @@
 #ifndef FT_INCLUDE_BASE_POSITION_H_
 #define FT_INCLUDE_BASE_POSITION_H_
 
-#include <spdlog/spdlog.h>
-
-#include <atomic>
-#include <map>
-#include <mutex>
-#include <string>
-#include <vector>
-
-#include "Base/Common.h"
+#include <cstddef>
 
 namespace ft {
 

@@ -4,10 +4,9 @@
 
 #include <getopt.hpp>
 
-#include "AlgoTrade/StrategyEngine.h"
-#include "Base/DataStruct.h"
 #include "ContractTable.h"
 #include "TestCommon.h"
+#include "TradingEngine.h"
 
 int main() {
   std::string login_config_file =
@@ -30,7 +29,7 @@ int main() {
     exit(-1);
   }
 
-  ft::StrategyEngine engine;
+  ft::TradingEngine engine;
 
   engine.login(params);
   engine.run();

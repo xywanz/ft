@@ -3,7 +3,6 @@
 #include <spdlog/spdlog.h>
 
 #include "AlgoTrade/Strategy.h"
-#include "MarketData/Candlestick.h"
 
 class GridStrategy : public ft::Strategy {
  public:
@@ -54,8 +53,8 @@ class GridStrategy : public ft::Strategy {
 
  private:
   double last_grid_price_ = 0.0;
-  double grid_height_ = 10.0;
-  int trade_volume_each_ = 100;
+  double grid_height_ = 2;
+  int trade_volume_each_ = 1;
   int trade_counts_ = 0;
 
   std::string ticker_ = "rb2009.SHFE";
