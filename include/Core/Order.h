@@ -7,6 +7,7 @@
 #include <string>
 
 #include "Core/Constants.h"
+#include "Core/Contract.h"
 
 namespace ft {
 
@@ -22,19 +23,16 @@ enum class OrderStatus {
 };
 
 struct Order {
-  // req data
-  uint64_t ticker_index;
+  const Contract* contract;
   uint64_t order_id;
   uint64_t type;
   uint64_t direction;
   uint64_t offset;
   double price = 0;
   int64_t volume = 0;
-
-  // rsp or local data
-  OrderStatus status;
   int64_t traded_volume = 0;
   int64_t canceled_volume = 0;
+  OrderStatus status;
   uint64_t insert_time;
 };
 

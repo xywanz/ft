@@ -13,7 +13,7 @@ namespace ft {
 // 不可以持有双向仓位
 class JustOneDirectionRule : public RiskRuleInterface {
  public:
-  bool check(const Order* order) override {
+  bool check(const OrderReq* order) override {
     const auto pos = portfolio_->get_position(order->ticker);
     const PositionDetail* opp_pos_detail;
     if (order->direction == Direction::BUY)

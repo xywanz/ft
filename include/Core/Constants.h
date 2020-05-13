@@ -34,7 +34,7 @@ namespace Offset {
 inline const uint64_t OPEN = 1;
 inline const uint64_t CLOSE = 2;
 inline const uint64_t CLOSE_TODAY = 4;
-inline const uint64_t CLOSE_YESTERDAY = 5;
+inline const uint64_t CLOSE_YESTERDAY = 8;
 }  // namespace Offset
 
 inline std::string to_ticker(std::string symbol, std::string exchange) {

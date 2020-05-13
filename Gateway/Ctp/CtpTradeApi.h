@@ -173,7 +173,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<bool> is_logon_ = false;
 
   std::map<uint64_t, Position> pos_cache_;
-  std::map<uint64_t, OrderDetail> order_details_;
+  std::map<int, OrderDetail> order_details_;
   std::mutex query_mutex_;
   std::mutex order_mutex_;
 };

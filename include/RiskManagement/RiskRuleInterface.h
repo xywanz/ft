@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include "Core/Gateway.h"
 #include "Core/Order.h"
 
 namespace ft {
@@ -14,7 +15,7 @@ class RiskRuleInterface {
   virtual ~RiskRuleInterface() {}
 
   // 返回false则拦截订单
-  virtual bool check(const Order* order) = 0;
+  virtual bool check(const OrderReq* order) = 0;
 };
 
 }  // namespace ft

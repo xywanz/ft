@@ -258,7 +258,7 @@ uint64_t CtpTradeApi::send_order(const OrderReq *order) {
     return 0;
   }
 
-  uint64_t order_ref = next_order_ref();
+  int order_ref = next_order_ref();
   CThostFtdcInputOrderField req;
   memset(&req, 0, sizeof(req));
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -449,13 +449,15 @@ bool CtpTradeApi::cancel_order(uint64_t order_id) {
   CThostFtdcInputOrderActionField req;
   memset(&req, 0, sizeof(req));
 
-  uint64_t ticker_index = (order_id >> 32) & 0xffffffff;
-  int order_ref = order_id & 0xffffffff;
-  const auto *contract = ContractTable::get_by_index(ticker_index);
-  if (!contract) {
-    spdlog::error("[CtpTradeApi::cancel_order] Contract not found");
-    return false;
+  int order_ref = static_cast<int>(order_id);
+  std::unique_lock<std::mutex> lock(order_mutex_);
+  auto iter = order_details_.find(order_ref);
+  if (iter == order_details_.end()) {
+    spdlog::error(
+        "[CtpTradeApi::cancel_order] Failed. Order not found. OrderRef: {}",
+        order_ref);
   }
+  auto contract = iter->second.contract;
 
   strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
@@ -625,7 +627,6 @@ void CtpTradeApi::OnRspQryInvestorPosition(
       return;
     }
 
-    auto ticker = to_ticker(position->InstrumentID, position->ExchangeID);
     auto &pos = pos_cache_[contract->index];
     pos.ticker_index = contract->index;
 

@@ -24,7 +24,7 @@ struct RedisReplyDestructor {
 
 class RedisSession {
  public:
-  RedisSession() {}
+  RedisSession() : RedisSession("127.0.0.1", 6379) {}
 
   RedisSession(const std::string& ip, int port) {
     ctx_ = redisConnect(ip.c_str(), port);

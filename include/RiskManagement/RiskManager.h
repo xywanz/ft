@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 
+#include "Core/Gateway.h"
 #include "RiskManagement/RiskRuleInterface.h"
 
 namespace ft {
@@ -16,7 +17,7 @@ class RiskManager {
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 
   // 返回false则拦截订单
-  bool check(const Order* order);
+  bool check(const OrderReq* order);
 
  private:
   std::list<std::shared_ptr<RiskRuleInterface>> rules_;

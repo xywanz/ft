@@ -21,7 +21,7 @@ class NoSelfTradeRule : public RiskRuleInterface {
  public:
   explicit NoSelfTradeRule(const TradingPanel* panel) : panel_(panel) {}
 
-  bool check(const Order* order) override {
+  bool check(const OrderReq* order) override {
     const auto* contract = ContractTable::get_by_index(order->ticker_index);
     assert(contract);
 
