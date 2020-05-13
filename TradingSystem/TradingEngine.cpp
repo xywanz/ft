@@ -171,6 +171,8 @@ void TradingEngine::on_query_position(const Position* position) {
 }
 
 void TradingEngine::on_tick(const TickData* tick) {
+  if (!is_logon_) return;
+
   auto contract = ContractTable::get_by_index(tick->ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::process_tick] Contract not found");
