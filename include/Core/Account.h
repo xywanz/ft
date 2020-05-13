@@ -3,7 +3,7 @@
 #ifndef FT_INCLUDE_CORE_ACCOUNT_H_
 #define FT_INCLUDE_CORE_ACCOUNT_H_
 
-#include <cstddef>
+#include <cstdint>
 
 namespace ft {
 

@@ -14,7 +14,7 @@
 #include "Core/LoginParams.h"
 #include "Core/TickData.h"
 #include "Core/TradingEngineInterface.h"
-#include "Ctp/CtpCommon.h"
+#include "Gateway/Ctp/CtpCommon.h"
 
 namespace ft {
 

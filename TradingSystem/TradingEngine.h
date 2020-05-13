@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGENGINE_H_
-#define FT_INCLUDE_TRADINGENGINE_H_
+#ifndef FT_TRADINGSYSTEM_TRADINGENGINE_H_
+#define FT_TRADINGSYSTEM_TRADINGENGINE_H_
 
 #include <list>
 #include <map>
@@ -15,11 +15,10 @@
 #include "Core/Account.h"
 #include "Core/Gateway.h"
 #include "Core/LoginParams.h"
-#include "Core/Order.h"
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
-#include "PositionManager.h"
-#include "RiskManagement/RiskManager.h"
+#include "TradingSystem/Order.h"
+#include "TradingSystem/PositionManager.h"
 
 namespace ft {
 
@@ -71,8 +70,6 @@ class TradingEngine : public TradingEngineInterface {
   std::map<uint64_t, Order> order_map_;
   std::mutex mutex_;
 
-  RiskManager risk_mgr_;
-
   RedisSession tick_redis_;
   RedisSession order_redis_;
 
@@ -81,4 +78,4 @@ class TradingEngine : public TradingEngineInterface {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGENGINE_H_
+#endif  // FT_TRADINGSYSTEM_TRADINGENGINE_H_

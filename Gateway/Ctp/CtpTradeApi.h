@@ -10,11 +10,11 @@
 #include <mutex>
 #include <string>
 
+#include "Core/Constants.h"
 #include "Core/Gateway.h"
 #include "Core/LoginParams.h"
-#include "Core/Order.h"
 #include "Core/TradingEngineInterface.h"
-#include "Ctp/CtpCommon.h"
+#include "Gateway/Ctp/CtpCommon.h"
 
 namespace ft {
 

@@ -1,15 +1,33 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_
-#define FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_
+#ifndef FT_INCLUDE_CORE_PROTOCOL_H_
+#define FT_INCLUDE_CORE_PROTOCOL_H_
 
 #include <fmt/format.h>
 
-#include <memory>
+#include <cstdint>
 #include <string>
-#include <vector>
 
 namespace ft {
+
+/*
+ * 这部分是TradingEngine和Gateway之间的交互协议
+ */
+
+// 这个是TradingEngine发给Gateway的下单信息
+struct OrderReq {
+  uint64_t ticker_index;
+  uint64_t type;
+  uint64_t direction;
+  uint64_t offset;
+  int64_t volume = 0;
+  double price = 0;
+};
+
+/*
+ * 这部分是Strategy和TradingEngine之间的交互协议
+ * Strategy通过IPC向TradingEngine发送交易相关指令
+ */
 
 enum TraderCmdType { NEW_ORDER = 1, CANCEL_ORDER };
 
@@ -43,4 +61,4 @@ inline std::string get_md_topic(const std::string& ticker) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_ALGOTRADE_TRADERPROTOCOL_H_
+#endif  // FT_INCLUDE_CORE_PROTOCOL_H_

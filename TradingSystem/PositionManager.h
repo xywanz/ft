@@ -1,9 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_POSITIONMANAGER_H_
-#define FT_INCLUDE_POSITIONMANAGER_H_
-
-#include <hiredis.h>
+#ifndef FT_TRADINGSYSTEM_POSITIONMANAGER_H_
+#define FT_TRADINGSYSTEM_POSITIONMANAGER_H_
 
 #include <map>
 #include <memory>
@@ -65,4 +63,4 @@ class PositionManager {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_POSITIONMANAGER_H_
+#endif  // FT_TRADINGSYSTEM_POSITIONMANAGER_H_

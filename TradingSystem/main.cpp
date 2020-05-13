@@ -4,9 +4,9 @@
 
 #include <getopt.hpp>
 
-#include "ContractTable.h"
-#include "TestCommon.h"
-#include "TradingEngine.h"
+#include "Core/ContractTable.h"
+#include "TradingSystem/Config.h"
+#include "TradingSystem/TradingEngine.h"
 
 int main() {
   std::string login_config_file =

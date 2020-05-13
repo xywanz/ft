@@ -1,13 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Ctp/CtpGateway.h"
+#include "Gateway/Ctp/CtpGateway.h"
 
 #include <ThostFtdcMdApi.h>
 #include <ThostFtdcTraderApi.h>
 #include <spdlog/spdlog.h>
 
-#include "ContractTable.h"
 #include "Core/Constants.h"
+#include "Core/ContractTable.h"
 
 namespace ft {
 
@@ -71,17 +71,11 @@ bool CtpGateway::query_position(const std::string &ticker) {
 
 bool CtpGateway::query_positions() { return trade_api_->query_positions(); }
 
-bool CtpGateway::query_account() {
-  return trade_api_->query_account();
-}
+bool CtpGateway::query_account() { return trade_api_->query_account(); }
 
-bool CtpGateway::query_orders() {
-  return trade_api_->query_orders();
-}
+bool CtpGateway::query_orders() { return trade_api_->query_orders(); }
 
-bool CtpGateway::query_trades() {
-  return trade_api_->query_trades();
-}
+bool CtpGateway::query_trades() { return trade_api_->query_trades(); }
 
 bool CtpGateway::query_margin_rate(const std::string &ticker) {
   return trade_api_->query_margin_rate(ticker);

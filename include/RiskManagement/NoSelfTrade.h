@@ -10,7 +10,6 @@
 
 #include "ContractTable.h"
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingPanel.h"
 
 namespace ft {
 

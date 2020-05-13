@@ -14,9 +14,9 @@
 #include <vector>
 
 #include "Core/Gateway.h"
-#include "Ctp/CtpCommon.h"
-#include "Ctp/CtpMdApi.h"
-#include "Ctp/CtpTradeApi.h"
+#include "Gateway/Ctp/CtpCommon.h"
+#include "Gateway/Ctp/CtpMdApi.h"
+#include "Gateway/Ctp/CtpTradeApi.h"
 
 namespace ft {
 

@@ -1,16 +1,15 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_ALGOTRADE_STRATEGY_H_
-#define FT_INCLUDE_ALGOTRADE_STRATEGY_H_
+#ifndef FT_STRATEGY_STRATEGY_H_
+#define FT_STRATEGY_STRATEGY_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "AlgoTrade/Context.h"
-#include "Core/Order.h"
 #include "Core/TickData.h"
 #include "IPC/redis.h"
+#include "Strategy/Context.h"
 
 namespace ft {
 
@@ -30,8 +29,6 @@ class Strategy {
   virtual void on_init(AlgoTradeContext* ctx) {}
 
   virtual void on_tick(AlgoTradeContext* ctx, const TickData* tick) {}
-
-  virtual void on_order(AlgoTradeContext* ctx, const Order* order) {}
 
   virtual void on_exit(AlgoTradeContext* ctx) {}
 
@@ -54,4 +51,4 @@ class Strategy {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_ALGOTRADE_STRATEGY_H_
+#endif  // FT_STRATEGY_STRATEGY_H_

@@ -1,8 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_CONTRACTTABLE_H_
-#define FT_INCLUDE_CONTRACTTABLE_H_
+#ifndef FT_INCLUDE_CORE_CONTRACTTABLE_H_
+#define FT_INCLUDE_CORE_CONTRACTTABLE_H_
 
+#include <cppex/string.h>
+
+#include <fstream>
 #include <map>
 #include <string>
 #include <utility>
@@ -115,4 +118,4 @@ class ContractTable {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_CONTRACTTABLE_H_
+#endif  // FT_INCLUDE_CORE_CONTRACTTABLE_H_

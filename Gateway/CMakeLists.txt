@@ -1,4 +1,4 @@
-include_directories(.)
+# Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 add_library(CtpGateway STATIC
     Ctp/CtpGateway.cpp

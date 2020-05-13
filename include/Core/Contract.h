@@ -1,26 +1,16 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_BASE_CONTRACT_H_
-#define FT_INCLUDE_BASE_CONTRACT_H_
+#ifndef FT_INCLUDE_CORE_CONTRACT_H_
+#define FT_INCLUDE_CORE_CONTRACT_H_
 
-#include <cppex/string.h>
-#include <fmt/format.h>
-
-#include <cassert>
-#include <fstream>
 #include <map>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace ft {
 
 enum class ProductType { FUTURES = 0, OPTIONS };
 
-enum SpecTickerIndex : uint64_t {
-  NONE_TICKER = 0,
-  ALL_TICKERS = UINT64_MAX
-};
+enum SpecTickerIndex : uint64_t { NONE_TICKER = 0, ALL_TICKERS = UINT64_MAX };
 
 struct Contract {
   std::string symbol;
@@ -58,4 +48,4 @@ inline ProductType string2product(const std::string& product) {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_BASE_CONTRACT_H_
+#endif  // FT_INCLUDE_CORE_CONTRACT_H_

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_TRADINGENGINEINTERFACE_H_
-#define FT_INCLUDE_TRADINGENGINEINTERFACE_H_
+#ifndef FT_INCLUDE_CORE_TRADINGENGINEINTERFACE_H_
+#define FT_INCLUDE_CORE_TRADINGENGINEINTERFACE_H_
 
 #include "Core/Account.h"
 #include "Core/Contract.h"
@@ -61,4 +61,4 @@ class TradingEngineInterface {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_TRADINGENGINEINTERFACE_H_
+#endif  // FT_INCLUDE_CORE_TRADINGENGINEINTERFACE_H_

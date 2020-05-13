@@ -1,25 +1,61 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Base/Portfolio.h"
+#include "TradingSystem/PositionManager.h"
 
-#include "ContractTable.h"
+#include "Core/Constants.h"
+#include "Core/ContractTable.h"
 
 namespace ft {
 
-void Portfolio::init_position(const Position& pos) {
-  if (find(pos.ticker_index)) {
-    spdlog::warn(
-        "[Portfolio::init_position] Failed to init pos: position already "
-        "exists");
-    return;
-  }
+PositionManager::PositionManager(const std::string& ip, int port)
+    : redis_(ip, port) {}
 
-  pos_map_.emplace(pos.ticker_index, pos);
-  spdlog::debug("[Portfolio::init_position]");
+Position PositionManager::get_position(const std::string& ticker) const {
+  static const Position empty_pos{};
+
+  auto reply = redis_.get(get_pos_key(ticker));
+
+  if (reply->len == 0) return empty_pos;
+
+  assert(reply->len == sizeof(Position));
+  Position pos;
+  memcpy(&pos, reply->str, reply->len);
+  return pos;
 }
 
-void Portfolio::update_pending(uint64_t ticker_index, uint64_t direction,
-                               uint64_t offset, int changed) {
+double PositionManager::get_realized_pnl() const {
+  auto reply = redis_.get(get_pnl_key());
+  if (reply->len == 0) return 0;
+
+  assert(reply->len == sizeof(realized_pnl_));
+  double ret = *reinterpret_cast<double*>(reply->str);
+  return ret;
+}
+
+double PositionManager::get_float_pnl() const {
+  // double float_pnl = 0;
+  // auto reply = redis_.keys("pos-*");
+  // for (size_t i = 0; i < reply->elements; ++i) {
+  //   auto key = reinterpret_cast<const char*>(reply->element[i]->str);
+  //   auto pos_reply = redis_.get(key);
+  //   auto pos = reinterpret_cast<const Position*>(pos_reply->str);
+  //   float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
+  // }
+  // return float_pnl;
+  return 0;
+}
+
+void PositionManager::set_position(const Position* pos) {
+  pos_map_.emplace(pos->ticker_index, *pos);
+
+  const auto* contract = ContractTable::get_by_index(pos->ticker_index);
+  assert(contract);
+  auto key = get_pos_key(contract->ticker);
+  redis_.set(key, pos, sizeof(Position));
+}
+
+void PositionManager::update_pending(uint64_t ticker_index, uint64_t direction,
+                                     uint64_t offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -41,11 +77,15 @@ void Portfolio::update_pending(uint64_t ticker_index, uint64_t direction,
     pos_detail.close_pending = 0;
     spdlog::warn("[Portfolio::update_pending] correct close_pending");
   }
+
+  const auto* contract = ContractTable::get_by_index(pos.ticker_index);
+  assert(contract);
+  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
-void Portfolio::update_traded(uint64_t ticker_index, uint64_t direction,
-                              uint64_t offset, int64_t traded,
-                              double traded_price) {
+void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
+                                    uint64_t offset, int64_t traded,
+                                    double traded_price) {
   if (traded <= 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -82,12 +122,7 @@ void Portfolio::update_traded(uint64_t ticker_index, uint64_t direction,
     spdlog::error("[Position::update_traded] Contract not found");
     return;
   }
-
-  if (contract->size <= 0) {
-    pos_detail.cost_price = 0;
-    pos_detail.float_pnl = 0;
-    return;
-  }
+  assert(contract->size > 0);
 
   if (is_close) {  // 如果是平仓则计算已实现的盈亏
     if (direction == Direction::BUY)
@@ -107,9 +142,13 @@ void Portfolio::update_traded(uint64_t ticker_index, uint64_t direction,
     pos_detail.float_pnl = 0;
     pos_detail.cost_price = 0;
   }
+
+  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(get_pnl_key(), &realized_pnl_, sizeof(realized_pnl_));
 }
 
-void Portfolio::update_float_pnl(uint64_t ticker_index, double last_price) {
+void PositionManager::update_float_pnl(uint64_t ticker_index,
+                                       double last_price) {
   auto* pos = find(ticker_index);
   if (pos) {
     const auto* contract = ContractTable::get_by_index(ticker_index);
@@ -123,6 +162,9 @@ void Portfolio::update_float_pnl(uint64_t ticker_index, double last_price) {
 
     if (sp.volume > 0)
       sp.float_pnl = sp.volume * contract->size * (sp.cost_price - last_price);
+
+    if (lp.volume > 0 || sp.volume > 0)
+      redis_.set(get_pos_key(contract->ticker), pos, sizeof(*pos));
   }
 }
 

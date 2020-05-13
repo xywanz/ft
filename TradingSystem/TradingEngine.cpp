@@ -1,9 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "TradingEngine.h"
+#include "TradingSystem/TradingEngine.h"
 
-#include "AlgoTrade/TraderProtocol.h"
-#include "ContractTable.h"
+#include "Core/ContractTable.h"
+#include "Core/Protocol.h"
 
 namespace ft {
 
@@ -42,11 +42,15 @@ bool TradingEngine::login(const LoginParams& params) {
     return false;
   }
 
+  spdlog::info("[TradingEngine::login] Init done");
+
   is_logon_ = true;
   return true;
 }
 
 void TradingEngine::run() {
+  spdlog::info("[TradingEngine::run] Start to recv order req");
+
   order_redis_.subscribe({TRADER_CMD_TOPIC});
 
   for (;;) {
@@ -93,11 +97,6 @@ uint64_t TradingEngine::send_order(uint64_t ticker_index, int volume,
   req.price = price;
 
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!risk_mgr_.check(&req)) {
-    spdlog::error("[StrategyEngine::send_order] RiskMgr check failed");
-    return 0;
-  }
-
   uint64_t order_id = gateway_->send_order(&req);
   if (order_id == 0) {
     spdlog::error(

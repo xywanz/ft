@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_API_CTP_CTPCOMMON_H_
-#define FT_SRC_API_CTP_CTPCOMMON_H_
+#ifndef FT_GATEWAY_CTP_CTPCOMMON_H_
+#define FT_GATEWAY_CTP_CTPCOMMON_H_
 
 #include <ThostFtdcUserApiDataType.h>
 
@@ -12,10 +12,10 @@
 #include <string>
 #include <vector>
 
-#include "ContractTable.h"
 #include "Core/Account.h"
+#include "Core/Constants.h"
 #include "Core/Contract.h"
-#include "Core/Order.h"
+#include "Core/ContractTable.h"
 #include "Core/Position.h"
 
 namespace ft {
@@ -131,19 +131,6 @@ inline char product_type(ProductType type) {
   return ft2ctp[type];
 }
 
-inline OrderStatus order_status(char ctp_type) {
-  static std::map<char, OrderStatus> ctp2ft = {
-      {THOST_FTDC_OST_Unknown, OrderStatus::SUBMITTING},
-      {THOST_FTDC_OST_NoTradeNotQueueing, OrderStatus::SUBMITTING},
-      {THOST_FTDC_OST_NoTradeQueueing, OrderStatus::NO_TRADED},
-      {THOST_FTDC_OST_PartTradedQueueing, OrderStatus::PART_TRADED},
-      {THOST_FTDC_OST_AllTraded, OrderStatus::ALL_TRADED},
-      {THOST_FTDC_OST_PartTradedNotQueueing, OrderStatus::CANCELED},
-      {THOST_FTDC_OST_Canceled, OrderStatus::CANCELED}};
-
-  return ctp2ft[ctp_type];
-}
-
 }  // namespace ft
 
-#endif  // FT_SRC_API_CTP_CTPCOMMON_H_
+#endif  // FT_GATEWAY_CTP_CTPCOMMON_H_

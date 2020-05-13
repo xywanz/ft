@@ -1,7 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_BASE_TICKDATA_H_
-#define FT_INCLUDE_BASE_TICKDATA_H_
+#ifndef FT_INCLUDE_CORE_TICKDATA_H_
+#define FT_INCLUDE_CORE_TICKDATA_H_
+
+#include <cstdint>
 
 namespace ft {
 
@@ -34,4 +36,4 @@ struct TickData {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_BASE_TICKDATA_H_
+#endif  // FT_INCLUDE_CORE_TICKDATA_H_

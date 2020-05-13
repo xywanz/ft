@@ -6,8 +6,8 @@
 #include <fstream>
 #include <getopt.hpp>
 
-#include "AlgoTrade/Strategy.h"
-#include "ContractTable.h"
+#include "Core/ContractTable.h"
+#include "Strategy/Strategy.h"
 #include "TestCommon.h"
 
 int main() {

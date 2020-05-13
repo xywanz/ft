@@ -1,9 +1,9 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_BASE_POSITION_H_
-#define FT_INCLUDE_BASE_POSITION_H_
+#ifndef FT_INCLUDE_CORE_POSITION_H_
+#define FT_INCLUDE_CORE_POSITION_H_
 
-#include <cstddef>
+#include <cstdint>
 
 namespace ft {
 
@@ -25,4 +25,4 @@ struct Position {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_BASE_POSITION_H_
+#endif  // FT_INCLUDE_CORE_POSITION_H_

@@ -14,7 +14,7 @@ endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}
     ${CTP_PATH}
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/include
@@ -40,12 +40,5 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 add_subdirectory(Gateway)
-add_subdirectory(test)
-
-set(FT_SRC_FILES
-    src/TradingEngine.cpp
-    src/PositionManager.cpp
-    src/RiskManager.cpp)
-
-add_library(ft STATIC ${FT_SRC_FILES})
-target_link_libraries(ft ${DEPENDENCIES})
+add_subdirectory(TradingSystem)
+add_subdirectory(Test)

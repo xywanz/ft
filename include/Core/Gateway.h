@@ -1,25 +1,17 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_GATEWAY_H_
-#define FT_INCLUDE_GATEWAY_H_
+#ifndef FT_INCLUDE_CORE_GATEWAY_H_
+#define FT_INCLUDE_CORE_GATEWAY_H_
 
 #include <map>
 #include <memory>
 #include <string>
 
 #include "Core/LoginParams.h"
+#include "Core/Protocol.h"
 #include "Core/TradingEngineInterface.h"
 
 namespace ft {
-
-struct OrderReq {
-  uint64_t ticker_index;
-  uint64_t type;
-  uint64_t direction;
-  uint64_t offset;
-  int64_t volume = 0;
-  double price = 0;
-};
 
 /*
  * Gateway的开发需要遵循以下规则：
@@ -82,4 +74,4 @@ void destroy_gateway(Gateway* api);
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_GATEWAY_H_
+#endif  // FT_INCLUDE_CORE_GATEWAY_H_

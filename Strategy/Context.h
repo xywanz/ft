@@ -1,18 +1,17 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_ALGOTRADE_CONTEXT_H_
-#define FT_INCLUDE_ALGOTRADE_CONTEXT_H_
+#ifndef FT_STRATEGY_CONTEXT_H_
+#define FT_STRATEGY_CONTEXT_H_
 
 #include <algorithm>
 #include <string>
 #include <vector>
 
-#include "AlgoTrade/TraderProtocol.h"
-#include "ContractTable.h"
 #include "Core/Constants.h"
-#include "Core/Order.h"
+#include "Core/ContractTable.h"
+#include "Core/Protocol.h"
 #include "IPC/redis.h"
-#include "PositionManager.h"
+#include "TradingSystem/PositionManager.h"
 
 namespace ft {
 
@@ -91,4 +90,4 @@ class AlgoTradeContext {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_ALGOTRADE_CONTEXT_H_
+#endif  // FT_STRATEGY_CONTEXT_H_

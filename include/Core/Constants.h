@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_BASE_COMMON_H_
-#define FT_INCLUDE_BASE_COMMON_H_
+#ifndef FT_INCLUDE_CORE_CONSTANTS_H_
+#define FT_INCLUDE_CORE_CONSTANTS_H_
 
 #include <fmt/format.h>
 
@@ -37,6 +37,43 @@ inline const uint64_t CLOSE_TODAY = 4;
 inline const uint64_t CLOSE_YESTERDAY = 8;
 }  // namespace Offset
 
+inline uint64_t opp_direction(uint64_t d) {
+  return d == Direction::BUY ? Direction::SELL : Direction::BUY;
+}
+
+inline bool is_offset_open(uint64_t offset) { return offset == Offset::OPEN; }
+
+inline bool is_offset_close(uint64_t offset) {
+  return offset &
+         (Offset::CLOSE | Offset::CLOSE_TODAY | Offset::CLOSE_YESTERDAY);
+}
+
+inline const std::string& direction_str(uint64_t d) {
+  static const std::map<uint64_t, std::string> d_str = {
+      {Direction::BUY, "Buy"}, {Direction::SELL, "Sell"}};
+
+  return d_str.find(d)->second;
+}
+
+inline const std::string& offset_str(uint64_t off) {
+  static const std::map<uint64_t, std::string> off_str = {
+      {Offset::OPEN, "Open"},
+      {Offset::CLOSE, "Close"},
+      {Offset::CLOSE_TODAY, "CloseToday"},
+      {Offset::CLOSE_YESTERDAY, "CloseYesterday"}};
+
+  return off_str.find(off)->second;
+}
+
+inline const std::string& ordertype_str(uint64_t t) {
+  static const std::map<uint64_t, std::string> t_str = {
+      {OrderType::LIMIT, "Limit"},
+      {OrderType::MARKET, "Market"},
+      {OrderType::BEST, "Best"}};
+
+  return t_str.find(t)->second;
+}
+
 inline std::string to_ticker(std::string symbol, std::string exchange) {
   return fmt::format("{}.{}", symbol, exchange);
 }
@@ -59,4 +96,4 @@ bool is_equal(const RealType& lhs, const RealType& rhs,
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_BASE_COMMON_H_
+#endif  // FT_INCLUDE_CORE_CONSTANTS_H_

@@ -5,7 +5,7 @@
 #include <functional>
 #include <map>
 
-#include "Ctp/CtpGateway.h"
+#include "Gateway/Ctp/CtpGateway.h"
 
 namespace ft {
 

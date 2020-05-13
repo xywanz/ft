@@ -2,7 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "AlgoTrade/Strategy.h"
+#include "Strategy/Strategy.h"
 
 class GridStrategy : public ft::Strategy {
  public:
@@ -40,11 +40,6 @@ class GridStrategy : public ft::Strategy {
       last_grid_price_ = tick->last_price;
       ++trade_counts_;
     }
-  }
-
-  void on_order(ft::AlgoTradeContext* ctx, const ft::Order* order) {
-    // if (order->status == ft::OrderStatus::CANCELED) {
-    // }
   }
 
   void on_exit(ft::AlgoTradeContext* ctx) override {

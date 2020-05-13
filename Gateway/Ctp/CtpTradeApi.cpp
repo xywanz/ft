@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Ctp/CtpTradeApi.h"
+#include "Gateway/Ctp/CtpTradeApi.h"
 
 #include <ThostFtdcTraderApi.h>
 #include <spdlog/spdlog.h>
