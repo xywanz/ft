@@ -7,8 +7,22 @@ ft是一个基于C++的低延迟交易引擎，为策略提供简便的开发、
 
 ### 1.2. 基本架构
 ft采用策略引擎与策略分离的体系，即策略引擎与策略引擎是不同的进程，策略引擎为策略提供仓位、订单等操作支持，一个引擎可以对接多个策略，每个策略都分别跑在一个进程上。
-
 ![image](https://github.com/DuckDuckDuck0/ft/blob/redis/img/framework.jpg)
+
+### 1.3. 目录结构
+#### 1.3.1. include
+include里面存放的是公共头文件，用户如果想自己为某个服务商的行情、交易接口写Gateway，或是自己写一个交易引擎，就需要用到Core里面的内容。
+* 如果需要自定义Gateway，至少需要用到两个头文件：Core/Gateway.h 以及 Core/TradingEngineInterface.h。Gateway.h里面是Gateway的基类，用户需要继承该基类并实现一些交易接口（如下单、撤单等）。同时，Gateway也要在按照约定去回调TradingEngineInterface中的函数（如收到回执时），TradingEngineInterface的子类就是交易引擎，用于仓位管理、订单管理等，通过回调告知交易状态或是查询信息。详情参考这两个头文件里的注释，以及CtpGateway的实现
+* 如果需要自定义交易引擎，也至少需要：Core/Gateway.h 和 Core/TradingEngineInterface.h。交易引擎通过继承TradingEngineInterface获知账户的各种交易信息并管理之，而通过调用gateway的交易接口或是查询接口去主动发出交易请求或是查询请求。可参考TradingSystem目录中的实现
+* Core里其他的文件定义的都是一些基本的交易相关数据结构
+#### 1.3.2. Gateway
+Gateway里是各个经纪商的交易网关的具体实现，可参考Ctp的实现来实现自己需要的网关
+#### 1.3.3. TradingSystem
+TradingSystem是本人实现的一个交易引擎，向上通过redis和策略进行交互，向下通过Gateway和交易所进行交互
+#### 1.3.4. Tools
+一些小工具，但是很必要。主要是ContractCollector，用于查询所有的合约信息并保存到本地，供其他组件使用
+#### 1.3.5. RiskManagement
+风险管理。考虑是否要合并到其他目录
 
 ## 2. 使用方式
 ### 2.1. 编译策略引擎及加载器
@@ -37,7 +51,7 @@ ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
 ```bash
 # 在terminal 0 启动策略引擎
 redis-server  # 启动redis，必须在启动策略引擎前启动redis
-./MSE --loglevel=debug
+./MTE --loglevel=debug
 ```
 ```bash
 # 在terminal 1 启动策略
@@ -48,7 +62,7 @@ redis-server  # 启动redis，必须在启动策略引擎前启动redis
 ```c++
 // MyStrategy.cpp
 
-#include <AlgoTrade/Strategy.h>
+#include <Strategy/Strategy.h>
 
 class MyStrategy : public ft::Strategy {
  public:
