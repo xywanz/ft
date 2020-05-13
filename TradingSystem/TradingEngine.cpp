@@ -196,7 +196,7 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
   auto& order = iter->second;
 
   spdlog::info(
-      "[TradingEngine::on_order_traded] 报单委托成功. Ticker: {}, Direction: "
+      "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, Direction: "
       "{}, Offset: {}, Volume: {}, Price: {:.2f}",
       order.contract->ticker, direction_str(order.direction),
       offset_str(order.offset), order.volume, order.price);
@@ -214,7 +214,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   auto& order = iter->second;
 
   spdlog::error(
-      "[TradingEngine::on_order_traded] 报单被拒. Ticker: {}, Direction: "
+      "[TradingEngine::on_order_rejected] 报单被拒. Ticker: {}, Direction: "
       "{}, Offset: {}, Volume: {}, Price: {:.2f}",
       order.contract->ticker, direction_str(order.direction),
       offset_str(order.offset), order.volume, order.price);
@@ -276,8 +276,8 @@ void TradingEngine::on_order_canceled(uint64_t order_id,
   order.canceled_volume = canceled_volume;
   if (order.traded_volume + order.canceled_volume == order.volume) {
     spdlog::info(
-        "[TradingEngine::on_order_traded] 报单完成. Ticker: {}, Direction: {}, "
-        "Offset: {}, Traded/Original: {}/{}",
+        "[TradingEngine::on_order_canceled] 报单完成. Ticker: {}, Direction: "
+        "{}, Offset: {}, Traded/Original: {}/{}",
         order.contract->ticker, direction_str(order.direction),
         offset_str(order.offset), order.traded_volume, order.volume);
     order_map_.erase(iter);
