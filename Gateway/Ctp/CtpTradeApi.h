@@ -1,17 +1,54 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_API_CTP_CTPTRADESPI_H_
-#define FT_SRC_API_CTP_CTPTRADESPI_H_
-
+#ifndef FT_GATEWAY_CTP_CTPTRADEAPI_H_
+#define FT_GATEWAY_CTP_CTPTRADEAPI_H_
 #include <ThostFtdcTraderApi.h>
+
+#include <atomic>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <string>
+
+#include "Core/Gateway.h"
+#include "Core/LoginParams.h"
+#include "Core/Order.h"
+#include "Core/TradingEngineInterface.h"
+#include "Ctp/CtpCommon.h"
 
 namespace ft {
 
 class CtpGateway;
 
-class CtpTradeSpi : public CThostFtdcTraderSpi {
+class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  explicit CtpTradeSpi(CtpGateway *gateway);
+  explicit CtpTradeApi(TradingEngineInterface *engine);
+
+  ~CtpTradeApi();
+
+  bool login(const LoginParams &params);
+
+  void logout();
+
+  uint64_t send_order(const OrderReq *order);
+
+  bool cancel_order(uint64_t order_id);
+
+  bool query_contract(const std::string &ticker);
+
+  bool query_contracts();
+
+  bool query_position(const std::string &ticker);
+
+  bool query_positions();
+
+  bool query_account();
+
+  bool query_orders();
+
+  bool query_trades();
+
+  bool query_margin_rate(const std::string &ticker);
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -88,12 +125,59 @@ class CtpTradeSpi : public CThostFtdcTraderSpi {
 
   void OnRspQryInstrumentMarginRate(
       CThostFtdcInstrumentMarginRateField *margin_rate,
-      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last);
+      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
  private:
-  CtpGateway *gateway_;
+  struct OrderDetail {
+    const Contract *contract = nullptr;
+    int order_sysid = 0;
+    bool accepted_ack = false;
+    int64_t original_vol = 0;
+    int64_t traded_vol = 0;
+    int64_t canceled_vol = 0;
+  };
+
+  int next_req_id() { return next_req_id_++; }
+
+  int next_order_ref() { return next_order_ref_++; }
+
+  void done() { is_done_ = true; }
+
+  void error() { is_error_ = true; }
+
+  void reset_sync() { is_done_ = false; }
+
+  bool wait_sync() {
+    while (!is_done_)
+      if (is_error_) return false;
+
+    return true;
+  }
+
+ private:
+  TradingEngineInterface *engine_;
+  std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> trade_api_;
+
+  std::string front_addr_;
+  std::string broker_id_;
+  std::string investor_id_;
+  int front_id_ = 0;
+  int session_id_ = 0;
+
+  std::atomic<int> next_req_id_ = 0;
+  std::atomic<int> next_order_ref_ = 0;
+
+  std::atomic<bool> is_error_ = false;
+  std::atomic<bool> is_connected_ = false;
+  std::atomic<bool> is_done_ = false;
+  std::atomic<bool> is_logon_ = false;
+
+  std::map<uint64_t, Position> pos_cache_;
+  std::map<uint64_t, OrderDetail> order_details_;
+  std::mutex query_mutex_;
+  std::mutex order_mutex_;
 };
 
 }  // namespace ft
 
-#endif  // FT_SRC_API_CTP_CTPTRADEAPI_H_
+#endif  // FT_GATEWAY_CTP_CTPTRADEAPI_H_
