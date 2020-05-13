@@ -9,16 +9,45 @@
 
 #include "Core/Constants.h"
 #include "Core/ContractTable.h"
+#include "Core/Position.h"
 #include "Core/Protocol.h"
 #include "IPC/redis.h"
-#include "TradingSystem/PositionManager.h"
 
 namespace ft {
 
+class PositionHelper {
+ public:
+  PositionHelper() : redis_("127.0.0.1", 6379) {}
+
+  Position get_position(const std::string& ticker) const {
+    Position pos;
+
+    auto reply = redis_.get(fmt::format("pos-{}", ticker));
+    if (reply->len == 0) return pos;
+
+    memcpy(&pos, reply->str, sizeof(pos));
+    return pos;
+  }
+
+  double get_realized_pnl() const {
+    auto reply = redis_.get("realized_pnl");
+    if (reply->len == 0) return 0;
+    return *reinterpret_cast<double*>(reply->str);
+  }
+
+  double get_float_pnl() const {
+    auto reply = redis_.get("float_pnl");
+    if (reply->len == 0) return 0;
+    return *reinterpret_cast<double*>(reply->str);
+  }
+
+ private:
+  RedisSession redis_;
+};
+
 class AlgoTradeContext {
  public:
-  AlgoTradeContext()
-      : redis_order_("127.0.0.1", 6379), portfolio_("127.0.0.1", 6379) {}
+  AlgoTradeContext() : redis_order_("127.0.0.1", 6379) {}
 
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK) {
@@ -85,7 +114,7 @@ class AlgoTradeContext {
 
  private:
   RedisSession redis_order_;
-  PositionManager portfolio_;
+  PositionHelper portfolio_;
 };
 
 }  // namespace ft
