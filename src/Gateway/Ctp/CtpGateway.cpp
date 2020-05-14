@@ -51,7 +51,7 @@ void CtpGateway::logout() {
   md_api_->logout();
 }
 
-uint64_t CtpGateway::send_order(const OrderReq *order) {
+bool CtpGateway::send_order(const OrderReq *order) {
   return trade_api_->send_order(order);
 }
 

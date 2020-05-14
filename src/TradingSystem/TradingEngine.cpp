@@ -74,21 +74,22 @@ void TradingEngine::run() {
   }
 }
 
-uint64_t TradingEngine::send_order(uint64_t ticker_index, int volume,
-                                   uint64_t direction, uint64_t offset,
-                                   uint64_t type, double price) {
+bool TradingEngine::send_order(uint64_t ticker_index, int volume,
+                               uint64_t direction, uint64_t offset,
+                               uint64_t type, double price) {
   if (!is_logon_) {
     spdlog::error("[TradingEngine::send_order] Failed. Not logon");
-    return 0;
+    return false;
   }
 
   auto contract = ContractTable::get_by_index(ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::send_order] Contract not found");
-    return 0;
+    return false;
   }
 
   OrderReq req;
+  req.order_id = next_order_id();
   req.ticker_index = ticker_index;
   req.direction = direction;
   req.offset = offset;
@@ -97,21 +98,30 @@ uint64_t TradingEngine::send_order(uint64_t ticker_index, int volume,
   req.price = price;
 
   std::unique_lock<std::mutex> lock(mutex_);
-  uint64_t order_id = gateway_->send_order(&req);
-  if (order_id == 0) {
+  if (risk_mgr_) {
+    if (!risk_mgr_->check_order_req(&req)) {
+      spdlog::error("风控未通过");
+      return false;
+    }
+  }
+
+  if (!gateway_->send_order(&req)) {
     spdlog::error(
         "[StrategyEngine::send_order] Failed to send_order."
         " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
         "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
         "Status: Failed>",
-        contract->ticker, order_id, direction_str(req.direction),
+        contract->ticker, req.order_id, direction_str(req.direction),
         offset_str(req.offset), ordertype_str(req.type), 0, req.volume,
         req.price);
-    return 0;
+
+    if (risk_mgr_) risk_mgr_->on_order_completed(req.order_id);
+
+    return false;
   }
 
   Order order;
-  order.order_id = order_id;
+  order.order_id = req.order_id;
   order.contract = contract;
   order.direction = direction;
   order.offset = offset;
@@ -119,7 +129,7 @@ uint64_t TradingEngine::send_order(uint64_t ticker_index, int volume,
   order.type = type;
   order.price = price;
   order.status = OrderStatus::SUBMITTING;
-  order_map_.emplace(order_id, order);
+  order_map_.emplace(order.order_id, order);
 
   portfolio_.update_pending(contract->index, direction, offset, volume);
 
@@ -131,7 +141,7 @@ uint64_t TradingEngine::send_order(uint64_t ticker_index, int volume,
       contract->ticker, order.order_id, direction_str(order.direction),
       offset_str(order.offset), ordertype_str(order.type), 0, order.volume,
       order.price, to_string(order.status));
-  return order_id;
+  return true;
 }
 
 void TradingEngine::cancel_order(uint64_t order_id) {
@@ -179,7 +189,7 @@ void TradingEngine::on_tick(const TickData* tick) {
     return;
   }
 
-  tick_redis_.publish(get_md_topic(contract->ticker), tick, sizeof(TickData));
+  tick_redis_.publish(proto_md_topic(contract->ticker), tick, sizeof(TickData));
   spdlog::debug("[TradingEngine::process_tick]");
 }
 
@@ -244,6 +254,9 @@ void TradingEngine::on_order_traded(uint64_t order_id, int64_t this_traded,
   portfolio_.update_traded(order.contract->index, order.direction, order.offset,
                            this_traded, traded_price);
 
+  if (risk_mgr_)
+    risk_mgr_->on_order_traded(order_id, this_traded, traded_price);
+
   order.traded_volume += this_traded;
   if (order.traded_volume + order.canceled_volume == order.volume) {
     spdlog::info(
@@ -251,6 +264,10 @@ void TradingEngine::on_order_traded(uint64_t order_id, int64_t this_traded,
         "Offset: {}, Traded/Original: {}/{}",
         order.contract->ticker, direction_str(order.direction),
         offset_str(order.offset), order.traded_volume, order.volume);
+
+    // 订单结束，通知风控模块
+    if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
+
     order_map_.erase(iter);
   }
 }
@@ -280,6 +297,10 @@ void TradingEngine::on_order_canceled(uint64_t order_id,
         "{}, Offset: {}, Traded/Original: {}/{}",
         order.contract->ticker, direction_str(order.direction),
         offset_str(order.offset), order.traded_volume, order.volume);
+
+    // 订单结束，通知风控模块
+    if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
+
     order_map_.erase(iter);
   }
 }

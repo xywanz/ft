@@ -30,7 +30,7 @@ class CtpGateway : public Gateway {
 
   void logout();
 
-  uint64_t send_order(const OrderReq *order);
+  bool send_order(const OrderReq *order);
 
   bool cancel_order(uint64_t order_id);
 

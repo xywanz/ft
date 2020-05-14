@@ -41,4 +41,5 @@ set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 add_subdirectory(src/Gateway)
 add_subdirectory(src/TradingSystem)
+add_subdirectory(src/RiskManagement)
 add_subdirectory(src/Test)

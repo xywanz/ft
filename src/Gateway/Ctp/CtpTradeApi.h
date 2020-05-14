@@ -30,7 +30,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void logout();
 
-  uint64_t send_order(const OrderReq *order);
+  bool send_order(const OrderReq *order);
 
   bool cancel_order(uint64_t order_id);
 
@@ -130,7 +130,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
  private:
   struct OrderDetail {
     const Contract *contract = nullptr;
-    int order_sysid = 0;
+    uint64_t order_id = 0;
     bool accepted_ack = false;
     int64_t original_vol = 0;
     int64_t traded_vol = 0;
@@ -174,6 +174,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   std::map<uint64_t, Position> pos_cache_;
   std::map<int, OrderDetail> order_details_;
+  std::map<uint64_t, int> id2ref_;
   std::mutex query_mutex_;
   std::mutex order_mutex_;
 };

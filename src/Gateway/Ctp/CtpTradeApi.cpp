@@ -246,16 +246,16 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
   is_logon_ = false;
 }
 
-uint64_t CtpTradeApi::send_order(const OrderReq *order) {
+bool CtpTradeApi::send_order(const OrderReq *order) {
   if (!is_logon_) {
     spdlog::error("[CtpTradeApi::send_order] Failed. Not logon");
-    return 0;
+    return false;
   }
 
   const auto *contract = ContractTable::get_by_index(order->ticker_index);
   if (!contract) {
     spdlog::error("[CtpTradeApi::send_order] Contract not found");
-    return 0;
+    return false;
   }
 
   int order_ref = next_order_ref();
@@ -290,13 +290,15 @@ uint64_t CtpTradeApi::send_order(const OrderReq *order) {
   }
 
   std::unique_lock<std::mutex> lock(order_mutex_);
-  if (trade_api_->ReqOrderInsert(&req, next_req_id()) != 0) return 0;
+  if (trade_api_->ReqOrderInsert(&req, next_req_id()) != 0) return false;
 
   OrderDetail detail;
   detail.contract = contract;
+  detail.order_id = order->order_id;
   order_details_.emplace(order_ref, detail);
+  id2ref_.emplace(order->order_id, order_ref);
 
-  return order_ref;
+  return true;
 }
 
 void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
@@ -336,6 +338,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
     return;
   }
   order_details_.erase(iter);
+  id2ref_.erase(order_ref);
   lock.unlock();
 
   engine_->on_order_rejected(order_ref);
@@ -402,8 +405,10 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     }
 
     // 这里是处理撤单比回调先到的情况，如果撤单比成交回执先到，则继续等待成交回执到来
-    if (detail->canceled_vol + detail->traded_vol == detail->original_vol)
+    if (detail->canceled_vol + detail->traded_vol == detail->original_vol) {
       order_details_.erase(iter);
+      id2ref_.erase(order_ref);
+    }
   }
 }
 
@@ -436,8 +441,10 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
 
   auto detail = &iter->second;
   detail->traded_vol += trade->Volume;
-  if (detail->traded_vol + detail->canceled_vol == detail->original_vol)
+  if (detail->traded_vol + detail->canceled_vol == detail->original_vol) {
     order_details_.erase(iter);
+    id2ref_.erase(order_ref);
+  }
   lock.unlock();
 
   engine_->on_order_traded(order_ref, trade->Volume, trade->Price);
@@ -449,14 +456,16 @@ bool CtpTradeApi::cancel_order(uint64_t order_id) {
   CThostFtdcInputOrderActionField req;
   memset(&req, 0, sizeof(req));
 
-  int order_ref = static_cast<int>(order_id);
   std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (iter == order_details_.end()) {
+  auto ref_iter = id2ref_.find(order_id);
+  if (ref_iter == id2ref_.end()) {
     spdlog::error(
-        "[CtpTradeApi::cancel_order] Failed. Order not found. OrderRef: {}",
-        order_ref);
+        "[CtpTradeApi::cancel_order] Failed. Order not found. OrderID: {}",
+        order_id);
   }
+  int order_ref = ref_iter->second;
+
+  auto iter = order_details_.find(order_ref);
   auto contract = iter->second.contract;
 
   strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));

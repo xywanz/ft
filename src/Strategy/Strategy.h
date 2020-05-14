@@ -22,7 +22,7 @@ class Strategy {
   void subscribe(const std::vector<std::string>& sub_list) {
     std::vector<std::string> topics;
     for (const auto& ticker : sub_list)
-      topics.emplace_back(get_md_topic(ticker));
+      topics.emplace_back(proto_md_topic(ticker));
     redis_tick_.subscribe(topics);
   }
 

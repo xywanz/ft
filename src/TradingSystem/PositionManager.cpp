@@ -4,53 +4,19 @@
 
 #include "Core/Constants.h"
 #include "Core/ContractTable.h"
+#include "Core/Protocol.h"
 
 namespace ft {
 
 PositionManager::PositionManager(const std::string& ip, int port)
     : redis_(ip, port) {}
 
-Position PositionManager::get_position(const std::string& ticker) const {
-  static const Position empty_pos{};
-
-  auto reply = redis_.get(get_pos_key(ticker));
-
-  if (reply->len == 0) return empty_pos;
-
-  assert(reply->len == sizeof(Position));
-  Position pos;
-  memcpy(&pos, reply->str, reply->len);
-  return pos;
-}
-
-double PositionManager::get_realized_pnl() const {
-  auto reply = redis_.get(get_pnl_key());
-  if (reply->len == 0) return 0;
-
-  assert(reply->len == sizeof(realized_pnl_));
-  double ret = *reinterpret_cast<double*>(reply->str);
-  return ret;
-}
-
-double PositionManager::get_float_pnl() const {
-  // double float_pnl = 0;
-  // auto reply = redis_.keys("pos-*");
-  // for (size_t i = 0; i < reply->elements; ++i) {
-  //   auto key = reinterpret_cast<const char*>(reply->element[i]->str);
-  //   auto pos_reply = redis_.get(key);
-  //   auto pos = reinterpret_cast<const Position*>(pos_reply->str);
-  //   float_pnl += pos->long_pos.float_pnl + pos->short_pos.float_pnl;
-  // }
-  // return float_pnl;
-  return 0;
-}
-
 void PositionManager::set_position(const Position* pos) {
   pos_map_.emplace(pos->ticker_index, *pos);
 
   const auto* contract = ContractTable::get_by_index(pos->ticker_index);
   assert(contract);
-  auto key = get_pos_key(contract->ticker);
+  auto key = proto_pos_key(contract->ticker);
   redis_.set(key, pos, sizeof(Position));
 }
 
@@ -80,7 +46,7 @@ void PositionManager::update_pending(uint64_t ticker_index, uint64_t direction,
 
   const auto* contract = ContractTable::get_by_index(pos.ticker_index);
   assert(contract);
-  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(proto_pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
@@ -143,8 +109,8 @@ void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
     pos_detail.cost_price = 0;
   }
 
-  redis_.set(get_pos_key(contract->ticker), &pos, sizeof(pos));
-  redis_.set(get_pnl_key(), &realized_pnl_, sizeof(realized_pnl_));
+  redis_.set(proto_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set("realized_pnl", &realized_pnl_, sizeof(realized_pnl_));
 }
 
 void PositionManager::update_float_pnl(uint64_t ticker_index,
@@ -164,7 +130,7 @@ void PositionManager::update_float_pnl(uint64_t ticker_index,
       sp.float_pnl = sp.volume * contract->size * (sp.cost_price - last_price);
 
     if (lp.volume > 0 || sp.volume > 0)
-      redis_.set(get_pos_key(contract->ticker), pos, sizeof(*pos));
+      redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
   }
 }
 

@@ -16,12 +16,6 @@ class PositionManager {
  public:
   PositionManager(const std::string& ip, int port);
 
-  Position get_position(const std::string& ticker) const;
-
-  double get_realized_pnl() const;
-
-  double get_float_pnl() const;
-
   void set_position(const Position* pos);
 
   void update_pending(uint64_t ticker_index, uint64_t direction,
@@ -33,12 +27,6 @@ class PositionManager {
   void update_float_pnl(uint64_t ticker_index, double last_price);
 
  private:
-  static std::string get_pos_key(const std::string& ticker) {
-    return fmt::format("pos-{}", ticker);
-  }
-
-  static std::string get_pnl_key() { return "realized_pnl"; }
-
   Position* find(uint64_t ticker_index) {
     auto iter = pos_map_.find(ticker_index);
     if (iter == pos_map_.end()) return nullptr;

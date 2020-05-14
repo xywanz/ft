@@ -15,6 +15,7 @@
 #include "Core/Account.h"
 #include "Core/Gateway.h"
 #include "Core/LoginParams.h"
+#include "Core/RiskManagementInterface.h"
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
 #include "TradingSystem/Order.h"
@@ -35,8 +36,8 @@ class TradingEngine : public TradingEngineInterface {
   void close();
 
  private:
-  uint64_t send_order(uint64_t ticker_index, int volume, uint64_t direction,
-                      uint64_t offset, uint64_t type, double price);
+  bool send_order(uint64_t ticker_index, int volume, uint64_t direction,
+                  uint64_t offset, uint64_t type, double price);
 
   void cancel_order(uint64_t order_id);
 
@@ -64,11 +65,16 @@ class TradingEngine : public TradingEngineInterface {
   void on_order_cancel_rejected(uint64_t order_id) override;
 
  private:
+  uint64_t next_order_id() { return next_order_id_++; }
+
   std::unique_ptr<Gateway> gateway_ = nullptr;
+  std::unique_ptr<RiskManagementInterface> risk_mgr_ = nullptr;
 
   PositionManager portfolio_;
   std::map<uint64_t, Order> order_map_;
   std::mutex mutex_;
+
+  uint64_t next_order_id_ = 1;
 
   RedisSession tick_redis_;
   RedisSession order_redis_;

@@ -16,6 +16,7 @@ namespace ft {
 
 // 这个是TradingEngine发给Gateway的下单信息
 struct OrderReq {
+  uint64_t order_id;
   uint64_t ticker_index;
   uint64_t type;
   uint64_t direction;
@@ -55,8 +56,12 @@ struct TraderCommand {
 
 constexpr const char* const TRADER_CMD_TOPIC = "trader_cmd";
 
-inline std::string get_md_topic(const std::string& ticker) {
+inline std::string proto_md_topic(const std::string& ticker) {
   return fmt::format("md-{}", ticker);
+}
+
+inline std::string proto_pos_key(const std::string& ticker) {
+  return fmt::format("pos-{}", ticker);
 }
 
 }  // namespace ft
