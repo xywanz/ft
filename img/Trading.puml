@@ -1,0 +1,44 @@
+@startuml Trading
+
+participant Strategy
+participant TradingEngine
+participant RiskManagement
+participant Gateway
+participant Exchange
+
+== 订单被风控模块拒单 ==
+Strategy -> TradingEngine: send_order_req
+TradingEngine -> RiskManagement: check order req
+TradingEngine <- RiskManagement: failed
+Strategy <- TradingEngine: on order completed
+
+== 订单调用API发送失败 ==
+Strategy -> TradingEngine: send order req
+TradingEngine -> RiskManagement: check order req
+TradingEngine <- RiskManagement: pass
+TradingEngine -> Gateway: send order req
+Gateway -> Exchange: req order insert failed
+TradingEngine <- Gateway: return false
+TradingEngine -> RiskManagement: on order completed
+Strategy <- TradingEngine: on order completed
+
+
+== 订单发送成功 ==
+Strategy -> TradingEngine: send order req
+TradingEngine -> RiskManagement: check order req
+TradingEngine <- RiskManagement: pass
+TradingEngine -> Gateway: send order req
+Gateway -> Exchange: req order insert succeeded
+TradingEngine <- Gateway: return true
+TradingEngine -> RiskManagement: on order sent
+Gateway <- Exchange: accepted
+TradingEngine <- Gateway: on order accepted
+Gateway <- Exchange: traded
+TradingEngine <- Gateway: on order traded
+Strategy <- TradingEngine: on order traded
+Gateway <- Exchange: all traded
+TradingEngine <- Gateway: on order traded
+TradingEngine -> RiskManagement: on order completed
+Strategy <- TradingEngine: on order completed
+
+@enduml

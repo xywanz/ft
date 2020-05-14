@@ -1,0 +1,16 @@
+@startuml MarketDataFlow
+
+participant Strategy
+participant Redis
+participant TradingEngine
+participant Gateway
+participant MdServer
+
+Gateway -> MdServer: subscribe
+Strategy -> Redis: subscribe
+Gateway <- MdServer: market data
+TradingEngine <- Gateway: on tick
+Redis <- TradingEngine: publish
+Strategy <- Redis: on tick
+
+@enduml

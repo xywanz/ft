@@ -133,6 +133,8 @@ bool TradingEngine::send_order(uint64_t ticker_index, int volume,
     return false;
   }
 
+  if (risk_mgr_) risk_mgr_->on_order_sent(req.order_id);
+
   Order order;
   order.order_id = req.order_id;
   order.contract = contract;

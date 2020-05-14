@@ -7,7 +7,15 @@ ft是一个基于C++的低延迟交易引擎，为策略提供简便的开发、
 
 ### 1.2. 基本架构
 ft采用策略引擎与策略分离的体系，即策略引擎与策略引擎是不同的进程，策略引擎为策略提供仓位、订单等操作支持，一个引擎可以对接多个策略，每个策略都分别跑在一个进程上。
-![image](https://github.com/DuckDuckDuck0/ft/blob/redis/img/framework.jpg)
+![image](img/framework.jpg)
+
+订单发送
+
+![image](img/Trading.png)
+
+数据驱动
+
+![image](img/MarketDataFlow.png)
 
 ### 1.3. 目录结构
 #### 1.3.1. include

@@ -11,6 +11,8 @@ class RiskManagementInterface {
  public:
   virtual bool check_order_req(const OrderReq* req) {}
 
+  virtual void on_order_sent(uint64_t order_id) {}
+
   /*
    * 订单成交时回调
    */
