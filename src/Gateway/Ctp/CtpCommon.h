@@ -23,8 +23,10 @@ namespace ft {
 struct CtpApiDeleter {
   template <class T>
   void operator()(T* p) {
-    p->RegisterSpi(nullptr);
-    p->Release();
+    if (p) {
+      p->RegisterSpi(nullptr);
+      p->Release();
+    }
   }
 };
 
