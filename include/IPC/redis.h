@@ -19,7 +19,9 @@ namespace ft {
 using RedisReply = std::shared_ptr<redisReply>;
 
 struct RedisReplyDestructor {
-  void operator()(redisReply* p) { freeReplyObject(p); }
+  void operator()(redisReply* p) {
+    if (p) freeReplyObject(p);
+  }
 };
 
 class RedisSession {
