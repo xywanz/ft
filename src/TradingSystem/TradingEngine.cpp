@@ -56,6 +56,11 @@ void TradingEngine::run() {
   for (;;) {
     auto reply = order_redis_.get_sub_reply();
     auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
+    if (cmd->magic != TRADER_CMD_MAGIC) {
+      spdlog::error("[TradingEngine::run] Recv unknown cmd: error magic num");
+      continue;
+    }
+
     switch (cmd->type) {
       case NEW_ORDER:
         spdlog::info("new order");
@@ -64,8 +69,16 @@ void TradingEngine::run() {
                    cmd->order_req.type, cmd->order_req.price);
         break;
       case CANCEL_ORDER:
-        if (cmd->cancel_req.order_id != 0)
-          cancel_order(cmd->cancel_req.order_id);
+        spdlog::info("cancel order");
+        cancel_order(cmd->cancel_req.order_id);
+        break;
+      case CANCEL_TICKER:
+        spdlog::info("cancel all for ticker");
+        cancel_all_for_ticker(cmd->cancel_ticker_req.ticker_index);
+        break;
+      case CANCEL_ALL:
+        spdlog::info("cancel all");
+        cancel_all();
         break;
       default:
         spdlog::error("[StrategyEngine::run] Unknown cmd");
@@ -148,9 +161,19 @@ void TradingEngine::cancel_order(uint64_t order_id) {
   gateway_->cancel_order(order_id);
 }
 
-void TradingEngine::cancel_all_by_ticker(const std::string& ticker) {}
+void TradingEngine::cancel_all_for_ticker(uint64_t ticker_index) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  for (const auto& [order_id, order] : order_map_) {
+    if (ticker_index == order.contract->index) gateway_->cancel_order(order_id);
+  }
+}
 
-void TradingEngine::cancel_all() {}
+void TradingEngine::cancel_all() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  for (const auto& [order_id, order] : order_map_) {
+    gateway_->cancel_order(order_id);
+  }
+}
 
 void TradingEngine::on_query_contract(const Contract* contract) {}
 
@@ -305,6 +328,11 @@ void TradingEngine::on_order_canceled(uint64_t order_id,
   }
 }
 
-void TradingEngine::on_order_cancel_rejected(uint64_t order_id) {}
+void TradingEngine::on_order_cancel_rejected(uint64_t order_id) {
+  spdlog::warn(
+      "[TradingEngine::on_order_cancel_rejected] Order cannot be canceled. "
+      "OrderID: {}",
+      order_id);
+}
 
 }  // namespace ft

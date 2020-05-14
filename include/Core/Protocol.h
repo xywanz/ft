@@ -30,7 +30,9 @@ struct OrderReq {
  * Strategy通过IPC向TradingEngine发送交易相关指令
  */
 
-enum TraderCmdType { NEW_ORDER = 1, CANCEL_ORDER };
+inline const uint32_t TRADER_CMD_MAGIC = 0x1709394;
+
+enum TraderCmdType { NEW_ORDER = 1, CANCEL_ORDER, CANCEL_TICKER, CANCEL_ALL };
 
 struct TraderOrderReq {
   uint64_t ticker_index;
@@ -42,15 +44,21 @@ struct TraderOrderReq {
 };
 
 struct TraderCancelReq {
-  uint64_t ticker_index;
   uint64_t order_id;
+};
+
+struct TraderCancelTickerReq {
+  uint64_t ticker_index;
 };
 
 struct TraderCommand {
   uint32_t type;
+  uint32_t magic;
+  uint32_t strategy_id;
   union {
     TraderOrderReq order_req;
     TraderCancelReq cancel_req;
+    TraderCancelTickerReq cancel_ticker_req;
   };
 };
 

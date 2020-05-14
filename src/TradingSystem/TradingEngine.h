@@ -41,7 +41,7 @@ class TradingEngine : public TradingEngineInterface {
 
   void cancel_order(uint64_t order_id);
 
-  void cancel_all_by_ticker(const std::string& ticker);
+  void cancel_all_for_ticker(uint64_t ticker_index);
 
   void cancel_all();
 

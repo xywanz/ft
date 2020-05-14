@@ -47,7 +47,7 @@ class PositionHelper {
 
 class AlgoTradeContext {
  public:
-  AlgoTradeContext() : redis_order_("127.0.0.1", 6379) {}
+  AlgoTradeContext() : cmd_redis_("127.0.0.1", 6379) {}
 
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK) {
@@ -76,7 +76,7 @@ class AlgoTradeContext {
     memset(&cmd, 0, sizeof(cmd));
     cmd.type = CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
-    redis_order_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
   Position get_position(const std::string& ticker) const {
@@ -109,11 +109,11 @@ class AlgoTradeContext {
     cmd.order_req.type = type;
     cmd.order_req.price = price;
 
-    redis_order_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
  private:
-  RedisSession redis_order_;
+  RedisSession cmd_redis_;
   PositionHelper portfolio_;
 };
 
