@@ -14,7 +14,7 @@ endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src
     ${CTP_PATH}
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/include
@@ -39,6 +39,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpic")
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
-add_subdirectory(Gateway)
-add_subdirectory(TradingSystem)
-add_subdirectory(Test)
+add_subdirectory(src/Gateway)
+add_subdirectory(src/TradingSystem)
+add_subdirectory(src/Test)
