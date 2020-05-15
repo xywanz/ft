@@ -16,6 +16,10 @@ CtpMdApi::~CtpMdApi() {
 }
 
 bool CtpMdApi::login(const LoginParams &params) {
+  if (is_logon_) {
+    spdlog::error("[CtpMdApi::login] Don't login twice");
+  }
+
   md_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!md_api_) {
     spdlog::error("[CtpMdApi::login] Failed to create CTP MD API");

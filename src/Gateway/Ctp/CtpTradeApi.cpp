@@ -15,6 +15,10 @@ CtpTradeApi::~CtpTradeApi() {
 }
 
 bool CtpTradeApi::login(const LoginParams &params) {
+  if (is_logon_) {
+    spdlog::error("[CtpTradeApi::login] Don't login twice");
+  }
+
   trade_api_.reset(CThostFtdcTraderApi::CreateFtdcTraderApi());
   if (!trade_api_) {
     spdlog::error("[CtpTradeApi::login] Failed. Failed to CreateFtdcTraderApi");
@@ -38,8 +42,7 @@ bool CtpTradeApi::login(const LoginParams &params) {
   }
 
   if (!params.auth_code().empty()) {
-    CThostFtdcReqAuthenticateField auth_req;
-    memset(&auth_req, 0, sizeof(auth_req));
+    CThostFtdcReqAuthenticateField auth_req{};
     strncpy(auth_req.BrokerID, params.broker_id().c_str(),
             sizeof(auth_req.BrokerID));
     strncpy(auth_req.UserID, params.investor_id().c_str(),
@@ -60,8 +63,7 @@ bool CtpTradeApi::login(const LoginParams &params) {
     }
   }
 
-  CThostFtdcReqUserLoginField login_req;
-  memset(&login_req, 0, sizeof(login_req));
+  CThostFtdcReqUserLoginField login_req{};
   strncpy(login_req.BrokerID, params.broker_id().c_str(),
           sizeof(login_req.BrokerID));
   strncpy(login_req.UserID, params.investor_id().c_str(),
@@ -80,8 +82,7 @@ bool CtpTradeApi::login(const LoginParams &params) {
     return false;
   }
 
-  CThostFtdcQrySettlementInfoField settlement_req;
-  memset(&settlement_req, 0, sizeof(settlement_req));
+  CThostFtdcQrySettlementInfoField settlement_req{};
   strncpy(settlement_req.BrokerID, broker_id_.c_str(),
           sizeof(settlement_req.BrokerID));
   strncpy(settlement_req.InvestorID, investor_id_.c_str(),
@@ -99,8 +100,7 @@ bool CtpTradeApi::login(const LoginParams &params) {
     return false;
   }
 
-  CThostFtdcSettlementInfoConfirmField confirm_req;
-  memset(&confirm_req, 0, sizeof(confirm_req));
+  CThostFtdcSettlementInfoConfirmField confirm_req{};
   strncpy(confirm_req.BrokerID, broker_id_.c_str(),
           sizeof(confirm_req.BrokerID));
   strncpy(confirm_req.InvestorID, investor_id_.c_str(),
@@ -132,7 +132,7 @@ bool CtpTradeApi::login(const LoginParams &params) {
 
 void CtpTradeApi::logout() {
   if (is_logon_) {
-    CThostFtdcUserLogoutField req;
+    CThostFtdcUserLogoutField req{};
     strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
     strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
     if (trade_api_->ReqUserLogout(&req, next_req_id()) != 0) return;
@@ -259,8 +259,7 @@ bool CtpTradeApi::send_order(const OrderReq *order) {
   }
 
   int order_ref = next_order_ref();
-  CThostFtdcInputOrderField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcInputOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
@@ -331,17 +330,15 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
 
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = order_details_.find(order_ref);
-  if (order_details_.find(order_ref) == order_details_.end()) {
+  if (iter == order_details_.end()) {
     spdlog::error(
         "[CtpTradeApi::OnRspOrderInsert] Order not found. OrderRef: {}",
         order_ref);
     return;
   }
+  engine_->on_order_rejected(iter->second.order_id);
+  id2ref_.erase(iter->second.order_id);
   order_details_.erase(iter);
-  id2ref_.erase(order_ref);
-  lock.unlock();
-
-  engine_->on_order_rejected(order_ref);
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
@@ -371,13 +368,16 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
                   order_ref);
     return;
   }
+  auto &detail = iter->second;
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
-    engine_->on_order_rejected(order_ref);
+    engine_->on_order_rejected(detail.order_id);
+    id2ref_.erase(detail.order_id);
+    order_details_.erase(iter);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    engine_->on_order_cancel_rejected(order_ref);
+    engine_->on_order_cancel_rejected(detail.order_id);
     return;
   }
 
@@ -386,12 +386,10 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
       order->OrderStatus == THOST_FTDC_OST_NoTradeNotQueueing)
     return;
 
-  auto detail = &iter->second;
-
   // 被交易所接收，则回调on_order_accepted
-  if (!detail->accepted_ack) {
-    engine_->on_order_accepted(order_ref);
-    detail->accepted_ack = true;
+  if (!detail.accepted_ack) {
+    engine_->on_order_accepted(detail.order_id);
+    detail.accepted_ack = true;
   }
 
   // 处理撤单
@@ -399,15 +397,15 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
     // 撤单都是一次性撤销所有未成交订单
     // 这里是为了防止重接收到撤单回执
-    if (detail->canceled_vol == 0) {
-      detail->canceled_vol = order->VolumeTotalOriginal - order->VolumeTraded;
-      engine_->on_order_canceled(order_ref, detail->canceled_vol);
+    if (detail.canceled_vol == 0) {
+      detail.canceled_vol = order->VolumeTotalOriginal - order->VolumeTraded;
+      engine_->on_order_canceled(detail.order_id, detail.canceled_vol);
     }
 
     // 这里是处理撤单比回调先到的情况，如果撤单比成交回执先到，则继续等待成交回执到来
-    if (detail->canceled_vol + detail->traded_vol == detail->original_vol) {
+    if (detail.canceled_vol + detail.traded_vol == detail.original_vol) {
+      id2ref_.erase(detail.order_id);
       order_details_.erase(iter);
-      id2ref_.erase(order_ref);
     }
   }
 }
@@ -439,22 +437,18 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
   }
 
-  auto detail = &iter->second;
-  detail->traded_vol += trade->Volume;
-  if (detail->traded_vol + detail->canceled_vol == detail->original_vol) {
-    order_details_.erase(iter);
-    id2ref_.erase(order_ref);
-  }
-  lock.unlock();
+  auto &detail = iter->second;
+  detail.traded_vol += trade->Volume;
+  engine_->on_order_traded(detail.order_id, trade->Volume, trade->Price);
 
-  engine_->on_order_traded(order_ref, trade->Volume, trade->Price);
+  if (detail.traded_vol + detail.canceled_vol == detail.original_vol) {
+    id2ref_.erase(detail.order_id);
+    order_details_.erase(iter);
+  }
 }
 
 bool CtpTradeApi::cancel_order(uint64_t order_id) {
   if (!is_logon_) return false;
-
-  CThostFtdcInputOrderActionField req;
-  memset(&req, 0, sizeof(req));
 
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto ref_iter = id2ref_.find(order_id);
@@ -462,12 +456,19 @@ bool CtpTradeApi::cancel_order(uint64_t order_id) {
     spdlog::error(
         "[CtpTradeApi::cancel_order] Failed. Order not found. OrderID: {}",
         order_id);
+    return false;
   }
   int order_ref = ref_iter->second;
 
   auto iter = order_details_.find(order_ref);
+  if (!iter->second.accepted_ack) {
+    spdlog::error("[CtpTradeApi::cancel_order] 未被交易所接受的订单不可撤");
+    return false;
+  }
+
   auto contract = iter->second.contract;
 
+  CThostFtdcInputOrderActionField req{};
   strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
@@ -510,15 +511,14 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
   }
 
   std::unique_lock<std::mutex> lock(order_mutex_);
-  if (order_details_.find(order_ref) == order_details_.end()) {
+  auto iter = order_details_.find(order_ref);
+  if (iter == order_details_.end()) {
     spdlog::error(
         "[CtpTradeApi::OnRspOrderAction] Order not found. OrderRef: {}",
         order_ref);
     return;
   }
-  lock.unlock();
-
-  engine_->on_order_cancel_rejected(order_ref);
+  engine_->on_order_cancel_rejected(iter->second.order_id);
 }
 
 bool CtpTradeApi::query_contract(const std::string &ticker) {
@@ -529,8 +529,7 @@ bool CtpTradeApi::query_contract(const std::string &ticker) {
   std::string symbol, exchange;
   ticker_split(ticker, &symbol, &exchange);
 
-  CThostFtdcQryInstrumentField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryInstrumentField req{};
   strncpy(req.InstrumentID, symbol.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
 
@@ -596,8 +595,7 @@ bool CtpTradeApi::query_position(const std::string &ticker) {
   std::string symbol, exchange;
   ticker_split(ticker, &symbol, &exchange);
 
-  CThostFtdcQryInvestorPositionField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryInvestorPositionField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   strncpy(req.InstrumentID, symbol.c_str(), symbol.size());
@@ -677,8 +675,7 @@ bool CtpTradeApi::query_account() {
 
   std::unique_lock<std::mutex> lock(query_mutex_);
 
-  CThostFtdcQryTradingAccountField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryTradingAccountField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
@@ -726,8 +723,7 @@ bool CtpTradeApi::query_orders() {
 
   std::unique_lock<std::mutex> lock(query_mutex_);
 
-  CThostFtdcQryOrderField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
@@ -762,9 +758,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order,
         order->VolumeTotalOriginal, order->VolumeTraded,
         gb2312_to_utf8(order->StatusMsg));
 
-    CThostFtdcInputOrderActionField req;
-    memset(&req, 0, sizeof(req));
-
+    CThostFtdcInputOrderActionField req{};
     strncpy(req.InstrumentID, order->InstrumentID, sizeof(req.InstrumentID));
     strncpy(req.ExchangeID, order->ExchangeID, sizeof(req.ExchangeID));
     strncpy(req.OrderSysID, order->OrderSysID, sizeof(req.OrderSysID));
@@ -785,8 +779,7 @@ bool CtpTradeApi::query_trades() {
 
   std::unique_lock<std::mutex> lock(query_mutex_);
 
-  CThostFtdcQryTradeField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryTradeField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
@@ -816,20 +809,23 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
 }
 
 bool CtpTradeApi::query_margin_rate(const std::string &ticker) {
+  auto contract = ContractTable::get_by_ticker(ticker);
+  if (!contract) {
+    spdlog::error(
+        "[CtpTradeApi::query_margin_rate] Contract not found. Ticker: {}",
+        ticker);
+    return false;
+  }
+
   std::unique_lock<std::mutex> lock(query_mutex_);
 
-  CThostFtdcQryInstrumentMarginRateField req;
-  memset(&req, 0, sizeof(req));
+  CThostFtdcQryInstrumentMarginRateField req{};
   req.HedgeFlag = THOST_FTDC_HF_Speculation;
-
-  std::string symbol, exchange;
-  ticker_split(ticker, &symbol, &exchange);
-
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   strncpy(req.InvestUnitID, investor_id_.c_str(), sizeof(req.InvestUnitID));
-  strncpy(req.InstrumentID, symbol.c_str(), sizeof(req.InstrumentID));
-  strncpy(req.ExchangeID, symbol.c_str(), sizeof(req.ExchangeID));
+  strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
 
   reset_sync();
   if (trade_api_->ReqQryInstrumentMarginRate(&req, next_req_id()) != 0) {
