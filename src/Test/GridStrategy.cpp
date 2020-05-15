@@ -19,6 +19,8 @@ class GridStrategy : public ft::Strategy {
     const auto& lp = pos.long_pos;
     const auto& sp = pos.short_pos;
 
+    ctx->buy_open(ticker_, 1, tick->ask[0]);
+
     spdlog::info(
         "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
         "short: {}, trades: {}, realized_pnl: {}, float_pnl: {}",

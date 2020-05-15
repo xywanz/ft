@@ -72,8 +72,8 @@ class AlgoTradeContext {
   }
 
   void cancel_order(uint64_t order_id) {
-    TraderCommand cmd;
-    memset(&cmd, 0, sizeof(cmd));
+    TraderCommand cmd{};
+    cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
     cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
@@ -99,8 +99,8 @@ class AlgoTradeContext {
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
-    TraderCommand cmd;
-    memset(&cmd, 0, sizeof(cmd));
+    TraderCommand cmd{};
+    cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = NEW_ORDER;
     cmd.order_req.ticker_index = contract->index;
     cmd.order_req.volume = volume;

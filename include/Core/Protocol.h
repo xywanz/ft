@@ -52,8 +52,8 @@ struct TraderCancelTickerReq {
 };
 
 struct TraderCommand {
-  uint32_t type;
   uint32_t magic;
+  uint32_t type;
   uint32_t strategy_id;
   union {
     TraderOrderReq order_req;
