@@ -25,7 +25,7 @@ namespace ft {
  */
 class Gateway {
  public:
-  explicit Gateway(TradingEngineInterface* engine) : engine_(engine) {}
+  explicit Gateway(TradingEngineInterface* engine) {}
 
   virtual ~Gateway() {}
 
@@ -50,9 +50,6 @@ class Gateway {
   virtual bool query_margin_rate(const std::string& ticker) { return false; }
 
   virtual bool query_commision_rate(const std::string& ticker) { return false; }
-
- protected:
-  TradingEngineInterface* engine_;
 };
 
 using __GATEWAY_CREATE_FUNC = std::function<Gateway*(TradingEngineInterface*)>;

@@ -6,6 +6,7 @@
 #include <map>
 
 #include "Gateway/Ctp/CtpGateway.h"
+#include "Gateway/Xtp/XtpGateway.h"
 
 namespace ft {
 
@@ -28,5 +29,6 @@ void destroy_api(Gateway* api) {
 }
 
 REGISTER_GATEWAY("ctp", CtpGateway);
+REGISTER_GATEWAY("xtp", XtpGateway);
 
 }  // namespace ft
