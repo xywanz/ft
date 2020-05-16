@@ -18,6 +18,7 @@ CtpMdApi::~CtpMdApi() {
 bool CtpMdApi::login(const LoginParams &params) {
   if (is_logon_) {
     spdlog::error("[CtpMdApi::login] Don't login twice");
+    return true;
   }
 
   md_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());

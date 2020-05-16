@@ -167,10 +167,10 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<int> next_req_id_ = 0;
   std::atomic<int> next_order_ref_ = 0;
 
-  std::atomic<bool> is_error_ = false;
-  std::atomic<bool> is_connected_ = false;
-  std::atomic<bool> is_done_ = false;
-  std::atomic<bool> is_logon_ = false;
+  volatile bool is_error_ = false;
+  volatile bool is_connected_ = false;
+  volatile bool is_done_ = false;
+  volatile bool is_logon_ = false;
 
   std::map<uint64_t, Position> pos_cache_;
   std::map<int, OrderDetail> order_details_;

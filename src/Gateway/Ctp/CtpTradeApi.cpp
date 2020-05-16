@@ -17,7 +17,7 @@ CtpTradeApi::~CtpTradeApi() {
 bool CtpTradeApi::login(const LoginParams &params) {
   if (is_logon_) {
     spdlog::error("[CtpTradeApi::login] Don't login twice");
-    return true;
+    return false;
   }
 
   trade_api_.reset(CThostFtdcTraderApi::CreateFtdcTraderApi());
