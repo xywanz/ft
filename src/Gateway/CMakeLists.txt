@@ -10,6 +10,7 @@ target_link_libraries(CtpGateway ${DEPENDENCIES})
 add_library(XtpGateway STATIC
     Xtp/XtpGateway.cpp
     Xtp/XtpTradeApi.cpp
+    Xtp/XtpMdApi.cpp
 )
 target_link_libraries(XtpGateway ${DEPENDENCIES})
 

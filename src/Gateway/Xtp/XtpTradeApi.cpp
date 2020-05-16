@@ -43,11 +43,22 @@ bool XtpTradeApi::login(const LoginParams& params) {
 
   trade_api_->SubscribePublicTopic(XTP_TERT_QUICK);
   trade_api_->RegisterSpi(this);
+  trade_api_->SetSoftwareKey(params.auth_code().c_str());
   session_id_ = trade_api_->Login(ip, port, params.investor_id().c_str(),
                                   params.passwd().c_str(), sock_type);
   if (session_id_ == 0) {
-    spdlog::error("[XtpTradeApi::login] Failed to login");
+    spdlog::error("[XtpTradeApi::login] Failed to login: {}",
+                  trade_api_->GetApiLastError()->error_msg);
     return false;
+  }
+
+  return true;
+}
+
+void XtpTradeApi::logout() {
+  if (session_id_ != 0) {
+    trade_api_->Logout(session_id_);
+    session_id_ = 0;
   }
 }
 
@@ -206,12 +217,98 @@ bool XtpTradeApi::cancel_order(uint64_t order_id) {
     return false;
   }
 
-  if (trade_api_->CancelOrder(xtp_order_id, session_id_) != 0) {
+  if (trade_api_->CancelOrder(xtp_order_id, session_id_) == 0) {
     spdlog::error("[XtpTradeApi::cancel_order] Failed to call CancelOrder");
     return false;
   }
 
   return true;
 }
+
+void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
+                                     XTPRI* error_info, uint64_t session_id) {
+  if (!is_error_rsp(error_info)) return;
+
+  if (!cancel_info) {
+    spdlog::warn("[XtpTradeApi::OnCancelOrderError] nullptr");
+    return;
+  }
+
+  std::unique_lock<std::mutex> lock(order_mutex_);
+  auto iter = order_details_.find(cancel_info->order_xtp_id);
+  if (iter == order_details_.end()) {
+    spdlog::error(
+        "[XtpTradeApi::OnCancelOrderError] Order not found. XtpOrderID: {}",
+        cancel_info->order_xtp_id);
+    return;
+  }
+  const auto& detail = iter->second;
+
+  spdlog::error("[XtpTradeApi::OnCancelOrderError] Cancel error. ErrorMsg: {}",
+                error_info->error_msg);
+  engine_->on_order_cancel_rejected(detail.order_id);
+}
+
+bool XtpTradeApi::query_position(const std::string& ticker) {
+  if (session_id_ == 0) return false;
+
+  std::unique_lock<std::mutex> lock(query_mutex_);
+  reset_sync();
+  int res =
+      trade_api_->QueryPosition(ticker.c_str(), session_id_, next_req_id());
+  if (res != 0) {
+    spdlog::error("[XtpTradeApi::query_position] Failed to call QueryPosition");
+    return false;
+  }
+  return wait_sync();
+}
+
+bool XtpTradeApi::query_positions() { return query_position(""); }
+
+void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
+                                  XTPRI* error_info, int request_id,
+                                  bool is_last, uint64_t session_id) {
+  if (is_error_rsp(error_info)) {
+    spdlog::error(
+        "[CtpTradeApi::OnRspQryInvestorPosition] Failed. Error Msg: {}",
+        error_info->error_msg);
+    pos_cache_.clear();
+    error();
+    return;
+  }
+
+  if (position) {
+    const auto* contract = ContractTable::get_by_symbol(position->ticker);
+    if (!contract) {
+      spdlog::error(
+          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found");
+      return;
+    }
+
+    auto& pos = pos_cache_[contract->index];
+    pos.ticker_index = contract->index;
+
+    bool is_long_pos =
+        position->position_direction == XTP_POSITION_DIRECTION_LONG;
+    auto& pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
+    pos_detail.yd_volume = position->sellable_qty;
+    pos_detail.volume = position->total_qty;
+    pos_detail.float_pnl = position->unrealized_pnl;
+    pos_detail.cost_price = position->avg_price;
+  }
+
+  if (is_last) {
+    for (auto& [ticker_index, pos] : pos_cache_)
+      engine_->on_query_position(&pos);
+    pos_cache_.clear();
+    done();
+  }
+}
+
+bool XtpTradeApi::query_account() { return true; }
+
+bool XtpTradeApi::query_orders() { return true; }
+
+bool XtpTradeApi::query_trades() { return true; }
 
 }  // namespace ft

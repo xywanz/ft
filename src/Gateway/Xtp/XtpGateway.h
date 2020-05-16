@@ -12,6 +12,7 @@
 #include "Core/Gateway.h"
 #include "Gateway/Xtp/XtpCommon.h"
 #include "Gateway/Xtp/XtpTradeApi.h"
+#include "Gateway/Xtp/XtpMdApi.h"
 
 namespace ft {
 
@@ -21,9 +22,12 @@ class XtpGateway : public Gateway {
 
   bool login(const LoginParams& params) override;
 
+  void logout() override;
+
  private:
   TradingEngineInterface* engine_ = nullptr;
   std::unique_ptr<XtpTradeApi> trade_api_;
+  std::unique_ptr<XtpMdApi> md_api_;
 };
 
 }  // namespace ft
