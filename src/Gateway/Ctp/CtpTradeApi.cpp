@@ -594,7 +594,12 @@ bool CtpTradeApi::query_position(const std::string &ticker) {
   std::unique_lock<std::mutex> lock(query_mutex_);
 
   std::string symbol, exchange;
-  ticker_split(ticker, &symbol, &exchange);
+  if (!ticker.empty()) {
+    auto contract = ContractTable::get_by_ticker(ticker);
+    assert(contract);
+    symbol = contract->symbol;
+    exchange = contract->exchange;
+  }
 
   CThostFtdcQryInvestorPositionField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));

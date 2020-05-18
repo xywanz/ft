@@ -62,8 +62,9 @@ bool CtpMdApi::login(const LoginParams &params) {
   std::string symbol;
   std::string exchange;
   for (const auto &ticker : params.subscribed_list()) {
-    ticker_split(ticker, &symbol, &exchange);
-    subscribed_list_.emplace_back(std::move(symbol));
+    auto contract = ContractTable::get_by_ticker(ticker);
+    assert(contract);
+    subscribed_list_.emplace_back(contract->symbol);
   }
 
   for (const auto &p : subscribed_list_)

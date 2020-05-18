@@ -11,8 +11,8 @@
 
 #include "Core/Gateway.h"
 #include "Gateway/Xtp/XtpCommon.h"
-#include "Gateway/Xtp/XtpTradeApi.h"
 #include "Gateway/Xtp/XtpMdApi.h"
+#include "Gateway/Xtp/XtpTradeApi.h"
 
 namespace ft {
 
@@ -23,6 +23,16 @@ class XtpGateway : public Gateway {
   bool login(const LoginParams& params) override;
 
   void logout() override;
+
+  bool query_contract(const std::string& ticker) override;
+
+  bool query_contracts() override;
+
+  bool query_account() override;
+
+  bool query_position(const std::string& ticker) override;
+
+  bool query_positions() override;
 
  private:
   TradingEngineInterface* engine_ = nullptr;

@@ -2,6 +2,8 @@
 
 #include "Gateway/Xtp/XtpGateway.h"
 
+#include <spdlog/spdlog.h>
+
 namespace ft {
 
 XtpGateway::XtpGateway(TradingEngineInterface* engine)
@@ -11,12 +13,40 @@ XtpGateway::XtpGateway(TradingEngineInterface* engine)
       md_api_(std::make_unique<XtpMdApi>(engine)) {}
 
 bool XtpGateway::login(const LoginParams& params) {
-  return trade_api_->login(params);
+  if (!params.front_addr().empty()) {
+    if (!trade_api_->login(params)) {
+      spdlog::error("[XtpGateway::login] Failed to login into the counter");
+      return false;
+    }
+  }
+
+  if (!params.md_server_addr().empty()) {
+    if (!md_api_->login(params)) {
+      spdlog::error("[XtpGateway::login] Failed to login into the md server");
+      return false;
+    }
+  }
+
+  return true;
 }
 
 void XtpGateway::logout() {
   trade_api_->logout();
   md_api_->logout();
 }
+
+bool XtpGateway::query_contract(const std::string& ticker) {
+  return md_api_->query_contract(ticker);
+}
+
+bool XtpGateway::query_contracts() { return md_api_->query_contracts(); }
+
+bool XtpGateway::query_account() { return trade_api_->query_account(); }
+
+bool XtpGateway::query_position(const std::string& ticker) {
+  return trade_api_->query_position(ticker);
+}
+
+bool XtpGateway::query_positions() { return trade_api_->query_positions(); }
 
 }  // namespace ft

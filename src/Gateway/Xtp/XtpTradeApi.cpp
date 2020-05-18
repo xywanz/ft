@@ -278,6 +278,12 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
   }
 
   if (position) {
+    spdlog::debug(
+        "[XtpTradeApi::OnQueryPosition] Ticker: {}, TickerName: {}, YDPos: {}, "
+        "Pos: {}, AvgPrice: {:.3f}, FloatPNL:{:.3f}",
+        position->ticker, position->ticker_name, position->yesterday_position,
+        position->total_qty, position->avg_price, position->unrealized_pnl);
+
     const auto* contract = ContractTable::get_by_symbol(position->ticker);
     if (!contract) {
       spdlog::error(

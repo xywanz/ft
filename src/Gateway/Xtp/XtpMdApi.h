@@ -30,11 +30,32 @@ class XtpMdApi : public XTP::API::QuoteSpi {
 
   bool query_contracts();
 
+  void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
+                         bool is_last) override;
+
+ private:
+  void done() { is_done_ = true; }
+
+  void error() { is_error_ = true; }
+
+  void reset_sync() { is_done_ = false; }
+
+  bool wait_sync() {
+    while (!is_done_)
+      if (is_error_) return false;
+
+    return true;
+  }
+
  private:
   TradingEngineInterface* engine_;
   std::unique_ptr<XTP::API::QuoteApi, XtpApiDeleter> quote_api_;
 
   volatile bool is_logon_ = false;
+  volatile bool is_error_ = false;
+  volatile bool is_done_ = false;
+
+  std::mutex query_mutex_;
 };
 
 }  // namespace ft
