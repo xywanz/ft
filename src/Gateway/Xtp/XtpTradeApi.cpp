@@ -208,6 +208,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
                            trade_info->price);
 
   if (detail.traded_vol += detail.canceled_vol == detail.original_vol) {
+    if (!detail.accepted_ack) engine_->on_order_accepted(detail.order_id);
     order_id_ft2xtp_.erase(detail.order_id);
     order_details_.erase(iter);
   }
@@ -307,9 +308,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
     auto& pos = pos_cache_[contract->index];
     pos.ticker_index = contract->index;
 
-    bool is_long_pos =
-        position->position_direction == XTP_POSITION_DIRECTION_LONG;
-    auto& pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
+    // 暂时只支持普通股票
+    auto& pos_detail = pos.long_pos;
     pos_detail.yd_volume = position->sellable_qty;
     pos_detail.volume = position->total_qty;
     pos_detail.float_pnl = position->unrealized_pnl;

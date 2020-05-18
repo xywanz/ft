@@ -443,6 +443,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   engine_->on_order_traded(detail.order_id, trade->Volume, trade->Price);
 
   if (detail.traded_vol + detail.canceled_vol == detail.original_vol) {
+    if (!detail.accepted_ack) engine_->on_order_accepted(detail.order_id);
     id2ref_.erase(detail.order_id);
     order_details_.erase(iter);
   }
