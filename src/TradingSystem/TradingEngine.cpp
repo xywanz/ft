@@ -4,13 +4,15 @@
 
 #include "Core/ContractTable.h"
 #include "Core/Protocol.h"
+#include "RiskManagement/RiskManager.h"
 
 namespace ft {
 
 TradingEngine::TradingEngine()
     : portfolio_("127.0.0.1", 6379),
       tick_redis_("127.0.0.1", 6379),
-      order_redis_("127.0.0.1", 6379) {}
+      order_redis_("127.0.0.1", 6379),
+      risk_mgr_(std::make_unique<RiskManager>()) {}
 
 TradingEngine::~TradingEngine() { close(); }
 

@@ -14,8 +14,14 @@ class RiskRuleInterface {
  public:
   virtual ~RiskRuleInterface() {}
 
-  // 返回false则拦截订单
-  virtual bool check(const OrderReq* req) = 0;
+  virtual bool check_order_req(const OrderReq* req) { return true; }
+
+  virtual void on_order_sent(uint64_t order_id) {}
+
+  virtual void on_order_traded(uint64_t order_id, int64_t this_traded,
+                               double traded_price) {}
+
+  virtual void on_order_completed(uint64_t order_id) {}
 };
 
 }  // namespace ft

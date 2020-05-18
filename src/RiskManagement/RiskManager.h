@@ -15,6 +15,8 @@ namespace ft {
 
 class RiskManager : public RiskManagementInterface {
  public:
+  RiskManager();
+
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 
   bool check_order_req(const OrderReq* req) override;
