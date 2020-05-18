@@ -59,11 +59,11 @@ ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
 ```bash
 # 在terminal 0 启动策略引擎
 redis-server  # 启动redis，必须在启动策略引擎前启动redis
-./MTE --loglevel=debug
+./MTE --loglevel=debug --login-config=../config/login.yml --contracts-file=../config/contracts.csv
 ```
 ```bash
 # 在terminal 1 启动策略
-./strategy_loader -l libgrid_strategy.so -loglevel=debug
+./strategy_loader -l libgrid_strategy.so -loglevel=debug --contracts-file=../config/contracts.csv
 ```
 
 ## 3. 开发你的第一个策略
