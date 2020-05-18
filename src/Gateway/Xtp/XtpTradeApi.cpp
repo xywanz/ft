@@ -12,6 +12,11 @@ namespace ft {
 
 XtpTradeApi::XtpTradeApi(TradingEngineInterface* engine) : engine_(engine) {}
 
+XtpTradeApi::~XtpTradeApi() {
+  error();
+  logout();
+}
+
 bool XtpTradeApi::login(const LoginParams& params) {
   if (session_id_ != 0) {
     spdlog::error("[XtpTradeApi::login] Don't login twice");
@@ -287,8 +292,9 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
     const auto* contract = ContractTable::get_by_symbol(position->ticker);
     if (!contract) {
       spdlog::error(
-          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found");
-      return;
+          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found. {}, {}",
+          position->ticker, position->ticker_name);
+      goto check_last;
     }
 
     auto& pos = pos_cache_[contract->index];
@@ -303,6 +309,7 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
     pos_detail.cost_price = position->avg_price;
   }
 
+check_last:
   if (is_last) {
     for (auto& [ticker_index, pos] : pos_cache_)
       engine_->on_query_position(&pos);
@@ -311,7 +318,35 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
   }
 }
 
-bool XtpTradeApi::query_account() { return true; }
+bool XtpTradeApi::query_account() {
+  if (session_id_ == 0) return false;
+
+  std::unique_lock<std::mutex> lock(query_mutex_);
+  reset_sync();
+  if (trade_api_->QueryAsset(session_id_, next_req_id()) != 0) {
+    spdlog::error("[XtpTradeApi::query_account] {}",
+                  trade_api_->GetApiLastError()->error_msg);
+    return false;
+  }
+
+  return wait_sync();
+}
+
+void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
+                               int request_id, bool is_last,
+                               uint64_t session_id) {
+  if (is_error_rsp(error_info)) {
+    spdlog::error("[XtpTradeApi::OnQueryAsset] {}", error_info->error_msg);
+    return;
+  }
+
+  if (asset) {
+    spdlog::debug("[XtpTradeApi::OnQueryAsset] TotalAsset: {}",
+                  asset->total_asset);
+  }
+
+  if (is_last) done();
+}
 
 bool XtpTradeApi::query_orders() { return true; }
 

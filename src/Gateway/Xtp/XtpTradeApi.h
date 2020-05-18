@@ -23,6 +23,8 @@ class XtpTradeApi : public XTP::API::TraderSpi {
  public:
   explicit XtpTradeApi(TradingEngineInterface* engine);
 
+  ~XtpTradeApi();
+
   bool login(const LoginParams& params);
 
   void logout();
@@ -52,6 +54,9 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   void OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error_info,
                        int request_id, bool is_last,
                        uint64_t session_id) override;
+
+  void OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id,
+                    bool is_last, uint64_t session_id) override;
 
  private:
   uint32_t next_client_order_id() { return next_client_order_id_++; }

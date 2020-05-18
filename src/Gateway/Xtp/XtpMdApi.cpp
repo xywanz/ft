@@ -8,6 +8,11 @@ namespace ft {
 
 XtpMdApi::XtpMdApi(TradingEngineInterface* engine) : engine_(engine) {}
 
+XtpMdApi::~XtpMdApi() {
+  error();
+  logout();
+}
+
 bool XtpMdApi::login(const LoginParams& params) {
   if (is_logon_) {
     spdlog::error("[XtpMdApi::login] Don't login twice");

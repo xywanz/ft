@@ -22,6 +22,8 @@ class XtpMdApi : public XTP::API::QuoteSpi {
  public:
   explicit XtpMdApi(TradingEngineInterface* engine);
 
+  ~XtpMdApi();
+
   bool login(const LoginParams& params);
 
   void logout();

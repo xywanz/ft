@@ -637,7 +637,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
     if (!contract) {
       spdlog::error(
           "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found");
-      return;
+      goto check_last;
     }
 
     auto &pos = pos_cache_[contract->index];
@@ -668,6 +668,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
         contract->ticker, pos.long_pos.volume, pos.short_pos.volume);
   }
 
+check_last:
   if (is_last) {
     for (auto &[ticker_index, pos] : pos_cache_)
       engine_->on_query_position(&pos);

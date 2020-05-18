@@ -35,6 +35,14 @@ void XtpGateway::logout() {
   md_api_->logout();
 }
 
+bool XtpGateway::send_order(const OrderReq* order) {
+  return trade_api_->send_order(order);
+}
+
+bool XtpGateway::cancel_order(uint64_t order_id) {
+  return trade_api_->cancel_order(order_id);
+}
+
 bool XtpGateway::query_contract(const std::string& ticker) {
   return md_api_->query_contract(ticker);
 }

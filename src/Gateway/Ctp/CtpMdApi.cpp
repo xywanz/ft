@@ -42,8 +42,7 @@ bool CtpMdApi::login(const LoginParams &params) {
     if (is_connected_) break;
   }
 
-  CThostFtdcReqUserLoginField login_req;
-  memset(&login_req, 0, sizeof(login_req));
+  CThostFtdcReqUserLoginField login_req{};
   strncpy(login_req.BrokerID, broker_id_.c_str(), sizeof(login_req.BrokerID));
   strncpy(login_req.UserID, investor_id_.c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, passwd_.c_str(), sizeof(login_req.Password));
@@ -80,7 +79,7 @@ bool CtpMdApi::login(const LoginParams &params) {
 
 void CtpMdApi::logout() {
   if (is_logon_) {
-    CThostFtdcUserLogoutField req;
+    CThostFtdcUserLogoutField req{};
     strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
     strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
     if (md_api_->ReqUserLogout(&req, next_req_id()) != 0) return;

@@ -8,6 +8,8 @@
 #include "TradingSystem/Config.h"
 #include "TradingSystem/TradingEngine.h"
 
+ft::TradingEngine* engine = nullptr;
+
 int main() {
   std::string login_config_file =
       getarg("../config/login.yml", "--login-config");
@@ -29,8 +31,9 @@ int main() {
     exit(-1);
   }
 
-  ft::TradingEngine engine;
+  engine = new ft::TradingEngine;
 
-  engine.login(params);
-  engine.run();
+  if (!engine->login(params)) exit(-1);
+
+  engine->run();
 }

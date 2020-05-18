@@ -12,7 +12,7 @@ TradingEngine::TradingEngine()
       tick_redis_("127.0.0.1", 6379),
       order_redis_("127.0.0.1", 6379) {}
 
-TradingEngine::~TradingEngine() {}
+TradingEngine::~TradingEngine() { close(); }
 
 bool TradingEngine::login(const LoginParams& params) {
   if (is_logon_) return true;
@@ -31,16 +31,20 @@ bool TradingEngine::login(const LoginParams& params) {
   spdlog::info("[TradingEngine::login] Success. Login as {}",
                params.investor_id());
 
+  spdlog::info("[[TradingEngine::login] Querying account");
   if (!gateway_->query_account()) {
     spdlog::error("[TradingEngine::login] Failed to query account");
     return false;
   }
+  spdlog::info("[[TradingEngine::login] Querying account done");
 
   // query all positions
+  spdlog::info("[[TradingEngine::login] Querying position");
   if (!gateway_->query_positions()) {
     spdlog::error("[TradingEngine::login] Failed to query positions");
     return false;
   }
+  spdlog::info("[[TradingEngine::login] Querying position done");
 
   spdlog::info("[TradingEngine::login] Init done");
 
@@ -85,6 +89,10 @@ void TradingEngine::run() {
         break;
     }
   }
+}
+
+void TradingEngine::close() {
+  if (gateway_) gateway_->logout();
 }
 
 bool TradingEngine::send_order(uint64_t ticker_index, int volume,
