@@ -114,6 +114,9 @@ bool XtpTradeApi::send_order(const OrderReq* order) {
     return false;
   }
 
+  spdlog::debug("[XtpTradeApi::send_order] 订单插入成功. XtpOrderID: {}",
+                xtp_order_id);
+
   OrderDetail detail{};
   detail.contract = contract;
   detail.order_id = order->order_id;
@@ -134,8 +137,12 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = order_details_.find(order_info->order_xtp_id);
   if (iter == order_details_.end()) {
-    spdlog::error("[XtpTradeApi::OnOrderEvent] Order not found. XtpOrderID: {}",
-                  order_info->order_xtp_id);
+    // 会在交易完成之后推送ALLTRADED，这里忽略即可
+    if (order_info->order_status !=
+        XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_ALLTRADED)
+      spdlog::error(
+          "[XtpTradeApi::OnOrderEvent] Order not found. XtpOrderID: {}",
+          order_info->order_xtp_id);
     return;
   }
   auto& detail = iter->second;
