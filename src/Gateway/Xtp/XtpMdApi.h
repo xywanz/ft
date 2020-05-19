@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include "Core/LoginParams.h"
 #include "Core/Protocol.h"
@@ -35,6 +36,11 @@ class XtpMdApi : public XTP::API::QuoteSpi {
   void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
                          bool is_last) override;
 
+  void OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
+                         int32_t bid1_count, int32_t max_bid1_count,
+                         int64_t ask1_qty[], int32_t ask1_count,
+                         int32_t max_ask1_count) override;
+
  private:
   void done() { is_done_ = true; }
 
@@ -52,6 +58,8 @@ class XtpMdApi : public XTP::API::QuoteSpi {
  private:
   TradingEngineInterface* engine_;
   std::unique_ptr<XTP::API::QuoteApi, XtpApiDeleter> quote_api_;
+
+  std::vector<std::string> subscribed_list_;
 
   volatile bool is_logon_ = false;
   volatile bool is_error_ = false;

@@ -4,6 +4,10 @@
 
 #include <spdlog/spdlog.h>
 
+#include <vector>
+
+#include "Core/ContractTable.h"
+
 namespace ft {
 
 XtpMdApi::XtpMdApi(TradingEngineInterface* engine) : engine_(engine) {}
@@ -52,6 +56,35 @@ bool XtpMdApi::login(const LoginParams& params) {
 
   spdlog::debug("[XtpMdApi::login] Success");
   is_logon_ = true;
+
+  subscribed_list_ = params.subscribed_list();
+  std::vector<char*> sub_list_sh;
+  std::vector<char*> sub_list_sz;
+  for (auto& ticker : subscribed_list_) {
+    auto contract = ContractTable::get_by_symbol(ticker);
+    assert(contract);
+    if (contract->exchange == EX_SH_A)
+      sub_list_sh.emplace_back(const_cast<char*>(ticker.c_str()));
+    else if (contract->exchange == EX_SZ_A)
+      sub_list_sz.emplace_back(const_cast<char*>(ticker.c_str()));
+  }
+
+  if (sub_list_sh.size() > 0) {
+    if (quote_api_->SubscribeMarketData(sub_list_sh.data(), sub_list_sh.size(),
+                                        XTP_EXCHANGE_SH) != 0) {
+      spdlog::error("[XtpMdApi::login] 无法订阅行情");
+      return false;
+    }
+  }
+
+  if (sub_list_sz.size() > 0) {
+    if (quote_api_->SubscribeMarketData(sub_list_sz.data(), sub_list_sz.size(),
+                                        XTP_EXCHANGE_SZ) != 0) {
+      spdlog::error("[XtpMdApi::login] 无法订阅行情");
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -120,6 +153,92 @@ void XtpMdApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
   }
 
   if (is_last) done();
+}
+
+void XtpMdApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
+                                 int32_t bid1_count, int32_t max_bid1_count,
+                                 int64_t ask1_qty[], int32_t ask1_count,
+                                 int32_t max_ask1_count) {
+  if (!market_data) {
+    spdlog::warn("[XtpMdApi::OnDepthMarketData] nullptr");
+    return;
+  }
+
+  auto contract = ContractTable::get_by_symbol(market_data->ticker);
+  if (!contract) {
+    spdlog::warn("[XtpMdApi::OnDepthMarketData] {} not found int ContractTable",
+                 market_data->ticker);
+    return;
+  }
+
+  TickData tick{};
+  tick.ticker_index = contract->index;
+
+  // market_data->data_time
+  // strptime(md->UpdateTime, "%H:%M:%S", &_tm);
+  // tick.time_sec = _tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600;
+  // tick.time_ms = md->UpdateMillisec;
+
+  tick.volume = market_data->qty;
+  tick.turnover = market_data->turnover;
+  tick.open_interest = market_data->total_long_positon;
+  tick.last_price = market_data->last_price;
+  tick.open_price = market_data->open_price;
+  tick.highest_price = market_data->high_price;
+  tick.lowest_price = market_data->low_price;
+  tick.pre_close_price = market_data->pre_close_price;
+  tick.upper_limit_price = market_data->upper_limit_price;
+  tick.lower_limit_price = market_data->lower_limit_price;
+
+  tick.level = 10;
+  tick.ask[0] = market_data->ask[0];
+  tick.ask[1] = market_data->ask[1];
+  tick.ask[2] = market_data->ask[2];
+  tick.ask[3] = market_data->ask[3];
+  tick.ask[4] = market_data->ask[4];
+  tick.ask[0] = market_data->ask[5];
+  tick.ask[1] = market_data->ask[6];
+  tick.ask[2] = market_data->ask[7];
+  tick.ask[3] = market_data->ask[8];
+  tick.ask[4] = market_data->ask[9];
+  tick.ask_volume[0] = market_data->ask_qty[0];
+  tick.ask_volume[1] = market_data->ask_qty[1];
+  tick.ask_volume[2] = market_data->ask_qty[2];
+  tick.ask_volume[3] = market_data->ask_qty[3];
+  tick.ask_volume[4] = market_data->ask_qty[4];
+  tick.ask_volume[0] = market_data->ask_qty[5];
+  tick.ask_volume[1] = market_data->ask_qty[6];
+  tick.ask_volume[2] = market_data->ask_qty[7];
+  tick.ask_volume[3] = market_data->ask_qty[8];
+  tick.ask_volume[4] = market_data->ask_qty[9];
+  tick.bid[0] = market_data->bid[0];
+  tick.bid[1] = market_data->bid[1];
+  tick.bid[2] = market_data->bid[2];
+  tick.bid[3] = market_data->bid[3];
+  tick.bid[4] = market_data->bid[4];
+  tick.bid[0] = market_data->bid[5];
+  tick.bid[1] = market_data->bid[6];
+  tick.bid[2] = market_data->bid[7];
+  tick.bid[3] = market_data->bid[8];
+  tick.bid[4] = market_data->bid[9];
+  tick.bid_volume[0] = market_data->bid_qty[0];
+  tick.bid_volume[1] = market_data->bid_qty[1];
+  tick.bid_volume[2] = market_data->bid_qty[2];
+  tick.bid_volume[3] = market_data->bid_qty[3];
+  tick.bid_volume[4] = market_data->bid_qty[4];
+  tick.bid_volume[0] = market_data->bid_qty[5];
+  tick.bid_volume[1] = market_data->bid_qty[6];
+  tick.bid_volume[2] = market_data->bid_qty[7];
+  tick.bid_volume[3] = market_data->bid_qty[8];
+  tick.bid_volume[4] = market_data->bid_qty[9];
+
+  spdlog::debug(
+      "[XtpMdApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
+      "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
+      market_data->ticker, tick.time_ms, tick.last_price, tick.volume,
+      tick.turnover, tick.open_interest);
+
+  engine_->on_tick(&tick);
 }
 
 }  // namespace ft

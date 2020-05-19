@@ -69,9 +69,11 @@ bool CtpMdApi::login(const LoginParams &params) {
   for (const auto &p : subscribed_list_)
     sub_list.emplace_back(const_cast<char *>(p.c_str()));
 
-  if (md_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
-    spdlog::error("[CtpMdApi::login] Failed to subscribe");
-    return false;
+  if (sub_list.size() > 0) {
+    if (md_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
+      spdlog::error("[CtpMdApi::login] Failed to subscribe");
+      return false;
+    }
   }
 
   return true;
@@ -190,7 +192,7 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
-  TickData tick;
+  TickData tick{};
   tick.ticker_index = iter->second->index;
 
   struct tm _tm;
