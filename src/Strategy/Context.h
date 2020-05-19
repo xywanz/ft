@@ -96,7 +96,11 @@ class AlgoTradeContext {
         ticker, volume, price, ordertype_str(type), direction_str(direction),
         offset_str(offset));
 
-    auto contract = ContractTable::get_by_ticker(ticker);
+    const Contract* contract;
+    if (ticker.find_first_of('.') != std::string::npos)
+      contract = ContractTable::get_by_ticker(ticker);
+    else
+      contract = ContractTable::get_by_symbol(ticker);
     assert(contract);
 
     TraderCommand cmd{};
