@@ -44,8 +44,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool query_account();
 
-  bool query_orders();
-
   bool query_trades();
 
   bool query_margin_rate(const std::string &ticker);
@@ -145,13 +143,21 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void error() { is_error_ = true; }
 
-  void reset_sync() { is_done_ = false; }
-
   bool wait_sync() {
     while (!is_done_)
       if (is_error_) return false;
 
+    is_done_ = false;
     return true;
+  }
+
+  void reset() {
+    is_error_ = false;
+    is_connected_ = false;
+    is_logon_ = false;
+    is_done_ = false;
+
+    if (trade_api_) trade_api_.reset();
   }
 
  private:
@@ -167,7 +173,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::atomic<int> next_req_id_ = 0;
   std::atomic<int> next_order_ref_ = 0;
 
-  volatile bool is_error_ = false;
+  volatile bool is_error_ = true;
   volatile bool is_connected_ = false;
   volatile bool is_done_ = false;
   volatile bool is_logon_ = false;

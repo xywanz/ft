@@ -24,12 +24,18 @@ bool CtpGateway::login(const LoginParams &params) {
       params.investor_id().size() > sizeof(TThostFtdcUserIDType) ||
       params.investor_id().empty() ||
       params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
-      params.passwd().empty() || params.front_addr().empty()) {
+      params.passwd().empty()) {
     spdlog::error("[CtpGateway::login] Failed. Invalid login params");
     return false;
   }
 
+  if (params.front_addr().empty() && params.md_server_addr().empty()) {
+    spdlog::warn("[CtpGateway::login] 交易柜台和行情服务器地址都未设置");
+    return false;
+  }
+
   if (!params.front_addr().empty()) {
+    spdlog::debug("[CtpGateway::login] Login into trading server");
     if (!trade_api_->login(params)) {
       spdlog::error("[CtpGateway::login] Failed to login into the counter");
       return false;
@@ -37,6 +43,7 @@ bool CtpGateway::login(const LoginParams &params) {
   }
 
   if (!params.md_server_addr().empty()) {
+    spdlog::debug("[CtpGateway::login] Login into market data server");
     if (!md_api_->login(params)) {
       spdlog::error("[CtpGateway::login] Failed to login into the md server");
       return false;
@@ -72,8 +79,6 @@ bool CtpGateway::query_position(const std::string &ticker) {
 bool CtpGateway::query_positions() { return trade_api_->query_positions(); }
 
 bool CtpGateway::query_account() { return trade_api_->query_account(); }
-
-bool CtpGateway::query_orders() { return trade_api_->query_orders(); }
 
 bool CtpGateway::query_trades() { return trade_api_->query_trades(); }
 

@@ -40,8 +40,6 @@ class CtpGateway : public Gateway {
 
   bool query_account() override;
 
-  bool query_orders();
-
   bool query_trades() override;
 
   bool query_margin_rate(const std::string &ticker) override;
