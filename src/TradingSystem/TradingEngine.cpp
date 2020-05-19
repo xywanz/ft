@@ -41,12 +41,19 @@ bool TradingEngine::login(const LoginParams& params) {
   spdlog::info("[[TradingEngine::login] Querying account done");
 
   // query all positions
-  spdlog::info("[[TradingEngine::login] Querying position");
+  spdlog::info("[[TradingEngine::login] Querying positions");
   if (!gateway_->query_positions()) {
     spdlog::error("[TradingEngine::login] Failed to query positions");
     return false;
   }
-  spdlog::info("[[TradingEngine::login] Querying position done");
+  spdlog::info("[[TradingEngine::login] Querying positions done");
+
+  spdlog::info("[[TradingEngine::login] Querying trades");
+  if (!gateway_->query_trades()) {
+    spdlog::error("[TradingEngine::login] Failed to query trades");
+    return false;
+  }
+  spdlog::info("[[TradingEngine::login] Querying trades done");
 
   spdlog::info("[TradingEngine::login] Init done");
 
@@ -206,10 +213,10 @@ void TradingEngine::on_query_position(const Position* position) {
       "[TradingEngine::on_query_position] Ticker: {}, "
       "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
       "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
-      contract->ticker, lp.volume, lp.cost_price, lp.frozen, lp.float_pnl,
-      sp.volume, sp.cost_price, sp.frozen, sp.float_pnl);
+      contract->ticker, lp.holdings, lp.cost_price, lp.frozen, lp.float_pnl,
+      sp.holdings, sp.cost_price, sp.frozen, sp.float_pnl);
 
-  if (lp.volume == 0 && lp.frozen == 0 && sp.volume == 0 && sp.frozen == 0)
+  if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0)
     return;
 
   portfolio_.set_position(position);
@@ -226,6 +233,12 @@ void TradingEngine::on_tick(const TickData* tick) {
 
   tick_redis_.publish(proto_md_topic(contract->ticker), tick, sizeof(TickData));
   spdlog::debug("[TradingEngine::process_tick]");
+}
+
+void TradingEngine::on_query_trade(const Trade* trade) {
+  if (is_offset_close(trade->offset))
+    portfolio_.update_ydpos(trade->ticker_index, trade->direction,
+                            trade->volume);
 }
 
 void TradingEngine::on_order_accepted(uint64_t order_id) {

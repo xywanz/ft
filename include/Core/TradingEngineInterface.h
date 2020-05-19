@@ -7,6 +7,7 @@
 #include "Core/Contract.h"
 #include "Core/Position.h"
 #include "Core/TickData.h"
+#include "Core/Trade.h"
 
 namespace ft {
 
@@ -26,6 +27,8 @@ class TradingEngineInterface {
    * 查询到仓位信息时回调
    */
   virtual void on_query_position(const Position* position) {}
+
+  virtual void on_query_trade(const Trade* trade) {}
 
   /*
    * 有新的tick数据到来时回调

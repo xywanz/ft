@@ -24,7 +24,7 @@ class GridStrategy : public ft::Strategy {
     spdlog::info(
         "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
         "short: {}, trades: {}, realized_pnl: {}, float_pnl: {}",
-        tick->last_price, last_grid_price_, lp.volume, sp.volume, trade_counts_,
+        tick->last_price, last_grid_price_, lp.holdings, sp.holdings, trade_counts_,
         ctx->get_realized_pnl(), ctx->get_float_pnl());
 
     if (tick->last_price - last_grid_price_ > grid_height_ - 1e-6) {

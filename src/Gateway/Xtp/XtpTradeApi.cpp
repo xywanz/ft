@@ -57,6 +57,11 @@ bool XtpTradeApi::login(const LoginParams& params) {
     return false;
   }
 
+  if (!query_orders()) {
+    spdlog::error("[XtpTradeApi::login] 订单查询失败");
+    return false;
+  }
+
   return true;
 }
 
@@ -310,8 +315,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
 
     // 暂时只支持普通股票
     auto& pos_detail = pos.long_pos;
-    pos_detail.yd_volume = position->sellable_qty;
-    pos_detail.volume = position->total_qty;
+    pos_detail.yd_position = position->sellable_qty;
+    pos_detail.holdings = position->total_qty;
     pos_detail.float_pnl = position->unrealized_pnl;
     pos_detail.cost_price = position->avg_price;
   }
@@ -344,6 +349,7 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
                                uint64_t session_id) {
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryAsset] {}", error_info->error_msg);
+    error();
     return;
   }
 
@@ -355,8 +361,88 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
   if (is_last) done();
 }
 
-bool XtpTradeApi::query_orders() { return true; }
+bool XtpTradeApi::query_orders() {
+  if (session_id_ == 0) return false;
 
-bool XtpTradeApi::query_trades() { return true; }
+  XTPQueryOrderReq req{};
+
+  std::unique_lock<std::mutex> lock(query_mutex_);
+  reset_sync();
+  if (trade_api_->QueryOrders(&req, session_id_, next_req_id()) != 0) {
+    spdlog::error("[XtpTradeApi::query_orders] {}",
+                  trade_api_->GetApiLastError()->error_msg);
+    return false;
+  }
+
+  return wait_sync();
+}
+
+void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
+                               int request_id, bool is_last,
+                               uint64_t session_id) {
+  if (is_error_rsp(error_info)) {
+    spdlog::error("[XtpTradeApi::OnQueryOrder] {}", error_info->error_msg);
+    error();
+    return;
+  }
+
+  if (order_info &&
+          order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING ||
+      order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDQUEUEING) {
+    if (trade_api_->CancelOrder(order_info->order_xtp_id, session_id_) == 0)
+      spdlog::error("[XtpTradeApi::OnQueryOrder] 订单撤回失败: {}",
+                    trade_api_->GetApiLastError()->error_msg);
+  }
+
+  if (is_last) done();
+}
+
+bool XtpTradeApi::query_trades() {
+  if (session_id_ == 0) return false;
+
+  XTPQueryTraderReq req{};
+
+  std::unique_lock<std::mutex> lock(query_mutex_);
+  reset_sync();
+  if (trade_api_->QueryTrades(&req, session_id_, next_req_id()) != 0) {
+    spdlog::error("[XtpTradeApi::query_trades] {}",
+                  trade_api_->GetApiLastError()->error_msg);
+    return false;
+  }
+
+  return wait_sync();
+}
+
+void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
+                               int request_id, bool is_last,
+                               uint64_t session_id) {
+  if (is_error_rsp(error_info)) {
+    spdlog::error("[XtpTradeApi::OnQueryTrade] {}", error_info->error_msg);
+    error();
+    return;
+  }
+
+  if (trade_info) {
+    auto contract = ContractTable::get_by_symbol(trade_info->ticker);
+    assert(contract);
+
+    Trade trade{};
+    trade.ticker_index = contract->index;
+    trade.volume = trade_info->quantity;
+    trade.price = trade_info->price;
+    if (trade_info->side == XTP_SIDE_BUY) {
+      trade.direction = Direction::BUY;
+      trade.offset = Offset::OPEN;
+    } else if (trade_info->side == XTP_SIDE_SELL) {
+      trade.direction = Direction::SELL;
+      trade.offset = Offset::CLOSE_YESTERDAY;
+    } else {
+      assert(false);
+    }
+    engine_->on_query_trade(&trade);
+  }
+
+  if (is_last) done();
+}
 
 }  // namespace ft

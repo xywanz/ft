@@ -38,6 +38,10 @@ class XtpGateway : public Gateway {
 
   bool query_positions() override;
 
+  bool query_trades() override;
+
+  bool query_orders();
+
  private:
   TradingEngineInterface* engine_ = nullptr;
   std::unique_ptr<XtpTradeApi> trade_api_;

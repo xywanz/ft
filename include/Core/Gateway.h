@@ -47,6 +47,8 @@ class Gateway {
 
   virtual bool query_account() { return false; }
 
+  virtual bool query_trades() { return false; }
+
   virtual bool query_margin_rate(const std::string& ticker) { return false; }
 
   virtual bool query_commision_rate(const std::string& ticker) { return false; }

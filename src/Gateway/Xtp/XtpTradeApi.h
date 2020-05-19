@@ -58,6 +58,12 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   void OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id,
                     bool is_last, uint64_t session_id) override;
 
+  void OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
+                    int request_id, bool is_last, uint64_t session_id) override;
+
+  void OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
+                    int request_id, bool is_last, uint64_t session_id) override;
+
  private:
   uint32_t next_client_order_id() { return next_client_order_id_++; }
 

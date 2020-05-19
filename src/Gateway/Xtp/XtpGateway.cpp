@@ -57,4 +57,8 @@ bool XtpGateway::query_position(const std::string& ticker) {
 
 bool XtpGateway::query_positions() { return trade_api_->query_positions(); }
 
+bool XtpGateway::query_trades() { return trade_api_->query_trades(); }
+
+bool XtpGateway::query_orders() { return trade_api_->query_orders(); }
+
 }  // namespace ft

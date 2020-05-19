@@ -61,17 +61,17 @@ void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
   auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
   if (is_close) {
     pos_detail.close_pending -= traded;
-    pos_detail.volume -= traded;
+    pos_detail.holdings -= traded;
   } else {
     pos_detail.open_pending -= traded;
-    pos_detail.volume += traded;
+    pos_detail.holdings += traded;
   }
 
   // TODO(kevin): 这里可能出问题
   // 如果abort可能是trade在position之前到达，正常使用不可能出现
   // 如果close_pending小于0，也有可能是之前启动时的挂单成交了，
   // 这次重启时未重启获取挂单数量导致的
-  assert(pos_detail.volume >= 0);
+  assert(pos_detail.holdings >= 0);
 
   if (pos_detail.open_pending < 0) {
     pos_detail.open_pending = 0;
@@ -97,14 +97,14 @@ void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
     else
       realized_pnl_ =
           contract->size * traded * (pos_detail.cost_price - traded_price);
-  } else if (pos_detail.volume > 0) {  // 如果是开仓则计算当前持仓的成本价
-    double cost =
-        contract->size * (pos_detail.volume - traded) * pos_detail.cost_price +
-        contract->size * traded * traded_price;
-    pos_detail.cost_price = cost / (pos_detail.volume * contract->size);
+  } else if (pos_detail.holdings > 0) {  // 如果是开仓则计算当前持仓的成本价
+    double cost = contract->size * (pos_detail.holdings - traded) *
+                      pos_detail.cost_price +
+                  contract->size * traded * traded_price;
+    pos_detail.cost_price = cost / (pos_detail.holdings * contract->size);
   }
 
-  if (pos_detail.volume == 0) {
+  if (pos_detail.holdings == 0) {
     pos_detail.float_pnl = 0;
     pos_detail.cost_price = 0;
   }
@@ -123,15 +123,36 @@ void PositionManager::update_float_pnl(uint64_t ticker_index,
     auto& lp = pos->long_pos;
     auto& sp = pos->short_pos;
 
-    if (lp.volume > 0)
-      lp.float_pnl = lp.volume * contract->size * (last_price - lp.cost_price);
+    if (lp.holdings > 0)
+      lp.float_pnl =
+          lp.holdings * contract->size * (last_price - lp.cost_price);
 
-    if (sp.volume > 0)
-      sp.float_pnl = sp.volume * contract->size * (sp.cost_price - last_price);
+    if (sp.holdings > 0)
+      sp.float_pnl =
+          sp.holdings * contract->size * (sp.cost_price - last_price);
 
-    if (lp.volume > 0 || sp.volume > 0)
+    if (lp.holdings > 0 || sp.holdings > 0)
       redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
   }
+}
+
+void PositionManager::update_ydpos(uint64_t ticker_index, uint64_t direction,
+                                   int64_t closed_volume) {
+  auto* pos = find(ticker_index);
+  if (!pos) return;
+
+  const auto* contract = ContractTable::get_by_index(ticker_index);
+  if (!contract) return;
+
+  if (direction == Direction::BUY) {
+    auto& sp = pos->short_pos;
+    sp.td_closed += closed_volume;
+  } else if (direction == Direction::SELL) {
+    auto& lp = pos->long_pos;
+    lp.td_closed += closed_volume;
+  }
+
+  redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
 }
 
 }  // namespace ft

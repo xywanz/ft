@@ -26,6 +26,9 @@ class PositionManager {
 
   void update_float_pnl(uint64_t ticker_index, double last_price);
 
+  void update_ydpos(uint64_t ticker_index, uint64_t direction,
+                    int64_t closed_volume);
+
  private:
   Position* find(uint64_t ticker_index) {
     auto iter = pos_map_.find(ticker_index);

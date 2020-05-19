@@ -51,6 +51,8 @@ class TradingEngine : public TradingEngineInterface {
 
   void on_query_position(const Position* position) override;
 
+  void on_query_trade(const Trade* trade) override;
+
   void on_tick(const TickData* tick) override;
 
   void on_order_accepted(uint64_t order_id) override;
