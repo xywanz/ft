@@ -204,6 +204,11 @@ void TradingEngine::on_query_account(const Account* account) {
 }
 
 void TradingEngine::on_query_position(const Position* position) {
+  if (is_logon_) {
+    spdlog::error("[TradingEngine::on_query_position] 只能在初始化时查询仓位");
+    return;
+  }
+
   auto contract = ContractTable::get_by_index(position->ticker_index);
   assert(contract);
 
@@ -236,6 +241,11 @@ void TradingEngine::on_tick(const TickData* tick) {
 }
 
 void TradingEngine::on_query_trade(const Trade* trade) {
+  if (is_logon_) {
+    spdlog::error("[TradingEngine::on_query_trade] 只能在初始化时查询交易");
+    return;
+  }
+
   if (is_offset_close(trade->offset))
     portfolio_.update_ydpos(trade->ticker_index, trade->direction,
                             trade->volume);
