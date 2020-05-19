@@ -1,0 +1,38 @@
+@startuml 登录流程
+
+TradingEngine -> Gateway: Login(TD)
+Gateway -> Server: login(TD)
+Gateway <- Server: successfully login(TD)
+Gateway -> Server: query order
+Gateway <- Server: on query order
+Gateway -> Server: cancel order
+TradingEngine <- Gateway: return true
+== ==
+TradingEngine -> Gateway: Login(MD)
+Gateway -> Server: login(MD)
+Gateway <- Server: successfully login(MD)
+Gateway -> Server: subscribe market data
+TradingEngine <- Gateway: return true
+== ==
+TradingEngine -> Gateway: query account
+Gateway -> Server: query account
+Gateway <- Server: on query account
+TradingEngine <- Gateway: on query account
+TradingEngine -> TradingEngine: update account info
+TradingEngine <- Gateway: return true
+== ==
+TradingEngine -> Gateway: query positions
+Gateway -> Server: query positions
+Gateway <- Server: on query positions
+TradingEngine <- Gateway: on query positions
+TradingEngine -> TradingEngine: update position info
+TradingEngine <- Gateway: return true
+== ==
+TradingEngine -> Gateway: query trades
+Gateway -> Server: query trades
+Gateway <- Server: on query trades
+TradingEngine <- Gateway: on query trades
+TradingEngine -> TradingEngine: update position info
+TradingEngine <- Gateway: return true
+
+@enduml
