@@ -20,6 +20,7 @@ ft采用策略引擎与策略分离的体系，即策略引擎与策略引擎是
 ![image](img/MarketDataFlow.png)
 
 策略引擎登录及初始化流程
+
 ![image](img/登录流程.png)
 
 ### 1.3. 目录结构
