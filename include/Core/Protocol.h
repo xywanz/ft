@@ -23,7 +23,7 @@ struct OrderReq {
   uint64_t offset;
   int64_t volume = 0;
   double price = 0;
-};
+} __attribute__((packed));
 
 /*
  * 这部分是Strategy和TradingEngine之间的交互协议
@@ -41,26 +41,27 @@ struct TraderOrderReq {
   uint64_t type;
   int64_t volume;
   double price;
-};
+} __attribute__((packed));
 
 struct TraderCancelReq {
   uint64_t order_id;
-};
+} __attribute__((packed));
 
 struct TraderCancelTickerReq {
   uint64_t ticker_index;
-};
+} __attribute__((packed));
 
 struct TraderCommand {
   uint32_t magic;
   uint32_t type;
   uint32_t strategy_id;
+  uint32_t reserved;
   union {
     TraderOrderReq order_req;
     TraderCancelReq cancel_req;
     TraderCancelTickerReq cancel_ticker_req;
   };
-};
+} __attribute__((packed));
 
 constexpr const char* const TRADER_CMD_TOPIC = "trader_cmd";
 

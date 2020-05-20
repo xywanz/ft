@@ -14,7 +14,13 @@ add_library(XtpGateway STATIC
 )
 target_link_libraries(XtpGateway ${DEPENDENCIES})
 
+add_library(VirtualGateway STATIC
+    Virtual/VirtualGateway.cpp
+    Virtual/VirtualTradeApi.cpp
+)
+target_link_libraries(VirtualGateway ${DEPENDENCIES})
+
 add_library(Gateway STATIC
     Gateway.cpp
 )
-target_link_libraries(Gateway CtpGateway XtpGateway)
+target_link_libraries(Gateway CtpGateway XtpGateway VirtualGateway)
