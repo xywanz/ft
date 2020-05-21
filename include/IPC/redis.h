@@ -26,11 +26,23 @@ struct RedisReplyDestructor {
 
 class RedisSession {
  public:
-  RedisSession() : RedisSession("127.0.0.1", 6379) {}
+  explicit RedisSession(bool nonblock = false)
+      : RedisSession("127.0.0.1", 6379, nonblock) {}
 
-  RedisSession(const std::string& ip, int port) {
-    ctx_ = redisConnect(ip.c_str(), port);
+  RedisSession(const std::string& ip, int port, bool nonblock = false) {
+    if (nonblock)
+      ctx_ = redisConnectNonBlock(ip.c_str(), port);
+    else
+      ctx_ = redisConnect(ip.c_str(), port);
     assert(ctx_ && ctx_->err == 0);
+  }
+
+  void set_timeout(uint64_t timeout_ms) {
+    timeval tv;
+    tv.tv_sec = timeout_ms / 1000;
+    tv.tv_usec = (timeout_ms % 1000) * 1000;
+
+    redisSetTimeout(ctx_, tv);
   }
 
   void set(const std::string& key, const void* p, size_t size) {
@@ -100,8 +112,8 @@ class RedisSession {
   RedisReply get_sub_reply() {
     redisReply* reply;
     auto status = redisGetReply(ctx_, reinterpret_cast<void**>(&reply));
-    assert(status == REDIS_OK);
-    return RedisReply(reply, RedisReplyDestructor());
+    if (status == REDIS_OK) return RedisReply(reply, RedisReplyDestructor());
+    return nullptr;
   }
 
   void publish(const std::string& topic, const void* p, size_t size) {

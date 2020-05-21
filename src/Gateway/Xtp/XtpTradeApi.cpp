@@ -315,7 +315,7 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
 
     // 暂时只支持普通股票
     auto& pos_detail = pos.long_pos;
-    pos_detail.yd_position = position->sellable_qty;
+    pos_detail.yd_holdings = position->sellable_qty;
     pos_detail.holdings = position->total_qty;
     pos_detail.float_pnl = position->unrealized_pnl;
     pos_detail.cost_price = position->avg_price;

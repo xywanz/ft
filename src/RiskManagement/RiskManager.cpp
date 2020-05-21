@@ -3,13 +3,13 @@
 #include "RiskManagement/RiskManager.h"
 
 #include "RiskManagement/NoSelfTrade.h"
-#include "RiskManagement/VelocityLimit.h"
+#include "RiskManagement/ThrottleRateLimit.h"
 
 namespace ft {
 
 RiskManager::RiskManager() {
   // 先硬编码吧
-  add_rule(std::make_shared<VelocityLimit>(1000, 5, 100));
+  add_rule(std::make_shared<ThrottleRateLimit>(1000, 5, 100));
   add_rule(std::make_shared<NoSelfTradeRule>());
 }
 

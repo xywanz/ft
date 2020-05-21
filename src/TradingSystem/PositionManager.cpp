@@ -2,6 +2,8 @@
 
 #include "TradingSystem/PositionManager.h"
 
+#include <algorithm>
+
 #include "Core/Constants.h"
 #include "Core/ContractTable.h"
 #include "Core/Protocol.h"
@@ -62,6 +64,12 @@ void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
   if (is_close) {
     pos_detail.close_pending -= traded;
     pos_detail.holdings -= traded;
+    if (offset == Offset::CLOSE_YESTERDAY)
+      pos_detail.yd_holdings -= traded;
+    else if (offset == Offset::CLOSE)
+      pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
+    assert(pos_detail.yd_holdings >= 0);
+    assert(pos_detail.holdings >= pos_detail.yd_holdings);
   } else {
     pos_detail.open_pending -= traded;
     pos_detail.holdings += traded;
@@ -136,23 +144,16 @@ void PositionManager::update_float_pnl(uint64_t ticker_index,
   }
 }
 
-void PositionManager::update_ydpos(uint64_t ticker_index, uint64_t direction,
-                                   int64_t closed_volume) {
-  auto* pos = find(ticker_index);
-  if (!pos) return;
+void PositionManager::update_on_query_trade(uint64_t ticker_index,
+                                            uint64_t direction, uint64_t offset,
+                                            int64_t closed_volume) {
+  // auto* pos = find(ticker_index);
+  // if (!pos) return;
 
-  const auto* contract = ContractTable::get_by_index(ticker_index);
-  if (!contract) return;
+  // const auto* contract = ContractTable::get_by_index(ticker_index);
+  // if (!contract) return;
 
-  if (direction == Direction::BUY) {
-    auto& sp = pos->short_pos;
-    sp.td_closed += closed_volume;
-  } else if (direction == Direction::SELL) {
-    auto& lp = pos->long_pos;
-    lp.td_closed += closed_volume;
-  }
-
-  redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
+  // redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
 }
 
 }  // namespace ft

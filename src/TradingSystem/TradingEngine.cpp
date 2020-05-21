@@ -68,6 +68,8 @@ void TradingEngine::run() {
 
   for (;;) {
     auto reply = order_redis_.get_sub_reply();
+    if (!reply) continue;
+
     auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
     if (cmd->magic != TRADER_CMD_MAGIC) {
       spdlog::error("[TradingEngine::run] Recv unknown cmd: error magic num");
@@ -246,9 +248,8 @@ void TradingEngine::on_query_trade(const Trade* trade) {
     return;
   }
 
-  if (is_offset_close(trade->offset))
-    portfolio_.update_ydpos(trade->ticker_index, trade->direction,
-                            trade->volume);
+  portfolio_.update_on_query_trade(trade->ticker_index, trade->direction,
+                                   trade->offset, trade->volume);
 }
 
 void TradingEngine::on_order_accepted(uint64_t order_id) {

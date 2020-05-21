@@ -8,12 +8,12 @@
 namespace ft {
 
 struct PositionDetail {
-  int64_t yd_position = 0;
+  int64_t yd_holdings = 0;
   int64_t holdings = 0;
   int64_t frozen = 0;
   int64_t open_pending = 0;
   int64_t close_pending = 0;
-  int64_t td_closed = 0;
+
   double cost_price = 0;
   double float_pnl = 0;
 };

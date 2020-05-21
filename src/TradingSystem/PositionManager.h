@@ -26,7 +26,7 @@ class PositionManager {
 
   void update_float_pnl(uint64_t ticker_index, double last_price);
 
-  void update_ydpos(uint64_t ticker_index, uint64_t direction,
+  void update_on_query_trade(uint64_t ticker_index, uint64_t direction, uint64_t offset,
                     int64_t closed_volume);
 
  private:

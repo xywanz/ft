@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISKMANAGEMENT_VELOCITYLIMIT_H_
-#define FT_SRC_RISKMANAGEMENT_VELOCITYLIMIT_H_
+#ifndef FT_SRC_RISKMANAGEMENT_THROTTLERATELIMIT_H_
+#define FT_SRC_RISKMANAGEMENT_THROTTLERATELIMIT_H_
 
 #include <spdlog/spdlog.h>
 
@@ -19,9 +19,9 @@ inline uint64_t get_current_ms() {
   return ts.tv_nsec / 1000000 + ts.tv_sec * 1000;
 }
 
-class VelocityLimit : public RiskRuleInterface {
+class ThrottleRateLimit : public RiskRuleInterface {
  public:
-  VelocityLimit(uint64_t period_ms, uint64_t order_limit,
+  ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
                 uint64_t volume_limit);
 
   // 返回false则拦截订单
@@ -40,4 +40,4 @@ class VelocityLimit : public RiskRuleInterface {
 
 }  // namespace ft
 
-#endif  // FT_SRC_RISKMANAGEMENT_VELOCITYLIMIT_H_
+#endif  // FT_SRC_RISKMANAGEMENT_THROTTLERATELIMIT_H_

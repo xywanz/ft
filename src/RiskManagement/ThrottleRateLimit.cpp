@@ -1,16 +1,16 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "RiskManagement/VelocityLimit.h"
+#include "RiskManagement/ThrottleRateLimit.h"
 
 namespace ft {
 
-VelocityLimit::VelocityLimit(uint64_t period_ms, uint64_t order_limit,
-                             uint64_t volume_limit)
+ThrottleRateLimit::ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
+                                     uint64_t volume_limit)
     : period_ms_(period_ms),
       order_limit_(order_limit),
       volume_limit_(volume_limit) {}
 
-bool VelocityLimit::check_order_req(const OrderReq* order) {
+bool ThrottleRateLimit::check_order_req(const OrderReq* order) {
   if (order_limit_ == 0 && volume_limit_ == 0 || period_ms_ == 0) return true;
 
   uint64_t current_ms = get_current_ms();
@@ -26,7 +26,7 @@ bool VelocityLimit::check_order_req(const OrderReq* order) {
 
     if (order_count_ + 1 > order_limit_) {
       spdlog::error(
-          "[VelocityLimit::check] Order num reached limit within {} ms. "
+          "[ThrottleRateLimit::check] Order num reached limit within {} ms. "
           "Current: {}, Limit: {}",
           period_ms_, order_count_, order_limit_);
       return false;

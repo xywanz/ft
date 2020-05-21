@@ -656,18 +656,14 @@ void CtpTradeApi::OnRspQryInvestorPosition(
 
     bool is_long_pos = position->PosiDirection == THOST_FTDC_PD_Long;
     auto &pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
-    if (contract->exchange == EX_SHFE || contract->exchange == EX_INE)
-      pos_detail.yd_position = position->YdPosition;
-    else
-      pos_detail.yd_position = position->Position - position->TodayPosition;
+    pos_detail.holdings = position->Position;
+    pos_detail.yd_holdings = position->Position - position->TodayPosition;
+    pos_detail.float_pnl = position->PositionProfit;
 
     if (is_long_pos)
-      pos_detail.frozen += position->LongFrozen;
+      pos_detail.frozen = position->LongFrozen;
     else
-      pos_detail.frozen += position->ShortFrozen;
-
-    pos_detail.holdings = position->Position;
-    pos_detail.float_pnl = position->PositionProfit;
+      pos_detail.frozen = position->ShortFrozen;
 
     if (pos_detail.holdings > 0 && contract->size > 0)
       pos_detail.cost_price =

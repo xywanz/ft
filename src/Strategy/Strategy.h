@@ -36,8 +36,10 @@ class Strategy {
     on_init(&ctx_);
     for (;;) {
       auto reply = redis_tick_.get_sub_reply();
-      auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
-      on_tick(&ctx_, tick);
+      if (reply) {
+        auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
+        on_tick(&ctx_, tick);
+      }
     }
   }
 
