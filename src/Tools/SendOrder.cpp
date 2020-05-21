@@ -15,7 +15,7 @@ int main() {
   std::string direction = getarg("", "--direction");
   std::string offset = getarg("open", "--offset");
   std::string order_type = getarg("fak", "--order_type");
-  int64_t volume = getarg(0, "--volume");
+  int volume = getarg(0, "--volume");
   double price = getarg(0.0, "--price");
 
   if (!ft::ContractTable::init(contracts_file)) {
@@ -30,7 +30,7 @@ int main() {
   }
 
   if (volume <= 0) {
-    printf("Invalid volume: %ld\n", volume);
+    printf("Invalid volume: %d\n", volume);
     exit(-1);
   }
 

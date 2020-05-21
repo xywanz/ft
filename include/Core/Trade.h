@@ -8,10 +8,10 @@
 namespace ft {
 
 struct Trade {
-  uint64_t ticker_index;
-  uint64_t direction;
-  uint64_t offset;
-  int64_t volume;
+  uint32_t ticker_index;
+  uint32_t direction;
+  uint32_t offset;
+  int volume;
   double price;
 };
 

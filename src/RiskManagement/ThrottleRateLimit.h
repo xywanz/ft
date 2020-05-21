@@ -35,7 +35,7 @@ class ThrottleRateLimit : public RiskRuleInterface {
   uint64_t order_count_ = 0;
   uint64_t volume_count_ = 0;
   std::list<uint64_t> order_tm_record_;
-  std::list<std::pair<uint64_t, int64_t>> volume_tm_record_;
+  std::list<std::pair<uint64_t, int>> volume_tm_record_;
 };
 
 }  // namespace ft

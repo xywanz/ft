@@ -109,7 +109,7 @@ class ContractTable {
     return iter->second;
   }
 
-  static const Contract* get_by_index(uint64_t ticker_index) {
+  static const Contract* get_by_index(uint32_t ticker_index) {
     if (ticker_index == 0 || ticker_index > contracts.size()) return nullptr;
     return &contracts[ticker_index - 1];
   }

@@ -18,7 +18,7 @@ class RiskRuleInterface {
 
   virtual void on_order_sent(uint64_t order_id) {}
 
-  virtual void on_order_traded(uint64_t order_id, int64_t this_traded,
+  virtual void on_order_traded(uint64_t order_id, int this_traded,
                                double traded_price) {}
 
   virtual void on_order_completed(uint64_t order_id) {}

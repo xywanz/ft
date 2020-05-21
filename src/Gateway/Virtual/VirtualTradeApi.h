@@ -9,11 +9,11 @@ namespace ft {
 
 struct VirtualOrderReq {
   uint64_t order_id;
-  uint64_t ticker_index;
-  uint64_t type;
-  uint64_t direction;
-  uint64_t offset;
-  int64_t volume = 0;
+  uint32_t ticker_index;
+  uint32_t type;
+  uint32_t direction;
+  uint32_t offset;
+  int volume = 0;
   double price = 0;
 };
 

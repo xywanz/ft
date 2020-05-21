@@ -87,9 +87,9 @@ class XtpTradeApi : public XTP::API::TraderSpi {
     const Contract* contract = nullptr;
     uint64_t order_id = 0;
     bool accepted_ack = false;
-    int64_t original_vol = 0;
-    int64_t traded_vol = 0;
-    int64_t canceled_vol = 0;
+    int original_vol = 0;
+    int traded_vol = 0;
+    int canceled_vol = 0;
   };
 
   TradingEngineInterface* engine_;

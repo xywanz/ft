@@ -16,7 +16,7 @@ class RiskManagementInterface {
   /*
    * 订单成交时回调
    */
-  virtual void on_order_traded(uint64_t order_id, int64_t this_traded,
+  virtual void on_order_traded(uint64_t order_id, int this_traded,
                                double traded_price) {}
 
   virtual void on_order_completed(uint64_t order_id) {}

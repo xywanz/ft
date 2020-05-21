@@ -25,13 +25,13 @@ enum class OrderStatus {
 struct Order {
   const Contract* contract;
   uint64_t order_id;
-  uint64_t type;
-  uint64_t direction;
-  uint64_t offset;
+  uint32_t type;
+  uint32_t direction;
+  uint32_t offset;
   double price = 0;
-  int64_t volume = 0;
-  int64_t traded_volume = 0;
-  int64_t canceled_volume = 0;
+  int volume = 0;
+  int traded_volume = 0;
+  int canceled_volume = 0;
   OrderStatus status;
   uint64_t insert_time;
 };

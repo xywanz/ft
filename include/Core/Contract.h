@@ -10,25 +10,25 @@ namespace ft {
 
 enum class ProductType { FUTURES = 0, OPTIONS, STOCK };
 
-enum SpecTickerIndex : uint64_t { NONE_TICKER = 0, ALL_TICKERS = UINT64_MAX };
+enum SpecTickerIndex : uint32_t { NONE_TICKER = 0, ALL_TICKERS = UINT32_MAX };
 
 struct Contract {
   std::string ticker;
   std::string exchange;
   std::string name;
   ProductType product_type;
-  int64_t size;
+  int size;
   double price_tick;
 
-  int64_t max_market_order_volume;
-  int64_t min_market_order_volume;
-  int64_t max_limit_order_volume;
-  int64_t min_limit_order_volume;
+  int max_market_order_volume;
+  int min_market_order_volume;
+  int max_limit_order_volume;
+  int min_limit_order_volume;
 
   int delivery_year;
   int delivery_month;
 
-  uint64_t index;  // local index
+  uint32_t index;  // local index
 };
 
 inline const std::string& to_string(ProductType product) {

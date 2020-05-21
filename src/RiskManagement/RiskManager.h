@@ -23,7 +23,7 @@ class RiskManager : public RiskManagementInterface {
 
   void on_order_sent(uint64_t order_id) override;
 
-  void on_order_traded(uint64_t order_id, int64_t this_traded,
+  void on_order_traded(uint64_t order_id, int this_traded,
                        double traded_price) override;
 
   void on_order_completed(uint64_t order_id) override;

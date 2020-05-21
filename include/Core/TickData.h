@@ -10,7 +10,7 @@ namespace ft {
 static const std::size_t kMarketLevel = 10;
 
 struct TickData {
-  uint64_t ticker_index;
+  uint32_t ticker_index;
   // std::string date;
   uint64_t date;
   uint64_t time_sec;
@@ -30,8 +30,8 @@ struct TickData {
   int level = 0;
   double ask[kMarketLevel]{0};
   double bid[kMarketLevel]{0};
-  uint64_t ask_volume[kMarketLevel]{0};
-  uint64_t bid_volume[kMarketLevel]{0};
+  int ask_volume[kMarketLevel]{0};
+  int bid_volume[kMarketLevel]{0};
 };
 
 }  // namespace ft

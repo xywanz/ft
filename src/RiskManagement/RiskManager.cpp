@@ -29,7 +29,7 @@ void RiskManager::on_order_sent(uint64_t order_id) {
   for (auto& rule : rules_) rule->on_order_sent(order_id);
 }
 
-void RiskManager::on_order_traded(uint64_t order_id, int64_t this_traded,
+void RiskManager::on_order_traded(uint64_t order_id, int this_traded,
                                   double traded_price) {
   for (auto& rule : rules_)
     rule->on_order_traded(order_id, this_traded, traded_price);

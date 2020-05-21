@@ -22,8 +22,8 @@ void PositionManager::set_position(const Position* pos) {
   redis_.set(key, pos, sizeof(Position));
 }
 
-void PositionManager::update_pending(uint64_t ticker_index, uint64_t direction,
-                                     uint64_t offset, int changed) {
+void PositionManager::update_pending(uint32_t ticker_index, uint32_t direction,
+                                     uint32_t offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -51,8 +51,8 @@ void PositionManager::update_pending(uint64_t ticker_index, uint64_t direction,
   redis_.set(proto_pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
-void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
-                                    uint64_t offset, int64_t traded,
+void PositionManager::update_traded(uint32_t ticker_index, uint32_t direction,
+                                    uint32_t offset, int traded,
                                     double traded_price) {
   if (traded <= 0) return;
 
@@ -121,7 +121,7 @@ void PositionManager::update_traded(uint64_t ticker_index, uint64_t direction,
   redis_.set("realized_pnl", &realized_pnl_, sizeof(realized_pnl_));
 }
 
-void PositionManager::update_float_pnl(uint64_t ticker_index,
+void PositionManager::update_float_pnl(uint32_t ticker_index,
                                        double last_price) {
   auto* pos = find(ticker_index);
   if (pos) {
@@ -144,9 +144,9 @@ void PositionManager::update_float_pnl(uint64_t ticker_index,
   }
 }
 
-void PositionManager::update_on_query_trade(uint64_t ticker_index,
-                                            uint64_t direction, uint64_t offset,
-                                            int64_t closed_volume) {
+void PositionManager::update_on_query_trade(uint32_t ticker_index,
+                                            uint32_t direction, uint32_t offset,
+                                            int closed_volume) {
   // auto* pos = find(ticker_index);
   // if (!pos) return;
 

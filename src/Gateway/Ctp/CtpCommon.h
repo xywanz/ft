@@ -62,8 +62,8 @@ inline PriceType adjust_price(PriceType price) {
   return ret;
 }
 
-inline uint64_t order_type(char ctp_type) {
-  static std::map<char, uint64_t> ctp2ft = {
+inline uint32_t order_type(char ctp_type) {
+  static std::map<char, uint32_t> ctp2ft = {
       {THOST_FTDC_OPT_AnyPrice, OrderType::MARKET},
       {THOST_FTDC_OPT_LimitPrice, OrderType::LIMIT},
       {THOST_FTDC_OPT_BestPrice, OrderType::BEST}};
@@ -71,8 +71,8 @@ inline uint64_t order_type(char ctp_type) {
   return ctp2ft[ctp_type];
 }
 
-inline char order_type(uint64_t type) {
-  static std::map<uint64_t, char> ft2ctp = {
+inline char order_type(uint32_t type) {
+  static std::map<uint32_t, char> ft2ctp = {
       {OrderType::MARKET, THOST_FTDC_OPT_AnyPrice},
       {OrderType::FAK, THOST_FTDC_OPT_LimitPrice},
       {OrderType::FOK, THOST_FTDC_OPT_LimitPrice},
@@ -82,8 +82,8 @@ inline char order_type(uint64_t type) {
   return ft2ctp[type];
 }
 
-inline uint64_t direction(char ctp_type) {
-  static std::map<char, uint64_t> ctp2ft = {
+inline uint32_t direction(char ctp_type) {
+  static std::map<char, uint32_t> ctp2ft = {
       {THOST_FTDC_D_Buy, Direction::BUY},
       {THOST_FTDC_D_Sell, Direction::SELL},
       {THOST_FTDC_PD_Long, Direction::BUY},
@@ -92,15 +92,15 @@ inline uint64_t direction(char ctp_type) {
   return ctp2ft[ctp_type];
 }
 
-inline char direction(uint64_t type) {
-  static std::map<uint64_t, char> ft2ctp = {
+inline char direction(uint32_t type) {
+  static std::map<uint32_t, char> ft2ctp = {
       {Direction::BUY, THOST_FTDC_D_Buy}, {Direction::SELL, THOST_FTDC_D_Sell}};
 
   return ft2ctp[type];
 }
 
-inline uint64_t offset(char ctp_type) {
-  static std::map<char, uint64_t> ctp2ft = {
+inline uint32_t offset(char ctp_type) {
+  static std::map<char, uint32_t> ctp2ft = {
       {THOST_FTDC_OF_Open, Offset::OPEN},
       {THOST_FTDC_OF_Close, Offset::CLOSE},
       {THOST_FTDC_OF_CloseToday, Offset::CLOSE_TODAY},
@@ -108,8 +108,8 @@ inline uint64_t offset(char ctp_type) {
   return ctp2ft[ctp_type];
 }
 
-inline char offset(uint64_t type) {
-  static std::map<uint64_t, char> ft2ctp = {
+inline char offset(uint32_t type) {
+  static std::map<uint32_t, char> ft2ctp = {
       {Offset::OPEN, THOST_FTDC_OF_Open},
       {Offset::CLOSE, THOST_FTDC_OF_Close},
       {Offset::CLOSE_TODAY, THOST_FTDC_OF_CloseToday},

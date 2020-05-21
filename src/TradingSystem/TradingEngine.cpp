@@ -106,9 +106,9 @@ void TradingEngine::close() {
   if (gateway_) gateway_->logout();
 }
 
-bool TradingEngine::send_order(uint64_t ticker_index, int volume,
-                               uint64_t direction, uint64_t offset,
-                               uint64_t type, double price) {
+bool TradingEngine::send_order(uint32_t ticker_index, int volume,
+                               uint32_t direction, uint32_t offset,
+                               uint32_t type, double price) {
   if (!is_logon_) {
     spdlog::error("[TradingEngine::send_order] Failed. Not logon");
     return false;
@@ -182,7 +182,7 @@ void TradingEngine::cancel_order(uint64_t order_id) {
   gateway_->cancel_order(order_id);
 }
 
-void TradingEngine::cancel_all_for_ticker(uint64_t ticker_index) {
+void TradingEngine::cancel_all_for_ticker(uint32_t ticker_index) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
     if (ticker_index == order.contract->index) gateway_->cancel_order(order_id);
@@ -291,7 +291,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   order_map_.erase(iter);
 }
 
-void TradingEngine::on_order_traded(uint64_t order_id, int64_t this_traded,
+void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
                                     double traded_price) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(order_id);
@@ -331,8 +331,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int64_t this_traded,
   }
 }
 
-void TradingEngine::on_order_canceled(uint64_t order_id,
-                                      int64_t canceled_volume) {
+void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(order_id);
   if (iter == order_map_.end()) {

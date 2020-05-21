@@ -130,9 +130,9 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     const Contract *contract = nullptr;
     uint64_t order_id = 0;
     bool accepted_ack = false;
-    int64_t original_vol = 0;
-    int64_t traded_vol = 0;
-    int64_t canceled_vol = 0;
+    int original_vol = 0;
+    int traded_vol = 0;
+    int canceled_vol = 0;
   };
 
   int next_req_id() { return next_req_id_++; }
@@ -178,7 +178,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   volatile bool is_done_ = false;
   volatile bool is_logon_ = false;
 
-  std::map<uint64_t, Position> pos_cache_;
+  std::map<uint32_t, Position> pos_cache_;
   std::map<int, OrderDetail> order_details_;
   std::map<uint64_t, int> id2ref_;
   std::mutex query_mutex_;

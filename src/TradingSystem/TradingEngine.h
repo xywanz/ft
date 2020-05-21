@@ -36,12 +36,12 @@ class TradingEngine : public TradingEngineInterface {
   void close();
 
  private:
-  bool send_order(uint64_t ticker_index, int volume, uint64_t direction,
-                  uint64_t offset, uint64_t type, double price);
+  bool send_order(uint32_t ticker_index, int volume, uint32_t direction,
+                  uint32_t offset, uint32_t type, double price);
 
   void cancel_order(uint64_t order_id);
 
-  void cancel_all_for_ticker(uint64_t ticker_index);
+  void cancel_all_for_ticker(uint32_t ticker_index);
 
   void cancel_all();
 
@@ -59,10 +59,10 @@ class TradingEngine : public TradingEngineInterface {
 
   void on_order_rejected(uint64_t order_id) override;
 
-  void on_order_traded(uint64_t order_id, int64_t this_traded,
+  void on_order_traded(uint64_t order_id, int this_traded,
                        double traded_price) override;
 
-  void on_order_canceled(uint64_t order_id, int64_t canceled_volume) override;
+  void on_order_canceled(uint64_t order_id, int canceled_volume) override;
 
   void on_order_cancel_rejected(uint64_t order_id) override;
 
