@@ -32,7 +32,8 @@ class VirtualGateway : public Gateway {
 
   bool cancel_order(uint64_t order_id) override;
 
-  bool query_contract(const std::string& ticker) override;
+  bool query_contract(const std::string& ticker,
+                      const std::string& exchange) override;
 
   bool query_contracts() override;
 

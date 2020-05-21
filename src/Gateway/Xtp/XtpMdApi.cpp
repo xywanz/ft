@@ -61,7 +61,7 @@ bool XtpMdApi::login(const LoginParams& params) {
   std::vector<char*> sub_list_sh;
   std::vector<char*> sub_list_sz;
   for (auto& ticker : subscribed_list_) {
-    auto contract = ContractTable::get_by_symbol(ticker);
+    auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
     if (contract->exchange == EX_SH_A)
       sub_list_sh.emplace_back(const_cast<char*>(ticker.c_str()));
@@ -95,7 +95,8 @@ void XtpMdApi::logout() {
   }
 }
 
-bool XtpMdApi::query_contract(const std::string& ticker) {
+bool XtpMdApi::query_contract(const std::string& ticker,
+                              const std::string& exchange) {
   spdlog::error("[XtpMdApi::query_contract] XTP不支持查询单个合约信息");
   return false;
 }
@@ -142,9 +143,8 @@ void XtpMdApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
     spdlog::debug("[XtpMdApi::OnQueryAllTickers] {}, {}", ticker_info->ticker,
                   ticker_info->ticker_name);
     Contract contract{};
-    contract.symbol = ticker_info->ticker;
+    contract.ticker = ticker_info->ticker;
     contract.exchange = ft_exchange_type(ticker_info->exchange_id);
-    contract.ticker = to_ticker(contract.symbol, contract.exchange);
     contract.name = ticker_info->ticker_name;
     contract.price_tick = ticker_info->price_tick;
     contract.product_type = ProductType::STOCK;
@@ -164,7 +164,7 @@ void XtpMdApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
     return;
   }
 
-  auto contract = ContractTable::get_by_symbol(market_data->ticker);
+  auto contract = ContractTable::get_by_ticker(market_data->ticker);
   if (!contract) {
     spdlog::warn("[XtpMdApi::OnDepthMarketData] {} not found int ContractTable",
                  market_data->ticker);

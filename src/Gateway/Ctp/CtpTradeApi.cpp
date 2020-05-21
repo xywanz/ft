@@ -266,7 +266,7 @@ bool CtpTradeApi::send_order(const OrderReq *order) {
   CThostFtdcInputOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-  strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
   req.OrderPriceType = order_type(order->type);
@@ -483,7 +483,7 @@ bool CtpTradeApi::cancel_order(uint64_t order_id) {
   auto contract = iter->second.contract;
 
   CThostFtdcInputOrderActionField req{};
-  strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -535,18 +535,15 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
   engine_->on_order_cancel_rejected(iter->second.order_id);
 }
 
-bool CtpTradeApi::query_contract(const std::string &ticker) {
+bool CtpTradeApi::query_contract(const std::string &ticker,
+                                 const std::string &exchange) {
   if (!is_logon_) return false;
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
-
-  std::string symbol, exchange;
-  ticker_split(ticker, &symbol, &exchange);
-
   CThostFtdcQryInstrumentField req{};
-  strncpy(req.InstrumentID, symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.InstrumentID, ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
 
+  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryInstrument(&req, next_req_id()) != 0) {
     spdlog::error(
         "[CtpTradeApi::query_contract] Failed. Failed to ReqQryInstrument");
@@ -556,7 +553,7 @@ bool CtpTradeApi::query_contract(const std::string &ticker) {
   return wait_sync();
 }
 
-bool CtpTradeApi::query_contracts() { return query_contract(""); }
+bool CtpTradeApi::query_contracts() { return query_contract("", ""); }
 
 void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
                                      CThostFtdcRspInfoField *rsp_info,
@@ -581,9 +578,8 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
 
   Contract contract;
   contract.product_type = product_type(instrument->ProductClass);
-  contract.symbol = instrument->InstrumentID;
+  contract.ticker = instrument->InstrumentID;
   contract.exchange = instrument->ExchangeID;
-  contract.ticker = to_ticker(contract.symbol, contract.exchange);
   contract.name = gb2312_to_utf8(instrument->InstrumentName);
   contract.product_type = product_type(instrument->ProductClass);
   contract.size = instrument->VolumeMultiple;
@@ -603,26 +599,24 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
 bool CtpTradeApi::query_position(const std::string &ticker) {
   if (!is_logon_) return false;
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
-
-  std::string symbol, exchange;
+  CThostFtdcQryInvestorPositionField req{};
   if (!ticker.empty()) {
     auto contract = ContractTable::get_by_ticker(ticker);
-    assert(contract);
-    symbol = contract->symbol;
-    exchange = contract->exchange;
+    if (!contract) {
+      spdlog::error("[CtpTradeApi::query_position] Contract not found: {}",
+                    ticker);
+      return false;
+    }
+    strncpy(req.InstrumentID, contract->ticker.c_str(),
+            sizeof(req.InstrumentID));
+    strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   }
-
-  CThostFtdcQryInvestorPositionField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-  strncpy(req.InstrumentID, symbol.c_str(), symbol.size());
-  strncpy(req.ExchangeID, exchange.c_str(), sizeof(req.ExchangeID));
 
+  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryInvestorPosition(&req, next_req_id()) != 0) {
-    spdlog::error(
-        "[CtpTradeApi::query_position] Failed. Failed to "
-        "ReqQryInvestorPosition");
+    spdlog::error("[CtpTradeApi::query_position] Failed to send query req");
     return false;
   }
 
@@ -644,10 +638,11 @@ void CtpTradeApi::OnRspQryInvestorPosition(
   }
 
   if (position) {
-    const auto *contract = ContractTable::get_by_symbol(position->InstrumentID);
+    auto contract = ContractTable::get_by_ticker(position->InstrumentID);
     if (!contract) {
       spdlog::error(
-          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found");
+          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found: {}",
+          position->InstrumentID);
       goto check_last;
     }
 
@@ -670,8 +665,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(
           position->PositionCost / (pos_detail.holdings * contract->size);
 
     spdlog::debug(
-        "[CtpTradeApi::OnRspQryInvestorPosition] ticker: {}, long: {}, short: "
-        "{}",
+        "[CtpTradeApi::OnRspQryInvestorPosition] {}, long:{}, short:{}",
         contract->ticker, pos.long_pos.holdings, pos.short_pos.holdings);
   }
 
@@ -800,7 +794,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
   }
 
   if (trade) {
-    auto contract = ContractTable::get_by_symbol(trade->InstrumentID);
+    auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
     assert(contract);
 
     Trade td{};
@@ -830,8 +824,7 @@ bool CtpTradeApi::query_margin_rate(const std::string &ticker) {
   req.HedgeFlag = THOST_FTDC_HF_Speculation;
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-  strncpy(req.InvestUnitID, investor_id_.c_str(), sizeof(req.InvestUnitID));
-  strncpy(req.InstrumentID, contract->symbol.c_str(), sizeof(req.InstrumentID));
+  strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
 
   if (trade_api_->ReqQryInstrumentMarginRate(&req, next_req_id()) != 0) {

@@ -3,9 +3,6 @@
 #include <spdlog/spdlog.h>
 
 #include <getopt.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 
 #include "Core/ContractTable.h"
 #include "Core/Gateway.h"

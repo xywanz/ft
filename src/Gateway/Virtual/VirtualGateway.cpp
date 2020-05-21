@@ -17,7 +17,10 @@ bool VirtualGateway::send_order(const OrderReq* order) { return true; }
 
 bool VirtualGateway::cancel_order(uint64_t order_id) { return false; }
 
-bool VirtualGateway::query_contract(const std::string& ticker) { return true; }
+bool VirtualGateway::query_contract(const std::string& ticker,
+                                    const std::string& exchange) {
+  return true;
+}
 
 bool VirtualGateway::query_contracts() { return true; }
 

@@ -58,13 +58,7 @@ bool CtpMdApi::login(const LoginParams &params) {
   }
 
   std::vector<char *> sub_list;
-  std::string symbol;
-  std::string exchange;
-  for (const auto &ticker : params.subscribed_list()) {
-    auto contract = ContractTable::get_by_ticker(ticker);
-    assert(contract);
-    subscribed_list_.emplace_back(contract->symbol);
-  }
+  subscribed_list_ = params.subscribed_list();
 
   for (const auto &p : subscribed_list_)
     sub_list.emplace_back(const_cast<char *>(p.c_str()));
@@ -149,16 +143,14 @@ void CtpMdApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
     return;
   }
 
-  auto *contract = ContractTable::get_by_symbol(instrument->InstrumentID);
+  auto contract = ContractTable::get_by_ticker(instrument->InstrumentID);
   if (!contract) {
     spdlog::error(
-        "[CtpMdApi::OnRspSubMarketData] Failed. ExchangeID not found in "
-        "contract list. "
-        "Maybe you should update the contract list. Symbol: {}",
+        "[CtpMdApi::OnRspSubMarketData] ExchangeID not found in contract list. "
+        "Maybe you should update the contract list. Ticker: {}",
         instrument->InstrumentID);
     return;
   }
-  symbol2contract_.emplace(contract->symbol, contract);
 
   spdlog::debug("[CtpMdApi::OnRspSubMarketData] Success. Ticker: {}",
                 contract->ticker);
@@ -182,8 +174,8 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
-  auto iter = symbol2contract_.find(md->InstrumentID);
-  if (iter == symbol2contract_.end()) {
+  auto contract = ContractTable::get_by_ticker(md->InstrumentID);
+  if (!contract) {
     spdlog::warn(
         "[CtpMdApi::OnRtnDepthMarketData] Failed. ExchangeID not found in "
         "contract list. "
@@ -193,7 +185,7 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick{};
-  tick.ticker_index = iter->second->index;
+  tick.ticker_index = contract->index;
 
   struct tm _tm;
   strptime(md->UpdateTime, "%H:%M:%S", &_tm);
@@ -237,7 +229,7 @@ void CtpMdApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   spdlog::debug(
       "[CtpMdApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
       "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
-      iter->second->ticker, tick.time_ms, tick.last_price, tick.volume,
+      contract->ticker, tick.time_ms, tick.last_price, tick.volume,
       tick.turnover, tick.open_interest);
 
   engine_->on_tick(&tick);

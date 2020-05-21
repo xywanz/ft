@@ -23,13 +23,10 @@ int main() {
     exit(-1);
   }
 
-  auto contract = ft::ContractTable::get_by_symbol(ticker);
+  auto contract = ft::ContractTable::get_by_ticker(ticker);
   if (!contract) {
-    contract = ft::ContractTable::get_by_ticker(ticker);
-    if (!contract) {
-      printf("Unknown ticker: %s\n", ticker.c_str());
-      exit(-1);
-    }
+    printf("Unknown ticker: %s\n", ticker.c_str());
+    exit(-1);
   }
 
   if (volume <= 0) {

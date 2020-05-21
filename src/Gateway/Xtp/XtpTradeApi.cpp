@@ -106,7 +106,7 @@ bool XtpTradeApi::send_order(const OrderReq* order) {
   }
 
   req.order_client_id = next_client_order_id();
-  strncpy(req.ticker, contract->symbol.c_str(), sizeof(req.ticker));
+  strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
   req.price = order->price;
   req.quantity = order->volume;
   req.business_type = XTP_BUSINESS_TYPE::XTP_BUSINESS_TYPE_CASH;
@@ -302,7 +302,7 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
         position->ticker, position->ticker_name, position->yesterday_position,
         position->total_qty, position->avg_price, position->unrealized_pnl);
 
-    const auto* contract = ContractTable::get_by_symbol(position->ticker);
+    auto contract = ContractTable::get_by_ticker(position->ticker);
     if (!contract) {
       spdlog::error(
           "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found. {}, {}",
@@ -423,7 +423,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
   }
 
   if (trade_info) {
-    auto contract = ContractTable::get_by_symbol(trade_info->ticker);
+    auto contract = ContractTable::get_by_ticker(trade_info->ticker);
     assert(contract);
 
     Trade trade{};

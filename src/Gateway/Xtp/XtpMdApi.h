@@ -29,7 +29,7 @@ class XtpMdApi : public XTP::API::QuoteSpi {
 
   void logout();
 
-  bool query_contract(const std::string& ticker);
+  bool query_contract(const std::string& ticker, const std::string& exchange);
 
   bool query_contracts();
 

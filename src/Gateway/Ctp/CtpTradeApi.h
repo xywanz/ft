@@ -34,7 +34,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   bool cancel_order(uint64_t order_id);
 
-  bool query_contract(const std::string &ticker);
+  bool query_contract(const std::string &ticker, const std::string &exchange);
 
   bool query_contracts();
 

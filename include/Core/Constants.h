@@ -153,29 +153,6 @@ inline const std::string& ordertype_str(uint64_t t) {
 }
 
 /*
- * symbol和exchange转为ft支持的ticker类型
- * ticker = symbol.exchange
- * 例如 rb2009.SHFE, 000001.SH
- */
-inline std::string to_ticker(std::string symbol, std::string exchange) {
-  return fmt::format("{}.{}", symbol, exchange);
-}
-
-/*
- * [deprecated]
- * ticker拆分为symbol和exchange
- */
-inline void ticker_split(const std::string& ticker, std::string* symbol,
-                         std::string* exchange) {
-  if (ticker.empty()) return;
-
-  auto pos = ticker.find_first_of('.');
-  *symbol = ticker.substr(0, pos);
-  if (pos != std::string::npos && pos + 1 < ticker.size())
-    *exchange = ticker.substr(pos + 1);
-}
-
-/*
  * 判断浮点数是否相等
  */
 template <class RealType>

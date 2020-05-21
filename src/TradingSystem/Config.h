@@ -25,7 +25,9 @@ inline bool load_login_params(const std::string& file,
   params->set_passwd(config["passwd"].as<std::string>(""));
   params->set_auth_code(config["auth_code"].as<std::string>(""));
   params->set_app_id(config["app_id"].as<std::string>(""));
-  params->set_subscribed_list({config["ticker"].as<std::string>("")});
+
+  auto subscribed_list = config["ticker"].as<std::string>("");
+  if (!subscribed_list.empty()) params->set_subscribed_list({subscribed_list});
 
   return true;
 }

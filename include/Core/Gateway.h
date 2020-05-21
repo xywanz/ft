@@ -40,7 +40,10 @@ class Gateway {
 
   virtual bool cancel_order(uint64_t order_id) { return false; }
 
-  virtual bool query_contract(const std::string& ticker) { return false; }
+  virtual bool query_contract(const std::string& ticker,
+                              const std::string& exchange) {
+    return false;
+  }
 
   virtual bool query_contracts() { return false; }
 

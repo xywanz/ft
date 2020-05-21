@@ -66,8 +66,9 @@ bool CtpGateway::cancel_order(uint64_t order_id) {
   return trade_api_->cancel_order(order_id);
 }
 
-bool CtpGateway::query_contract(const std::string &ticker) {
-  return trade_api_->query_contract(ticker);
+bool CtpGateway::query_contract(const std::string &ticker,
+                                const std::string &exchange) {
+  return trade_api_->query_contract(ticker, exchange);
 }
 
 bool CtpGateway::query_contracts() { return trade_api_->query_contracts(); }

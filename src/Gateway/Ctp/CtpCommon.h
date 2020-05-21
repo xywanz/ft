@@ -36,7 +36,7 @@ inline bool is_error_rsp(CThostFtdcRspInfoField* rsp_info) {
 }
 
 inline std::string gb2312_to_utf8(const std::string& gb2312) {
-  static const std::locale loc("zh_CN.GB18030");
+  static const std::locale loc("zh_CN.GB2312");
 
   std::vector<wchar_t> wstr(gb2312.size());
   wchar_t* wstr_end = nullptr;

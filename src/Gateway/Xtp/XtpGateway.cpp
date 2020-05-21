@@ -43,8 +43,9 @@ bool XtpGateway::cancel_order(uint64_t order_id) {
   return trade_api_->cancel_order(order_id);
 }
 
-bool XtpGateway::query_contract(const std::string& ticker) {
-  return md_api_->query_contract(ticker);
+bool XtpGateway::query_contract(const std::string& ticker,
+                                const std::string& exchange) {
+  return md_api_->query_contract(ticker, exchange);
 }
 
 bool XtpGateway::query_contracts() { return md_api_->query_contracts(); }

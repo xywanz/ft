@@ -97,10 +97,7 @@ class AlgoTradeContext {
         offset_str(offset));
 
     const Contract* contract;
-    if (ticker.find_first_of('.') != std::string::npos)
-      contract = ContractTable::get_by_ticker(ticker);
-    else
-      contract = ContractTable::get_by_symbol(ticker);
+    contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
     TraderCommand cmd{};
