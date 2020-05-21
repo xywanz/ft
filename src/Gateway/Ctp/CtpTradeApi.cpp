@@ -303,6 +303,7 @@ bool CtpTradeApi::send_order(const OrderReq *order) {
   detail.order_id = order->order_id;
   order_details_.emplace(order_ref, detail);
   id2ref_.emplace(order->order_id, order_ref);
+  lock.unlock();
 
   spdlog::debug(
       "[CtpTradeApi::send_order] [{}-{}-{}-{}{}] 订单发送成功. "
@@ -366,13 +367,8 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     return;
   }
 
-  int order_ref;
-  try {
-    order_ref = std::stoi(order->OrderRef);
-  } catch (...) {
-    spdlog::error("[CtpTradeApi::OnRspOrderInsert] Invalid order ref");
-    return;
-  }
+  // CTP返回的OrderRef不会有问题吧？
+  int order_ref = std::stoi(order->OrderRef);
 
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = order_details_.find(order_ref);
@@ -434,13 +430,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
   }
 
-  int order_ref;
-  try {
-    order_ref = std::stoi(trade->OrderRef);
-  } catch (...) {
-    spdlog::error("[CtpTradeApi::OnRtnTrade] Invalid OrderRef");
-    return;
-  }
+  int order_ref = std::stoi(trade->OrderRef);
 
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = order_details_.find(order_ref);
@@ -481,6 +471,7 @@ bool CtpTradeApi::cancel_order(uint64_t order_id) {
   }
 
   auto contract = iter->second.contract;
+  lock.unlock();
 
   CThostFtdcInputOrderActionField req{};
   strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
@@ -681,12 +672,11 @@ check_last:
 bool CtpTradeApi::query_account() {
   if (!is_logon_) return false;
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
-
   CThostFtdcQryTradingAccountField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
+  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryTradingAccount(&req, next_req_id()) != 0) {
     spdlog::error(
         "[CtpTradeApi::query_account] Failed. Failed to "
@@ -766,12 +756,11 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order,
 bool CtpTradeApi::query_trades() {
   if (!is_logon_) return false;
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
-
   CThostFtdcQryTradeField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
+  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryTrade(&req, next_req_id()) != 0) {
     spdlog::error("[CtpTradeApi::query_trades] Failed. Failed to ReqQryTrade");
     return false;
@@ -818,8 +807,6 @@ bool CtpTradeApi::query_margin_rate(const std::string &ticker) {
     return false;
   }
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
-
   CThostFtdcQryInstrumentMarginRateField req{};
   req.HedgeFlag = THOST_FTDC_HF_Speculation;
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -827,6 +814,7 @@ bool CtpTradeApi::query_margin_rate(const std::string &ticker) {
   strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
 
+  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryInstrumentMarginRate(&req, next_req_id()) != 0) {
     spdlog::error(
         "[CtpTradeApi::query_margin_rate] Failed. "
