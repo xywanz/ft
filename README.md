@@ -85,7 +85,7 @@ class MyStrategy : public ft::Strategy {
 
      // 订阅感兴趣的数据
      // 订阅之后才会在有新的行情数据后收到对应的on_tick回调
-     subscribe({"rb2009.SHFE", "rb2005.SHFE"});
+     subscribe({"rb2009", "rb2005"});
   }
 
   void on_tick(AlgoTradingContext* ctx, const TickData* tick) override {
