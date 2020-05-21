@@ -31,8 +31,10 @@ class Strategy {
 
   virtual void on_exit() {}
 
+  /* 仅供加载器调用，内部不可使用 */
   void run();
 
+  /* 策略启动后请勿更改id */
   void set_id(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }

@@ -84,23 +84,28 @@ redis-server  # 启动redis，必须在启动策略引擎前启动redis
 
 class MyStrategy : public ft::Strategy {
  public:
-  bool on_init(AlgoTradingContext* ctx) override {
-     // 策略加载完后回调
-
+  // 策略加载完后回调
+  bool on_init() override {
      // 订阅感兴趣的数据
      // 订阅之后才会在有新的行情数据后收到对应的on_tick回调
-     subscribe({"rb2009", "rb2005"});
+     subscribe({"rb2009"});  // 可以同时订阅多个合约
   }
 
-  void on_tick(AlgoTradingContext* ctx, const TickData* tick) override {
-    // tick数据到来时回调
+  // tick数据到来时回调
+  void on_tick(const ft::TickData* tick) override {
+    buy_open("rb2009", 1, tick->ask[0]);
   }
 
-  void on_exit(AlgoTradingContext* ctx) override {
+  // 收到本策略发出的订单的订单回报
+  void on_order_rsp(const ft::OrderResponse* order) override {
+    // do sth.
+  }
+
+  void on_exit() override {
     // 暂时还没用到
   }
 };
 
 EXPORT_STRATEGY(MyStrategy);  // 导出你的策略
 ```
-把上面的代码像网格策略demo一样编译即可通过strategy_loader进行加载了
+把上面的代码像网格策略demo一样编译即可通过StrategyLoader进行加载了
