@@ -4,9 +4,7 @@
 
 #include <atomic>
 #include <getopt.hpp>
-#include <iostream>
 
-#include "Base/EventEngine.h"
 #include "ContractTable.h"
 #include "Gateway.h"
 #include "TestCommon.h"

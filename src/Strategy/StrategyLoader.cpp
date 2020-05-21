@@ -8,7 +8,7 @@
 
 #include "Core/ContractTable.h"
 #include "Strategy/Strategy.h"
-#include "TestCommon.h"
+#include "TradingSystem/Config.h"
 
 int main() {
   std::string contracts_file =

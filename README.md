@@ -73,7 +73,7 @@ redis-server  # 启动redis，必须在启动策略引擎前启动redis
 ```
 ```bash
 # 在terminal 1 启动策略
-./strategy_loader -l libgrid_strategy.so -loglevel=debug --contracts-file=../config/contracts.csv
+./StrategyLoader -l libGridStrategy.so -loglevel=debug --contracts-file=../config/contracts.csv
 ```
 
 ## 3. 开发你的第一个策略
