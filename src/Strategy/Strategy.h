@@ -20,10 +20,7 @@ namespace ft {
 
 class Strategy {
  public:
-  Strategy() {
-    strategy_id_ = static_cast<uint32_t>(
-        std::chrono::high_resolution_clock::now().time_since_epoch().count());
-  }
+  Strategy() {}
 
   virtual ~Strategy() {}
 
@@ -31,17 +28,22 @@ class Strategy {
 
   virtual void on_tick(const TickData* tick) {}
 
+  virtual void on_order_rsp(const OrderResponse* order) {}
+
   virtual void on_exit() {}
 
   void run() {
     on_init();
 
     std::thread rsp_receiver([this] {
+      rsp_redis_.subscribe({strategy_id_});
+
       for (;;) {
         auto reply = rsp_redis_.get_sub_reply();
         if (reply) {
-          auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
-          on_tick(tick);
+          auto rsp =
+              reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
+          on_order_rsp(rsp);
         }
       }
     });
@@ -55,6 +57,10 @@ class Strategy {
     }
   }
 
+  void set_id(const std::string& name) {
+    strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
+  }
+
  protected:
   void subscribe(const std::vector<std::string>& sub_list) {
     std::vector<std::string> topics;
@@ -64,25 +70,27 @@ class Strategy {
   }
 
   void buy_open(const std::string& ticker, int volume, double price,
-                uint64_t type = OrderType::FAK) {
-    send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price);
+                uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+    send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price,
+               user_order_id);
   }
 
   void buy_close(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK) {
-    send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
-               price);
+                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+    send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price,
+               user_order_id);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK) {
-    send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price);
+                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+    send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price,
+               user_order_id);
   }
 
   void sell_close(const std::string& ticker, int volume, double price,
-                  uint64_t type = OrderType::FAK) {
+                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
     send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
-               price);
+               price, user_order_id);
   }
 
   void cancel_order(uint64_t order_id) {
@@ -116,8 +124,9 @@ class Strategy {
   }
 
  private:
-  void send_order(const std::string& ticker, int volume, uint64_t direction,
-                  uint64_t offset, uint64_t type, double price) {
+  void send_order(const std::string& ticker, int volume, uint32_t direction,
+                  uint32_t offset, uint32_t type, double price,
+                  uint32_t user_order_id) {
     spdlog::info(
         "[Strategy::send_order] ticker: {}, volume: {}, price: {}, "
         "type: {}, direction: {}, offset: {}",
@@ -131,7 +140,8 @@ class Strategy {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = NEW_ORDER;
-    cmd.strategy_id = strategy_id_;
+    strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
+    cmd.order_req.user_order_id = user_order_id;
     cmd.order_req.ticker_index = contract->index;
     cmd.order_req.volume = volume;
     cmd.order_req.direction = direction;
@@ -143,7 +153,7 @@ class Strategy {
   }
 
  private:
-  uint32_t strategy_id_;
+  StrategyIdType strategy_id_;
 
   RedisSession tick_redis_;
   RedisSession cmd_redis_;

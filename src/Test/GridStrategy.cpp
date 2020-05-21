@@ -44,6 +44,12 @@ class GridStrategy : public ft::Strategy {
     }
   }
 
+  void on_order_rsp(const ft::OrderResponse* order) override {
+    spdlog::info("Order: {}  Traded/Total: {}/{}     Completed: {}",
+                 order->order_id, order->traded_volume, order->original_volume,
+                 order->completed);
+  }
+
   void on_exit() override { spdlog::info("[GridStrategy::on_exit]"); }
 
  private:

@@ -10,6 +10,8 @@
 
 namespace ft {
 
+using StrategyIdType = char[16];
+
 /*
  * 这部分是TradingEngine和Gateway之间的交互协议
  */
@@ -17,6 +19,7 @@ namespace ft {
 // 这个是TradingEngine发给Gateway的下单信息
 struct OrderReq {
   uint64_t order_id;
+  uint32_t user_order_id;
   uint32_t ticker_index;
   uint32_t type;
   uint32_t direction;
@@ -35,6 +38,7 @@ inline const uint32_t TRADER_CMD_MAGIC = 0x1709394;
 enum TraderCmdType { NEW_ORDER = 1, CANCEL_ORDER, CANCEL_TICKER, CANCEL_ALL };
 
 struct TraderOrderReq {
+  uint32_t user_order_id;
   uint32_t ticker_index;
   uint32_t direction;
   uint32_t offset;
@@ -54,8 +58,7 @@ struct TraderCancelTickerReq {
 struct TraderCommand {
   uint32_t magic;
   uint32_t type;
-  uint32_t strategy_id;
-  uint32_t reserved;
+  StrategyIdType strategy_id;
   union {
     TraderOrderReq order_req;
     TraderCancelReq cancel_req;
@@ -67,9 +70,18 @@ struct TraderCommand {
  *
  */
 struct OrderResponse {
-  uint32_t type;
+  uint32_t user_order_id;
+  uint32_t order_id;
   uint32_t ticker_index;
-};
+  uint32_t direction;
+  uint32_t offset;
+  int original_volume;
+  int traded_volume;
+
+  bool completed;
+  uint32_t this_traded;
+  double this_traded_price;
+} __attribute__((packed));
 
 constexpr const char* const TRADER_CMD_TOPIC = "trader_cmd";
 

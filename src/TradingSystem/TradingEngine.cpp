@@ -10,8 +10,6 @@ namespace ft {
 
 TradingEngine::TradingEngine()
     : portfolio_("127.0.0.1", 6379),
-      tick_redis_("127.0.0.1", 6379),
-      order_redis_("127.0.0.1", 6379),
       risk_mgr_(std::make_unique<RiskManager>()) {}
 
 TradingEngine::~TradingEngine() { close(); }
@@ -79,9 +77,7 @@ void TradingEngine::run() {
     switch (cmd->type) {
       case NEW_ORDER:
         spdlog::info("new order");
-        send_order(cmd->order_req.ticker_index, cmd->order_req.volume,
-                   cmd->order_req.direction, cmd->order_req.offset,
-                   cmd->order_req.type, cmd->order_req.price);
+        send_order(cmd);
         break;
       case CANCEL_ORDER:
         spdlog::info("cancel order");
@@ -106,15 +102,15 @@ void TradingEngine::close() {
   if (gateway_) gateway_->logout();
 }
 
-bool TradingEngine::send_order(uint32_t ticker_index, int volume,
-                               uint32_t direction, uint32_t offset,
-                               uint32_t type, double price) {
+bool TradingEngine::send_order(const TraderCommand* cmd) {
   if (!is_logon_) {
     spdlog::error("[TradingEngine::send_order] Failed. Not logon");
     return false;
   }
 
-  auto contract = ContractTable::get_by_index(ticker_index);
+  auto& sreq = cmd->order_req;
+
+  auto contract = ContractTable::get_by_index(sreq.ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::send_order] Contract not found");
     return false;
@@ -122,12 +118,12 @@ bool TradingEngine::send_order(uint32_t ticker_index, int volume,
 
   OrderReq req;
   req.order_id = next_order_id();
-  req.ticker_index = ticker_index;
-  req.direction = direction;
-  req.offset = offset;
-  req.volume = volume;
-  req.type = type;
-  req.price = price;
+  req.ticker_index = sreq.ticker_index;
+  req.direction = sreq.direction;
+  req.offset = sreq.offset;
+  req.volume = sreq.volume;
+  req.type = sreq.type;
+  req.price = sreq.price;
 
   std::unique_lock<std::mutex> lock(mutex_);
   if (risk_mgr_) {
@@ -155,17 +151,20 @@ bool TradingEngine::send_order(uint32_t ticker_index, int volume,
   if (risk_mgr_) risk_mgr_->on_order_sent(req.order_id);
 
   Order order;
-  order.order_id = req.order_id;
   order.contract = contract;
-  order.direction = direction;
-  order.offset = offset;
-  order.volume = volume;
-  order.type = type;
-  order.price = price;
+  order.order_id = req.order_id;
+  order.user_order_id = sreq.user_order_id;
+  order.direction = sreq.direction;
+  order.offset = sreq.offset;
+  order.volume = sreq.volume;
+  order.type = sreq.type;
+  order.price = sreq.price;
   order.status = OrderStatus::SUBMITTING;
+  order.strategy_id = cmd->strategy_id;
   order_map_.emplace(order.order_id, order);
 
-  portfolio_.update_pending(contract->index, direction, offset, volume);
+  portfolio_.update_pending(contract->index, order.direction, order.offset,
+                            order.volume);
 
   spdlog::debug(
       "[StrategyEngine::send_order] Success."
@@ -263,6 +262,14 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
   }
 
   auto& order = iter->second;
+  OrderResponse rsp{};
+  rsp.user_order_id = order.user_order_id;
+  rsp.order_id = order.order_id;
+  rsp.ticker_index = order.contract->index;
+  rsp.direction = order.direction;
+  rsp.offset = order.offset;
+  rsp.original_volume = order.volume;
+  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
 
   spdlog::info(
       "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, Direction: "
@@ -280,7 +287,17 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
         order_id);
     return;
   }
+
   auto& order = iter->second;
+  OrderResponse rsp{};
+  rsp.user_order_id = order.user_order_id;
+  rsp.order_id = order.order_id;
+  rsp.ticker_index = order.contract->index;
+  rsp.direction = order.direction;
+  rsp.offset = order.offset;
+  rsp.original_volume = order.volume;
+  rsp.completed = true;
+  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
 
   spdlog::error(
       "[TradingEngine::on_order_rejected] 报单被拒. Ticker: {}, Direction: "
@@ -316,6 +333,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
   if (risk_mgr_)
     risk_mgr_->on_order_traded(order_id, this_traded, traded_price);
 
+  bool completed = false;
   order.traded_volume += this_traded;
   if (order.traded_volume + order.canceled_volume == order.volume) {
     spdlog::info(
@@ -327,8 +345,22 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
     // 订单结束，通知风控模块
     if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
 
+    completed = true;
     order_map_.erase(iter);
   }
+
+  OrderResponse rsp{};
+  rsp.user_order_id = order.user_order_id;
+  rsp.order_id = order.order_id;
+  rsp.ticker_index = order.contract->index;
+  rsp.direction = order.direction;
+  rsp.offset = order.offset;
+  rsp.original_volume = order.volume;
+  rsp.traded_volume = order.traded_volume;
+  rsp.this_traded = this_traded;
+  rsp.this_traded_price = traded_price;
+  rsp.completed = completed;
+  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
 }
 
 void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
@@ -358,6 +390,17 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
 
     // 订单结束，通知风控模块
     if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
+
+    OrderResponse rsp{};
+    rsp.user_order_id = order.user_order_id;
+    rsp.order_id = order.order_id;
+    rsp.ticker_index = order.contract->index;
+    rsp.direction = order.direction;
+    rsp.offset = order.offset;
+    rsp.original_volume = order.volume;
+    rsp.traded_volume = order.traded_volume;
+    rsp.completed = true;
+    rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
 
     order_map_.erase(iter);
   }

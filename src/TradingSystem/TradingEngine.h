@@ -36,8 +36,7 @@ class TradingEngine : public TradingEngineInterface {
   void close();
 
  private:
-  bool send_order(uint32_t ticker_index, int volume, uint32_t direction,
-                  uint32_t offset, uint32_t type, double price);
+  bool send_order(const TraderCommand* cmd);
 
   void cancel_order(uint64_t order_id);
 
@@ -80,6 +79,7 @@ class TradingEngine : public TradingEngineInterface {
 
   RedisSession tick_redis_;
   RedisSession order_redis_;
+  RedisSession rsp_redis_;
 
   std::atomic<bool> is_logon_ = false;
 };

@@ -25,6 +25,7 @@ enum class OrderStatus {
 struct Order {
   const Contract* contract;
   uint64_t order_id;
+  uint32_t user_order_id;
   uint32_t type;
   uint32_t direction;
   uint32_t offset;
@@ -34,6 +35,7 @@ struct Order {
   int canceled_volume = 0;
   OrderStatus status;
   uint64_t insert_time;
+  std::string strategy_id;
 };
 
 inline const std::string& to_string(OrderStatus s) {
