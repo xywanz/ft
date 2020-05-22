@@ -205,7 +205,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     engine_->on_order_accepted(trade_info->order_xtp_id);
 
   detail.traded_vol += trade_info->trade_amount;
-  engine_->on_order_traded(trade_info->order_xtp_id, trade_info->trade_amount,
+  engine_->on_order_traded(trade_info->order_xtp_id, trade_info->quantity,
                            trade_info->price);
 
   if (detail.traded_vol += detail.canceled_vol == detail.original_vol)
@@ -263,7 +263,6 @@ bool XtpTradeApi::query_position(const std::string& ticker) {
   if (session_id_ == 0) return false;
 
   std::unique_lock<std::mutex> lock(query_mutex_);
-  reset_sync();
   int res =
       trade_api_->QueryPosition(ticker.c_str(), session_id_, next_req_id());
   if (res != 0) {
@@ -326,7 +325,6 @@ bool XtpTradeApi::query_account() {
   if (session_id_ == 0) return false;
 
   std::unique_lock<std::mutex> lock(query_mutex_);
-  reset_sync();
   if (trade_api_->QueryAsset(session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_account] {}",
                   trade_api_->GetApiLastError()->error_msg);
@@ -359,7 +357,6 @@ bool XtpTradeApi::query_orders() {
   XTPQueryOrderReq req{};
 
   std::unique_lock<std::mutex> lock(query_mutex_);
-  reset_sync();
   if (trade_api_->QueryOrders(&req, session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_orders] {}",
                   trade_api_->GetApiLastError()->error_msg);
@@ -374,7 +371,7 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
                                uint64_t session_id) {
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryOrder] {}", error_info->error_msg);
-    error();
+    done();
     return;
   }
 
@@ -395,7 +392,6 @@ bool XtpTradeApi::query_trades() {
   XTPQueryTraderReq req{};
 
   std::unique_lock<std::mutex> lock(query_mutex_);
-  reset_sync();
   if (trade_api_->QueryTrades(&req, session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_trades] {}",
                   trade_api_->GetApiLastError()->error_msg);
@@ -410,7 +406,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
                                uint64_t session_id) {
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryTrade] {}", error_info->error_msg);
-    error();
+    done();
     return;
   }
 

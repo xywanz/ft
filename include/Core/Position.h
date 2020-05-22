@@ -19,7 +19,7 @@ struct PositionDetail {
 };
 
 struct Position {
-  uint32_t ticker_index;
+  uint32_t ticker_index = 0;
   PositionDetail long_pos;
   PositionDetail short_pos;
 };

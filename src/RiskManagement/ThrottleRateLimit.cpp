@@ -46,7 +46,7 @@ bool ThrottleRateLimit::check_order_req(const OrderReq* order) {
 
     if (volume_count_ + order->volume > volume_limit_) {
       spdlog::error(
-          "[VelocityLimit::check] Volume reach limit within {} ms. "
+          "[ThrottleRateLimit::check] Volume reach limit within {} ms. "
           "This Order: {}, Current: {}, Limit: {}",
           period_ms_, order->volume, volume_count_, volume_limit_);
       return false;
