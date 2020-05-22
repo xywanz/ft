@@ -40,9 +40,9 @@ catch_order:
   return false;
 }
 
-void NoSelfTradeRule::on_order_completed(uint64_t order_id) {
+void NoSelfTradeRule::on_order_completed(uint64_t engine_order_id) {
   for (auto iter = orders_.begin(); iter != orders_.end(); ++iter) {
-    if (iter->order_id == order_id) {
+    if (iter->engine_order_id == engine_order_id) {
       orders_.erase(iter);
       return;
     }

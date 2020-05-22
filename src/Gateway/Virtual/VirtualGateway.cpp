@@ -13,7 +13,7 @@ bool VirtualGateway::login(const LoginParams& params) {
 
 void VirtualGateway::logout() {}
 
-bool VirtualGateway::send_order(const OrderReq* order) { return true; }
+uint64_t VirtualGateway::send_order(const OrderReq* order) { return 1; }
 
 bool VirtualGateway::cancel_order(uint64_t order_id) { return false; }
 

@@ -29,7 +29,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
 
   void logout();
 
-  bool send_order(const OrderReq* order);
+  uint64_t send_order(const OrderReq* order);
 
   bool cancel_order(uint64_t order_id);
 
@@ -85,7 +85,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
  private:
   struct OrderDetail {
     const Contract* contract = nullptr;
-    uint64_t order_id = 0;
     bool accepted_ack = false;
     int original_vol = 0;
     int traded_vol = 0;
@@ -100,7 +99,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   std::atomic<uint32_t> next_req_id_ = 1;
 
   std::map<uint64_t, OrderDetail> order_details_;
-  std::map<uint64_t, uint64_t> order_id_ft2xtp_;
   std::mutex order_mutex_;
 
   volatile bool is_done_ = false;

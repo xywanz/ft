@@ -109,7 +109,6 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   }
 
   auto& sreq = cmd->order_req;
-
   auto contract = ContractTable::get_by_index(sreq.ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::send_order] Contract not found");
@@ -117,7 +116,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   }
 
   OrderReq req;
-  req.order_id = next_order_id();
+  req.engine_order_id = next_engine_order_id();
   req.ticker_index = sreq.ticker_index;
   req.direction = sreq.direction;
   req.offset = sreq.offset;
@@ -133,26 +132,24 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
     }
   }
 
-  if (!gateway_->send_order(&req)) {
+  uint64_t order_id = gateway_->send_order(&req);
+  if (order_id == 0) {
     spdlog::error(
-        "[StrategyEngine::send_order] Failed to send_order."
-        " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
-        "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
-        "Status: Failed>",
-        contract->ticker, req.order_id, direction_str(req.direction),
-        offset_str(req.offset), ordertype_str(req.type), 0, req.volume,
-        req.price);
+        "[StrategyEngine::send_order] Failed to send_order. Order: <Ticker: "
+        "{}, Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, "
+        "Price: {:.2f}, Status: Failed>",
+        contract->ticker, direction_str(req.direction), offset_str(req.offset),
+        ordertype_str(req.type), 0, req.volume, req.price);
 
-    if (risk_mgr_) risk_mgr_->on_order_completed(req.order_id);
-
+    if (risk_mgr_) risk_mgr_->on_order_completed(req.engine_order_id);
     return false;
   }
 
-  if (risk_mgr_) risk_mgr_->on_order_sent(req.order_id);
+  if (risk_mgr_) risk_mgr_->on_order_sent(req.engine_order_id);
 
   Order order;
   order.contract = contract;
-  order.order_id = req.order_id;
+  order.engine_order_id = req.engine_order_id;
   order.user_order_id = sreq.user_order_id;
   order.direction = sreq.direction;
   order.offset = sreq.offset;
@@ -161,17 +158,16 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   order.price = sreq.price;
   order.status = OrderStatus::SUBMITTING;
   order.strategy_id = cmd->strategy_id;
-  order_map_.emplace(order.order_id, order);
+  order_map_.emplace(order_id, order);
 
   portfolio_.update_pending(contract->index, order.direction, order.offset,
                             order.volume);
 
   spdlog::debug(
-      "[StrategyEngine::send_order] Success."
-      " Order: <Ticker: {}, OrderID: {}, Direction: {}, "
-      "Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: {:.2f}, "
-      "Status: {}>",
-      contract->ticker, order.order_id, direction_str(order.direction),
+      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, OrderID: {}, "
+      "Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: "
+      "{:.2f}, Status: {}>",
+      contract->ticker, order_id, direction_str(order.direction),
       offset_str(order.offset), ordertype_str(order.type), 0, order.volume,
       order.price, to_string(order.status));
   return true;
@@ -264,7 +260,7 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
   auto& order = iter->second;
   OrderResponse rsp{};
   rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order.order_id;
+  rsp.order_id = order_id;
   rsp.ticker_index = order.contract->index;
   rsp.direction = order.direction;
   rsp.offset = order.offset;
@@ -291,7 +287,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   auto& order = iter->second;
   OrderResponse rsp{};
   rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order.order_id;
+  rsp.order_id = order_id;
   rsp.ticker_index = order.contract->index;
   rsp.direction = order.direction;
   rsp.offset = order.offset;
@@ -331,7 +327,8 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
                            this_traded, traded_price);
 
   if (risk_mgr_)
-    risk_mgr_->on_order_traded(order_id, this_traded, traded_price);
+    risk_mgr_->on_order_traded(order.engine_order_id, this_traded,
+                               traded_price);
 
   bool completed = false;
   order.traded_volume += this_traded;
@@ -343,7 +340,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
+    if (risk_mgr_) risk_mgr_->on_order_completed(order.engine_order_id);
 
     completed = true;
     order_map_.erase(iter);
@@ -351,7 +348,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
 
   OrderResponse rsp{};
   rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order.order_id;
+  rsp.order_id = order_id;
   rsp.ticker_index = order.contract->index;
   rsp.direction = order.direction;
   rsp.offset = order.offset;
@@ -389,11 +386,11 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    if (risk_mgr_) risk_mgr_->on_order_completed(order_id);
+    if (risk_mgr_) risk_mgr_->on_order_completed(order.engine_order_id);
 
     OrderResponse rsp{};
     rsp.user_order_id = order.user_order_id;
-    rsp.order_id = order.order_id;
+    rsp.order_id = order_id;
     rsp.ticker_index = order.contract->index;
     rsp.direction = order.direction;
     rsp.offset = order.offset;

@@ -24,7 +24,7 @@ enum class OrderStatus {
 
 struct Order {
   const Contract* contract;
-  uint64_t order_id;
+  uint64_t engine_order_id;
   uint32_t user_order_id;
   uint32_t type;
   uint32_t direction;

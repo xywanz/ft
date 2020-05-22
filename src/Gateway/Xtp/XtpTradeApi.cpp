@@ -72,7 +72,7 @@ void XtpTradeApi::logout() {
   }
 }
 
-bool XtpTradeApi::send_order(const OrderReq* order) {
+uint64_t XtpTradeApi::send_order(const OrderReq* order) {
   if (session_id_ == 0) {
     spdlog::error("[XtpTradeApi::send_order] Not logon");
     return false;
@@ -80,9 +80,7 @@ bool XtpTradeApi::send_order(const OrderReq* order) {
 
   auto contract = ContractTable::get_by_index(order->ticker_index);
   if (!contract) {
-    spdlog::error(
-        "[XtpTradeApi::send_order] Contract not found. XtpOrderID: {}",
-        order->order_id);
+    spdlog::error("[XtpTradeApi::send_order] Contract not found");
     return false;
   }
 
@@ -124,12 +122,10 @@ bool XtpTradeApi::send_order(const OrderReq* order) {
 
   OrderDetail detail{};
   detail.contract = contract;
-  detail.order_id = order->order_id;
   detail.original_vol = order->volume;
   order_details_.emplace(xtp_order_id, detail);
-  order_id_ft2xtp_.emplace(order->order_id, xtp_order_id);
 
-  return true;
+  return xtp_order_id;
 }
 
 void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
@@ -155,15 +151,14 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnOrderEvent] ErrorMsg: {}",
                   error_info->error_msg);
-    engine_->on_order_rejected(detail.order_id);
-    order_id_ft2xtp_.erase(detail.order_id);
+    engine_->on_order_rejected(order_info->order_xtp_id);
     order_details_.erase(iter);
     return;
   }
 
   if (order_info->order_status ==
       XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_REJECTED) {
-    engine_->on_order_rejected(detail.order_id);
+    engine_->on_order_rejected(order_info->order_xtp_id);
     return;
   }
 
@@ -172,7 +167,7 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
     return;
 
   if (!detail.accepted_ack) {
-    engine_->on_order_accepted(detail.order_id);
+    engine_->on_order_accepted(order_info->order_xtp_id);
     detail.accepted_ack = true;
   }
 
@@ -182,12 +177,10 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
           XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
     if (detail.canceled_vol == 0) {
       detail.canceled_vol = order_info->qty_left;
-      engine_->on_order_canceled(detail.order_id, detail.canceled_vol);
+      engine_->on_order_canceled(order_info->order_xtp_id, detail.canceled_vol);
 
-      if (detail.canceled_vol + detail.traded_vol == detail.original_vol) {
-        order_id_ft2xtp_.erase(detail.order_id);
+      if (detail.canceled_vol + detail.traded_vol == detail.original_vol)
         order_details_.erase(iter);
-      }
     }
   }
 }
@@ -208,34 +201,33 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
   }
 
   auto& detail = iter->second;
+  if (!detail.accepted_ack)
+    engine_->on_order_accepted(trade_info->order_xtp_id);
+
   detail.traded_vol += trade_info->trade_amount;
-  engine_->on_order_traded(detail.order_id, trade_info->trade_amount,
+  engine_->on_order_traded(trade_info->order_xtp_id, trade_info->trade_amount,
                            trade_info->price);
 
-  if (detail.traded_vol += detail.canceled_vol == detail.original_vol) {
-    if (!detail.accepted_ack) engine_->on_order_accepted(detail.order_id);
-    order_id_ft2xtp_.erase(detail.order_id);
+  if (detail.traded_vol += detail.canceled_vol == detail.original_vol)
     order_details_.erase(iter);
-  }
 }
 
 bool XtpTradeApi::cancel_order(uint64_t order_id) {
   std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_id_ft2xtp_.find(order_id);
-  if (iter == order_id_ft2xtp_.end()) {
+  auto iter = order_details_.find(order_id);
+  if (iter == order_details_.end()) {
     spdlog::error("[XtpTradeApi::cancel_order] Order not found. OrderID: {}",
                   order_id);
     return false;
   }
 
-  uint64_t xtp_order_id = iter->second;
-  auto& detail = order_details_.find(xtp_order_id)->second;
+  auto& detail = iter->second;
   if (!detail.accepted_ack) {
     spdlog::error("[XtpTradeApi::cancel_order] 未被交易所接受的订单不可撤");
     return false;
   }
 
-  if (trade_api_->CancelOrder(xtp_order_id, session_id_) == 0) {
+  if (trade_api_->CancelOrder(order_id, session_id_) == 0) {
     spdlog::error("[XtpTradeApi::cancel_order] Failed to call CancelOrder");
     return false;
   }
@@ -264,7 +256,7 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
 
   spdlog::error("[XtpTradeApi::OnCancelOrderError] Cancel error. ErrorMsg: {}",
                 error_info->error_msg);
-  engine_->on_order_cancel_rejected(detail.order_id);
+  engine_->on_order_cancel_rejected(cancel_info->order_xtp_id);
 }
 
 bool XtpTradeApi::query_position(const std::string& ticker) {

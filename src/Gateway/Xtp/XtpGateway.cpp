@@ -35,7 +35,7 @@ void XtpGateway::logout() {
   md_api_->logout();
 }
 
-bool XtpGateway::send_order(const OrderReq* order) {
+uint64_t XtpGateway::send_order(const OrderReq* order) {
   return trade_api_->send_order(order);
 }
 

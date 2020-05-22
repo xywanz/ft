@@ -66,8 +66,9 @@ class TradingEngine : public TradingEngineInterface {
   void on_order_cancel_rejected(uint64_t order_id) override;
 
  private:
-  uint64_t next_order_id() { return next_order_id_++; }
+  uint64_t next_engine_order_id() { return next_engine_order_id_++; }
 
+ private:
   std::unique_ptr<Gateway> gateway_ = nullptr;
   std::unique_ptr<RiskManagementInterface> risk_mgr_ = nullptr;
 
@@ -75,7 +76,7 @@ class TradingEngine : public TradingEngineInterface {
   std::map<uint64_t, Order> order_map_;
   std::mutex mutex_;
 
-  uint64_t next_order_id_ = 1;
+  uint64_t next_engine_order_id_ = 1;
 
   RedisSession tick_redis_;
   RedisSession order_redis_;

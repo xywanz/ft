@@ -21,12 +21,12 @@ class RiskManager : public RiskManagementInterface {
 
   bool check_order_req(const OrderReq* req) override;
 
-  void on_order_sent(uint64_t order_id) override;
+  void on_order_sent(uint64_t engine_order_id) override;
 
-  void on_order_traded(uint64_t order_id, int this_traded,
+  void on_order_traded(uint64_t engine_order_id, int this_traded,
                        double traded_price) override;
 
-  void on_order_completed(uint64_t order_id) override;
+  void on_order_completed(uint64_t engine_order_id) override;
 
  private:
   std::list<std::shared_ptr<RiskRuleInterface>> rules_;
