@@ -61,7 +61,7 @@ investor_id: 123456
 passwd: 12345678
 auth_code: 0000000000000000
 app_id: simnow_client_test
-ticker: rb2009.SHFE,rb2005.SHFE  # subscribed list (for market data).
+ticker: rb2009,rb2005  # subscribed list (for market data).
 ```
 
 ### 2.3. 让示例跑起来
