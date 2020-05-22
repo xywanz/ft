@@ -371,8 +371,9 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   std::unique_lock<std::mutex> lock(order_mutex_);
   auto iter = order_details_.find(order_ref);
   if (order_details_.find(order_ref) == order_details_.end()) {
-    spdlog::error("[CtpTradeApi::OnRtnOrder] Order not found. OrderRef: {}",
-                  order_ref);
+    // 出现这种情况应该是启动时撤销之前的未完成订单导致的，否则是bug
+    spdlog::warn("[CtpTradeApi::OnRtnOrder] Order not found. OrderRef: {}",
+                 order_ref);
     return;
   }
   auto &detail = iter->second;

@@ -140,10 +140,12 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   if (iter == order_details_.end()) {
     // 会在交易完成之后推送ALLTRADED，这里忽略即可
     if (order_info->order_status !=
-        XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_ALLTRADED)
-      spdlog::error(
+        XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_ALLTRADED) {
+      // 应该是启动时撤销之前的未完成订单导致的，否则是bug
+      spdlog::warn(
           "[XtpTradeApi::OnOrderEvent] Order not found. XtpOrderID: {}",
           order_info->order_xtp_id);
+    }
     return;
   }
   auto& detail = iter->second;
