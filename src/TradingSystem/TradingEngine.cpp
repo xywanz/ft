@@ -128,6 +128,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   if (risk_mgr_) {
     if (!risk_mgr_->check_order_req(&req)) {
       spdlog::error("风控未通过");
+      respond_send_order_error(cmd);
       return false;
     }
   }
@@ -142,12 +143,13 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
         ordertype_str(req.type), 0, req.volume, req.price);
 
     if (risk_mgr_) risk_mgr_->on_order_completed(req.engine_order_id);
+    respond_send_order_error(cmd);
     return false;
   }
 
   if (risk_mgr_) risk_mgr_->on_order_sent(req.engine_order_id);
 
-  Order order;
+  Order order{};
   order.contract = contract;
   order.engine_order_id = req.engine_order_id;
   order.user_order_id = sreq.user_order_id;
@@ -258,14 +260,17 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
   }
 
   auto& order = iter->second;
-  OrderResponse rsp{};
-  rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order_id;
-  rsp.ticker_index = order.contract->index;
-  rsp.direction = order.direction;
-  rsp.offset = order.offset;
-  rsp.original_volume = order.volume;
-  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+
+  if (order.strategy_id[0] != 0) {
+    OrderResponse rsp{};
+    rsp.user_order_id = order.user_order_id;
+    rsp.order_id = order_id;
+    rsp.ticker_index = order.contract->index;
+    rsp.direction = order.direction;
+    rsp.offset = order.offset;
+    rsp.original_volume = order.volume;
+    rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+  }
 
   spdlog::info(
       "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, Direction: "
@@ -285,15 +290,18 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   }
 
   auto& order = iter->second;
-  OrderResponse rsp{};
-  rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order_id;
-  rsp.ticker_index = order.contract->index;
-  rsp.direction = order.direction;
-  rsp.offset = order.offset;
-  rsp.original_volume = order.volume;
-  rsp.completed = true;
-  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+
+  if (order.strategy_id[0] != 0) {
+    OrderResponse rsp{};
+    rsp.user_order_id = order.user_order_id;
+    rsp.order_id = order_id;
+    rsp.ticker_index = order.contract->index;
+    rsp.direction = order.direction;
+    rsp.offset = order.offset;
+    rsp.original_volume = order.volume;
+    rsp.completed = true;
+    rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+  }
 
   spdlog::error(
       "[TradingEngine::on_order_rejected] 报单被拒. Ticker: {}, Direction: "
@@ -346,18 +354,20 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
     order_map_.erase(iter);
   }
 
-  OrderResponse rsp{};
-  rsp.user_order_id = order.user_order_id;
-  rsp.order_id = order_id;
-  rsp.ticker_index = order.contract->index;
-  rsp.direction = order.direction;
-  rsp.offset = order.offset;
-  rsp.original_volume = order.volume;
-  rsp.traded_volume = order.traded_volume;
-  rsp.this_traded = this_traded;
-  rsp.this_traded_price = traded_price;
-  rsp.completed = completed;
-  rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+  if (order.strategy_id[0] != 0) {
+    OrderResponse rsp{};
+    rsp.user_order_id = order.user_order_id;
+    rsp.order_id = order_id;
+    rsp.ticker_index = order.contract->index;
+    rsp.direction = order.direction;
+    rsp.offset = order.offset;
+    rsp.original_volume = order.volume;
+    rsp.traded_volume = order.traded_volume;
+    rsp.this_traded = this_traded;
+    rsp.this_traded_price = traded_price;
+    rsp.completed = completed;
+    rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+  }
 }
 
 void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
@@ -388,16 +398,18 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
     // 订单结束，通知风控模块
     if (risk_mgr_) risk_mgr_->on_order_completed(order.engine_order_id);
 
-    OrderResponse rsp{};
-    rsp.user_order_id = order.user_order_id;
-    rsp.order_id = order_id;
-    rsp.ticker_index = order.contract->index;
-    rsp.direction = order.direction;
-    rsp.offset = order.offset;
-    rsp.original_volume = order.volume;
-    rsp.traded_volume = order.traded_volume;
-    rsp.completed = true;
-    rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+    if (order.strategy_id[0] != 0) {
+      OrderResponse rsp{};
+      rsp.user_order_id = order.user_order_id;
+      rsp.order_id = order_id;
+      rsp.ticker_index = order.contract->index;
+      rsp.direction = order.direction;
+      rsp.offset = order.offset;
+      rsp.original_volume = order.volume;
+      rsp.traded_volume = order.traded_volume;
+      rsp.completed = true;
+      rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
+    }
 
     order_map_.erase(iter);
   }
@@ -408,6 +420,19 @@ void TradingEngine::on_order_cancel_rejected(uint64_t order_id) {
       "[TradingEngine::on_order_cancel_rejected] Order cannot be canceled. "
       "OrderID: {}",
       order_id);
+}
+
+void TradingEngine::respond_send_order_error(const TraderCommand* cmd) {
+  if (cmd->strategy_id[0] == 0) return;
+
+  OrderResponse rsp{};
+  rsp.user_order_id = cmd->order_req.user_order_id;
+  rsp.ticker_index = cmd->order_req.ticker_index;
+  rsp.direction = cmd->order_req.direction;
+  rsp.offset = cmd->order_req.offset;
+  rsp.original_volume = cmd->order_req.volume;
+  rsp.completed = true;
+  rsp_redis_.publish(cmd->strategy_id, &rsp, sizeof(rsp));
 }
 
 }  // namespace ft

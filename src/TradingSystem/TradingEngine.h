@@ -68,6 +68,8 @@ class TradingEngine : public TradingEngineInterface {
  private:
   uint64_t next_engine_order_id() { return next_engine_order_id_++; }
 
+  void respond_send_order_error(const TraderCommand* cmd);
+
  private:
   std::unique_ptr<Gateway> gateway_ = nullptr;
   std::unique_ptr<RiskManagementInterface> risk_mgr_ = nullptr;
