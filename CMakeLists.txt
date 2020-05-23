@@ -6,7 +6,8 @@ project(ft)
 
 set(CTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/v6.3.15_20190220_api_tradeapi_se_linux64)
 set(XTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/XTP_API_1.1.19.2_20190627/bin)
-set(DEPENDENCIES spdlog hiredis thostmduserapi_se thosttraderapi_se xtptraderapi xtpquoteapi)
+set(COMMON_LIB yaml-cpp fmt hiredis pthread dl)
+set(GATEWAY_LIB thostmduserapi_se thosttraderapi_se xtptraderapi xtpquoteapi)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include

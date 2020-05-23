@@ -3,7 +3,7 @@
 #ifndef FT_INCLUDE_CORE_PROTOCOL_H_
 #define FT_INCLUDE_CORE_PROTOCOL_H_
 
-// #include <fmt/format.h>
+#include <fmt/format.h>
 
 #include <cstdint>
 #include <string>
@@ -97,13 +97,11 @@ struct OrderResponse {
 constexpr const char* const TRADER_CMD_TOPIC = "trader_cmd";
 
 inline std::string proto_md_topic(const std::string& ticker) {
-  // return fmt::format("md-{}", ticker);
-  return std::string("md-{}") + ticker;
+  return fmt::format("md-{}", ticker);
 }
 
 inline std::string proto_pos_key(const std::string& ticker) {
-  // return fmt::format("pos-{}", ticker);
-  return std::string("pos-{}") + ticker;
+  return fmt::format("pos-{}", ticker);
 }
 
 }  // namespace ft

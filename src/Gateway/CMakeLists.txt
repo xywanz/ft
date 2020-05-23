@@ -5,22 +5,20 @@ add_library(CtpGateway STATIC
     Ctp/CtpTradeApi.cpp
     Ctp/CtpMdApi.cpp
 )
-target_link_libraries(CtpGateway ${DEPENDENCIES})
+target_link_libraries(CtpGateway ${COMMON_LIB} ${GATEWAY_LIB})
 
 add_library(XtpGateway STATIC
     Xtp/XtpGateway.cpp
     Xtp/XtpTradeApi.cpp
     Xtp/XtpMdApi.cpp
 )
-target_link_libraries(XtpGateway ${DEPENDENCIES})
+target_link_libraries(XtpGateway ${COMMON_LIB} ${GATEWAY_LIB})
 
 add_library(VirtualGateway STATIC
     Virtual/VirtualGateway.cpp
     Virtual/VirtualTradeApi.cpp
 )
-target_link_libraries(VirtualGateway ${DEPENDENCIES} pthread)
+target_link_libraries(VirtualGateway ${COMMON_LIB})
 
-add_library(Gateway STATIC
-    Gateway.cpp
-)
+add_library(Gateway STATIC Gateway.cpp)
 target_link_libraries(Gateway CtpGateway XtpGateway VirtualGateway)

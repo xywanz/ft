@@ -2,4 +2,4 @@
 
 aux_source_directory(. TS_SRC)
 add_executable(MTE ${TS_SRC})
-target_link_libraries(MTE yaml-cpp spdlog Gateway RiskManagement)
+target_link_libraries(MTE Gateway RiskManagement ${COMMON_LIB})
