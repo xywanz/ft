@@ -4,7 +4,6 @@
 #define FT_INCLUDE_IPC_REDIS_H_
 
 #include <async.h>
-#include <fmt/format.h>
 #include <hiredis.h>
 #include <spdlog/spdlog.h>
 
