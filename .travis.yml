@@ -14,15 +14,10 @@ addons:
 
 script:
   - git clone https://github.com/jbeder/yaml-cpp.git --depth=1
-  - git clone https://github.com/gabime/spdlog.git --depth=1
   - mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake .. && make -j8
   - cd ../..
   - cp -rf yaml-cpp/include dependencies/yaml-cpp/
   - cp -rf yaml-cpp/build/libyaml-cpp.a dependencies/yaml-cpp/lib/
-  - mkdir -p spdlog/build && cd spdlog/build && cmake .. && make -j8
-  - cd ../..
-  - cp -rf spdlog/include dependencies/spdlog/
-  - cp -rf spdlog/build/libspdlog.a dependencies/spdlog/lib/
   - export CC=gcc-7
   - export CXX=g++-7
   - gcc -v && g++ -v && cmake --version
