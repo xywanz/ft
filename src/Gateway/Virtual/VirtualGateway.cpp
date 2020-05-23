@@ -15,7 +15,7 @@ VirtualGateway::VirtualGateway(TradingEngineInterface* engine)
 }
 
 bool VirtualGateway::login(const LoginParams& params) {
-  spdlog::info("[VirtualGateway::login] Virtual API v0.0.1");
+  spdlog::info("[VirtualGateway::login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
   return true;
 }
 
