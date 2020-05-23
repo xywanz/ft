@@ -18,7 +18,7 @@ add_library(VirtualGateway STATIC
     Virtual/VirtualGateway.cpp
     Virtual/VirtualTradeApi.cpp
 )
-target_link_libraries(VirtualGateway ${DEPENDENCIES})
+target_link_libraries(VirtualGateway ${DEPENDENCIES} pthread)
 
 add_library(Gateway STATIC
     Gateway.cpp

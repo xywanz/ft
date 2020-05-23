@@ -22,7 +22,7 @@ namespace ft {
 
 class VirtualGateway : public Gateway {
  public:
-  explicit VirtualGateway(TradingEngineInterface* engine) : Gateway(engine) {}
+  explicit VirtualGateway(TradingEngineInterface* engine);
 
   bool login(const LoginParams& params) override;
 
@@ -49,7 +49,14 @@ class VirtualGateway : public Gateway {
 
   bool query_commision_rate(const std::string& ticker) override;
 
+  void on_order_accepted(uint64_t order_id);
+
+  void on_order_traded(uint64_t order_id, int traded, double price);
+
+  void on_order_canceled(uint64_t order_id, int canceled);
+
  private:
+  TradingEngineInterface* engine_;
   VirtualTradeApi trade_api_;
 };
 

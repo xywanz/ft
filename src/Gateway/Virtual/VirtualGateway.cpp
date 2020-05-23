@@ -4,7 +4,15 @@
 
 #include <spdlog/spdlog.h>
 
+#include "Core/ContractTable.h"
+
 namespace ft {
+
+VirtualGateway::VirtualGateway(TradingEngineInterface* engine)
+    : engine_(engine) {
+  trade_api_.set_gateway(this);
+  trade_api_.start();
+}
 
 bool VirtualGateway::login(const LoginParams& params) {
   spdlog::info("[VirtualGateway::login] Virtual API v0.0.1");
@@ -13,7 +21,17 @@ bool VirtualGateway::login(const LoginParams& params) {
 
 void VirtualGateway::logout() {}
 
-uint64_t VirtualGateway::send_order(const OrderReq* order) { return 1; }
+uint64_t VirtualGateway::send_order(const OrderReq* order) {
+  VirtualOrderReq req{};
+  req.ticker_index = order->ticker_index;
+  req.direction = order->direction;
+  req.offset = order->offset;
+  req.type = order->type;
+  req.volume = order->volume;
+  req.price = order->price;
+
+  trade_api_.insert_order(&req);
+}
 
 bool VirtualGateway::cancel_order(uint64_t order_id) { return false; }
 
@@ -38,6 +56,19 @@ bool VirtualGateway::query_margin_rate(const std::string& ticker) {
 
 bool VirtualGateway::query_commision_rate(const std::string& ticker) {
   return true;
+}
+
+void VirtualGateway::on_order_accepted(uint64_t order_id) {
+  engine_->on_order_accepted(order_id);
+}
+
+void VirtualGateway::on_order_traded(uint64_t order_id, int traded,
+                                     double price) {
+  engine_->on_order_traded(order_id, traded, price);
+}
+
+void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {
+  engine_->on_order_canceled(order_id, canceled);
 }
 
 }  // namespace ft
