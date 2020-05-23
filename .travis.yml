@@ -9,6 +9,7 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
+      - binutils-2.26
       - gcc-7
       - g++-7
 
