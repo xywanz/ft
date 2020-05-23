@@ -12,8 +12,7 @@
 namespace ft {
 
 CtpGateway::CtpGateway(TradingEngineInterface *engine)
-    : Gateway(engine),
-      trade_api_(std::make_unique<CtpTradeApi>(engine)),
+    : trade_api_(std::make_unique<CtpTradeApi>(engine)),
       md_api_(std::make_unique<CtpMdApi>(engine)) {}
 
 CtpGateway::~CtpGateway() {}

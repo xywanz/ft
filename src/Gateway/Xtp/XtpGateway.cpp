@@ -7,8 +7,7 @@
 namespace ft {
 
 XtpGateway::XtpGateway(TradingEngineInterface* engine)
-    : Gateway(engine),
-      engine_(engine),
+    : engine_(engine),
       trade_api_(std::make_unique<XtpTradeApi>(engine)),
       md_api_(std::make_unique<XtpMdApi>(engine)) {}
 

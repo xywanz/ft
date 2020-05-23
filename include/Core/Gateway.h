@@ -25,8 +25,6 @@ namespace ft {
  */
 class Gateway {
  public:
-  explicit Gateway(TradingEngineInterface* engine) {}
-
   virtual ~Gateway() {}
 
   /*
