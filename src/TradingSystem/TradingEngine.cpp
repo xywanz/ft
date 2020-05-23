@@ -85,7 +85,7 @@ void TradingEngine::run() {
         break;
       case CANCEL_TICKER:
         spdlog::info("cancel all for ticker");
-        cancel_all_for_ticker(cmd->cancel_ticker_req.ticker_index);
+        cancel_for_ticker(cmd->cancel_ticker_req.ticker_index);
         break;
       case CANCEL_ALL:
         spdlog::info("cancel all");
@@ -179,7 +179,7 @@ void TradingEngine::cancel_order(uint64_t order_id) {
   gateway_->cancel_order(order_id);
 }
 
-void TradingEngine::cancel_all_for_ticker(uint32_t ticker_index) {
+void TradingEngine::cancel_for_ticker(uint32_t ticker_index) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
     if (ticker_index == order.contract->index) gateway_->cancel_order(order_id);

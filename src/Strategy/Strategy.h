@@ -14,6 +14,7 @@
 #include "Core/Protocol.h"
 #include "Core/TickData.h"
 #include "IPC/redis.h"
+#include "Strategy/OrderSender.h"
 
 namespace ft {
 
@@ -37,6 +38,7 @@ class Strategy {
   /* 策略启动后请勿更改id */
   void set_id(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
+    sender_.set_id(name);
   }
 
  protected:
@@ -44,35 +46,35 @@ class Strategy {
 
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
-    send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price,
-               user_order_id);
+    sender_.send_order(ticker, volume, Direction::BUY, Offset::OPEN, type,
+                       price, user_order_id);
   }
 
   void buy_close(const std::string& ticker, int volume, double price,
                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
-    send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price,
-               user_order_id);
+    sender_.send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY,
+                       type, price, user_order_id);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
-    send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price,
-               user_order_id);
+    sender_.send_order(ticker, volume, Direction::SELL, Offset::OPEN, type,
+                       price, user_order_id);
   }
 
   void sell_close(const std::string& ticker, int volume, double price,
                   uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
-    send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
-               price, user_order_id);
+    sender_.send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY,
+                       type, price, user_order_id);
   }
 
-  void cancel_order(uint64_t order_id) {
-    TraderCommand cmd{};
-    cmd.magic = TRADER_CMD_MAGIC;
-    cmd.type = CANCEL_ORDER;
-    cmd.cancel_req.order_id = order_id;
-    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+  void cancel_order(uint64_t order_id) { sender_.cancel_order(order_id); }
+
+  void cancel_for_ticker(const std::string& ticker) {
+    sender_.cancel_for_ticker(ticker);
   }
+
+  void cancel_all() { sender_.cancel_all(); }
 
   Position get_position(const std::string& ticker) const {
     Position pos;
@@ -99,13 +101,15 @@ class Strategy {
  private:
   void send_order(const std::string& ticker, int volume, uint32_t direction,
                   uint32_t offset, uint32_t type, double price,
-                  uint32_t user_order_id);
+                  uint32_t user_order_id) {
+    sender_.send_order(ticker, volume, direction, offset, type, price,
+                       user_order_id);
+  }
 
  private:
   StrategyIdType strategy_id_;
-
+  OrderSender sender_;
   RedisSession tick_redis_;
-  RedisSession cmd_redis_;
   RedisSession rsp_redis_;
   RedisSession portfolio_redis_;
 };

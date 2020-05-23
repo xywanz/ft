@@ -3,10 +3,7 @@
 #include <chrono>
 #include <getopt.hpp>
 
-#include "Core/Constants.h"
-#include "Core/ContractTable.h"
-#include "Core/Protocol.h"
-#include "IPC/redis.h"
+#include "Strategy/OrderSender.h"
 
 int main() {
   std::string contracts_file =
@@ -72,17 +69,5 @@ int main() {
     exit(-1);
   }
 
-  ft::RedisSession redis("127.0.0.1", 6379);
-
-  ft::TraderCommand cmd;
-  cmd.type = ft::TraderCmdType::NEW_ORDER;
-  cmd.magic = ft::TRADER_CMD_MAGIC;
-  cmd.order_req.ticker_index = contract->index;
-  cmd.order_req.direction = d;
-  cmd.order_req.offset = o;
-  cmd.order_req.type = k;
-  cmd.order_req.volume = volume;
-  cmd.order_req.price = price;
-
-  redis.publish(ft::TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+  ft::OrderSender().send_order(ticker, volume, d, o, k, price, 0);
 }

@@ -40,7 +40,7 @@ class TradingEngine : public TradingEngineInterface {
 
   void cancel_order(uint64_t order_id);
 
-  void cancel_all_for_ticker(uint32_t ticker_index);
+  void cancel_for_ticker(uint32_t ticker_index);
 
   void cancel_all();
 

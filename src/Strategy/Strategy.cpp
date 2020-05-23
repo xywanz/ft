@@ -36,32 +36,4 @@ void Strategy::subscribe(const std::vector<std::string>& sub_list) {
   tick_redis_.subscribe(topics);
 }
 
-void Strategy::send_order(const std::string& ticker, int volume,
-                          uint32_t direction, uint32_t offset, uint32_t type,
-                          double price, uint32_t user_order_id) {
-  spdlog::info(
-      "[Strategy::send_order] ticker: {}, volume: {}, price: {}, "
-      "type: {}, direction: {}, offset: {}",
-      ticker, volume, price, ordertype_str(type), direction_str(direction),
-      offset_str(offset));
-
-  const Contract* contract;
-  contract = ContractTable::get_by_ticker(ticker);
-  assert(contract);
-
-  TraderCommand cmd{};
-  cmd.magic = TRADER_CMD_MAGIC;
-  cmd.type = NEW_ORDER;
-  strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
-  cmd.order_req.user_order_id = user_order_id;
-  cmd.order_req.ticker_index = contract->index;
-  cmd.order_req.volume = volume;
-  cmd.order_req.direction = direction;
-  cmd.order_req.offset = offset;
-  cmd.order_req.type = type;
-  cmd.order_req.price = price;
-
-  cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
-}
-
 }  // namespace ft
