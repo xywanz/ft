@@ -6,7 +6,7 @@ project(ft)
 
 set(CTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/v6.3.15_20190220_api_tradeapi_se_linux64)
 set(XTP_PATH ${CMAKE_SOURCE_DIR}/dependencies/XTP_API_1.1.19.2_20190627/bin)
-set(COMMON_LIB yaml-cpp fmt hiredis pthread dl)
+set(COMMON_LIB yaml-cpp hiredis pthread dl)
 set(GATEWAY_LIB thostmduserapi_se thosttraderapi_se xtptraderapi xtpquoteapi)
 
 include_directories(
@@ -26,7 +26,6 @@ link_directories(
     ${XTP_PATH}/linux_centos7
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/lib
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/lib
-    ${CMAKE_SOURCE_DIR}/dependencies/fmt/lib
     ${CMAKE_SOURCE_DIR}/dependencies/hiredis/lib
 )
 
@@ -34,6 +33,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_definitions(-DFMT_HEADER_ONLY)
 
 add_subdirectory(src/Gateway)
 add_subdirectory(src/TradingSystem)
