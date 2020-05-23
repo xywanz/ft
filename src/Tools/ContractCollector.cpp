@@ -6,15 +6,15 @@
 
 #include "Core/ContractTable.h"
 #include "Core/Gateway.h"
-#include "TradingSystem/Config.h"
+#include "TradingSystem/ConfigLoader.h"
 
 class ContractCollector : public ft::TradingEngineInterface {
  public:
-  bool login(const ft::LoginParams& params) {
-    gateway_.reset(ft::create_gateway(params.api(), this));
+  bool login(const ft::Config& config) {
+    gateway_.reset(ft::create_gateway(config.api, this));
     if (!gateway_) return false;
 
-    return gateway_->login(params);
+    return gateway_->login(config);
   }
 
   bool dump(const std::string& file = "./contracts.csv") {
@@ -40,9 +40,9 @@ int main() {
   spdlog::set_level(spdlog::level::from_str(loglevel));
 
   ContractCollector collector;
-  ft::LoginParams params;
-  load_login_params(login_yml, &params);
-  if (!collector.login(params)) {
+  ft::Config config;
+  ft::load_config(login_yml, &config);
+  if (!collector.login(config)) {
     printf("failed to login\n");
     exit(-1);
   }

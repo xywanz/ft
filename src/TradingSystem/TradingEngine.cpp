@@ -14,22 +14,22 @@ TradingEngine::TradingEngine()
 
 TradingEngine::~TradingEngine() { close(); }
 
-bool TradingEngine::login(const LoginParams& params) {
+bool TradingEngine::login(const Config& config) {
   if (is_logon_) return true;
 
-  gateway_.reset(create_gateway(params.api(), this));
+  gateway_.reset(create_gateway(config.api, this));
   if (!gateway_) {
     spdlog::error("[TradingEngine::login] Failed. Unknown gateway");
     return false;
   }
 
-  if (!gateway_->login(params)) {
+  if (!gateway_->login(config)) {
     spdlog::error("[TradingEngine::login] Failed to login");
     return false;
   }
 
   spdlog::info("[TradingEngine::login] Success. Login as {}",
-               params.investor_id());
+               config.investor_id);
 
   spdlog::info("[[TradingEngine::login] Querying account");
   if (!gateway_->query_account()) {

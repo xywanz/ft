@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "Core/LoginParams.h"
+#include "Core/Config.h"
 #include "Core/Protocol.h"
 #include "Core/TradingEngineInterface.h"
 #include "Gateway/Xtp/XtpCommon.h"
@@ -25,7 +25,7 @@ class XtpMdApi : public XTP::API::QuoteSpi {
 
   ~XtpMdApi();
 
-  bool login(const LoginParams& params);
+  bool login(const Config& config);
 
   void logout();
 

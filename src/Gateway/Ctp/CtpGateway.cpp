@@ -17,33 +17,34 @@ CtpGateway::CtpGateway(TradingEngineInterface *engine)
 
 CtpGateway::~CtpGateway() {}
 
-bool CtpGateway::login(const LoginParams &params) {
-  if (params.broker_id().size() > sizeof(TThostFtdcBrokerIDType) ||
-      params.broker_id().empty() ||
-      params.investor_id().size() > sizeof(TThostFtdcUserIDType) ||
-      params.investor_id().empty() ||
-      params.passwd().size() > sizeof(TThostFtdcPasswordType) ||
-      params.passwd().empty()) {
-    spdlog::error("[CtpGateway::login] Failed. Invalid login params");
+bool CtpGateway::login(const Config &config) {
+  if (config.broker_id.size() > sizeof(TThostFtdcBrokerIDType) ||
+      config.broker_id.empty() ||
+      config.investor_id.size() > sizeof(TThostFtdcUserIDType) ||
+      config.investor_id.empty() ||
+      config.password.size() > sizeof(TThostFtdcPasswordType) ||
+      config.password.empty()) {
+    spdlog::error("[CtpGateway::login] Failed. Invalid login config");
     return false;
   }
 
-  if (params.front_addr().empty() && params.md_server_addr().empty()) {
+  if (config.trade_server_address.empty() &&
+      config.quote_server_address.empty()) {
     spdlog::warn("[CtpGateway::login] 交易柜台和行情服务器地址都未设置");
     return false;
   }
 
-  if (!params.front_addr().empty()) {
+  if (!config.trade_server_address.empty()) {
     spdlog::debug("[CtpGateway::login] Login into trading server");
-    if (!trade_api_->login(params)) {
+    if (!trade_api_->login(config)) {
       spdlog::error("[CtpGateway::login] Failed to login into the counter");
       return false;
     }
   }
 
-  if (!params.md_server_addr().empty()) {
+  if (!config.quote_server_address.empty()) {
     spdlog::debug("[CtpGateway::login] Login into market data server");
-    if (!md_api_->login(params)) {
+    if (!md_api_->login(config)) {
       spdlog::error("[CtpGateway::login] Failed to login into the md server");
       return false;
     }

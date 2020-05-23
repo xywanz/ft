@@ -17,7 +17,7 @@ XtpTradeApi::~XtpTradeApi() {
   logout();
 }
 
-bool XtpTradeApi::login(const LoginParams& params) {
+bool XtpTradeApi::login(const Config& config) {
   if (session_id_ != 0) {
     spdlog::error("[XtpTradeApi::login] Don't login twice");
     return false;
@@ -36,8 +36,8 @@ bool XtpTradeApi::login(const LoginParams& params) {
   int port = 0;
 
   try {
-    int ret = sscanf(params.front_addr().c_str(), "%[^:]://%[^:]:%d", protocol,
-                     ip, &port);
+    int ret = sscanf(config.trade_server_address.c_str(), "%[^:]://%[^:]:%d",
+                     protocol, ip, &port);
     assert(ret == 3);
   } catch (...) {
     assert(false);
@@ -48,9 +48,9 @@ bool XtpTradeApi::login(const LoginParams& params) {
 
   trade_api_->SubscribePublicTopic(XTP_TERT_QUICK);
   trade_api_->RegisterSpi(this);
-  trade_api_->SetSoftwareKey(params.auth_code().c_str());
-  session_id_ = trade_api_->Login(ip, port, params.investor_id().c_str(),
-                                  params.passwd().c_str(), sock_type);
+  trade_api_->SetSoftwareKey(config.auth_code.c_str());
+  session_id_ = trade_api_->Login(ip, port, config.investor_id.c_str(),
+                                  config.password.c_str(), sock_type);
   if (session_id_ == 0) {
     spdlog::error("[XtpTradeApi::login] Failed to login: {}",
                   trade_api_->GetApiLastError()->error_msg);

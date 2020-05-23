@@ -134,7 +134,7 @@ bool VirtualTradeApi::cancel_order(uint64_t order_id) {
   return false;
 }
 
-void VirtualTradeApi::set_gateway(VirtualGateway* gateway) {
+void VirtualTradeApi::set_spi(VirtualGateway* gateway) {
   gateway_ = gateway;
 }
 

@@ -15,7 +15,7 @@ CtpMdApi::~CtpMdApi() {
   logout();
 }
 
-bool CtpMdApi::login(const LoginParams &params) {
+bool CtpMdApi::login(const Config &config) {
   if (is_logon_) {
     spdlog::error("[CtpMdApi::login] Don't login twice");
     return true;
@@ -27,10 +27,10 @@ bool CtpMdApi::login(const LoginParams &params) {
     return false;
   }
 
-  server_addr_ = params.md_server_addr();
-  broker_id_ = params.broker_id();
-  investor_id_ = params.investor_id();
-  passwd_ = params.passwd();
+  server_addr_ = config.quote_server_address;
+  broker_id_ = config.broker_id;
+  investor_id_ = config.investor_id;
+  passwd_ = config.password;
 
   md_api_->RegisterSpi(this);
   md_api_->RegisterFront(const_cast<char *>(server_addr_.c_str()));
@@ -58,9 +58,9 @@ bool CtpMdApi::login(const LoginParams &params) {
   }
 
   std::vector<char *> sub_list;
-  subscribed_list_ = params.subscribed_list();
+  sub_list_ = config.subscription_list;
 
-  for (const auto &p : subscribed_list_)
+  for (const auto &p : sub_list_)
     sub_list.emplace_back(const_cast<char *>(p.c_str()));
 
   if (sub_list.size() > 0) {

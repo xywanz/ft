@@ -11,16 +11,16 @@ XtpGateway::XtpGateway(TradingEngineInterface* engine)
       trade_api_(std::make_unique<XtpTradeApi>(engine)),
       md_api_(std::make_unique<XtpMdApi>(engine)) {}
 
-bool XtpGateway::login(const LoginParams& params) {
-  if (!params.front_addr().empty()) {
-    if (!trade_api_->login(params)) {
+bool XtpGateway::login(const Config& config) {
+  if (!config.trade_server_address.empty()) {
+    if (!trade_api_->login(config)) {
       spdlog::error("[XtpGateway::login] Failed to login into the counter");
       return false;
     }
   }
 
-  if (!params.md_server_addr().empty()) {
-    if (!md_api_->login(params)) {
+  if (!config.quote_server_address.empty()) {
+    if (!md_api_->login(config)) {
       spdlog::error("[XtpGateway::login] Failed to login into the md server");
       return false;
     }

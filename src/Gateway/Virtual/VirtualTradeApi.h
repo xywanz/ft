@@ -21,6 +21,7 @@ struct VirtualOrderReq {
   int volume;
   double price;
 
+  // used internally
   uint64_t order_id;
   bool to_canceled;
 };
@@ -31,7 +32,7 @@ class VirtualTradeApi {
  public:
   VirtualTradeApi();
 
-  void set_gateway(VirtualGateway* gateway);
+  void set_spi(VirtualGateway* gateway);
 
   void start();
 

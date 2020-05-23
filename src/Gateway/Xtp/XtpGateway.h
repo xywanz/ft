@@ -20,7 +20,7 @@ class XtpGateway : public Gateway {
  public:
   explicit XtpGateway(TradingEngineInterface* engine);
 
-  bool login(const LoginParams& params) override;
+  bool login(const Config& config) override;
 
   void logout() override;
 

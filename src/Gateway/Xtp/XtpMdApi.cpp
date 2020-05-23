@@ -17,7 +17,7 @@ XtpMdApi::~XtpMdApi() {
   logout();
 }
 
-bool XtpMdApi::login(const LoginParams& params) {
+bool XtpMdApi::login(const Config& config) {
   if (is_logon_) {
     spdlog::error("[XtpMdApi::login] Don't login twice");
     return false;
@@ -36,7 +36,7 @@ bool XtpMdApi::login(const LoginParams& params) {
   int port = 0;
 
   try {
-    int ret = sscanf(params.md_server_addr().c_str(), "%[^:]://%[^:]:%d",
+    int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d",
                      protocol, ip, &port);
     assert(ret == 3);
   } catch (...) {
@@ -47,8 +47,8 @@ bool XtpMdApi::login(const LoginParams& params) {
   if (strcmp(protocol, "udp") == 0) sock_type = XTP_PROTOCOL_UDP;
 
   quote_api_->RegisterSpi(this);
-  if (quote_api_->Login(ip, port, params.investor_id().c_str(),
-                        params.passwd().c_str(), sock_type) != 0) {
+  if (quote_api_->Login(ip, port, config.investor_id.c_str(),
+                        config.password.c_str(), sock_type) != 0) {
     spdlog::error("[XtpMdApi::login] Failed to login: {}",
                   quote_api_->GetApiLastError()->error_msg);
     return false;
@@ -57,7 +57,7 @@ bool XtpMdApi::login(const LoginParams& params) {
   spdlog::debug("[XtpMdApi::login] Success");
   is_logon_ = true;
 
-  subscribed_list_ = params.subscribed_list();
+  subscribed_list_ = config.subscription_list;
   std::vector<char*> sub_list_sh;
   std::vector<char*> sub_list_sz;
   for (auto& ticker : subscribed_list_) {

@@ -10,11 +10,11 @@ namespace ft {
 
 VirtualGateway::VirtualGateway(TradingEngineInterface* engine)
     : engine_(engine) {
-  trade_api_.set_gateway(this);
+  trade_api_.set_spi(this);
   trade_api_.start();
 }
 
-bool VirtualGateway::login(const LoginParams& params) {
+bool VirtualGateway::login(const Config& config) {
   spdlog::info("[VirtualGateway::login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
   return true;
 }

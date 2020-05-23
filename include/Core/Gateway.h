@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-#include "Core/LoginParams.h"
+#include "Core/Config.h"
 #include "Core/Protocol.h"
 #include "Core/TradingEngineInterface.h"
 
@@ -30,7 +30,7 @@ class Gateway {
   /*
    * 一个Gateway只能登录一次，并不保证重复调用或同时调用能产生正确的行为
    */
-  virtual bool login(const LoginParams& params) { return false; }
+  virtual bool login(const Config& config) { return false; }
 
   virtual void logout() {}
 

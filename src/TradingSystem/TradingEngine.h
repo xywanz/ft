@@ -13,8 +13,8 @@
 #include <vector>
 
 #include "Core/Account.h"
+#include "Core/Config.h"
 #include "Core/Gateway.h"
-#include "Core/LoginParams.h"
 #include "Core/RiskManagementInterface.h"
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
@@ -29,7 +29,7 @@ class TradingEngine : public TradingEngineInterface {
 
   ~TradingEngine();
 
-  bool login(const LoginParams& params);
+  bool login(const Config& config);
 
   void run();
 

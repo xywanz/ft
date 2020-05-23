@@ -5,14 +5,14 @@
 #include <getopt.hpp>
 
 #include "Core/ContractTable.h"
-#include "TradingSystem/Config.h"
+#include "TradingSystem/ConfigLoader.h"
 #include "TradingSystem/TradingEngine.h"
 
 ft::TradingEngine* engine = nullptr;
 
 int main() {
   std::string login_config_file =
-      getarg("../config/login.yml", "--login-config");
+      getarg("../config/ctp_config.yml", "--login-config");
   std::string contracts_file =
       getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
@@ -20,11 +20,8 @@ int main() {
 
   spdlog::set_level(spdlog::level::from_str(log_level));
 
-  ft::LoginParams params;
-  if (!load_login_params(login_config_file, &params)) {
-    spdlog::error("Invalid file of login config");
-    exit(-1);
-  }
+  ft::Config config;
+  ft::load_config(login_config_file, &config);
 
   if (!ft::ContractTable::init(contracts_file)) {
     spdlog::error("Invalid file of contract list");
@@ -33,7 +30,7 @@ int main() {
 
   engine = new ft::TradingEngine;
 
-  if (!engine->login(params)) exit(-1);
+  if (!engine->login(config)) exit(-1);
 
   engine->run();
 }

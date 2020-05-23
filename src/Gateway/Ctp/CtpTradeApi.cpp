@@ -14,7 +14,7 @@ CtpTradeApi::~CtpTradeApi() {
   logout();
 }
 
-bool CtpTradeApi::login(const LoginParams &params) {
+bool CtpTradeApi::login(const Config &config) {
   std::unique_lock<std::mutex> lock(query_mutex_);
   // 这里只是做个简单的警告，并不保证安全性，一般来说不会登录两次吧？
   if (is_logon_) {
@@ -29,13 +29,14 @@ bool CtpTradeApi::login(const LoginParams &params) {
     return false;
   }
 
-  front_addr_ = params.front_addr();
-  broker_id_ = params.broker_id();
-  investor_id_ = params.investor_id();
+  front_addr_ = config.trade_server_address;
+  broker_id_ = config.broker_id;
+  investor_id_ = config.investor_id;
 
   trade_api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   trade_api_->RegisterSpi(this);
-  trade_api_->RegisterFront(const_cast<char *>(params.front_addr().c_str()));
+  trade_api_->RegisterFront(
+      const_cast<char *>(config.trade_server_address.c_str()));
   trade_api_->Init();
   while (!is_connected_) {
     if (is_error_) {
@@ -45,15 +46,15 @@ bool CtpTradeApi::login(const LoginParams &params) {
     }
   }
 
-  if (!params.auth_code().empty()) {
+  if (!config.auth_code.empty()) {
     CThostFtdcReqAuthenticateField auth_req{};
-    strncpy(auth_req.BrokerID, params.broker_id().c_str(),
+    strncpy(auth_req.BrokerID, config.broker_id.c_str(),
             sizeof(auth_req.BrokerID));
-    strncpy(auth_req.UserID, params.investor_id().c_str(),
+    strncpy(auth_req.UserID, config.investor_id.c_str(),
             sizeof(auth_req.UserID));
-    strncpy(auth_req.AuthCode, params.auth_code().c_str(),
+    strncpy(auth_req.AuthCode, config.auth_code.c_str(),
             sizeof(auth_req.AuthCode));
-    strncpy(auth_req.AppID, params.app_id().c_str(), sizeof(auth_req.AppID));
+    strncpy(auth_req.AppID, config.app_id.c_str(), sizeof(auth_req.AppID));
 
     if (trade_api_->ReqAuthenticate(&auth_req, next_req_id()) != 0) {
       spdlog::error("[CtpTradeApi::login] Failed. Failed to ReqAuthenticate");
@@ -66,11 +67,11 @@ bool CtpTradeApi::login(const LoginParams &params) {
   }
 
   CThostFtdcReqUserLoginField login_req{};
-  strncpy(login_req.BrokerID, params.broker_id().c_str(),
+  strncpy(login_req.BrokerID, config.broker_id.c_str(),
           sizeof(login_req.BrokerID));
-  strncpy(login_req.UserID, params.investor_id().c_str(),
+  strncpy(login_req.UserID, config.investor_id.c_str(),
           sizeof(login_req.UserID));
-  strncpy(login_req.Password, params.passwd().c_str(),
+  strncpy(login_req.Password, config.password.c_str(),
           sizeof(login_req.Password));
 
   if (trade_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {

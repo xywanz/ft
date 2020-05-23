@@ -26,7 +26,7 @@ class VirtualGateway : public Gateway {
  public:
   explicit VirtualGateway(TradingEngineInterface* engine);
 
-  bool login(const LoginParams& params) override;
+  bool login(const Config& config) override;
 
   void logout() override;
 

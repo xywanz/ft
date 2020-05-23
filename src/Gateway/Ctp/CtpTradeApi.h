@@ -10,9 +10,9 @@
 #include <mutex>
 #include <string>
 
+#include "Core/Config.h"
 #include "Core/Constants.h"
 #include "Core/Gateway.h"
-#include "Core/LoginParams.h"
 #include "Core/TradingEngineInterface.h"
 #include "Gateway/Ctp/CtpCommon.h"
 
@@ -26,7 +26,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   ~CtpTradeApi();
 
-  bool login(const LoginParams &params);
+  bool login(const Config &config);
 
   void logout();
 

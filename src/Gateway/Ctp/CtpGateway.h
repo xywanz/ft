@@ -22,7 +22,7 @@ class CtpGateway : public Gateway {
 
   ~CtpGateway();
 
-  bool login(const LoginParams &params);
+  bool login(const Config &config);
 
   void logout();
 

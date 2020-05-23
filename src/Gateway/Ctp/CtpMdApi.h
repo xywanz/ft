@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "Core/LoginParams.h"
+#include "Core/Config.h"
 #include "Core/TickData.h"
 #include "Core/TradingEngineInterface.h"
 #include "Gateway/Ctp/CtpCommon.h"
@@ -24,7 +24,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
   ~CtpMdApi();
 
-  bool login(const LoginParams &params);
+  bool login(const Config &config);
 
   void logout();
 
@@ -83,7 +83,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
   std::atomic<bool> is_connected_ = false;
   std::atomic<bool> is_logon_ = false;
 
-  std::vector<std::string> subscribed_list_;
+  std::vector<std::string> sub_list_;
   std::map<std::string, const Contract *> symbol2contract_;
 };
 

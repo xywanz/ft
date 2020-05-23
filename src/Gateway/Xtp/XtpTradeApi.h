@@ -11,7 +11,7 @@
 #include <mutex>
 #include <string>
 
-#include "Core/LoginParams.h"
+#include "Core/Config.h"
 #include "Core/Position.h"
 #include "Core/Protocol.h"
 #include "Core/TradingEngineInterface.h"
@@ -25,7 +25,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
 
   ~XtpTradeApi();
 
-  bool login(const LoginParams& params);
+  bool login(const Config& config);
 
   void logout();
 

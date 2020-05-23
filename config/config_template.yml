@@ -1,9 +1,20 @@
-api:  ctp                                     # 必填，现支持ctp/xtp/virtual
-front_addr: tcp://123.123.123.123:8888        # 交易柜台地址，根据使用场景选填
-md_server_addr: tcp://180.168.146.187:10131   # 行情服务器地址，根据使用场景选填
-broker_id: 9999                               # broker id，根据API选填，部分API需要这个，部分不需要
-investor_id: 123456                           # 必填，账户
-passwd: 1234567                               # 必填，密码
-auth_code: 0000000000000000                   # 认证码，CTP和XTP都需要
-app_id: simnow_client_test                    # CTP交易需要
-ticker: rb2009                                # 要订阅的行情，用逗号分隔，逗号前后不能有空格
+api:  ctp                                               # 必填，现支持ctp/xtp/virtual
+trade_server_address: tcp://123.123.123.123:8888        # 交易柜台地址，根据使用场景选填
+quote_server_address: tcp://180.168.146.187:10131       # 行情服务器地址，根据使用场景选填
+broker_id: 9999                                         # broker id，根据API选填，部分API需要这个，部分不需要
+investor_id: 123456                                     # 必填，账户
+password: 1234567                                       # 必填，密码
+auth_code: 0000000000000000                             # 认证码，CTP和XTP都需要
+app_id: simnow_client_test                              # CTP交易需要
+subscription_list: rb2009                               # 要订阅的行情，用逗号分隔，逗号前后不能有空格
+
+# 下面9个都是各个Gateway自定义的参数，可选
+arg0:
+arg1:
+arg2:
+arg3:
+arg4:
+arg5:
+arg6:
+arg7:
+arg8:
