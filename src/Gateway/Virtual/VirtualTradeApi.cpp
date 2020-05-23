@@ -10,11 +10,7 @@
 
 namespace ft {
 
-VirtualTradeApi::VirtualTradeApi() {
-  auto contract = ContractTable::get_by_ticker("rb2009");
-  assert(contract);
-  lastest_quotes_[contract->index] = {200, 200};
-}
+VirtualTradeApi::VirtualTradeApi() {}
 
 uint64_t VirtualTradeApi::insert_order(VirtualOrderReq* req) {
   if (req->volume <= 0) {
@@ -46,6 +42,8 @@ uint64_t VirtualTradeApi::insert_order(VirtualOrderReq* req) {
   req->order_id = next_order_id_++;
   std::unique_lock<std::mutex> lock(mutex_);
   pendings_.emplace_back(*req);
+  lock.unlock();
+  cv_.notify_one();
   return req->order_id;
 }
 
@@ -79,9 +77,17 @@ void VirtualTradeApi::update_quote(uint32_t ticker_index, double ask,
 
 void VirtualTradeApi::process_pendings() {
   std::unique_lock<std::mutex> lock(mutex_);
+  cv_.wait(lock, [this]() { return !pendings_.empty(); });
+
   for (auto pending_iter = pendings_.begin();
        pending_iter != pendings_.end();) {
     auto& order = *pending_iter;
+    if (order.to_canceled) {
+      gateway_->on_order_canceled(order.order_id, order.volume);
+      pending_iter = pendings_.erase(pending_iter);
+      continue;
+    }
+
     gateway_->on_order_accepted(order.order_id);
 
     auto iter = lastest_quotes_.find(order.ticker_index);
@@ -109,16 +115,47 @@ void VirtualTradeApi::process_pendings() {
   }
 }
 
+bool VirtualTradeApi::cancel_order(uint64_t order_id) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  for (auto& [ticker_index, order_list] : limit_orders_) {
+    for (auto iter = order_list.begin(); iter != order_list.end(); ++iter) {
+      auto& order = *iter;
+      if (order_id == order.order_id) {
+        order.to_canceled = true;
+        pendings_.emplace_back(order);
+        order_list.erase(iter);
+        lock.unlock();
+        cv_.notify_one();
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void VirtualTradeApi::set_gateway(VirtualGateway* gateway) {
   gateway_ = gateway;
 }
 
 void VirtualTradeApi::start() {
   std::thread([this] {
+    auto contract = ContractTable::get_by_ticker("rb2009");
+    assert(contract);
     for (;;) {
-      process_pendings();
-      __asm__ __volatile__("pause" : : : "memory");
+      TickData tick{};
+      tick.ticker_index = contract->index;
+      tick.ask[0] = 200;
+      tick.bid[0] = 200;
+
+      update_quote(tick.ticker_index, tick.ask[0], tick.bid[0]);
+      gateway_->on_tick(&tick);
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
+  }).detach();
+
+  std::thread([this] {
+    for (;;) process_pendings();
   }).detach();
 }
 

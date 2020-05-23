@@ -33,7 +33,9 @@ uint64_t VirtualGateway::send_order(const OrderReq* order) {
   trade_api_.insert_order(&req);
 }
 
-bool VirtualGateway::cancel_order(uint64_t order_id) { return false; }
+bool VirtualGateway::cancel_order(uint64_t order_id) {
+  return trade_api_.cancel_order(order_id);
+}
 
 bool VirtualGateway::query_contract(const std::string& ticker,
                                     const std::string& exchange) {
@@ -70,5 +72,7 @@ void VirtualGateway::on_order_traded(uint64_t order_id, int traded,
 void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {
   engine_->on_order_canceled(order_id, canceled);
 }
+
+void VirtualGateway::on_tick(const TickData* tick) { engine_->on_tick(tick); }
 
 }  // namespace ft
