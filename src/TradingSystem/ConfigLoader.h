@@ -9,23 +9,9 @@
 #include <vector>
 
 #include "Core/Config.h"
+#include "Utils/StringUtils.h"
 
 namespace ft {
-
-inline void split(const std::string_view& str, const std::string_view& delim,
-                  std::vector<std::string>* results) {
-  std::size_t start = 0, end, size;
-  while ((end = str.find(delim, start)) != std::string::npos) {
-    size = end - start;
-    if (size != 0)
-      results->emplace_back(std::string(str.cbegin() + start, size));
-    start = end + delim.size();
-  }
-
-  if (start != str.size())
-    results->emplace_back(
-        std::string(str.cbegin() + start, str.size() - start));
-}
 
 inline void load_config(const std::string& file, ft::Config* config) {
   std::ifstream ifs(file);

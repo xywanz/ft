@@ -3,8 +3,6 @@
 #ifndef FT_INCLUDE_CORE_CONTRACTTABLE_H_
 #define FT_INCLUDE_CORE_CONTRACTTABLE_H_
 
-#include <cppex/string.h>
-
 #include <fstream>
 #include <map>
 #include <string>
@@ -13,6 +11,7 @@
 
 #include "Core/Constants.h"
 #include "Core/Contract.h"
+#include "Utils/StringUtils.h"
 
 namespace ft {
 
@@ -28,7 +27,7 @@ inline bool load_contracts(const std::string& file,
   std::getline(ifs, line);  // skip header
   while (std::getline(ifs, line)) {
     fields.clear();
-    split(line, ",", fields);
+    split(line, ",", &fields);
     if (fields.empty() || fields[0].front() == '\n') continue;
 
     if (fields.size() != 12) return false;
