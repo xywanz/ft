@@ -60,7 +60,10 @@ void VirtualTradeApi::update_quote(uint32_t ticker_index, double ask,
   for (auto iter = order_list.begin(); iter != order_list.end();) {
     auto& order = *iter;
     auto quote_iter = lastest_quotes_.find(ticker_index);
-    if (quote_iter == lastest_quotes_.end()) continue;
+    if (quote_iter == lastest_quotes_.end()) {
+      ++iter;
+      continue;
+    }
     const auto& quote = quote_iter->second;
     if ((order.direction == Direction::BUY && quote.ask > 0 &&
          order.price >= quote.ask - 1e-5) ||
@@ -68,6 +71,8 @@ void VirtualTradeApi::update_quote(uint32_t ticker_index, double ask,
          order.price <= quote.bid + 1e-5)) {
       gateway_->on_order_traded(order.order_id, order.volume, order.price);
       iter = order_list.erase(iter);
+    } else {
+      ++iter;
     }
   }
 }
