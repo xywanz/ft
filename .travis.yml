@@ -9,11 +9,30 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - binutils-2.26
       - gcc-7
       - g++-7
 
 script:
+  - git clone https://github.com/jbeder/yaml-cpp.git --depth=1
+  - git clone https://github.com/fmtlib/fmt.git --depth=1
+  - git clone https://github.com/gabime/spdlog.git --depth=1
+  - git clone https://github.com/redis/hiredis.git --depth=1
+  - mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake .. && make -j8
+  - cd ../..
+  - cp -rf yaml-cpp/include dependencies/yaml-cpp/
+  - cp -rf yaml-cpp/build/libyaml-cpp.a dependencies/yaml-cpp/lib/
+  - mkdir -p fmt/build && cd fmt/build && cmake .. && make -j8
+  - cd ../..
+  - cp -rf fmt/include dependencies/fmt/
+  - cp -rf fmt/build/libfmt.a dependencies/fmt/lib/
+  - mkdir -p spdlog/build && cd spdlog/build && cmake .. && make -j8
+  - cd ../..
+  - cp -rf spdlog/include dependencies/spdlog/
+  - cp -rf spdlog/build/libspdlog.a dependencies/spdlog/lib/
+  - mkdir -p hiredis/build && cd hiredis/build && cmake .. && make -j8
+  - cd ../..
+  - cp -rf hiredis/*.h dependencies/hiredis/include
+  - cp -rf hiredis/build/libhiredis.a dependencies/hiredis/lib/
   - export CC=gcc-7
   - export CXX=g++-7
   - gcc -v && g++ -v && cmake --version
