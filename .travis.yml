@@ -1,11 +1,26 @@
+dist: trusty
+sudo: required
 language: cpp
 os: linux
-compiler:
-  - g++-7
-  - clang++-6.0
+compiler: gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-7
+      - g++-7
+      - cmake
+
+script:
+  - sudo ln -s /usr/bin/gcc-7 /usr/local/bin/gcc
+  - sudo ln -s /usr/bin/g++-7 /usr/local/bin/g++
+  - export CC=/usr/bin/gcc-7
+  - export CXX=/usr/bin/g++-7
+  - gcc -v && g++ -v && cmake --version
 
 install:
-  - mkdir build
-  - cd build
+  - mkdir build && cd build
   - cmake ..
   - make
