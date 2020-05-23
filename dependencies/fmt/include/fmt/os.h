@@ -133,7 +133,7 @@ class error_code {
 };
 
 #ifdef _WIN32
-namespace internal {
+namespace detail {
 // A converter from UTF-16 to UTF-8.
 // It is only provided for Windows since other systems support UTF-8 natively.
 class utf16_to_utf8 {
@@ -156,7 +156,7 @@ class utf16_to_utf8 {
 
 FMT_API void format_windows_error(buffer<char>& out, int error_code,
                                   string_view message) FMT_NOEXCEPT;
-}  // namespace internal
+}  // namespace detail
 
 /** A Windows error. */
 class windows_error : public system_error {
@@ -313,10 +313,10 @@ class file {
   FMT_API long long size() const;
 
   // Attempts to read count bytes from the file into the specified buffer.
-  FMT_API std::size_t read(void* buffer, std::size_t count);
+  FMT_API size_t read(void* buffer, size_t count);
 
   // Attempts to write count bytes from the specified buffer to the file.
-  FMT_API std::size_t write(const void* buffer, std::size_t count);
+  FMT_API size_t write(const void* buffer, size_t count);
 
   // Duplicates a file descriptor with the dup function and returns
   // the duplicate as a file object.
