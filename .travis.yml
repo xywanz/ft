@@ -1,8 +1,8 @@
 language: cpp
 os: linux
 compiler:
-  - gcc
-  - clang
+  - g++-7
+  - clang++-6.0
 
 install:
   - mkdir build
