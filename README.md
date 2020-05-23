@@ -1,7 +1,30 @@
 # ft 交易引擎
-[toc]
+| Platform | Build                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Linux    | [![Build Status](https://travis-ci.com/DuckDuckDuck0/ft.svg?branch=master)](https://travis-ci.com/DuckDuckDuck0/ft) |
 
 不断更新中，大家有什么想法或是发现了bug，可以一起在issue上面自由讨论，也欢迎大家加入到开发中。如有问题我将全力提供支持。  
+
+目录
+=================
+
+
+- [ft 交易引擎](#ft-%e4%ba%a4%e6%98%93%e5%bc%95%e6%93%8e)
+- [目录](#%e7%9b%ae%e5%bd%95)
+  - [1. 简介](#1-%e7%ae%80%e4%bb%8b)
+    - [1.1. ft是什么](#11-ft%e6%98%af%e4%bb%80%e4%b9%88)
+    - [1.2. 基本架构](#12-%e5%9f%ba%e6%9c%ac%e6%9e%b6%e6%9e%84)
+    - [1.3. 目录结构](#13-%e7%9b%ae%e5%bd%95%e7%bb%93%e6%9e%84)
+      - [1.3.1. include](#131-include)
+      - [1.3.2. Gateway](#132-gateway)
+      - [1.3.3. TradingSystem](#133-tradingsystem)
+      - [1.3.4. Tools](#134-tools)
+      - [1.3.5. RiskManagement](#135-riskmanagement)
+  - [2. 使用方式](#2-%e4%bd%bf%e7%94%a8%e6%96%b9%e5%bc%8f)
+    - [2.1. 编译策略引擎及加载器](#21-%e7%bc%96%e8%af%91%e7%ad%96%e7%95%a5%e5%bc%95%e6%93%8e%e5%8f%8a%e5%8a%a0%e8%bd%bd%e5%99%a8)
+    - [2.2. 配置登录信息](#22-%e9%85%8d%e7%bd%ae%e7%99%bb%e5%bd%95%e4%bf%a1%e6%81%af)
+    - [2.3. 让示例跑起来](#23-%e8%ae%a9%e7%a4%ba%e4%be%8b%e8%b7%91%e8%b5%b7%e6%9d%a5)
+  - [3. 开发你的第一个策略](#3-%e5%bc%80%e5%8f%91%e4%bd%a0%e7%9a%84%e7%ac%ac%e4%b8%80%e4%b8%aa%e7%ad%96%e7%95%a5)
 
 下面是一个简单的演示图，CTP simnow的一个简单策略示例，每收到一个价格变动就发出 一个下单指令，左边运行的是TradingEngine，右边则是Strategy
 
