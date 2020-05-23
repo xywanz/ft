@@ -2,6 +2,7 @@
 
 #ifndef FT_SRC_GATEWAY_CTP_CTPTRADEAPI_H_
 #define FT_SRC_GATEWAY_CTP_CTPTRADEAPI_H_
+
 #include <ThostFtdcTraderApi.h>
 
 #include <atomic>

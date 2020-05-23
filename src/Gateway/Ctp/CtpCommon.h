@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_GATEWAY_CTP_CTPCOMMON_H_
-#define FT_GATEWAY_CTP_CTPCOMMON_H_
+#ifndef FT_SRC_GATEWAY_CTP_CTPCOMMON_H_
+#define FT_SRC_GATEWAY_CTP_CTPCOMMON_H_
 
 #include <ThostFtdcUserApiDataType.h>
 
@@ -135,4 +135,4 @@ inline char product_type(ProductType type) {
 
 }  // namespace ft
 
-#endif  // FT_GATEWAY_CTP_CTPCOMMON_H_
+#endif  // FT_SRC_GATEWAY_CTP_CTPCOMMON_H_

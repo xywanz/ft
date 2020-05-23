@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_TRADINGSYSTEM_ORDER_H_
-#define FT_TRADINGSYSTEM_ORDER_H_
+#ifndef FT_SRC_TRADINGSYSTEM_ORDER_H_
+#define FT_SRC_TRADINGSYSTEM_ORDER_H_
 
 #include <map>
 #include <string>
@@ -53,4 +53,4 @@ inline const std::string& to_string(OrderStatus s) {
 
 }  // namespace ft
 
-#endif  // FT_TRADINGSYSTEM_ORDER_H_
+#endif  // FT_SRC_TRADINGSYSTEM_ORDER_H_

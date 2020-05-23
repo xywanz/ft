@@ -1,15 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_TRADINGSYSTEM_TRADINGENGINE_H_
-#define FT_TRADINGSYSTEM_TRADINGENGINE_H_
+#ifndef FT_SRC_TRADINGSYSTEM_TRADINGENGINE_H_
+#define FT_SRC_TRADINGSYSTEM_TRADINGENGINE_H_
 
 #include <list>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "Core/Account.h"
@@ -89,4 +87,4 @@ class TradingEngine : public TradingEngineInterface {
 
 }  // namespace ft
 
-#endif  // FT_TRADINGSYSTEM_TRADINGENGINE_H_
+#endif  // FT_SRC_TRADINGSYSTEM_TRADINGENGINE_H_

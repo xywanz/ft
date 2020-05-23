@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_GATEWAY_CTP_CTPMDAPI_H_
-#define FT_GATEWAY_CTP_CTPMDAPI_H_
+#ifndef FT_SRC_GATEWAY_CTP_CTPMDAPI_H_
+#define FT_SRC_GATEWAY_CTP_CTPMDAPI_H_
 
 #include <ThostFtdcMdApi.h>
 
@@ -89,4 +89,4 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
 }  // namespace ft
 
-#endif  // FT_GATEWAY_CTP_CTPMDAPI_H_
+#endif  // FT_SRC_GATEWAY_CTP_CTPMDAPI_H_
