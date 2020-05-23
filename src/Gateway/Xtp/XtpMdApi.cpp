@@ -108,7 +108,6 @@ bool XtpMdApi::query_contracts() {
   }
 
   std::unique_lock<std::mutex> lock(query_mutex_);
-  reset_sync();
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SH) != 0) {
     spdlog::error("[XtpMdApi::query_contract] Failed to query SH stocks");
     return false;
@@ -118,7 +117,6 @@ bool XtpMdApi::query_contracts() {
     return false;
   }
 
-  reset_sync();
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SZ) != 0) {
     spdlog::error("[XtpMdApi::query_contract] Failed to query SZ stocks");
     return false;

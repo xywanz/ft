@@ -46,12 +46,11 @@ class XtpMdApi : public XTP::API::QuoteSpi {
 
   void error() { is_error_ = true; }
 
-  void reset_sync() { is_done_ = false; }
-
   bool wait_sync() {
     while (!is_done_)
       if (is_error_) return false;
 
+    is_done_ = false;
     return true;
   }
 
