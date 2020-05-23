@@ -23,7 +23,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/include
     ${CMAKE_SOURCE_DIR}/dependencies/fmt/include
     ${CMAKE_SOURCE_DIR}/dependencies/getopt
-    ${CMAKE_SOURCE_DIR}/dependencies/cppex/include
     ${CMAKE_SOURCE_DIR}/dependencies/hiredis
 )
 
@@ -33,7 +32,6 @@ link_directories(
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/lib
     ${CMAKE_SOURCE_DIR}/dependencies/yaml-cpp/lib
     ${CMAKE_SOURCE_DIR}/dependencies/fmt/lib
-    ${CMAKE_SOURCE_DIR}/dependencies/cppex/lib
     ${CMAKE_SOURCE_DIR}/dependencies/hiredis/lib
 )
 

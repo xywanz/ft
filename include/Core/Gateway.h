@@ -3,6 +3,7 @@
 #ifndef FT_INCLUDE_CORE_GATEWAY_H_
 #define FT_INCLUDE_CORE_GATEWAY_H_
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>

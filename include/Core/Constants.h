@@ -3,8 +3,6 @@
 #ifndef FT_INCLUDE_CORE_CONSTANTS_H_
 #define FT_INCLUDE_CORE_CONSTANTS_H_
 
-#include <fmt/format.h>
-
 #include <map>
 #include <memory>
 #include <string>

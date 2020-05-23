@@ -3,8 +3,11 @@
 #ifndef FT_INCLUDE_CORE_CONTRACTTABLE_H_
 #define FT_INCLUDE_CORE_CONTRACTTABLE_H_
 
+// #include <fmt/format.h>
+
 #include <fstream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -54,28 +57,37 @@ inline bool load_contracts(const std::string& file,
 inline void store_contracts(const std::string& file,
                             const std::vector<Contract>& contracts) {
   std::ofstream ofs(file, std::ios_base::trunc);
-  std::string line = fmt::format(
-      "ticker,"
-      "exchange,"
-      "name,"
-      "product_type,"
-      "size,"
-      "price_tick,"
-      "max_market_order_volume,"
-      "min_market_order_volume,"
-      "max_limit_order_volume,"
-      "min_limit_order_volume,"
-      "delivery_year,"
-      "delivery_month\n");
-  ofs << line;
+  ofs << "ticker,"
+         "exchange,"
+         "name,"
+         "product_type,"
+         "size,"
+         "price_tick,"
+         "max_market_order_volume,"
+         "min_market_order_volume,"
+         "max_limit_order_volume,"
+         "min_limit_order_volume,"
+         "delivery_year,"
+         "delivery_month\n";
+
+  std::stringstream ss;
+  std::string line;
   for (const auto& contract : contracts) {
-    line = fmt::format(
-        "{},{},{},{},{},{},{},{},{},{},{},{}\n", contract.ticker,
-        contract.exchange, contract.name, to_string(contract.product_type),
-        contract.size, contract.price_tick, contract.max_market_order_volume,
-        contract.min_market_order_volume, contract.max_limit_order_volume,
-        contract.min_limit_order_volume, contract.delivery_year,
-        contract.delivery_month);
+    ss << contract.ticker << ',' << contract.exchange << ',' << contract.name
+       << ',' << to_string(contract.product_type) << ',' << contract.size << ','
+       << contract.price_tick << ',' << contract.max_market_order_volume << ','
+       << contract.min_market_order_volume << ','
+       << contract.max_limit_order_volume << ','
+       << contract.min_limit_order_volume << ',' << contract.delivery_year
+       << ',' << contract.delivery_month << '\n';
+    // line = fmt::format(
+    //     "{},{},{},{},{},{},{},{},{},{},{},{}\n", contract.ticker,
+    //     contract.exchange, contract.name, to_string(contract.product_type),
+    //     contract.size, contract.price_tick, contract.max_market_order_volume,
+    //     contract.min_market_order_volume, contract.max_limit_order_volume,
+    //     contract.min_limit_order_volume, contract.delivery_year,
+    //     contract.delivery_month);
+    ss >> line;
     ofs << line;
   }
 
