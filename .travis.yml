@@ -1,0 +1,10 @@
+language: cpp
+os: linux
+compiler:
+  - gcc
+  - clang
+
+install:
+  - mkdir build
+  - cmake ..
+  - make
