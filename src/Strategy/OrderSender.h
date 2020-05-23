@@ -3,6 +3,7 @@
 #ifndef FT_SRC_STRATEGY_ORDERSENDER_H_
 #define FT_SRC_STRATEGY_ORDERSENDER_H_
 
+#include <mutex>
 #include <string>
 
 #include "Core/Constants.h"
@@ -61,6 +62,7 @@ class OrderSender {
     cmd.order_req.type = type;
     cmd.order_req.price = price;
 
+    std::unique_lock<std::mutex> lock(mutex_);
     cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
@@ -69,6 +71,8 @@ class OrderSender {
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
+
+    std::unique_lock<std::mutex> lock(mutex_);
     cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
@@ -79,6 +83,8 @@ class OrderSender {
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_index = contract->index;
+
+    std::unique_lock<std::mutex> lock(mutex_);
     cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
@@ -86,12 +92,15 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CANCEL_ALL;
+
+    std::unique_lock<std::mutex> lock(mutex_);
     cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
   }
 
  private:
   StrategyIdType strategy_id_;
   RedisSession cmd_redis_;
+  std::mutex mutex_;
 };
 
 }  // namespace ft
