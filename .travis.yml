@@ -13,6 +13,8 @@ addons:
       - g++-7
 
 script:
+  - export CODECOV_TOKEN="964ca3de-67f4-4065-a81a-b86c489c1738"
+  - bash <(curl -s https://codecov.io/bash)
   - git clone https://github.com/jbeder/yaml-cpp.git --depth=1
   - mkdir -p yaml-cpp/build && cd yaml-cpp/build && cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. && make -j8
   - cd ../..
