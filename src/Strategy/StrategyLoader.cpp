@@ -9,6 +9,20 @@
 #include "Core/ContractTable.h"
 #include "Strategy/Strategy.h"
 
+static void usage() {
+  printf("usage: ./strategy-loader [--account=<account>] [--config=<file>]\n");
+  printf("                         [--contracts=<file>] [-h -? --help]\n");
+  printf("                         [--id=<id>] [--loglevel=level]\n");
+  printf("                         [--strategy=<so>]\n");
+  printf("\n");
+  printf("    --account           账户\n");
+  printf("    --contracts         合约列表文件\n");
+  printf("    -h, -?, --help      帮助\n");
+  printf("    --id                策略的唯一标识，用于接收订单回报\n");
+  printf("    --loglevel          日志等级(info, warn, error, debug, trace)\n");
+  printf("    --strategy          要加载的策略的动态库\n");
+}
+
 int main() {
   std::string contracts_file =
       getarg("../config/contracts.csv", "--contracts-file");
@@ -16,6 +30,12 @@ int main() {
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("Strategy", "id");
   uint64_t account_id = getarg(0, "--account");
+  bool help = getarg(false, "-h", "--help", "-?");
+
+  if (help) {
+    usage();
+    exit(0);
+  }
 
   spdlog::set_level(spdlog::level::from_str(log_level));
 

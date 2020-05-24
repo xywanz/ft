@@ -10,13 +10,27 @@
 
 ft::TradingEngine* engine = nullptr;
 
+static void usage() {
+  printf("usage: ./trading-engine [--config=<file>] [--contracts=<file>]\n");
+  printf("                        [-h -? --help] [--loglevel=level]\n");
+  printf("\n");
+  printf("    --config            登录的配置文件\n");
+  printf("    --contracts         合约列表文件\n");
+  printf("    -h, -?, --help      帮助\n");
+  printf("    --loglevel          日志等级(info, warn, error, debug, trace)\n");
+}
+
 int main() {
   std::string login_config_file =
-      getarg("../config/ctp_config.yml", "--login-config");
-  std::string contracts_file =
-      getarg("../config/contracts.csv", "--contracts-file");
-  std::string strategy_file = getarg("", "--strategy");
+      getarg("../config/ctp_config.yml", "--config");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts");
   std::string log_level = getarg("info", "--loglevel");
+  bool help = getarg(false, "-h", "--help", "-?");
+
+  if (help) {
+    usage();
+    exit(0);
+  }
 
   spdlog::set_level(spdlog::level::from_str(log_level));
 

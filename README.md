@@ -75,7 +75,7 @@ TradingSystem是本人实现的一个交易引擎，向上通过redis和策略�
 
 ## 2. 使用方式
 ### 2.1. 编译策略引擎及加载器
-策略引擎的源码文件为MSE.cpp，策略加载器的源码为StrategyLoader.cpp，使用cmake进行编译
+策略引擎的源码文件为TradingEngine.cpp，策略加载器的源码为StrategyLoader.cpp，使用cmake进行编译
 ```bash
 mkdir build && cd build
 cmake .. && make -j4
@@ -92,7 +92,7 @@ investor_id: 123456
 passwd: 12345678
 auth_code: 0000000000000000
 app_id: simnow_client_test
-ticker: rb2009,rb2005  # subscribed list (for market data).
+subscription_list: rb2009,rb2005  # subscribed list (for market data).
 ```
 
 ### 2.3. 让示例跑起来
@@ -100,11 +100,11 @@ ticker: rb2009,rb2005  # subscribed list (for market data).
 ```bash
 # 在terminal 0 启动策略引擎
 redis-server  # 启动redis，必须在启动策略引擎前启动redis
-./MTE --loglevel=debug --login-config=../config/login.yml --contracts-file=../config/contracts.csv
+./trading-engine --loglevel=debug --login-config=../config/ctp_config.yml --contracts-file=../config/contracts.csv
 ```
 ```bash
 # 在terminal 1 启动策略
-./StrategyLoader -l libGridStrategy.so -loglevel=debug --contracts-file=../config/contracts.csv
+./strategy-loader -l libgrid-strategy.so -loglevel=debug --contracts-file=../config/contracts.csv --account=1234 --id=grid001
 ```
 
 ## 3. 开发你的第一个策略
@@ -139,4 +139,4 @@ class MyStrategy : public ft::Strategy {
 
 EXPORT_STRATEGY(MyStrategy);  // 导出你的策略
 ```
-把上面的代码像网格策略demo一样编译即可通过StrategyLoader进行加载了
+把上面的代码像网格策略demo一样编译即可通过strategy-loader进行加载了
