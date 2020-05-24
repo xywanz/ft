@@ -11,8 +11,14 @@ int main() {
   std::string direction = getarg("", "--direction");
   std::string offset = getarg("open", "--offset");
   std::string order_type = getarg("fak", "--order_type");
+  uint64_t account = getarg(0, "--account");
   int volume = getarg(0, "--volume");
   double price = getarg(0.0, "--price");
+
+  if (account == 0) {
+    printf("Invalid account\n");
+    exit(-1);
+  }
 
   if (!ft::ContractTable::init(contracts_file)) {
     printf("ContractTable init failed\n");
@@ -68,5 +74,7 @@ int main() {
     exit(-1);
   }
 
-  ft::OrderSender().send_order(ticker, volume, d, o, k, price, 0);
+  ft::OrderSender sender;
+  sender.set_account_id(account);
+  sender.send_order(ticker, volume, d, o, k, price, 0);
 }

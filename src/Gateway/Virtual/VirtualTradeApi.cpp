@@ -58,11 +58,13 @@ void VirtualTradeApi::update_quote(uint32_t ticker_index, double ask,
   auto& order_list = limit_orders_[ticker_index];
   for (auto iter = order_list.begin(); iter != order_list.end();) {
     auto& order = *iter;
+
     auto quote_iter = lastest_quotes_.find(ticker_index);
     if (quote_iter == lastest_quotes_.end()) {
       ++iter;
       continue;
     }
+
     const auto& quote = quote_iter->second;
     if ((order.direction == Direction::BUY && quote.ask > 0 &&
          order.price >= quote.ask - 1e-5) ||
@@ -106,7 +108,7 @@ void VirtualTradeApi::process_pendings() {
         (order.direction == Direction::SELL && quote.bid > 0 &&
          order.price <= quote.bid + 1e-5)) {
       gateway_->on_order_traded(order.order_id, order.volume, quote.ask);
-    } else if (order.direction == Direction::SELL) {
+    } else if (order.type == OrderType::LIMIT) {
       limit_orders_[order.ticker_index].emplace_back(order);
     } else {
       gateway_->on_order_canceled(order.order_id, order.volume);

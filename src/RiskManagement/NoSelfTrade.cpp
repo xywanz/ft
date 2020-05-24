@@ -20,12 +20,13 @@ bool NoSelfTradeRule::check_order_req(const OrderReq* order) {
     if (pending_order->type == OrderType::MARKET) goto catch_order;
 
     if (order->direction == Direction::BUY) {
-      if (order->price >= pending_order->price + 1e-5) goto catch_order;
+      if (order->price > pending_order->price - 1e-5) goto catch_order;
     } else {
-      if (order->price <= pending_order->price - 1e-5) goto catch_order;
+      if (order->price < pending_order->price + 1e-5) goto catch_order;
     }
   }
 
+  orders_.emplace_back(*order);
   return true;
 
 catch_order:
