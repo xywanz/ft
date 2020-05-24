@@ -1,4 +1,4 @@
-# FT 交易引擎
+# FT 算法交易系统
 | Platform | Build                                                                                                               |
 | -------- | ------------------------------------------------------------------------------------------------------------------- |
 | Linux    | [![Build Status](https://travis-ci.com/DuckDuckDuck0/ft.svg?branch=master)](https://travis-ci.com/DuckDuckDuck0/ft) |
@@ -9,7 +9,7 @@
 =================
 
 
-- [FT 交易引擎](#ft-%e4%ba%a4%e6%98%93%e5%bc%95%e6%93%8e)
+- [FT 算法交易系统](#ft-%e7%ae%97%e6%b3%95%e4%ba%a4%e6%98%93%e7%b3%bb%e7%bb%9f)
 - [目录](#%e7%9b%ae%e5%bd%95)
   - [1. 更新说明](#1-%e6%9b%b4%e6%96%b0%e8%af%b4%e6%98%8e)
   - [2. 运行示例](#2-%e8%bf%90%e8%a1%8c%e7%a4%ba%e4%be%8b)
