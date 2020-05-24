@@ -30,15 +30,22 @@
   - [5. 策略模型](#5-%e7%ad%96%e7%95%a5%e6%a8%a1%e5%9e%8b)
   - [6. 目录结构](#6-%e7%9b%ae%e5%bd%95%e7%bb%93%e6%9e%84)
     - [6.1. include](#61-include)
-      - [6.2. Gateway](#62-gateway)
-      - [6.3. TradingSystem](#63-tradingsystem)
-      - [6.4. Tools](#64-tools)
-      - [6.5. RiskManagement](#65-riskmanagement)
+        - [Core：核心数据类型](#core%e6%a0%b8%e5%bf%83%e6%95%b0%e6%8d%ae%e7%b1%bb%e5%9e%8b)
+        - [IPC：进程间通讯，用于交易引擎与策略的通讯](#ipc%e8%bf%9b%e7%a8%8b%e9%97%b4%e9%80%9a%e8%ae%af%e7%94%a8%e4%ba%8e%e4%ba%a4%e6%98%93%e5%bc%95%e6%93%8e%e4%b8%8e%e7%ad%96%e7%95%a5%e7%9a%84%e9%80%9a%e8%ae%af)
+        - [Utils：一些通用的功能](#utils%e4%b8%80%e4%ba%9b%e9%80%9a%e7%94%a8%e7%9a%84%e5%8a%9f%e8%83%bd)
+    - [6.2. src](#62-src)
+        - [Gateway](#gateway)
+        - [TradingSystem](#tradingsystem)
+        - [RiskManagement](#riskmanagement)
+        - [Strategy](#strategy)
+        - [Tools](#tools)
+        - [Test](#test)
   - [7. 使用方式](#7-%e4%bd%bf%e7%94%a8%e6%96%b9%e5%bc%8f)
-    - [7.1. 编译策略引擎及加载器](#71-%e7%bc%96%e8%af%91%e7%ad%96%e7%95%a5%e5%bc%95%e6%93%8e%e5%8f%8a%e5%8a%a0%e8%bd%bd%e5%99%a8)
+    - [7.1. 编译](#71-%e7%bc%96%e8%af%91)
     - [7.2. 配置登录信息](#72-%e9%85%8d%e7%bd%ae%e7%99%bb%e5%bd%95%e4%bf%a1%e6%81%af)
     - [7.3. 让示例跑起来](#73-%e8%ae%a9%e7%a4%ba%e4%be%8b%e8%b7%91%e8%b5%b7%e6%9d%a5)
   - [8. 开发你的第一个策略](#8-%e5%bc%80%e5%8f%91%e4%bd%a0%e7%9a%84%e7%ac%ac%e4%b8%80%e4%b8%aa%e7%ad%96%e7%95%a5)
+  - [9. 依赖](#9-%e4%be%9d%e8%b5%96)
 
 ## 1. 更新说明
 | 更新时间  | 更新内容                                                                                                      |
@@ -251,26 +258,53 @@ class Gateway {
 
 ## 6. 目录结构
 ### 6.1. include
-include里面存放的是公共头文件，用户如果想自己为某个服务商的行情、交易接口写Gateway，或是自己写一个交易引擎，就需要用到Core里面的内容。
-* 如果需要自定义Gateway，至少需要用到两个头文件：Core/Gateway.h 以及 Core/TradingEngineInterface.h。Gateway.h里面是Gateway的基类，用户需要继承该基类并实现一些交易接口（如下单、撤单等）。同时，Gateway也要在按照约定去回调TradingEngineInterface中的函数（如收到回执时），TradingEngineInterface的子类就是交易引擎，用于仓位管理、订单管理等，通过回调告知交易状态或是查询信息。详情参考这两个头文件里的注释，以及CtpGateway的实现
-* 如果需要自定义交易引擎，也至少需要：Core/Gateway.h 和 Core/TradingEngineInterface.h。交易引擎通过继承TradingEngineInterface获知账户的各种交易信息并管理之，而通过调用gateway的交易接口或是查询接口去主动发出交易请求或是查询请求。可参考TradingSystem目录中的实现
-* Core里其他的文件定义的都是一些基本的交易相关数据结构
-#### 6.2. Gateway
-Gateway里是各个经纪商的交易网关的具体实现，可参考Ctp的实现来实现自己需要的网关
-#### 6.3. TradingSystem
+##### Core：核心数据类型
+* Account.h  Config.h  Constants.h  Contract.h  Position.h  TickData.h  Trade.h 都是交易相关的基本的通用的数据结构
+* ContractTable.h 里面是ContractTable的实现，ContractTable是交易系统的重要组成部分，为了能快速获取到合约信息，以及减少map的使用，交易系统内部都使用数值索引进行合约的查找，这就要利用到ContractTable了。ContractTable的使用需要用到合约信息文件，这个文件可以通过Tools目录下的小工具contract-collector获取到
+* Protocol.h 中定义了公共协议，用于TM与Gateway的交互以及策略与交易引擎的交互
+* TradingEngineInterface.h 中定义了交易引擎的接口
+* Gateway.h 中定义了交易网关的接口
+* RiskManagementInterface.h 中定义了风险管理模块的接口
+##### IPC：进程间通讯，用于交易引擎与策略的通讯
+* redis.h 中封装了hiredis同步接口中的基本功能
+##### Utils：一些通用的功能
+* Misc.h 一些宏定义
+* StringUtils.h 字符串处理函数
+
+### 6.2. src
+##### Gateway
+Gateway里是各个经纪商的交易网关的具体实现，可参考CTP Gateway的实现来对接自己所需要的交易接口。目前支持CTP、XTP、以及模拟的交易网关VirtualGateway
+* Ctp：上期CTP
+* Xtp：中泰XTP
+* Virtual：模拟交易或回测用
+##### TradingSystem
 TradingSystem是本人实现的一个交易引擎，向上通过redis和策略进行交互，向下通过Gateway和交易所进行交互
-#### 6.4. Tools
-一些小工具，但是很必要。主要是ContractCollector，用于查询所有的合约信息并保存到本地，供其他组件使用
-#### 6.5. RiskManagement
-风险管理。考虑是否要合并到其他目录
+##### RiskManagement
+* RiskManager.h/cpp 风险管理的总入口
+* RiskRuleInterface.h 风险管理规则接口，需要注册到RiskManager中
+* NoSelfTrade.h/cpp 禁止自成交规则
+* ThrottleRateLimit.h/cpp 节流率控制
+##### Strategy
+* Strategy.h 一个数据驱动的策略基类
+* StrategyLoader.cpp 策略加载器
+* OrderSender.h 对协议进行了封装，可以向交易引擎发送订单指令
+##### Tools
+一些小工具，但是很必要。主要是contract-collector，用于查询所有的合约信息并保存到本地，供ContractTable使用。要注意的是，使用contract-collector时务必只配置相关的登录信息
+##### Test
+一些测试用例及简单的策略实现
 
 ## 7. 使用方式
-### 7.1. 编译策略引擎及加载器
-策略引擎的源码文件为TradingEngine.cpp，策略加载器的源码为StrategyLoader.cpp，使用cmake进行编译
+### 7.1. 编译
+使用cmake进行编译整个项目
 ```bash
 mkdir build && cd build
-cmake .. && make -j4
+cmake .. && make -j8
 ```
+编译完成后会有如下几个可执行文件或动态库：
+* trading-engine：交易引擎可执行文件
+* strategy-loader：策略加载器可执行文件，可通过该加载器动态加载策略程序
+* contract-collector：合约文件收集器可执行文件，从柜台拉取所有合约信息到本地供其他可执行文件使用
+* <text>libgrid-strategy.so</text>：示例策略的动态库，可以使用strategy-loader进行加载
 
 ### 7.2. 配置登录信息
 ```yml
@@ -283,20 +317,30 @@ investor_id: 123456
 passwd: 12345678
 auth_code: 0000000000000000
 app_id: simnow_client_test
-subscription_list: rb2009,rb2005  # subscribed list (for market data).
+subscription_list: rb2009,rb2005  # 要订阅哪些合约的市场数据，逗号前后不能有空格
 ```
 
 ### 7.3. 让示例跑起来
 这里提供了一个网格策略的demo
 ```bash
-# 在terminal 0 启动策略引擎
+# 在terminal 0 启动redis
 redis-server  # 启动redis，必须在启动策略引擎前启动redis
-./trading-engine --loglevel=debug --config=../config/ctp_config.yml --contracts=../config/contracts.csv
 ```
 ```bash
-# 在terminal 1 启动策略
-./strategy-loader -l libgrid-strategy.so -loglevel=debug --contracts=../config/contracts.csv --account=1234 --id=grid001
+# 在terminal 1 启动交易引擎
+./trading-engine --loglevel=debug \
+  --config=../config/ctp_config.yml \
+  --contracts=../config/contracts.csv
 ```
+```bash
+# 在terminal 2 启动策略
+./strategy-loader  --loglevel=debug \
+  --contracts=../config/contracts.csv \
+  --account=123456 \
+  --id=grid001 \
+  --strategy=libgrid-strategy.so
+```
+配置好并运行之后就会看到如图2.1所示的结果
 
 ## 8. 开发你的第一个策略
 ```c++
@@ -331,3 +375,22 @@ class MyStrategy : public ft::Strategy {
 EXPORT_STRATEGY(MyStrategy);  // 导出你的策略
 ```
 把上面的代码像网格策略demo一样编译即可通过strategy-loader进行加载了
+```cmake
+add_library(my-strategy SHARED MyStrategy.cpp)
+target_link_libraries(my-strategy strategy ${COMMON_LIB})
+```
+```bash
+./strategy-loader  --loglevel=debug \
+  --contracts=../config/contracts.csv \
+  --account=123456 \
+  --id=grid001 \
+  --strategy=libmy-strategy.so
+```
+
+## 9. 依赖
+本代码库中用到了以下依赖，感谢这些库的开发者们：
+* fmt
+* getopt
+* hiredis
+* spdlog
+* yaml-cpp
