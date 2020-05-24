@@ -5,6 +5,8 @@
 #include <ThostFtdcTraderApi.h>
 #include <spdlog/spdlog.h>
 
+#include "Utils/Misc.h"
+
 namespace ft {
 
 CtpTradeApi::CtpTradeApi(TradingEngineInterface *engine) : engine_(engine) {}
@@ -652,8 +654,10 @@ void CtpTradeApi::OnRspQryInvestorPosition(
 
 check_last:
   if (is_last) {
-    for (auto &[ticker_index, pos] : pos_cache_)
+    for (auto &[ticker_index, pos] : pos_cache_) {
+      UNUSED(ticker_index);
       engine_->on_query_position(&pos);
+    }
     pos_cache_.clear();
     done();
   }

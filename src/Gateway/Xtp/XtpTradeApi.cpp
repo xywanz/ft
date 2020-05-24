@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "Core/ContractTable.h"
+#include "Utils/Misc.h"
 
 namespace ft {
 
@@ -132,6 +133,8 @@ uint64_t XtpTradeApi::send_order(const OrderReq* order) {
 
 void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
                                uint64_t session_id) {
+  if (session_id != session_id_) return;
+
   if (!order_info) {
     spdlog::warn("[XtpTradeApi::OnOrderEvent] nullptr");
     return;
@@ -191,6 +194,8 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
 
 void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
                                uint64_t session_id) {
+  if (session_id_ != session_id) return;
+
   if (!trade_info) {
     spdlog::warn("[XtpTradeApi::OnTradeEvent] nullptr");
     return;
@@ -241,6 +246,8 @@ bool XtpTradeApi::cancel_order(uint64_t order_id) {
 
 void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
                                      XTPRI* error_info, uint64_t session_id) {
+  if (session_id_ != session_id) return;
+
   if (!is_error_rsp(error_info)) return;
 
   if (!cancel_info) {
@@ -249,14 +256,12 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
   }
 
   std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(cancel_info->order_xtp_id);
-  if (iter == order_details_.end()) {
+  if (order_details_.find(cancel_info->order_xtp_id) == order_details_.end()) {
     spdlog::error(
         "[XtpTradeApi::OnCancelOrderError] Order not found. XtpOrderID: {}",
         cancel_info->order_xtp_id);
     return;
   }
-  const auto& detail = iter->second;
 
   spdlog::error("[XtpTradeApi::OnCancelOrderError] Cancel error. ErrorMsg: {}",
                 error_info->error_msg);
@@ -318,8 +323,10 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
 
 check_last:
   if (is_last) {
-    for (auto& [ticker_index, pos] : pos_cache_)
+    for (auto& [ticker_index, pos] : pos_cache_) {
+      UNUSED(ticker_index);
       engine_->on_query_position(&pos);
+    }
     pos_cache_.clear();
     done();
   }
@@ -341,6 +348,10 @@ bool XtpTradeApi::query_account() {
 void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
                                int request_id, bool is_last,
                                uint64_t session_id) {
+  UNUSED(request_id);
+
+  if (session_id_ != session_id) return;
+
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryAsset] {}", error_info->error_msg);
     error();
@@ -381,6 +392,10 @@ bool XtpTradeApi::query_orders() {
 void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
                                int request_id, bool is_last,
                                uint64_t session_id) {
+  UNUSED(request_id);
+
+  if (session_id_ != session_id) return;
+
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryOrder] {}", error_info->error_msg);
     done();
@@ -388,8 +403,8 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
   }
 
   if (order_info &&
-          order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING ||
-      order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDQUEUEING) {
+      (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING ||
+       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDQUEUEING)) {
     if (trade_api_->CancelOrder(order_info->order_xtp_id, session_id_) == 0)
       spdlog::error("[XtpTradeApi::OnQueryOrder] 订单撤回失败: {}",
                     trade_api_->GetApiLastError()->error_msg);
@@ -416,6 +431,10 @@ bool XtpTradeApi::query_trades() {
 void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
                                int request_id, bool is_last,
                                uint64_t session_id) {
+  UNUSED(request_id);
+
+  if (session_id_ != session_id) return;
+
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryTrade] {}", error_info->error_msg);
     done();

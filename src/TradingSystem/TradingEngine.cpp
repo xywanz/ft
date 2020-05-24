@@ -5,6 +5,7 @@
 #include "Core/ContractTable.h"
 #include "Core/Protocol.h"
 #include "RiskManagement/RiskManager.h"
+#include "Utils/Misc.h"
 
 namespace ft {
 
@@ -191,6 +192,7 @@ void TradingEngine::cancel_for_ticker(uint32_t ticker_index) {
 void TradingEngine::cancel_all() {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
+    UNUSED(order);
     gateway_->cancel_order(order_id);
   }
 }

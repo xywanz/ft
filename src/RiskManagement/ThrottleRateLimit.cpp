@@ -6,12 +6,12 @@ namespace ft {
 
 ThrottleRateLimit::ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
                                      uint64_t volume_limit)
-    : period_ms_(period_ms),
-      order_limit_(order_limit),
-      volume_limit_(volume_limit) {}
+    : order_limit_(order_limit),
+      volume_limit_(volume_limit),
+      period_ms_(period_ms) {}
 
 bool ThrottleRateLimit::check_order_req(const OrderReq* order) {
-  if (order_limit_ == 0 && volume_limit_ == 0 || period_ms_ == 0) return true;
+  if ((order_limit_ == 0 && volume_limit_ == 0) || period_ms_ == 0) return true;
 
   uint64_t current_ms = get_current_ms();
   uint64_t lower_bound_ms = current_ms - period_ms_;

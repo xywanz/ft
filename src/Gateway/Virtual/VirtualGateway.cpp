@@ -30,7 +30,7 @@ uint64_t VirtualGateway::send_order(const OrderReq* order) {
   req.volume = order->volume;
   req.price = order->price;
 
-  trade_api_.insert_order(&req);
+  return trade_api_.insert_order(&req);
 }
 
 bool VirtualGateway::cancel_order(uint64_t order_id) {

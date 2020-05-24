@@ -2,6 +2,7 @@
 
 #include "Gateway/Virtual/VirtualTradeApi.h"
 
+#include <Utils/Misc.h>
 #include <spdlog/spdlog.h>
 
 #include <thread>
@@ -118,6 +119,7 @@ void VirtualTradeApi::process_pendings() {
 bool VirtualTradeApi::cancel_order(uint64_t order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (auto& [ticker_index, order_list] : limit_orders_) {
+    UNUSED(ticker_index);
     for (auto iter = order_list.begin(); iter != order_list.end(); ++iter) {
       auto& order = *iter;
       if (order_id == order.order_id) {
@@ -134,9 +136,7 @@ bool VirtualTradeApi::cancel_order(uint64_t order_id) {
   return false;
 }
 
-void VirtualTradeApi::set_spi(VirtualGateway* gateway) {
-  gateway_ = gateway;
-}
+void VirtualTradeApi::set_spi(VirtualGateway* gateway) { gateway_ = gateway; }
 
 void VirtualTradeApi::start() {
   std::thread([this] {

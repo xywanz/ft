@@ -69,23 +69,22 @@ class TradingEngine : public TradingEngineInterface {
   void respond_send_order_error(const TraderCommand* cmd);
 
  private:
-  std::unique_ptr<Gateway> gateway_ = nullptr;
-  std::unique_ptr<RiskManagementInterface> risk_mgr_ = nullptr;
+  std::unique_ptr<Gateway> gateway_{nullptr};
 
-  ProtocolQueryCenter proto_;
-
+  ProtocolQueryCenter proto_{};
   Account account_{};
   PositionManager portfolio_;
-  std::map<uint64_t, Order> order_map_;
-  std::mutex mutex_;
+  std::unique_ptr<RiskManagementInterface> risk_mgr_{nullptr};
+  std::map<uint64_t, Order> order_map_{};
+  std::mutex mutex_{};
 
-  uint64_t next_engine_order_id_ = 1;
+  uint64_t next_engine_order_id_{1};
 
-  RedisSession tick_redis_;
-  RedisSession order_redis_;
-  RedisSession rsp_redis_;
+  RedisSession tick_redis_{};
+  RedisSession order_redis_{};
+  RedisSession rsp_redis_{};
 
-  std::atomic<bool> is_logon_ = false;
+  std::atomic<bool> is_logon_{false};
 };
 
 }  // namespace ft

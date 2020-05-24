@@ -9,7 +9,7 @@ namespace ft {
 
 class RiskManagementInterface {
  public:
-  virtual bool check_order_req(const OrderReq* req) {}
+  virtual bool check_order_req(const OrderReq* req) { return false; }
 
   virtual void on_order_sent(uint64_t engine_order_id) {}
 
