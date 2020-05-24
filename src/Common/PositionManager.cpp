@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "TradingSystem/PositionManager.h"
+#include "Common/PositionManager.h"
 
 #include <algorithm>
 

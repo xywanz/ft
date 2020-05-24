@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "Common/PositionManager.h"
 #include "Core/Account.h"
 #include "Core/Config.h"
 #include "Core/Gateway.h"
@@ -17,7 +18,6 @@
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
 #include "TradingSystem/Order.h"
-#include "TradingSystem/PositionManager.h"
 
 namespace ft {
 

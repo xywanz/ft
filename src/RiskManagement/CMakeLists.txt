@@ -3,4 +3,4 @@
 aux_source_directory(. RISKMGR_SRC)
 
 add_library(risk-management STATIC ${RISKMGR_SRC})
-target_link_libraries(risk-management ${COMMON_LIB})
+target_link_libraries(risk-management common ${COMMON_LIB})

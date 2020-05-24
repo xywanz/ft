@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "Common/OrderSender.h"
 #include "Core/Constants.h"
 #include "Core/Contract.h"
 #include "Core/ContractTable.h"
@@ -14,7 +15,6 @@
 #include "Core/Protocol.h"
 #include "Core/TickData.h"
 #include "IPC/redis.h"
-#include "Strategy/OrderSender.h"
 
 namespace ft {
 

@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "RiskManagement/RiskRuleInterface.h"
-#include "TradingSystem/PositionManager.h"
 
 namespace ft {
 
@@ -23,8 +22,6 @@ class NoSelfTradeRule : public RiskRuleInterface {
   void on_order_completed(uint64_t order_id) override;
 
  private:
-  const PositionManager* pos_mgr_;
-
   std::vector<OrderReq> orders_;
 };
 

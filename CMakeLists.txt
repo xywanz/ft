@@ -36,6 +36,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_definitions(-DFMT_HEADER_ONLY)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
+add_subdirectory(src/Common)
 add_subdirectory(src/Gateway)
 add_subdirectory(src/TradingSystem)
 add_subdirectory(src/RiskManagement)

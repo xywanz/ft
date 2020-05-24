@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADINGSYSTEM_POSITIONMANAGER_H_
-#define FT_SRC_TRADINGSYSTEM_POSITIONMANAGER_H_
+#ifndef FT_SRC_COMMON_POSITIONMANAGER_H_
+#define FT_SRC_COMMON_POSITIONMANAGER_H_
 
 #include <map>
 #include <memory>
@@ -32,15 +32,15 @@ class PositionManager {
   void update_on_query_trade(uint32_t ticker_index, uint32_t direction,
                              uint32_t offset, int closed_volume);
 
+  const Position* find(uint32_t ticker_index) const {
+    return const_cast<PositionManager*>(this)->find(ticker_index);
+  }
+
  private:
   Position* find(uint32_t ticker_index) {
     auto iter = pos_map_.find(ticker_index);
     if (iter == pos_map_.end()) return nullptr;
     return &iter->second;
-  }
-
-  const Position* find(uint32_t ticker_index) const {
-    return const_cast<PositionManager*>(this)->find(ticker_index);
   }
 
   Position& find_or_create_pos(uint32_t ticker_index) {
@@ -58,4 +58,4 @@ class PositionManager {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADINGSYSTEM_POSITIONMANAGER_H_
+#endif  // FT_SRC_COMMON_POSITIONMANAGER_H_

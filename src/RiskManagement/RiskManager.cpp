@@ -2,15 +2,17 @@
 
 #include "RiskManagement/RiskManager.h"
 
+#include "RiskManagement/AvailablePosCheck.h"
 #include "RiskManagement/NoSelfTrade.h"
 #include "RiskManagement/ThrottleRateLimit.h"
 
 namespace ft {
 
-RiskManager::RiskManager() {
+RiskManager::RiskManager(const PositionManager* pos_mgr) : pos_mgr_(pos_mgr) {
   // 先硬编码吧
-  add_rule(std::make_shared<ThrottleRateLimit>(1000, 5, 100));
+  add_rule(std::make_shared<AvailablePosCheck>(pos_mgr));
   add_rule(std::make_shared<NoSelfTradeRule>());
+  add_rule(std::make_shared<ThrottleRateLimit>(1000, 5, 100));
 }
 
 void RiskManager::add_rule(std::shared_ptr<RiskRuleInterface> rule) {

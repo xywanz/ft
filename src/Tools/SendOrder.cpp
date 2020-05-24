@@ -2,7 +2,7 @@
 
 #include <getopt.hpp>
 
-#include "Strategy/OrderSender.h"
+#include "Common/OrderSender.h"
 
 int main() {
   std::string contracts_file =
