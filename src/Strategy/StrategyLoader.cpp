@@ -15,8 +15,14 @@ int main() {
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("Strategy", "id");
+  uint64_t account_id = getarg(0, "--account");
 
   spdlog::set_level(spdlog::level::from_str(log_level));
+
+  if (account_id == 0) {
+    spdlog::error("Please input account id");
+    exit(-1);
+  }
 
   if (!ft::ContractTable::init(contracts_file)) {
     spdlog::error("Invalid file of contract list");
@@ -39,5 +45,6 @@ int main() {
 
   auto strategy = create_strategy();
   strategy->set_id(strategy_id);
+  strategy->set_account_id(account_id);
   strategy->run();
 }

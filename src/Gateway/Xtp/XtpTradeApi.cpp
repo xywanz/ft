@@ -23,6 +23,8 @@ bool XtpTradeApi::login(const Config& config) {
     return false;
   }
 
+  investor_id_ = config.investor_id;
+
   uint32_t seed = time(nullptr);
   uint8_t client_id = rand_r(&seed) & 0xff;
   trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
@@ -345,10 +347,18 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
     return;
   }
 
-  if (asset) {
-    spdlog::debug("[XtpTradeApi::OnQueryAsset] TotalAsset: {}",
-                  asset->total_asset);
+  if (!asset) {
+    spdlog::error("[[XtpTradeApi::OnQueryAsset] nullptr");
+    error();
+    return;
   }
+
+  spdlog::debug("[XtpTradeApi::OnQueryAsset] TotalAsset: {}",
+                asset->total_asset);
+  Account account{};
+  account.account_id = std::stoull(investor_id_);
+  account.balance = asset->banlance;
+  engine_->on_query_account(&account);
 
   if (is_last) done();
 }

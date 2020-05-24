@@ -19,6 +19,10 @@ class OrderSender {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
+  void set_account_id(uint64_t account_id) {
+    proto_.set_account_id(account_id);
+  }
+
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
     send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price,
@@ -63,7 +67,7 @@ class OrderSender {
     cmd.order_req.price = price;
 
     std::unique_lock<std::mutex> lock(mutex_);
-    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
   }
 
   void cancel_order(uint64_t order_id) {
@@ -73,7 +77,7 @@ class OrderSender {
     cmd.cancel_req.order_id = order_id;
 
     std::unique_lock<std::mutex> lock(mutex_);
-    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
   }
 
   void cancel_for_ticker(const std::string& ticker) {
@@ -85,7 +89,7 @@ class OrderSender {
     cmd.cancel_ticker_req.ticker_index = contract->index;
 
     std::unique_lock<std::mutex> lock(mutex_);
-    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
   }
 
   void cancel_all() {
@@ -94,13 +98,14 @@ class OrderSender {
     cmd.type = CANCEL_ALL;
 
     std::unique_lock<std::mutex> lock(mutex_);
-    cmd_redis_.publish(TRADER_CMD_TOPIC, &cmd, sizeof(cmd));
+    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
   }
 
  private:
   StrategyIdType strategy_id_;
   RedisSession cmd_redis_;
   std::mutex mutex_;
+  ProtocolQueryCenter proto_;
 };
 
 }  // namespace ft

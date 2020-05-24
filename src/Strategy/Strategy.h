@@ -41,6 +41,11 @@ class Strategy {
     sender_.set_id(name);
   }
 
+  void set_account_id(uint64_t account_id) {
+    proto_.set_account_id(account_id);
+    sender_.set_account_id(account_id);
+  }
+
  protected:
   void subscribe(const std::vector<std::string>& sub_list);
 
@@ -79,7 +84,7 @@ class Strategy {
   Position get_position(const std::string& ticker) const {
     Position pos;
 
-    auto reply = portfolio_redis_.get(proto_pos_key(ticker));
+    auto reply = portfolio_redis_.get(proto_.pos_key(ticker));
     if (reply->len == 0) return pos;
 
     memcpy(&pos, reply->str, sizeof(pos));
@@ -112,6 +117,7 @@ class Strategy {
   RedisSession tick_redis_;
   RedisSession rsp_redis_;
   RedisSession portfolio_redis_;
+  ProtocolQueryCenter proto_;
 };
 
 #define EXPORT_STRATEGY(type) \

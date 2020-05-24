@@ -6,19 +6,25 @@
 
 #include "Core/Constants.h"
 #include "Core/ContractTable.h"
-#include "Core/Protocol.h"
 
 namespace ft {
 
 PositionManager::PositionManager(const std::string& ip, int port)
     : redis_(ip, port) {}
 
+void PositionManager::init(uint64_t account) {
+  proto_.set_account_id(account);
+  auto reply = redis_.keys(fmt::format("{}*", proto_.pos_key_prefix()));
+  for (size_t i = 0; i < reply->elements; ++i)
+    redis_.del(reply->element[i]->str);
+}
+
 void PositionManager::set_position(const Position* pos) {
   pos_map_.emplace(pos->ticker_index, *pos);
 
   const auto* contract = ContractTable::get_by_index(pos->ticker_index);
   assert(contract);
-  auto key = proto_pos_key(contract->ticker);
+  auto key = proto_.pos_key(contract->ticker);
   redis_.set(key, pos, sizeof(Position));
 }
 
@@ -48,7 +54,7 @@ void PositionManager::update_pending(uint32_t ticker_index, uint32_t direction,
 
   const auto* contract = ContractTable::get_by_index(pos.ticker_index);
   assert(contract);
-  redis_.set(proto_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void PositionManager::update_traded(uint32_t ticker_index, uint32_t direction,
@@ -117,7 +123,7 @@ void PositionManager::update_traded(uint32_t ticker_index, uint32_t direction,
     pos_detail.cost_price = 0;
   }
 
-  redis_.set(proto_pos_key(contract->ticker), &pos, sizeof(pos));
+  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
   redis_.set("realized_pnl", &realized_pnl_, sizeof(realized_pnl_));
 }
 
@@ -140,7 +146,7 @@ void PositionManager::update_float_pnl(uint32_t ticker_index,
           sp.holdings * contract->size * (sp.cost_price - last_price);
 
     if (lp.holdings > 0 || sp.holdings > 0)
-      redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
+      redis_.set(proto_.pos_key(contract->ticker), pos, sizeof(*pos));
   }
 }
 
@@ -153,7 +159,7 @@ void PositionManager::update_on_query_trade(uint32_t ticker_index,
   // const auto* contract = ContractTable::get_by_index(ticker_index);
   // if (!contract) return;
 
-  // redis_.set(proto_pos_key(contract->ticker), pos, sizeof(*pos));
+  // redis_.set(proto_.pos_key(contract->ticker), pos, sizeof(*pos));
 }
 
 }  // namespace ft

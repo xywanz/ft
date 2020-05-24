@@ -32,7 +32,7 @@ void Strategy::run() {
 void Strategy::subscribe(const std::vector<std::string>& sub_list) {
   std::vector<std::string> topics;
   for (const auto& ticker : sub_list)
-    topics.emplace_back(proto_md_topic(ticker));
+    topics.emplace_back(proto_.quote_key(ticker));
   tick_redis_.subscribe(topics);
 }
 

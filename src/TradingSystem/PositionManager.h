@@ -8,6 +8,7 @@
 #include <string>
 
 #include "Core/Position.h"
+#include "Core/Protocol.h"
 #include "IPC/redis.h"
 
 namespace ft {
@@ -15,6 +16,8 @@ namespace ft {
 class PositionManager {
  public:
   PositionManager(const std::string& ip, int port);
+
+  void init(uint64_t account);
 
   void set_position(const Position* pos);
 
@@ -50,6 +53,7 @@ class PositionManager {
   RedisSession redis_;
   std::map<uint32_t, Position> pos_map_;
   double realized_pnl_ = 0;
+  ProtocolQueryCenter proto_;
 };
 
 }  // namespace ft

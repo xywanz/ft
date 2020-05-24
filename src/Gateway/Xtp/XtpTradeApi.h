@@ -93,6 +93,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   TradingEngineInterface* engine_;
   std::unique_ptr<XTP::API::TraderApi, XtpApiDeleter> trade_api_;
 
+  std::string investor_id_;
   uint64_t session_id_ = 0;
   std::atomic<uint32_t> next_client_order_id_ = 1;
   std::atomic<uint32_t> next_req_id_ = 1;

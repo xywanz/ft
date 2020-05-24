@@ -94,15 +94,38 @@ struct OrderResponse {
   double this_traded_price;
 } __attribute__((packed));
 
-constexpr const char* const TRADER_CMD_TOPIC = "trader_cmd";
+class ProtocolQueryCenter {
+ public:
+  void set_account_id(uint64_t account_id) {
+    account_id_ = account_id;
+    account_abbreviation_ = std::to_string(account_id).substr(0, 4);
+    trader_cmd_topic_ = fmt::format("trader_cmd-{}", account_abbreviation_);
+    realized_pnl_key_ = fmt::format("rpnl-{}", account_abbreviation_);
+    float_pnl_key_ = fmt::format("fpnl-{}", account_abbreviation_);
+    pos_key_prefix_ = fmt::format("pos-{}-", account_abbreviation_);
+  }
 
-inline std::string proto_md_topic(const std::string& ticker) {
-  return fmt::format("md-{}", ticker);
-}
+  const std::string& trader_cmd_topic() const { return trader_cmd_topic_; }
+  const std::string& rpnl_key() const { return realized_pnl_key_; }
+  const std::string& fpnl_key() const { return float_pnl_key_; }
+  const std::string& pos_key_prefix() const { return pos_key_prefix_; }
 
-inline std::string proto_pos_key(const std::string& ticker) {
-  return fmt::format("pos-{}", ticker);
-}
+  std::string pos_key(const std::string& ticker) const {
+    return fmt::format("{}{}", pos_key_prefix_, ticker);
+  }
+
+  std::string quote_key(const std::string& ticker) const {
+    return fmt::format("quote-{}", ticker);
+  }
+
+ private:
+  uint64_t account_id_;
+  std::string account_abbreviation_;
+  std::string trader_cmd_topic_;
+  std::string realized_pnl_key_;
+  std::string float_pnl_key_;
+  std::string pos_key_prefix_;
+};
 
 }  // namespace ft
 

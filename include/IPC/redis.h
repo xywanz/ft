@@ -95,6 +95,21 @@ class RedisSession {
     return RedisReply(reply, RedisReplyDestructor());
   }
 
+  void del(const std::string& key) {
+    const char* argv[2];
+    size_t argvlen[2];
+
+    argv[0] = "del";
+    argvlen[0] = 3;
+
+    argv[1] = key.c_str();
+    argvlen[1] = key.length();
+
+    auto* reply =
+        reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
+    freeReplyObject(reply);
+  }
+
   void subscribe(const std::vector<std::string>& topics) {
     if (topics.empty()) return;
 

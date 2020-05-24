@@ -40,6 +40,7 @@ bool TradingEngine::login(const Config& config) {
 
   // query all positions
   spdlog::info("[[TradingEngine::login] Querying positions");
+  portfolio_.init(account_.account_id);
   if (!gateway_->query_positions()) {
     spdlog::error("[TradingEngine::login] Failed to query positions");
     return false;
@@ -53,6 +54,7 @@ bool TradingEngine::login(const Config& config) {
   }
   spdlog::info("[[TradingEngine::login] Querying trades done");
 
+  proto_.set_account_id(account_.account_id);
   spdlog::info("[TradingEngine::login] Init done");
 
   is_logon_ = true;
@@ -62,7 +64,7 @@ bool TradingEngine::login(const Config& config) {
 void TradingEngine::run() {
   spdlog::info("[TradingEngine::run] Start to recv order req");
 
-  order_redis_.subscribe({TRADER_CMD_TOPIC});
+  order_redis_.subscribe({proto_.trader_cmd_topic()});
 
   for (;;) {
     auto reply = order_redis_.get_sub_reply();
@@ -196,6 +198,7 @@ void TradingEngine::cancel_all() {
 void TradingEngine::on_query_contract(const Contract* contract) {}
 
 void TradingEngine::on_query_account(const Account* account) {
+  account_ = *account;
   spdlog::info(
       "[TradingEngine::on_query_account] Account ID: {}, Balance: {}, Fronzen: "
       "{}",
@@ -235,7 +238,8 @@ void TradingEngine::on_tick(const TickData* tick) {
     return;
   }
 
-  tick_redis_.publish(proto_md_topic(contract->ticker), tick, sizeof(TickData));
+  tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
+                      sizeof(TickData));
   spdlog::debug("[TradingEngine::process_tick]");
 }
 

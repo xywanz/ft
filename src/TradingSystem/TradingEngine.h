@@ -72,6 +72,9 @@ class TradingEngine : public TradingEngineInterface {
   std::unique_ptr<Gateway> gateway_ = nullptr;
   std::unique_ptr<RiskManagementInterface> risk_mgr_ = nullptr;
 
+  ProtocolQueryCenter proto_;
+
+  Account account_{};
   PositionManager portfolio_;
   std::map<uint64_t, Order> order_map_;
   std::mutex mutex_;
