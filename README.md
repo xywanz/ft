@@ -207,6 +207,37 @@ class RiskManagementInterface {
 };
 ```
 ### 4.4. 交易网关模块
+交易网关作为介于TM和柜台之间的一个模块，起到承上启下的作用。Gateway的接口中，**下单和撤单需要保证线程安全**，其他接口均只在初始化时调用一次故不用保证线程安全。**除了下单和撤单操作，其他操作需要保证是同步的**，即等所有查询回执返回并处理完后接口函数才能返回。Gateway的接口说明如下所示：
+```cpp
+class Gateway {
+ public:
+  // 根据配置登录到交易柜台或行情服务器或二者都登录
+  // Gateway只登录一次，可以不用做安全性保证
+  virtual bool login(const Config& config) { return false; }
+
+  // 登出
+  virtual void logout() {}
+
+  // 发单成功返回大于0的订单号，这个订单号可传回给gateway用于撤单。发单失败则返回0
+  virtual uint64_t send_order(const OrderReq* order) { return 0; }
+
+  // 取消订单，传入的订单号是send_order所返回的，只能撤销被市场接受的订单
+  virtual bool cancel_order(uint64_t order_id) { return false; }
+
+  // 查询合约信息，对于查询到的结果应回调TradingEngineInterface::on_query_contract
+  virtual bool query_contracts() { return false; }
+
+  // 查询仓位信息，对于查询到的结果应回调TradingEngineInterface::on_query_position
+  virtual bool query_positions() { return false; }
+
+  // 查询资金账户，对于查询到的结果应回调TradingEngineInterface::on_query_account
+  virtual bool query_account() { return false; }
+
+  // 查询当日历史成交信息，对于查询到的结果应回调TradingEngineInterface::on_query_trade
+  virtual bool query_trades() { return false; }
+};
+```
+与此同时，Gateway在收到订单回报时，也应该回调TradingEngineInterface中相应的函数，具体说明在**4.2.1**章节
 
 ### 4.5. 交易引擎初始化
 <br>
