@@ -308,7 +308,7 @@ cmake .. && make -j8
 
 ### 7.2. 配置登录信息
 ```yml
-# 可以参考config/login.yml
+# 可以参考config/config_template.yml
 api: ctp  # api name.
 front_addr: tcp://180.168.146.187:10130
 md_server_addr: tcp://180.168.146.187:10131
@@ -318,6 +318,9 @@ passwd: 12345678
 auth_code: 0000000000000000
 app_id: simnow_client_test
 subscription_list: [rb2009, rb2007]  # 要订阅哪些合约的市场数据，是yaml数组格式的
+
+# 是否在启动时撤销所有未完成订单，默认为true
+cancel_outstanding_orders_on_startup: true
 ```
 
 ### 7.3. 让示例跑起来

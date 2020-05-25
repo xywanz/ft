@@ -8,6 +8,9 @@ auth_code: 0000000000000000                             # 认证码，CTP和XTP�
 app_id: simnow_client_test                              # CTP交易需要
 subscription_list: rb2009                               # 要订阅的行情，用逗号分隔，逗号前后不能有空格
 
+# 是否在启动时撤销所有未完成订单，默认为true
+cancel_outstanding_orders_on_startup: true
+
 # 下面9个都是各个Gateway自定义的参数，可选
 arg0:
 arg1:
