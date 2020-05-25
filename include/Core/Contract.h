@@ -8,7 +8,7 @@
 
 namespace ft {
 
-enum class ProductType { FUTURES = 0, OPTIONS, STOCK };
+enum class ProductType { FUTURES = 0, OPTIONS, STOCK, FUND };
 
 enum SpecTickerIndex : uint32_t { NONE_TICKER = 0, ALL_TICKERS = UINT32_MAX };
 
@@ -35,7 +35,8 @@ inline const std::string& to_string(ProductType product) {
   static const std::map<ProductType, std::string> product_str = {
       {ProductType::FUTURES, "Futures"},
       {ProductType::OPTIONS, "Options"},
-      {ProductType::STOCK, "Stock"}};
+      {ProductType::STOCK, "Stock"},
+      {ProductType::FUND, "Fund"}};
 
   return product_str.find(product)->second;
 }
@@ -44,7 +45,8 @@ inline ProductType string2product(const std::string& product) {
   static const std::map<std::string, ProductType> product_map = {
       {"Futures", ProductType::FUTURES},
       {"Options", ProductType::OPTIONS},
-      {"Stock", ProductType::STOCK}};
+      {"Stock", ProductType::STOCK},
+      {"Fund", ProductType::FUND}};
 
   return product_map.find(product)->second;
 }

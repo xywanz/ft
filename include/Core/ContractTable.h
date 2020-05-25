@@ -3,7 +3,7 @@
 #ifndef FT_INCLUDE_CORE_CONTRACTTABLE_H_
 #define FT_INCLUDE_CORE_CONTRACTTABLE_H_
 
-// #include <fmt/format.h>
+#include <fmt/format.h>
 
 #include <fstream>
 #include <map>
@@ -70,25 +70,29 @@ inline void store_contracts(const std::string& file,
          "delivery_year,"
          "delivery_month\n";
 
-  std::stringstream ss;
+  // std::stringstream ss;
   std::string line;
   for (const auto& contract : contracts) {
-    ss << contract.ticker << ',' << contract.exchange << ',' << contract.name
-       << ',' << to_string(contract.product_type) << ',' << contract.size << ','
-       << contract.price_tick << ',' << contract.max_market_order_volume << ','
-       << contract.min_market_order_volume << ','
-       << contract.max_limit_order_volume << ','
-       << contract.min_limit_order_volume << ',' << contract.delivery_year
-       << ',' << contract.delivery_month << '\n';
-    // line = fmt::format(
-    //     "{},{},{},{},{},{},{},{},{},{},{},{}\n", contract.ticker,
-    //     contract.exchange, contract.name, to_string(contract.product_type),
-    //     contract.size, contract.price_tick, contract.max_market_order_volume,
-    //     contract.min_market_order_volume, contract.max_limit_order_volume,
-    //     contract.min_limit_order_volume, contract.delivery_year,
-    //     contract.delivery_month);
-    ss >> line;
+    // ss << contract.ticker << ',' << contract.exchange << ',' << contract.name
+    //    << ',' << to_string(contract.product_type) << ',' << contract.size <<
+    //    ','
+    //    << contract.price_tick << ',' << contract.max_market_order_volume <<
+    //    ','
+    //    << contract.min_market_order_volume << ','
+    //    << contract.max_limit_order_volume << ','
+    //    << contract.min_limit_order_volume << ',' << contract.delivery_year
+    //    << ',' << contract.delivery_month << '\n';
+    line = fmt::format(
+        "{},{},{},{},{},{},{},{},{},{},{},{}\n", contract.ticker,
+        contract.exchange, contract.name, to_string(contract.product_type),
+        contract.size, contract.price_tick, contract.max_market_order_volume,
+        contract.min_market_order_volume, contract.max_limit_order_volume,
+        contract.min_limit_order_volume, contract.delivery_year,
+        contract.delivery_month);
+
+    // ss >> line;
     ofs << line;
+    // ss.clear();
   }
 
   ofs.close();

@@ -137,7 +137,8 @@ void XtpMdApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
     return;
   }
 
-  if (ticker_info && ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK) {
+  if (ticker_info && (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK ||
+                      ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)) {
     spdlog::debug("[XtpMdApi::OnQueryAllTickers] {}, {}", ticker_info->ticker,
                   ticker_info->ticker_name);
     Contract contract{};
@@ -145,7 +146,10 @@ void XtpMdApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
     contract.exchange = ft_exchange_type(ticker_info->exchange_id);
     contract.name = ticker_info->ticker_name;
     contract.price_tick = ticker_info->price_tick;
-    contract.product_type = ProductType::STOCK;
+    if (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK)
+      contract.product_type = ProductType::STOCK;
+    else if (ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)
+      contract.product_type = ProductType::FUND;
     contract.size = 1;
     engine_->on_query_contract(&contract);
   }
