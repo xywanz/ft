@@ -128,12 +128,11 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   req.price = sreq.price;
 
   std::unique_lock<std::mutex> lock(mutex_);
-  if (risk_mgr_) {
-    if (!risk_mgr_->check_order_req(&req)) {
-      spdlog::error("风控未通过");
-      respond_send_order_error(cmd);
-      return false;
-    }
+  if (!risk_mgr_->check_order_req(&req)) {
+    spdlog::error("风控未通过");
+    risk_mgr_->on_order_completed(req.engine_order_id);
+    respond_send_order_error(cmd);
+    return false;
   }
 
   uint64_t order_id = gateway_->send_order(&req);
@@ -145,12 +144,12 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
         contract->ticker, direction_str(req.direction), offset_str(req.offset),
         ordertype_str(req.type), 0, req.volume, req.price);
 
-    if (risk_mgr_) risk_mgr_->on_order_completed(req.engine_order_id);
+    risk_mgr_->on_order_completed(req.engine_order_id);
     respond_send_order_error(cmd);
     return false;
   }
 
-  if (risk_mgr_) risk_mgr_->on_order_sent(req.engine_order_id);
+  risk_mgr_->on_order_sent(req.engine_order_id);
 
   Order order{};
   order.contract = contract;
@@ -267,7 +266,6 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
   }
 
   auto& order = iter->second;
-
   if (order.strategy_id[0] != 0) {
     OrderResponse rsp{};
     rsp.user_order_id = order.user_order_id;
@@ -297,6 +295,10 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   }
 
   auto& order = iter->second;
+  portfolio_.update_pending(order.contract->index, order.direction,
+                            order.offset, -order.volume);
+
+  risk_mgr_->on_order_completed(order.engine_order_id);
 
   if (order.strategy_id[0] != 0) {
     OrderResponse rsp{};
@@ -341,9 +343,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
   portfolio_.update_traded(order.contract->index, order.direction, order.offset,
                            this_traded, traded_price);
 
-  if (risk_mgr_)
-    risk_mgr_->on_order_traded(order.engine_order_id, this_traded,
-                               traded_price);
+  risk_mgr_->on_order_traded(order.engine_order_id, this_traded, traded_price);
 
   bool completed = false;
   order.traded_volume += this_traded;
@@ -355,7 +355,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    if (risk_mgr_) risk_mgr_->on_order_completed(order.engine_order_id);
+    risk_mgr_->on_order_completed(order.engine_order_id);
 
     completed = true;
     order_map_.erase(iter);
@@ -386,8 +386,8 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
         order_id);
     return;
   }
-  auto& order = iter->second;
 
+  auto& order = iter->second;
   spdlog::info(
       "[TradingEngine::on_order_canceled] 报单已撤. Ticker: {}, Direction: {}, "
       "Offset: {}, Canceled: {}",
@@ -395,6 +395,9 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
       offset_str(order.offset), canceled_volume);
 
   order.canceled_volume = canceled_volume;
+  portfolio_.update_pending(order.contract->index, order.direction,
+                            order.offset, -order.canceled_volume);
+
   if (order.traded_volume + order.canceled_volume == order.volume) {
     spdlog::info(
         "[TradingEngine::on_order_canceled] 报单完成. Ticker: {}, Direction: "
@@ -403,7 +406,7 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    if (risk_mgr_) risk_mgr_->on_order_completed(order.engine_order_id);
+    risk_mgr_->on_order_completed(order.engine_order_id);
 
     if (order.strategy_id[0] != 0) {
       OrderResponse rsp{};
