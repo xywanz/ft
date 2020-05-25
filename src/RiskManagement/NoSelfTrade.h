@@ -19,7 +19,7 @@ class NoSelfTradeRule : public RiskRuleInterface {
  public:
   bool check_order_req(const OrderReq* order) override;
 
-  void on_order_completed(uint64_t order_id) override;
+  void on_order_completed(uint64_t order_id, int error_code) override;
 
  private:
   std::vector<OrderReq> orders_;

@@ -2,6 +2,8 @@
 
 #include "RiskManagement/ThrottleRateLimit.h"
 
+#include "Core/ErrorCode.h"
+
 namespace ft {
 
 ThrottleRateLimit::ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
@@ -19,28 +21,27 @@ bool ThrottleRateLimit::check_order_req(const OrderReq* order) {
   if (order_limit_ > 0) {
     for (auto iter = order_tm_record_.begin();
          iter != order_tm_record_.end();) {
-      if (*iter > lower_bound_ms) break;
-      --order_count_;
+      if (std::get<0>(*iter) > lower_bound_ms) break;
       iter = order_tm_record_.erase(iter);
     }
 
-    if (order_count_ + 1 > order_limit_) {
+    if (order_tm_record_.size() >= order_limit_) {
       spdlog::error(
           "[ThrottleRateLimit::check] Order num reached limit within {} ms. "
           "Current: {}, Limit: {}",
-          period_ms_, order_count_, order_limit_);
+          period_ms_, order_tm_record_.size(), order_limit_);
       return false;
     }
 
-    ++order_count_;
-    order_tm_record_.emplace_back(current_ms);
+    order_tm_record_.emplace_back(
+        std::make_tuple(current_ms, order->engine_order_id));
   }
 
   if (volume_limit_ > 0) {
     for (auto iter = volume_tm_record_.begin();
          iter != volume_tm_record_.end();) {
-      if (iter->first > lower_bound_ms) break;
-      volume_count_ -= iter->second;
+      if (std::get<0>(*iter) > lower_bound_ms) break;
+      volume_count_ -= std::get<1>(*iter);
       iter = volume_tm_record_.erase(iter);
     }
 
@@ -53,10 +54,27 @@ bool ThrottleRateLimit::check_order_req(const OrderReq* order) {
     }
 
     volume_count_ += order->volume;
-    volume_tm_record_.emplace_back(std::pair{current_ms, order->volume});
+    volume_tm_record_.emplace_back(
+        std::make_tuple(current_ms, order->volume, order->engine_order_id));
   }
 
   return true;
+}
+
+void ThrottleRateLimit::on_order_completed(uint64_t engine_order_id,
+                                           int error_code) {
+  if (error_code == ERR_SEND_FAILED) {
+    if (!volume_tm_record_.empty() &&
+        std::get<2>(volume_tm_record_.back()) == engine_order_id) {
+      volume_count_ -= std::get<1>(volume_tm_record_.back());
+      volume_tm_record_.pop_back();
+    }
+
+    if (!order_tm_record_.empty() &&
+        std::get<1>(order_tm_record_.back()) == engine_order_id) {
+      order_tm_record_.pop_back();
+    }
+  }
 }
 
 }  // namespace ft

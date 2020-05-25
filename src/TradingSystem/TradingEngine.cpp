@@ -3,6 +3,7 @@
 #include "TradingSystem/TradingEngine.h"
 
 #include "Core/ContractTable.h"
+#include "Core/ErrorCode.h"
 #include "Core/Protocol.h"
 #include "RiskManagement/RiskManager.h"
 #include "Utils/Misc.h"
@@ -130,7 +131,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (!risk_mgr_->check_order_req(&req)) {
     spdlog::error("风控未通过");
-    risk_mgr_->on_order_completed(req.engine_order_id);
+    risk_mgr_->on_order_completed(req.engine_order_id, ERR_SEND_FAILED);
     respond_send_order_error(cmd);
     return false;
   }
@@ -144,7 +145,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
         contract->ticker, direction_str(req.direction), offset_str(req.offset),
         ordertype_str(req.type), 0, req.volume, req.price);
 
-    risk_mgr_->on_order_completed(req.engine_order_id);
+    risk_mgr_->on_order_completed(req.engine_order_id, ERR_SEND_FAILED);
     respond_send_order_error(cmd);
     return false;
   }
@@ -298,7 +299,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   portfolio_.update_pending(order.contract->index, order.direction,
                             order.offset, -order.volume);
 
-  risk_mgr_->on_order_completed(order.engine_order_id);
+  risk_mgr_->on_order_completed(order.engine_order_id, ERR_REJECTED);
 
   if (order.strategy_id[0] != 0) {
     OrderResponse rsp{};
@@ -355,7 +356,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    risk_mgr_->on_order_completed(order.engine_order_id);
+    risk_mgr_->on_order_completed(order.engine_order_id, NO_ERROR);
 
     completed = true;
     order_map_.erase(iter);
@@ -406,7 +407,7 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
         offset_str(order.offset), order.traded_volume, order.volume);
 
     // 订单结束，通知风控模块
-    risk_mgr_->on_order_completed(order.engine_order_id);
+    risk_mgr_->on_order_completed(order.engine_order_id, NO_ERROR);
 
     if (order.strategy_id[0] != 0) {
       OrderResponse rsp{};

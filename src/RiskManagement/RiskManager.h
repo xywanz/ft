@@ -27,7 +27,7 @@ class RiskManager : public RiskManagementInterface {
   void on_order_traded(uint64_t engine_order_id, int this_traded,
                        double traded_price) override;
 
-  void on_order_completed(uint64_t engine_order_id) override;
+  void on_order_completed(uint64_t engine_order_id, int error_code) override;
 
  private:
   const PositionManager* pos_mgr_;

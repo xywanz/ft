@@ -19,7 +19,7 @@ class RiskManagementInterface {
   virtual void on_order_traded(uint64_t engine_order_id, int this_traded,
                                double traded_price) {}
 
-  virtual void on_order_completed(uint64_t engine_order_id) {}
+  virtual void on_order_completed(uint64_t engine_order_id, int error_code) {}
 };
 
 }  // namespace ft
