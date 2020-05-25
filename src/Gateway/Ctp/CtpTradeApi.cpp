@@ -118,20 +118,24 @@ bool CtpTradeApi::login(const Config &config) {
     return false;
   }
 
-  CThostFtdcQryOrderField req{};
-  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+  if (config.cancel_outstanding_orders_on_startup) {
+    spdlog::debug("[CtpTradeApi::login] Cancel outstanding orders on startup");
 
-  if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::login] Failed. Failed to ReqQryOrder");
-    return false;
-  }
-  if (!wait_sync()) {
-    spdlog::error("[CtpTradeApi::login] Failed to query orders");
-    return false;
-  }
+    CThostFtdcQryOrderField req{};
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
+      spdlog::error("[CtpTradeApi::login] Failed. Failed to ReqQryOrder");
+      return false;
+    }
+    if (!wait_sync()) {
+      spdlog::error("[CtpTradeApi::login] Failed to query orders");
+      return false;
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
 
   is_logon_ = true;
   return true;
@@ -375,8 +379,18 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   auto iter = order_details_.find(order_ref);
   if (order_details_.find(order_ref) == order_details_.end()) {
     // 出现这种情况应该是启动时撤销之前的未完成订单导致的，否则是bug
-    spdlog::warn("[CtpTradeApi::OnRtnOrder] Order not found. OrderRef: {}",
-                 order_ref);
+    if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
+        order->OrderStatus == THOST_FTDC_OST_Canceled) {
+      spdlog::warn(
+          "[CtpTradeApi::OnRtnOrder] Outstanding order canceled. Ticker: {}, "
+          "OrderRef: {}, Traded/Total: {}/{}",
+          order->InstrumentID, order->OrderRef, order->VolumeTraded,
+          order->VolumeTotalOriginal);
+    } else {
+      spdlog::warn("[CtpTradeApi::OnRtnOrder] Order not found. OrderRef: {}",
+                   order->OrderRef);
+    }
+
     return;
   }
   auto &detail = iter->second;

@@ -20,6 +20,8 @@ class Config {
   std::string app_id{""};
   std::vector<std::string> subscription_list{};
 
+  bool cancel_outstanding_orders_on_startup = true;
+
   std::string arg0{""};
   std::string arg1{""};
   std::string arg2{""};

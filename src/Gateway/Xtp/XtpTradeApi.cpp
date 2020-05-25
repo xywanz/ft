@@ -60,9 +60,12 @@ bool XtpTradeApi::login(const Config& config) {
     return false;
   }
 
-  if (!query_orders()) {
-    spdlog::error("[XtpTradeApi::login] 订单查询失败");
-    return false;
+  if (config.cancel_outstanding_orders_on_startup) {
+    spdlog::debug("[XtpTradeApi::login] Cancel outstanding orders on startup");
+    if (!query_orders()) {
+      spdlog::error("[XtpTradeApi::login] 订单查询失败");
+      return false;
+    }
   }
 
   return true;
@@ -95,13 +98,13 @@ uint64_t XtpTradeApi::send_order(const OrderReq* order) {
   }
 
   req.price_type = xtp_price_type(order->type);
-  if (req.side == XTP_PRICE_TYPE::XTP_PRICE_TYPE_UNKNOWN) {
+  if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
     spdlog::error("[XtpTradeApi::send_order] 不支持的订单价格类型");
     return false;
   }
 
   req.market = xtp_market_type(contract->exchange);
-  if (req.market == XTP_MARKET_TYPE::XTP_MKT_UNKNOWN) {
+  if (req.market == XTP_MKT_UNKNOWN) {
     spdlog::error("[XtpTradeApi::send_order] Unknown exchange");
     return false;
   }
@@ -110,7 +113,7 @@ uint64_t XtpTradeApi::send_order(const OrderReq* order) {
   strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
   req.price = order->price;
   req.quantity = order->volume;
-  req.business_type = XTP_BUSINESS_TYPE::XTP_BUSINESS_TYPE_CASH;
+  req.business_type = XTP_BUSINESS_TYPE_CASH;
 
   std::unique_lock<std::mutex> lock(order_mutex_);
   uint64_t xtp_order_id = trade_api_->InsertOrder(&req, session_id_);
@@ -144,12 +147,20 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   auto iter = order_details_.find(order_info->order_xtp_id);
   if (iter == order_details_.end()) {
     // 会在交易完成之后推送ALLTRADED，这里忽略即可
-    if (order_info->order_status !=
-        XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_ALLTRADED) {
+    if (order_info->order_status != XTP_ORDER_STATUS_ALLTRADED) {
       // 应该是启动时撤销之前的未完成订单导致的，否则是bug
-      spdlog::warn(
-          "[XtpTradeApi::OnOrderEvent] Order not found. XtpOrderID: {}",
-          order_info->order_xtp_id);
+      if (order_info->order_status != XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING ||
+          order_info->order_status == XTP_ORDER_STATUS_CANCELED) {
+        spdlog::warn(
+            "[XtpTradeApi::OnOrderEvent] Outstanding order canceled. Ticker: "
+            "{}, XtpOrderID: {}, Traded/Total: {}/{}",
+            order_info->ticker, order_info->order_xtp_id,
+            order_info->qty_traded, order_info->quantity);
+      } else {
+        spdlog::warn(
+            "[XtpTradeApi::OnOrderEvent] Order not found. XtpOrderID: {}",
+            order_info->order_xtp_id);
+      }
     }
     return;
   }
@@ -163,25 +174,20 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
     return;
   }
 
-  if (order_info->order_status ==
-      XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_REJECTED) {
+  if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
     engine_->on_order_rejected(order_info->order_xtp_id);
     return;
   }
 
-  if (order_info->order_status ==
-      XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_UNKNOWN)
-    return;
+  if (order_info->order_status == XTP_ORDER_STATUS_UNKNOWN) return;
 
   if (!detail.accepted_ack) {
     engine_->on_order_accepted(order_info->order_xtp_id);
     detail.accepted_ack = true;
   }
 
-  if (order_info->order_status ==
-          XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_CANCELED ||
-      order_info->order_status ==
-          XTP_ORDER_STATUS_TYPE::XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
+  if (order_info->order_status == XTP_ORDER_STATUS_CANCELED ||
+      order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
     if (detail.canceled_vol == 0) {
       detail.canceled_vol = order_info->qty_left;
       engine_->on_order_canceled(order_info->order_xtp_id, detail.canceled_vol);
