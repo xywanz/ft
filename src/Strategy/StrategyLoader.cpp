@@ -29,7 +29,7 @@ int main() {
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("Strategy", "id");
-  uint64_t account_id = getarg(0, "--account");
+  uint64_t account_id = getarg(0ULL, "--account");
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {

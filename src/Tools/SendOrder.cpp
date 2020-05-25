@@ -11,7 +11,7 @@ int main() {
   std::string direction = getarg("", "--direction");
   std::string offset = getarg("open", "--offset");
   std::string order_type = getarg("fak", "--order_type");
-  uint64_t account = getarg(0, "--account");
+  uint64_t account = getarg(0ULL, "--account");
   int volume = getarg(0, "--volume");
   double price = getarg(0.0, "--price");
 

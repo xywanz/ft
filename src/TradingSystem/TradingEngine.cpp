@@ -64,7 +64,8 @@ bool TradingEngine::login(const Config& config) {
 }
 
 void TradingEngine::run() {
-  spdlog::info("[TradingEngine::run] Start to recv order req");
+  spdlog::info("[TradingEngine::run] Start to recv order req from topic: {}",
+               proto_.trader_cmd_topic());
 
   order_redis_.subscribe({proto_.trader_cmd_topic()});
 
