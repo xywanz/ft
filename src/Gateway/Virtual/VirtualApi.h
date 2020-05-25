@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_GATEWAY_VIRTUAL_VIRTUALTRADEAPI_H_
-#define FT_SRC_GATEWAY_VIRTUAL_VIRTUALTRADEAPI_H_
+#ifndef FT_SRC_GATEWAY_VIRTUAL_VIRTUALAPI_H_
+#define FT_SRC_GATEWAY_VIRTUAL_VIRTUALAPI_H_
 
 #include <atomic>
 #include <condition_variable>
@@ -28,13 +28,15 @@ struct VirtualOrderReq {
 
 class VirtualGateway;
 
-class VirtualTradeApi {
+class VirtualApi {
  public:
-  VirtualTradeApi();
+  VirtualApi();
 
   void set_spi(VirtualGateway* gateway);
 
-  void start();
+  void start_trade_server();
+
+  void start_quote_server();
 
   uint64_t insert_order(VirtualOrderReq* req);
 
@@ -44,6 +46,8 @@ class VirtualTradeApi {
 
  private:
   void process_pendings();
+
+  void disseminate_market_data();
 
  private:
   struct LatestQuote {
@@ -63,4 +67,4 @@ class VirtualTradeApi {
 
 }  // namespace ft
 
-#endif  // FT_SRC_GATEWAY_VIRTUAL_VIRTUALTRADEAPI_H_
+#endif  // FT_SRC_GATEWAY_VIRTUAL_VIRTUALAPI_H_

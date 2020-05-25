@@ -10,8 +10,9 @@ namespace ft {
 
 VirtualGateway::VirtualGateway(TradingEngineInterface* engine)
     : engine_(engine) {
-  trade_api_.set_spi(this);
-  trade_api_.start();
+  virtual_api_.set_spi(this);
+  virtual_api_.start_quote_server();
+  virtual_api_.start_trade_server();
 }
 
 bool VirtualGateway::login(const Config& config) {
@@ -30,11 +31,11 @@ uint64_t VirtualGateway::send_order(const OrderReq* order) {
   req.volume = order->volume;
   req.price = order->price;
 
-  return trade_api_.insert_order(&req);
+  return virtual_api_.insert_order(&req);
 }
 
 bool VirtualGateway::cancel_order(uint64_t order_id) {
-  return trade_api_.cancel_order(order_id);
+  return virtual_api_.cancel_order(order_id);
 }
 
 bool VirtualGateway::query_contract(const std::string& ticker,

@@ -1,23 +1,15 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-add_library(ctp-gateway STATIC
-    Ctp/CtpGateway.cpp
-    Ctp/CtpTradeApi.cpp
-    Ctp/CtpMdApi.cpp
-)
+aux_source_directory(Ctp CTP_SRC)
+add_library(ctp-gateway STATIC ${CTP_SRC})
 target_link_libraries(ctp-gateway ${COMMON_LIB} ${GATEWAY_LIB})
 
-add_library(xtp-gateway STATIC
-    Xtp/XtpGateway.cpp
-    Xtp/XtpTradeApi.cpp
-    Xtp/XtpMdApi.cpp
-)
+aux_source_directory(Xtp XTP_SRC)
+add_library(xtp-gateway STATIC ${XTP_SRC})
 target_link_libraries(xtp-gateway ${COMMON_LIB} ${GATEWAY_LIB})
 
-add_library(virtual-gateway STATIC
-    Virtual/VirtualGateway.cpp
-    Virtual/VirtualTradeApi.cpp
-)
+aux_source_directory(Virtual VIRTUAL_SRC)
+add_library(virtual-gateway STATIC ${VIRTUAL_SRC})
 target_link_libraries(virtual-gateway ${COMMON_LIB})
 
 add_library(gateway STATIC Gateway.cpp)

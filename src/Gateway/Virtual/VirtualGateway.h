@@ -16,7 +16,7 @@
 #include "Core/ContractTable.h"
 #include "Core/Gateway.h"
 #include "Core/Position.h"
-#include "Gateway/Virtual/VirtualTradeApi.h"
+#include "Gateway/Virtual/VirtualApi.h"
 
 namespace ft {
 
@@ -61,7 +61,7 @@ class VirtualGateway : public Gateway {
 
  private:
   TradingEngineInterface* engine_;
-  VirtualTradeApi trade_api_;
+  VirtualApi virtual_api_;
 };
 
 }  // namespace ft

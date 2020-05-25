@@ -242,7 +242,8 @@ void TradingEngine::on_tick(const TickData* tick) {
 
   tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
                       sizeof(TickData));
-  spdlog::debug("[TradingEngine::process_tick]");
+  spdlog::debug("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
+                tick->ask[0], tick->bid[0]);
 }
 
 void TradingEngine::on_query_trade(const Trade* trade) {
