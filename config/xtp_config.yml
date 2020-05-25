@@ -4,4 +4,6 @@ quote_server_address: tcp://111.111.222.222:12346
 investor_id: 88888888888
 password: 1234567
 auth_code: 22222222222222222222222222222aa
-subscription_list: 600036,600001
+subscription_list: 
+  - 600036
+  - 600001

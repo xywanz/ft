@@ -38,12 +38,9 @@ inline void load_config(const std::string& file, ft::Config* config) {
   config->arg6 = node["arg6"].as<std::string>("");
   config->arg7 = node["arg7"].as<std::string>("");
   config->arg8 = node["arg8"].as<std::string>("");
-
-  auto subs = node["subscription_list"].as<std::string>("");
-  if (!subs.empty()) {
-    std::vector<std::string> sub_list;
-    split(subs, ",", &config->subscription_list);
-  }
+  config->subscription_list =
+      node["subscription_list"].as<std::vector<std::string>>(
+          std::vector<std::string>{});
 }
 
 }  // namespace ft

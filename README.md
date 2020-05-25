@@ -317,7 +317,7 @@ investor_id: 123456
 passwd: 12345678
 auth_code: 0000000000000000
 app_id: simnow_client_test
-subscription_list: rb2009,rb2005  # 要订阅哪些合约的市场数据，逗号前后不能有空格
+subscription_list: [rb2009, rb2007]  # 要订阅哪些合约的市场数据，是yaml数组格式的
 ```
 
 ### 7.3. 让示例跑起来

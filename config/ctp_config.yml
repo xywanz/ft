@@ -6,4 +6,4 @@ investor_id: 123456
 password: abc123456
 auth_code: 0000000000000000
 app_id: simnow_client_test
-subscription_list: rb2009
+subscription_list: [rb2009, rb2007]
