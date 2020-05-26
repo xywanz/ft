@@ -20,6 +20,9 @@ struct Contract {
   int size;
   double price_tick;
 
+  double long_margin_rate;
+  double short_margin_rate;
+
   int max_market_order_volume;
   int min_market_order_volume;
   int max_limit_order_volume;

@@ -11,6 +11,7 @@ struct Account {
   uint64_t account_id;  // 资金账户号
   double balance;       // 余额
   double frozen;        // 冻结金额
+  double margin;
 };
 
 }  // namespace ft

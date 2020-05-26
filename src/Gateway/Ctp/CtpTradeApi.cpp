@@ -422,7 +422,7 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
     // 撤单都是一次性撤销所有未成交订单
-    // 这里是为了防止重接收到撤单回执
+    // 这里是为了防止重复收到撤单回执
     if (detail.canceled_vol == 0) {
       detail.canceled_vol = order->VolumeTotalOriginal - order->VolumeTraded;
       engine_->on_order_canceled(order_ref, detail.canceled_vol);
@@ -807,20 +807,24 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
 }
 
 bool CtpTradeApi::query_margin_rate(const std::string &ticker) {
-  auto contract = ContractTable::get_by_ticker(ticker);
-  if (!contract) {
-    spdlog::error(
-        "[CtpTradeApi::query_margin_rate] Contract not found. Ticker: {}",
-        ticker);
-    return false;
+  CThostFtdcQryInstrumentMarginRateField req{};
+
+  if (!ticker.empty()) {
+    auto contract = ContractTable::get_by_ticker(ticker);
+    if (!contract) {
+      spdlog::error(
+          "[CtpTradeApi::query_margin_rate] Contract not found. Ticker: {}",
+          ticker);
+      return false;
+    }
+    strncpy(req.InstrumentID, contract->ticker.c_str(),
+            sizeof(req.InstrumentID));
+    strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   }
 
-  CThostFtdcQryInstrumentMarginRateField req{};
   req.HedgeFlag = THOST_FTDC_HF_Speculation;
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-  strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
-  strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
 
   std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->ReqQryInstrumentMarginRate(&req, next_req_id()) != 0) {
@@ -846,6 +850,20 @@ void CtpTradeApi::OnRspQryInstrumentMarginRate(
 
   if (margin_rate) {
     // TODO(kevin)
+    auto __c = ContractTable::get_by_ticker(margin_rate->InstrumentID);
+    if (!__c) {
+      spdlog::error(
+          "[CtpTradeApi::OnRspQryInstrumentMarginRate] Contract not found: {}",
+          margin_rate->InstrumentID);
+    }
+
+    spdlog::info("Margin Rate. {}, {}, {}", margin_rate->InstrumentID,
+                 margin_rate->LongMarginRatioByMoney,
+                 margin_rate->ShortMarginRatioByMoney);
+
+    auto contract = const_cast<Contract *>(__c);
+    contract->long_margin_rate = margin_rate->LongMarginRatioByMoney;
+    contract->short_margin_rate = margin_rate->ShortMarginRatioByMoney;
   }
 
   if (is_last) done();

@@ -19,6 +19,7 @@ enum ErrorCode : int {
   // 小于ERR_SEND_FAILED的错误归属于RM
   ERR_SELF_TRADE,
   ERR_POSITION_NOT_ENOUGH,
+  ERR_FUND_NOT_ENOUGH,
   ERR_THROTTLE_RATE_LIMIT,
 
   ERR_SEND_FAILED,
@@ -32,6 +33,7 @@ inline const char* error_code_str(int error_code) {
       "NO_ERROR",
       "ERR_SELF_TRADE",
       "ERR_POSITION_NOT_ENOUGH",
+      "ERR_FUND_NOT_ENOUGH",
       "ERR_THROTTLE_RATE_LIMIT",
       "ERR_SEND_FAILED",
       "ERR_REJECTED",

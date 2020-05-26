@@ -48,6 +48,8 @@ inline bool load_contracts(const std::string& file,
     contract.min_limit_order_volume = std::stoi(fields[index++]);
     contract.delivery_year = std::stoi(fields[index++]);
     contract.delivery_month = std::stoi(fields[index++]);
+    contract.long_margin_rate = 1.0;
+    contract.short_margin_rate = 1.0;
     contracts->emplace_back(std::move(contract));
   }
 

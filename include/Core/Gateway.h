@@ -45,22 +45,22 @@ class Gateway {
 
   virtual bool query_contract(const std::string& ticker,
                               const std::string& exchange) {
-    return false;
+    return true;
   }
 
-  virtual bool query_contracts() { return false; }
+  virtual bool query_contracts() { return true; }
 
-  virtual bool query_position(const std::string& ticker) { return false; }
+  virtual bool query_position(const std::string& ticker) { return true; }
 
-  virtual bool query_positions() { return false; }
+  virtual bool query_positions() { return true; }
 
-  virtual bool query_account() { return false; }
+  virtual bool query_account() { return true; }
 
-  virtual bool query_trades() { return false; }
+  virtual bool query_trades() { return true; }
 
-  virtual bool query_margin_rate(const std::string& ticker) { return false; }
+  virtual bool query_margin_rate(const std::string& ticker) { return true; }
 
-  virtual bool query_commision_rate(const std::string& ticker) { return false; }
+  virtual bool query_commision_rate(const std::string& ticker) { return true; }
 };
 
 using __GATEWAY_CREATE_FUNC = std::function<Gateway*(TradingEngineInterface*)>;
