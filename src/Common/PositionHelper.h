@@ -12,7 +12,7 @@ namespace ft {
 
 class PositionHelper {
  public:
-  void set_account(uint64_t account) { proto_.set_account_id(account); }
+  void set_account(uint64_t account) { proto_.set_account(account); }
 
   Position get_position(const std::string& ticker) const {
     Position pos;

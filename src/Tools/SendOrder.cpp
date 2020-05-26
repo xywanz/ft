@@ -75,6 +75,6 @@ int main() {
   }
 
   ft::OrderSender sender;
-  sender.set_account_id(account);
+  sender.set_account(account);
   sender.send_order(ticker, volume, d, o, k, price, 0);
 }

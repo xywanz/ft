@@ -13,7 +13,7 @@ PositionManager::PositionManager(const std::string& ip, int port)
     : redis_(ip, port) {}
 
 void PositionManager::init(uint64_t account) {
-  proto_.set_account_id(account);
+  proto_.set_account(account);
   auto reply = redis_.keys(fmt::format("{}*", proto_.pos_key_prefix()));
   for (size_t i = 0; i < reply->elements; ++i)
     redis_.del(reply->element[i]->str);

@@ -43,8 +43,8 @@ class Strategy {
   }
 
   void set_account_id(uint64_t account_id) {
-    proto_.set_account_id(account_id);
-    sender_.set_account_id(account_id);
+    proto_.set_account(account_id);
+    sender_.set_account(account_id);
     pos_helper_.set_account(account_id);
   }
 

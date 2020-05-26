@@ -56,7 +56,7 @@ bool TradingEngine::login(const Config& config) {
   }
   spdlog::info("[[TradingEngine::login] Querying trades done");
 
-  proto_.set_account_id(account_.account_id);
+  proto_.set_account(account_.account_id);
   spdlog::info("[TradingEngine::login] Init done");
 
   is_logon_ = true;

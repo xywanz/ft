@@ -19,8 +19,8 @@ class OrderSender {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
-  void set_account_id(uint64_t account_id) {
-    proto_.set_account_id(account_id);
+  void set_account(uint64_t account_id) {
+    proto_.set_account(account_id);
   }
 
   void buy_open(const std::string& ticker, int volume, double price,

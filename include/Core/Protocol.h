@@ -97,7 +97,7 @@ struct OrderResponse {
 
 class ProtocolQueryCenter {
  public:
-  void set_account_id(uint64_t account_id) {
+  void set_account(uint64_t account_id) {
     account_id_ = account_id;
     account_abbreviation_ = std::to_string(account_id).substr(0, 4);
     trader_cmd_topic_ = fmt::format("trader_cmd-{}", account_abbreviation_);
