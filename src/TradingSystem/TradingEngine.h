@@ -13,6 +13,7 @@
 #include "Common/PositionManager.h"
 #include "Core/Account.h"
 #include "Core/Config.h"
+#include "Core/ErrorCode.h"
 #include "Core/Gateway.h"
 #include "Core/RiskManagementInterface.h"
 #include "Core/TradingEngineInterface.h"
@@ -66,7 +67,8 @@ class TradingEngine : public TradingEngineInterface {
  private:
   uint64_t next_engine_order_id() { return next_engine_order_id_++; }
 
-  void respond_send_order_error(const TraderCommand* cmd);
+  void respond_send_order_error(const TraderCommand* cmd,
+                                int error_code = NO_ERROR);
 
  private:
   std::unique_ptr<Gateway> gateway_{nullptr};

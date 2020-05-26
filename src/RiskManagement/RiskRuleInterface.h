@@ -5,6 +5,7 @@
 
 #include <string>
 
+#include "Core/ErrorCode.h"
 #include "Core/Gateway.h"
 #include "Core/Protocol.h"
 
@@ -14,7 +15,7 @@ class RiskRuleInterface {
  public:
   virtual ~RiskRuleInterface() {}
 
-  virtual bool check_order_req(const OrderReq* req) { return true; }
+  virtual int check_order_req(const OrderReq* req) { return NO_ERROR; }
 
   virtual void on_order_sent(uint64_t engine_order_id) {}
 

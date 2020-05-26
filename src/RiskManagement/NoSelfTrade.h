@@ -17,7 +17,7 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  bool check_order_req(const OrderReq* order) override;
+  int check_order_req(const OrderReq* order) override;
 
   void on_order_completed(uint64_t order_id, int error_code) override;
 

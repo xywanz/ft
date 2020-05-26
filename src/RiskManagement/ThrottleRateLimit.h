@@ -25,8 +25,7 @@ class ThrottleRateLimit : public RiskRuleInterface {
   ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
                     uint64_t volume_limit);
 
-  // 返回false则拦截订单
-  bool check_order_req(const OrderReq* order) override;
+  int check_order_req(const OrderReq* order) override;
 
   void on_order_completed(uint64_t engine_order_id, int error_code) override;
 

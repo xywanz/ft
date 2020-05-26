@@ -9,7 +9,7 @@ namespace ft {
 AvailablePosCheck::AvailablePosCheck(const PositionManager* pos_mgr)
     : pos_mgr_(pos_mgr) {}
 
-bool AvailablePosCheck::check_order_req(const OrderReq* order) {
+int AvailablePosCheck::check_order_req(const OrderReq* order) {
   if (is_offset_close(order->offset)) {
     auto pos = pos_mgr_->find(order->ticker_index);
     int available = 0;
@@ -23,11 +23,11 @@ bool AvailablePosCheck::check_order_req(const OrderReq* order) {
           "[AvailablePosCheck::check_order_req] Not enough volume to close. "
           "Available: {}, OrderVolume: {}",
           available, order->volume);
-      return false;
+      return ERR_POSITION_NOT_ENOUGH;
     }
   }
 
-  return true;
+  return NO_ERROR;
 }
 
 }  // namespace ft

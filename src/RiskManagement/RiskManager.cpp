@@ -19,12 +19,15 @@ void RiskManager::add_rule(std::shared_ptr<RiskRuleInterface> rule) {
   rules_.emplace_back(rule);
 }
 
-bool RiskManager::check_order_req(const OrderReq* order) {
+int RiskManager::check_order_req(const OrderReq* order) {
+  int error_code;
+
   for (auto& rule : rules_) {
-    if (!rule->check_order_req(order)) return false;
+    error_code = rule->check_order_req(order);
+    if (error_code != NO_ERROR) return error_code;
   }
 
-  return true;
+  return NO_ERROR;
 }
 
 void RiskManager::on_order_sent(uint64_t order_id) {

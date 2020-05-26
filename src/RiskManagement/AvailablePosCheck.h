@@ -20,7 +20,7 @@ class AvailablePosCheck : public RiskRuleInterface {
  public:
   explicit AvailablePosCheck(const PositionManager* pos_mgr);
 
-  bool check_order_req(const OrderReq* order) override;
+  int check_order_req(const OrderReq* order) override;
 
  private:
   const PositionManager* pos_mgr_{nullptr};

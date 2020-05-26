@@ -20,7 +20,7 @@ class RiskManager : public RiskManagementInterface {
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 
-  bool check_order_req(const OrderReq* req) override;
+  int check_order_req(const OrderReq* req) override;
 
   void on_order_sent(uint64_t engine_order_id) override;
 

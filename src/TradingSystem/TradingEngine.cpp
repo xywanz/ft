@@ -130,10 +130,12 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   req.price = sreq.price;
 
   std::unique_lock<std::mutex> lock(mutex_);
-  if (!risk_mgr_->check_order_req(&req)) {
-    spdlog::error("风控未通过");
-    risk_mgr_->on_order_completed(req.engine_order_id, ERR_SEND_FAILED);
-    respond_send_order_error(cmd);
+  int error_code = risk_mgr_->check_order_req(&req);
+  if (error_code != NO_ERROR) {
+    spdlog::error("[TradingEngine::send_order] 风控未通过: {}",
+                  error_code_str(error_code));
+    risk_mgr_->on_order_completed(req.engine_order_id, error_code);
+    respond_send_order_error(cmd, error_code);
     return false;
   }
 
@@ -147,7 +149,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
         ordertype_str(req.type), 0, req.volume, req.price);
 
     risk_mgr_->on_order_completed(req.engine_order_id, ERR_SEND_FAILED);
-    respond_send_order_error(cmd);
+    respond_send_order_error(cmd, ERR_SEND_FAILED);
     return false;
   }
 
@@ -257,6 +259,10 @@ void TradingEngine::on_query_trade(const Trade* trade) {
                                    trade->offset, trade->volume);
 }
 
+/*
+ * 订单被市场接受后通知策略
+ * 告知策略order_id，策略可通过此order_id撤单
+ */
 void TradingEngine::on_order_accepted(uint64_t order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(order_id);
@@ -276,6 +282,7 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
     rsp.direction = order.direction;
     rsp.offset = order.offset;
     rsp.original_volume = order.volume;
+    rsp.error_code = NO_ERROR;
     rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
   }
 
@@ -311,6 +318,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
     rsp.offset = order.offset;
     rsp.original_volume = order.volume;
     rsp.completed = true;
+    rsp.error_code = ERR_REJECTED;
     rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
   }
 
@@ -375,6 +383,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
     rsp.this_traded = this_traded;
     rsp.this_traded_price = traded_price;
     rsp.completed = completed;
+    rsp.error_code = NO_ERROR;
     rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
   }
 }
@@ -420,6 +429,7 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
       rsp.original_volume = order.volume;
       rsp.traded_volume = order.traded_volume;
       rsp.completed = true;
+      rsp.error_code = NO_ERROR;
       rsp_redis_.publish(order.strategy_id, &rsp, sizeof(rsp));
     }
 
@@ -434,7 +444,8 @@ void TradingEngine::on_order_cancel_rejected(uint64_t order_id) {
       order_id);
 }
 
-void TradingEngine::respond_send_order_error(const TraderCommand* cmd) {
+void TradingEngine::respond_send_order_error(const TraderCommand* cmd,
+                                             int error_code) {
   if (cmd->strategy_id[0] == 0) return;
 
   OrderResponse rsp{};
@@ -444,6 +455,7 @@ void TradingEngine::respond_send_order_error(const TraderCommand* cmd) {
   rsp.offset = cmd->order_req.offset;
   rsp.original_volume = cmd->order_req.volume;
   rsp.completed = true;
+  rsp.error_code = error_code;
   rsp_redis_.publish(cmd->strategy_id, &rsp, sizeof(rsp));
 }
 

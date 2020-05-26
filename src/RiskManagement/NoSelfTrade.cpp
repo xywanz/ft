@@ -6,7 +6,7 @@
 
 namespace ft {
 
-bool NoSelfTradeRule::check_order_req(const OrderReq* order) {
+int NoSelfTradeRule::check_order_req(const OrderReq* order) {
   const auto* contract = ContractTable::get_by_index(order->ticker_index);
   assert(contract);
 
@@ -27,7 +27,7 @@ bool NoSelfTradeRule::check_order_req(const OrderReq* order) {
   }
 
   orders_.emplace_back(*order);
-  return true;
+  return NO_ERROR;
 
 catch_order:
   spdlog::error(
@@ -38,7 +38,7 @@ catch_order:
       ordertype_str(order->type), order->price,
       direction_str(pending_order->direction),
       ordertype_str(pending_order->type), pending_order->price);
-  return false;
+  return ERR_SELF_TRADE;
 }
 
 void NoSelfTradeRule::on_order_completed(uint64_t engine_order_id,

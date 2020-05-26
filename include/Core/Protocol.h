@@ -90,6 +90,7 @@ struct OrderResponse {
   int traded_volume;
 
   bool completed;
+  int error_code;
   uint32_t this_traded;
   double this_traded_price;
 } __attribute__((packed));
