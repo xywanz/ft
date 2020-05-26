@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "Common/OrderSender.h"
+#include "Common/PositionHelper.h"
 #include "Core/Constants.h"
 #include "Core/Contract.h"
 #include "Core/ContractTable.h"
@@ -44,6 +45,7 @@ class Strategy {
   void set_account_id(uint64_t account_id) {
     proto_.set_account_id(account_id);
     sender_.set_account_id(account_id);
+    pos_helper_.set_account(account_id);
   }
 
  protected:
@@ -82,26 +84,12 @@ class Strategy {
   void cancel_all() { sender_.cancel_all(); }
 
   Position get_position(const std::string& ticker) const {
-    Position pos;
-
-    auto reply = portfolio_redis_.get(proto_.pos_key(ticker));
-    if (reply->len == 0) return pos;
-
-    memcpy(&pos, reply->str, sizeof(pos));
-    return pos;
+    return pos_helper_.get_position(ticker);
   }
 
-  double get_realized_pnl() const {
-    auto reply = portfolio_redis_.get("realized_pnl");
-    if (reply->len == 0) return 0;
-    return *reinterpret_cast<double*>(reply->str);
-  }
+  double get_realized_pnl() const { return pos_helper_.get_realized_pnl(); }
 
-  double get_float_pnl() const {
-    auto reply = portfolio_redis_.get("float_pnl");
-    if (reply->len == 0) return 0;
-    return *reinterpret_cast<double*>(reply->str);
-  }
+  double get_float_pnl() const { return pos_helper_.get_float_pnl(); }
 
  private:
   void send_order(const std::string& ticker, int volume, uint32_t direction,
@@ -116,8 +104,8 @@ class Strategy {
   OrderSender sender_;
   RedisSession tick_redis_;
   RedisSession rsp_redis_;
-  RedisSession portfolio_redis_;
   ProtocolQueryCenter proto_;
+  PositionHelper pos_helper_;
 };
 
 #define EXPORT_STRATEGY(type) \
