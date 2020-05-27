@@ -709,15 +709,16 @@ void CtpTradeApi::OnRspQryTradingAccount(
 
   spdlog::debug(
       "[CtpTradeApi::OnRspQryTradingAccount] Success. "
-      "Account ID: {}, Balance: {}, Frozen: {}",
+      "Account ID: {}, Balance: {}, Frozen: {}, Margin:{}",
       trading_account->AccountID, trading_account->Balance,
-      trading_account->FrozenMargin);
+      trading_account->FrozenMargin, trading_account->CurrMargin);
 
   Account account;
   account.account_id = std::stoul(trading_account->AccountID);
   account.balance = trading_account->Balance;
   account.frozen = trading_account->FrozenCash + trading_account->FrozenMargin +
                    trading_account->FrozenCommission;
+  account.margin = trading_account->CurrMargin;
 
   engine_->on_query_account(&account);
   done();

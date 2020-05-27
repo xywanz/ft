@@ -242,13 +242,6 @@ void TradingEngine::on_query_position(const Position* position) {
     return;
 
   portfolio_.set_position(position);
-
-  account_.margin +=
-      contract->size *
-      (lp.holdings * lp.cost_price * contract->long_margin_rate +
-       sp.holdings * sp.cost_price * contract->short_margin_rate);
-  spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_.balance,
-                account_.frozen, account_.margin);
 }
 
 void TradingEngine::on_tick(const TickData* tick) {
