@@ -9,6 +9,7 @@
 namespace ft {
 
 void FundManager::init(Account* account) { account_ = account; }
+
 void FundManager::on_new_order(const Order& order) {
   if (!account_) return;
 
@@ -41,7 +42,7 @@ void FundManager::on_order_abort(const Order& order, int incompleted_volume) {
 }
 
 void FundManager::on_order_traded(const Order& order, int traded,
-                            double traded_price) {
+                                  double traded_price) {
   if (!account_) return;
 
   auto contract = order.contract;
