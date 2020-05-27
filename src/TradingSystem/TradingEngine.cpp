@@ -58,6 +58,15 @@ bool TradingEngine::login(const Config& config) {
 
   proto_.set_account(account_.account_id);
   fund_mgr_.init(&account_);
+
+  // 启动个线程去定时查询资金账户信息
+  std::thread([this]() {
+    for (;;) {
+      std::this_thread::sleep_for(std::chrono::seconds(15));
+      gateway_->query_account();
+    }
+  }).detach();
+
   spdlog::info("[TradingEngine::login] Init done");
 
   is_logon_ = true;
@@ -206,11 +215,13 @@ void TradingEngine::cancel_all() {
 void TradingEngine::on_query_contract(const Contract* contract) {}
 
 void TradingEngine::on_query_account(const Account* account) {
+  std::unique_lock<std::mutex> lock(mutex_);
   account_ = *account;
+  lock.unlock();
+
   spdlog::info(
-      "[TradingEngine::on_query_account] Account ID: {}, Balance: {}, Frozen: "
-      "{}",
-      account->account_id, account->balance, account->frozen);
+      "[TradingEngine::on_query_account] balance:{}, frozen:{}, margin:{}",
+      account->balance, account->frozen, account->margin);
 }
 
 void TradingEngine::on_query_position(const Position* position) {
