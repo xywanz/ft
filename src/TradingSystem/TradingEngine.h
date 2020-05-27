@@ -18,6 +18,7 @@
 #include "Core/RiskManagementInterface.h"
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
+#include "TradingSystem/FundManager.h"
 #include "TradingSystem/Order.h"
 
 namespace ft {
@@ -77,6 +78,7 @@ class TradingEngine : public TradingEngineInterface {
   Account account_{};
   PositionManager portfolio_;
   std::unique_ptr<RiskManagementInterface> risk_mgr_{nullptr};
+  FundManager fund_mgr_;
   std::map<uint64_t, Order> order_map_{};
   std::mutex mutex_{};
 

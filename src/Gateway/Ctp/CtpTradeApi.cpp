@@ -570,8 +570,10 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   }
 
   spdlog::debug(
-      "[CtpTradeApi::OnRspQryInstrument] Success. Instrument: {}, Exchange: {}",
-      instrument->InstrumentID, instrument->ExchangeID);
+      "[CtpTradeApi::OnRspQryInstrument] Success. Instrument: {}, Exchange: "
+      "{}, {}",
+      instrument->InstrumentID, instrument->ExchangeID,
+      instrument->LongMarginRatio);
 
   Contract contract;
   contract.product_type = product_type(instrument->ProductClass);
@@ -581,6 +583,8 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   contract.product_type = product_type(instrument->ProductClass);
   contract.size = instrument->VolumeMultiple;
   contract.price_tick = instrument->PriceTick;
+  contract.long_margin_rate = instrument->LongMarginRatio;
+  contract.short_margin_rate = instrument->ShortMarginRatio;
   contract.max_market_order_volume = instrument->MaxMarketOrderVolume;
   contract.min_market_order_volume = instrument->MinMarketOrderVolume;
   contract.max_limit_order_volume = instrument->MaxLimitOrderVolume;

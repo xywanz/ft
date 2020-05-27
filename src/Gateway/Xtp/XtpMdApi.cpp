@@ -146,6 +146,8 @@ void XtpMdApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
     contract.exchange = ft_exchange_type(ticker_info->exchange_id);
     contract.name = ticker_info->ticker_name;
     contract.price_tick = ticker_info->price_tick;
+    contract.long_margin_rate = 1.0;
+    contract.short_margin_rate = 1.0;
     if (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK)
       contract.product_type = ProductType::STOCK;
     else if (ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)

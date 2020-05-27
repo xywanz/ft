@@ -57,6 +57,7 @@ bool TradingEngine::login(const Config& config) {
   spdlog::info("[[TradingEngine::login] Querying trades done");
 
   proto_.set_account(account_.account_id);
+  fund_mgr_.init(&account_);
   spdlog::info("[TradingEngine::login] Init done");
 
   is_logon_ = true;
@@ -171,15 +172,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   portfolio_.update_pending(contract->index, order.direction, order.offset,
                             order.volume);
 
-  if (is_offset_open(order.offset)) {
-    auto margin_rate = order.direction == Direction::BUY
-                           ? contract->long_margin_rate
-                           : contract->short_margin_rate;
-    account_.frozen +=
-        contract->size * order.volume * order.price * margin_rate;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_.balance,
-                  account_.frozen, account_.margin);
-  }
+  fund_mgr_.on_new_order(order);
 
   spdlog::debug(
       "[StrategyEngine::send_order] Success. Order: <Ticker: {}, OrderID: {}, "
@@ -215,7 +208,7 @@ void TradingEngine::on_query_contract(const Contract* contract) {}
 void TradingEngine::on_query_account(const Account* account) {
   account_ = *account;
   spdlog::info(
-      "[TradingEngine::on_query_account] Account ID: {}, Balance: {}, Fronzen: "
+      "[TradingEngine::on_query_account] Account ID: {}, Balance: {}, Frozen: "
       "{}",
       account->account_id, account->balance, account->frozen);
 }
@@ -317,15 +310,7 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   portfolio_.update_pending(order.contract->index, order.direction,
                             order.offset, -order.volume);
 
-  if (is_offset_open(order.offset)) {
-    auto margin_rate = order.direction == Direction::BUY
-                           ? order.contract->long_margin_rate
-                           : order.contract->short_margin_rate;
-    account_.frozen -=
-        order.contract->size * order.volume * order.price * margin_rate;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_.balance,
-                  account_.frozen, account_.margin);
-  }
+  fund_mgr_.on_order_abort(order, order.volume);
 
   risk_mgr_->on_order_completed(order.engine_order_id, ERR_REJECTED);
 
@@ -373,25 +358,7 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
   portfolio_.update_traded(order.contract->index, order.direction, order.offset,
                            this_traded, traded_price);
 
-  if (is_offset_open(order.offset)) {
-    auto margin_rate = order.direction == Direction::BUY
-                           ? order.contract->long_margin_rate
-                           : order.contract->short_margin_rate;
-    auto margin =
-        order.contract->size * this_traded * order.price * margin_rate;
-    account_.frozen -= margin;
-    account_.margin += margin;
-  } else if (is_offset_close(order.offset)) {
-    auto margin_rate = order.direction == Direction::BUY
-                           ? order.contract->long_margin_rate
-                           : order.contract->short_margin_rate;
-    auto margin =
-        order.contract->size * this_traded * traded_price * margin_rate;
-    account_.margin -= margin;
-    if (account_.margin < 0) account_.margin = 0;
-  }
-  spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_.balance,
-                account_.frozen, account_.margin);
+  fund_mgr_.on_order_traded(order, this_traded, traded_price);
 
   risk_mgr_->on_order_traded(order.engine_order_id, this_traded, traded_price);
 
@@ -449,15 +416,7 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
   portfolio_.update_pending(order.contract->index, order.direction,
                             order.offset, -order.canceled_volume);
 
-  if (is_offset_open(order.offset)) {
-    auto margin_rate = order.direction == Direction::BUY
-                           ? order.contract->long_margin_rate
-                           : order.contract->short_margin_rate;
-    account_.frozen -=
-        order.contract->size * canceled_volume * order.price * margin_rate;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_.balance,
-                  account_.frozen, account_.margin);
-  }
+  fund_mgr_.on_order_abort(order, canceled_volume);
 
   if (order.traded_volume + order.canceled_volume == order.volume) {
     spdlog::info(
