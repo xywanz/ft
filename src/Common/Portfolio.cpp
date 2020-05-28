@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Common/PositionManager.h"
+#include "Common/Portfolio.h"
 
 #include <algorithm>
 
@@ -9,17 +9,16 @@
 
 namespace ft {
 
-PositionManager::PositionManager(const std::string& ip, int port)
-    : redis_(ip, port) {}
+Portfolio::Portfolio(const std::string& ip, int port) : redis_(ip, port) {}
 
-void PositionManager::init(uint64_t account) {
+void Portfolio::init(uint64_t account) {
   proto_.set_account(account);
   auto reply = redis_.keys(fmt::format("{}*", proto_.pos_key_prefix()));
   for (size_t i = 0; i < reply->elements; ++i)
     redis_.del(reply->element[i]->str);
 }
 
-void PositionManager::set_position(const Position* pos) {
+void Portfolio::set_position(const Position* pos) {
   pos_map_.emplace(pos->ticker_index, *pos);
 
   const auto* contract = ContractTable::get_by_index(pos->ticker_index);
@@ -28,8 +27,8 @@ void PositionManager::set_position(const Position* pos) {
   redis_.set(key, pos, sizeof(Position));
 }
 
-void PositionManager::update_pending(uint32_t ticker_index, uint32_t direction,
-                                     uint32_t offset, int changed) {
+void Portfolio::update_pending(uint32_t ticker_index, uint32_t direction,
+                               uint32_t offset, int changed) {
   if (changed == 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -57,9 +56,9 @@ void PositionManager::update_pending(uint32_t ticker_index, uint32_t direction,
   redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
-void PositionManager::update_traded(uint32_t ticker_index, uint32_t direction,
-                                    uint32_t offset, int traded,
-                                    double traded_price) {
+void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
+                              uint32_t offset, int traded,
+                              double traded_price) {
   if (traded <= 0) return;
 
   bool is_close = is_offset_close(offset);
@@ -127,8 +126,7 @@ void PositionManager::update_traded(uint32_t ticker_index, uint32_t direction,
   redis_.set("realized_pnl", &realized_pnl_, sizeof(realized_pnl_));
 }
 
-void PositionManager::update_float_pnl(uint32_t ticker_index,
-                                       double last_price) {
+void Portfolio::update_float_pnl(uint32_t ticker_index, double last_price) {
   auto* pos = find(ticker_index);
   if (pos) {
     const auto* contract = ContractTable::get_by_index(ticker_index);
@@ -150,9 +148,8 @@ void PositionManager::update_float_pnl(uint32_t ticker_index,
   }
 }
 
-void PositionManager::update_on_query_trade(uint32_t ticker_index,
-                                            uint32_t direction, uint32_t offset,
-                                            int closed_volume) {
+void Portfolio::update_on_query_trade(uint32_t ticker_index, uint32_t direction,
+                                      uint32_t offset, int closed_volume) {
   // auto* pos = find(ticker_index);
   // if (!pos) return;
 

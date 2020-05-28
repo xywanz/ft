@@ -5,9 +5,8 @@
 
 #include <string>
 
+#include "Common/Order.h"
 #include "Core/ErrorCode.h"
-#include "Core/Gateway.h"
-#include "Core/Protocol.h"
 
 namespace ft {
 
@@ -15,14 +14,18 @@ class RiskRuleInterface {
  public:
   virtual ~RiskRuleInterface() {}
 
-  virtual int check_order_req(const OrderReq* req) { return NO_ERROR; }
+  virtual int check_order_req(const Order* order) { return NO_ERROR; }
 
-  virtual void on_order_sent(uint64_t engine_order_id) {}
+  virtual void on_order_sent(const Order* order) {}
 
-  virtual void on_order_traded(uint64_t engine_order_id, int this_traded,
+  virtual void on_order_traded(const Order* order, int this_traded,
                                double traded_price) {}
 
-  virtual void on_order_completed(uint64_t engine_order_id, int error_code) {}
+  virtual void on_order_canceled(const Order* order, int canceled) {}
+
+  virtual void on_order_completed(const Order* order) {}
+
+  virtual void on_order_rejected(const Order* order, int error_code) {}
 };
 
 }  // namespace ft

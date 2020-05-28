@@ -7,30 +7,33 @@
 #include <memory>
 #include <string>
 
-#include "Common/PositionManager.h"
-#include "Core/Gateway.h"
-#include "Core/RiskManagementInterface.h"
+#include "Common/Order.h"
+#include "Common/Portfolio.h"
+#include "Core/Account.h"
 #include "RiskManagement/RiskRuleInterface.h"
 
 namespace ft {
 
-class RiskManager : public RiskManagementInterface {
+class RiskManager {
  public:
-  explicit RiskManager(const PositionManager* pos_mgr);
+  RiskManager(Account* account, Portfolio* pos_mgr);
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 
-  int check_order_req(const OrderReq* req) override;
+  int check_order_req(const Order* order);
 
-  void on_order_sent(uint64_t engine_order_id) override;
+  void on_order_sent(const Order* order);
 
-  void on_order_traded(uint64_t engine_order_id, int this_traded,
-                       double traded_price) override;
+  void on_order_traded(const Order* order, int this_traded,
+                       double traded_price);
 
-  void on_order_completed(uint64_t engine_order_id, int error_code) override;
+  void on_order_canceled(const Order* order, int canceled);
+
+  void on_order_rejected(const Order* order, int error_code);
+
+  void on_order_completed(const Order* order);
 
  private:
-  const PositionManager* pos_mgr_;
   std::list<std::shared_ptr<RiskRuleInterface>> rules_;
 };
 

@@ -10,16 +10,15 @@
 #include <string>
 #include <vector>
 
-#include "Common/PositionManager.h"
+#include "Common/Order.h"
+#include "Common/Portfolio.h"
 #include "Core/Account.h"
 #include "Core/Config.h"
 #include "Core/ErrorCode.h"
 #include "Core/Gateway.h"
-#include "Core/RiskManagementInterface.h"
 #include "Core/TradingEngineInterface.h"
 #include "IPC/redis.h"
-#include "TradingSystem/FundManager.h"
-#include "TradingSystem/Order.h"
+#include "RiskManagement/RiskManager.h"
 
 namespace ft {
 
@@ -76,9 +75,8 @@ class TradingEngine : public TradingEngineInterface {
 
   ProtocolQueryCenter proto_{};
   Account account_{};
-  PositionManager portfolio_;
-  std::unique_ptr<RiskManagementInterface> risk_mgr_{nullptr};
-  FundManager fund_mgr_;
+  Portfolio portfolio_;
+  std::unique_ptr<RiskManager> risk_mgr_{nullptr};
   std::map<uint64_t, Order> order_map_{};
   std::mutex mutex_{};
 

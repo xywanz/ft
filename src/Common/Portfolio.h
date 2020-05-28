@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_COMMON_POSITIONMANAGER_H_
-#define FT_SRC_COMMON_POSITIONMANAGER_H_
+#ifndef FT_SRC_COMMON_PORTFOLIO_H_
+#define FT_SRC_COMMON_PORTFOLIO_H_
 
 #include <map>
 #include <memory>
@@ -13,9 +13,9 @@
 
 namespace ft {
 
-class PositionManager {
+class Portfolio {
  public:
-  PositionManager(const std::string& ip, int port);
+  Portfolio(const std::string& ip, int port);
 
   void init(uint64_t account);
 
@@ -33,7 +33,7 @@ class PositionManager {
                              uint32_t offset, int closed_volume);
 
   const Position* find(uint32_t ticker_index) const {
-    return const_cast<PositionManager*>(this)->find(ticker_index);
+    return const_cast<Portfolio*>(this)->find(ticker_index);
   }
 
  private:
@@ -58,4 +58,4 @@ class PositionManager {
 
 }  // namespace ft
 
-#endif  // FT_SRC_COMMON_POSITIONMANAGER_H_
+#endif  // FT_SRC_COMMON_PORTFOLIO_H_
