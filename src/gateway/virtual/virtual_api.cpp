@@ -6,9 +6,9 @@
 
 #include <thread>
 
-#include "Utils/misc.h"
 #include "gateway/virtual/random_walk.h"
 #include "gateway/virtual/virtual_gateway.h"
+#include "utils/misc.h"
 
 namespace ft {
 
