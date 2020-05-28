@@ -12,5 +12,5 @@ aux_source_directory(virtual VIRTUAL_SRC)
 add_library(virtual-gateway STATIC ${VIRTUAL_SRC})
 target_link_libraries(virtual-gateway ${COMMON_LIB})
 
-add_library(gateway STATIC Gateway.cpp)
+add_library(gateway STATIC gateway.cpp)
 target_link_libraries(gateway ctp-gateway xtp-gateway virtual-gateway)
