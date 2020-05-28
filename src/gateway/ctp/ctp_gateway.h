@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include "core/Gateway.h"
+#include "core/gateway.h"
 #include "gateway/ctp/ctp_common.h"
 #include "gateway/ctp/ctp_quote_api.h"
 #include "gateway/ctp/ctp_trade_api.h"
@@ -47,7 +47,7 @@ class CtpGateway : public Gateway {
 
  private:
   std::unique_ptr<CtpTradeApi> trade_api_;
-  std::unique_ptr<CtpMdApi> md_api_;
+  std::unique_ptr<CtpQuoteApi> quote_api_;
 
   // trade
 

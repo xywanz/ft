@@ -7,9 +7,9 @@
 #include <memory>
 #include <string>
 
-#include "Core/Position.h"
-#include "Core/Protocol.h"
-#include "IPC/redis.h"
+#include "core/position.h"
+#include "core/protocol.h"
+#include "ipc/redis.h"
 
 namespace ft {
 

@@ -19,11 +19,11 @@
 
 namespace ft {
 
-class XtpMdApi : public XTP::API::QuoteSpi {
+class XtpQuoteApi : public XTP::API::QuoteSpi {
  public:
-  explicit XtpMdApi(TradingEngineInterface* engine);
+  explicit XtpQuoteApi(TradingEngineInterface* engine);
 
-  ~XtpMdApi();
+  ~XtpQuoteApi();
 
   bool login(const Config& config);
 

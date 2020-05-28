@@ -46,7 +46,7 @@ class XtpGateway : public Gateway {
  private:
   TradingEngineInterface* engine_ = nullptr;
   std::unique_ptr<XtpTradeApi> trade_api_;
-  std::unique_ptr<XtpMdApi> md_api_;
+  std::unique_ptr<XtpQuoteApi> quote_api_;
 };
 
 }  // namespace ft

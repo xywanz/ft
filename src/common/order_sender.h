@@ -6,10 +6,10 @@
 #include <mutex>
 #include <string>
 
-#include "IPC/redis.h"
 #include "core/constants.h"
 #include "core/contract_table.h"
 #include "core/protocol.h"
+#include "ipc/redis.h"
 
 namespace ft {
 

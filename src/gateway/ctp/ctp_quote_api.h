@@ -18,11 +18,11 @@
 
 namespace ft {
 
-class CtpMdApi : public CThostFtdcMdSpi {
+class CtpQuoteApi : public CThostFtdcMdSpi {
  public:
-  explicit CtpMdApi(TradingEngineInterface *engine);
+  explicit CtpQuoteApi(TradingEngineInterface *engine);
 
-  ~CtpMdApi();
+  ~CtpQuoteApi();
 
   bool login(const Config &config);
 
@@ -70,7 +70,7 @@ class CtpMdApi : public CThostFtdcMdSpi {
 
  private:
   TradingEngineInterface *engine_;
-  std::unique_ptr<CThostFtdcMdApi, CtpApiDeleter> md_api_;
+  std::unique_ptr<CThostFtdcMdApi, CtpApiDeleter> quote_api_;
 
   std::string server_addr_;
   std::string broker_id_;

@@ -9,7 +9,7 @@ namespace ft {
 XtpGateway::XtpGateway(TradingEngineInterface* engine)
     : engine_(engine),
       trade_api_(std::make_unique<XtpTradeApi>(engine)),
-      md_api_(std::make_unique<XtpMdApi>(engine)) {}
+      quote_api_(std::make_unique<XtpQuoteApi>(engine)) {}
 
 bool XtpGateway::login(const Config& config) {
   if (!config.trade_server_address.empty()) {
@@ -20,7 +20,7 @@ bool XtpGateway::login(const Config& config) {
   }
 
   if (!config.quote_server_address.empty()) {
-    if (!md_api_->login(config)) {
+    if (!quote_api_->login(config)) {
       spdlog::error("[XtpGateway::login] Failed to login into the md server");
       return false;
     }
@@ -31,7 +31,7 @@ bool XtpGateway::login(const Config& config) {
 
 void XtpGateway::logout() {
   trade_api_->logout();
-  md_api_->logout();
+  quote_api_->logout();
 }
 
 uint64_t XtpGateway::send_order(const OrderReq* order) {
@@ -44,10 +44,10 @@ bool XtpGateway::cancel_order(uint64_t order_id) {
 
 bool XtpGateway::query_contract(const std::string& ticker,
                                 const std::string& exchange) {
-  return md_api_->query_contract(ticker, exchange);
+  return quote_api_->query_contract(ticker, exchange);
 }
 
-bool XtpGateway::query_contracts() { return md_api_->query_contracts(); }
+bool XtpGateway::query_contracts() { return quote_api_->query_contracts(); }
 
 bool XtpGateway::query_account() { return trade_api_->query_account(); }
 

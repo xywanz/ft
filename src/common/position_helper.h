@@ -1,3 +1,5 @@
+// Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+
 #ifndef FT_SRC_COMMON_POSITION_HELPER_H_
 #define FT_SRC_COMMON_POSITION_HELPER_H_
 

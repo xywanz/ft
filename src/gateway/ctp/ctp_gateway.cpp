@@ -13,7 +13,7 @@ namespace ft {
 
 CtpGateway::CtpGateway(TradingEngineInterface *engine)
     : trade_api_(std::make_unique<CtpTradeApi>(engine)),
-      md_api_(std::make_unique<CtpMdApi>(engine)) {}
+      quote_api_(std::make_unique<CtpQuoteApi>(engine)) {}
 
 CtpGateway::~CtpGateway() {}
 
@@ -44,7 +44,7 @@ bool CtpGateway::login(const Config &config) {
 
   if (!config.quote_server_address.empty()) {
     spdlog::debug("[CtpGateway::login] Login into market data server");
-    if (!md_api_->login(config)) {
+    if (!quote_api_->login(config)) {
       spdlog::error("[CtpGateway::login] Failed to login into the md server");
       return false;
     }
@@ -55,7 +55,7 @@ bool CtpGateway::login(const Config &config) {
 
 void CtpGateway::logout() {
   trade_api_->logout();
-  md_api_->logout();
+  quote_api_->logout();
 }
 
 uint64_t CtpGateway::send_order(const OrderReq *order) {
