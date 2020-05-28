@@ -27,17 +27,17 @@ inline bool is_error_rsp(XTPRI* error_info) {
 
 inline std::string ft_exchange_type(XTP_EXCHANGE_TYPE exchange) {
   if (exchange == XTP_EXCHANGE_TYPE::XTP_EXCHANGE_SH)
-    return EX_SH_A;
+    return SSE;
   else if (exchange == XTP_EXCHANGE_TYPE::XTP_EXCHANGE_SZ)
-    return EX_SZ_A;
+    return SZE;
   else
     return "UNKNOWN";
 }
 
 inline XTP_MARKET_TYPE xtp_market_type(const std::string& type) {
-  if (type == EX_SH_A)
+  if (type == SSE)
     return XTP_MARKET_TYPE::XTP_MKT_SH_A;
-  else if (type == EX_SZ_A)
+  else if (type == SZE)
     return XTP_MARKET_TYPE::XTP_MKT_SZ_A;
   else
     return XTP_MARKET_TYPE::XTP_MKT_UNKNOWN;

@@ -14,25 +14,25 @@ namespace ft {
  */
 
 // 上海期货交易所
-inline const std::string EX_SHFE = "SHFE";
+inline const std::string SHFE = "SHFE";
 
 // 上海国际能源交易所
-inline const std::string EX_INE = "INE";
+inline const std::string INE = "INE";
 
 // 中国金融期货交易所
-inline const std::string EX_CFFEX = "CFFEX";
+inline const std::string CFFEX = "CFFEX";
 
 // 郑州商品交易所
-inline const std::string EX_CZCE = "CZCE";
+inline const std::string CZCE = "CZCE";
 
 // 大连商品交易所
-inline const std::string EX_DCE = "DCE";
+inline const std::string DCE = "DCE";
 
 // 上海证券交易所-A股
-inline const std::string EX_SH_A = "SH";
+inline const std::string SSE = "SH";
 
 // 深圳证券交易所-A股
-inline const std::string EX_SZ_A = "SZ";
+inline const std::string SZE = "SZ";
 
 /*
  * 订单价格类型

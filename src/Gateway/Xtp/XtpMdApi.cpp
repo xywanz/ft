@@ -63,9 +63,9 @@ bool XtpMdApi::login(const Config& config) {
   for (auto& ticker : subscribed_list_) {
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
-    if (contract->exchange == EX_SH_A)
+    if (contract->exchange == SSE)
       sub_list_sh.emplace_back(const_cast<char*>(ticker.c_str()));
-    else if (contract->exchange == EX_SZ_A)
+    else if (contract->exchange == SZE)
       sub_list_sz.emplace_back(const_cast<char*>(ticker.c_str()));
   }
 
