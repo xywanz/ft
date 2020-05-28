@@ -1,11 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Common/Portfolio.h"
+#include "common/portfolio.h"
 
 #include <algorithm>
 
-#include "Core/Constants.h"
-#include "Core/ContractTable.h"
+#include "core/constants.h"
+#include "core/contract_table.h"
 
 namespace ft {
 

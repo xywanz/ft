@@ -6,9 +6,9 @@
 #include <map>
 #include <string>
 
-#include "Core/Constants.h"
-#include "Core/Contract.h"
-#include "Core/Protocol.h"
+#include "core/constants.h"
+#include "core/contract.h"
+#include "core/protocol.h"
 
 namespace ft {
 

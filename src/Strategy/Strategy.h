@@ -7,15 +7,15 @@
 #include <string>
 #include <vector>
 
-#include "Common/OrderSender.h"
-#include "Common/PositionHelper.h"
-#include "Core/Constants.h"
-#include "Core/Contract.h"
-#include "Core/ContractTable.h"
-#include "Core/Position.h"
-#include "Core/Protocol.h"
-#include "Core/TickData.h"
-#include "IPC/redis.h"
+#include "common/order_sender.h"
+#include "common/position_helper.h"
+#include "core/constants.h"
+#include "core/contract.h"
+#include "core/contract_table.h"
+#include "core/position.h"
+#include "core/protocol.h"
+#include "core/tick_data.h"
+#include "ipc/redis.h"
 
 namespace ft {
 

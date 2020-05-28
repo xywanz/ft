@@ -8,9 +8,9 @@
 #include <memory>
 #include <string>
 
-#include "Core/Config.h"
-#include "Core/Protocol.h"
-#include "Core/TradingEngineInterface.h"
+#include "core/config.h"
+#include "core/protocol.h"
+#include "core/trading_engine_interface.h"
 
 namespace ft {
 

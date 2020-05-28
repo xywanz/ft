@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Strategy/Strategy.h"
+#include "strategy/strategy.h"
 
 namespace ft {
 

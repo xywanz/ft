@@ -1,13 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "Core/Gateway.h"
+#include "core/gateway.h"
 
 #include <functional>
 #include <map>
 
-#include "Gateway/Ctp/CtpGateway.h"
-#include "Gateway/Virtual/VirtualGateway.h"
-#include "Gateway/Xtp/XtpGateway.h"
+#include "gateway/ctp/ctp_gateway.h"
+#include "gateway/virtual/virtual_gateway.h"
+#include "gateway/xtp/xtp_gateway.h"
 
 namespace ft {
 
