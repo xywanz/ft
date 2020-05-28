@@ -84,7 +84,6 @@ class TradingEngine : public TradingEngineInterface {
 
   RedisSession tick_redis_{};
   RedisSession order_redis_{};
-  RedisSession rsp_redis_{};
 
   std::atomic<bool> is_logon_{false};
 };

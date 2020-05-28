@@ -39,6 +39,8 @@ struct Order {
    */
   uint32_t user_order_id;
 
+  uint64_t order_id;
+
   const Contract* contract = nullptr;
   int traded_volume = 0;
   int canceled_volume = 0;

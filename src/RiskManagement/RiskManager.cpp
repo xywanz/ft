@@ -5,6 +5,7 @@
 #include "RiskManagement/FundManager.h"
 #include "RiskManagement/NoSelfTrade.h"
 #include "RiskManagement/PositionManager.h"
+#include "RiskManagement/StrategyNotifier.h"
 #include "RiskManagement/ThrottleRateLimit.h"
 
 namespace ft {
@@ -15,6 +16,7 @@ RiskManager::RiskManager(Account* account, Portfolio* portfolio) {
   add_rule(std::make_shared<PositionManager>(portfolio));
   add_rule(std::make_shared<NoSelfTradeRule>());
   add_rule(std::make_shared<ThrottleRateLimit>(1000, 2, 100));
+  add_rule(std::make_shared<StrategyNotifier>());
 }
 
 void RiskManager::add_rule(std::shared_ptr<RiskRuleInterface> rule) {
@@ -34,6 +36,10 @@ int RiskManager::check_order_req(const Order* order) {
 
 void RiskManager::on_order_sent(const Order* order) {
   for (auto& rule : rules_) rule->on_order_sent(order);
+}
+
+void RiskManager::on_order_accepted(const Order* order) {
+  for (auto& rule : rules_) rule->on_order_accepted(order);
 }
 
 void RiskManager::on_order_traded(const Order* order, int this_traded,

@@ -713,7 +713,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
 
   spdlog::debug(
       "[CtpTradeApi::OnRspQryTradingAccount] Success. "
-      "Account ID: {}, Balance: {}, Frozen: {}, Margin:{}",
+      "Account ID: {}, Balance: {:.3f}, Frozen: {:.3f}, Margin:{:.3f}",
       trading_account->AccountID, trading_account->Balance,
       trading_account->FrozenMargin, trading_account->CurrMargin);
 

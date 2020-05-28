@@ -18,6 +18,8 @@ class RiskRuleInterface {
 
   virtual void on_order_sent(const Order* order) {}
 
+  virtual void on_order_accepted(const Order* order) {}
+
   virtual void on_order_traded(const Order* order, int this_traded,
                                double traded_price) {}
 

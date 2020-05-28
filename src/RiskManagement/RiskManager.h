@@ -24,6 +24,8 @@ class RiskManager {
 
   void on_order_sent(const Order* order);
 
+  void on_order_accepted(const Order* order);
+
   void on_order_traded(const Order* order, int this_traded,
                        double traded_price);
 

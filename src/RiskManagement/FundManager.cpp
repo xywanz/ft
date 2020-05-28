@@ -48,8 +48,8 @@ void FundManager::on_order_sent(const Order* order) {
                            : contract->short_margin_rate;
     account_->frozen +=
         contract->size * order->req.volume * order->req.price * margin_rate;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_->balance,
-                  account_->frozen, account_->margin);
+    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+                  account_->balance, account_->frozen, account_->margin);
   }
 }
 
@@ -74,7 +74,7 @@ void FundManager::on_order_traded(const Order* order, int traded,
     auto margin = contract->size * traded * traded_price * margin_rate;
     account_->margin -= margin;
     if (account_->margin < 0) account_->margin = 0;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_->balance,
+    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}", account_->balance,
                   account_->frozen, account_->margin);
   }
 }
@@ -89,7 +89,7 @@ void FundManager::on_order_canceled(const Order* order, int canceled) {
                            : contract->short_margin_rate;
     account_->frozen -=
         contract->size * canceled * order->req.price * margin_rate;
-    spdlog::debug("Account: balance:{} frozen:{} margin:{}", account_->balance,
+    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}", account_->balance,
                   account_->frozen, account_->margin);
   }
 }
