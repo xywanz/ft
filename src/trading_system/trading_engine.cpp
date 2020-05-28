@@ -4,6 +4,7 @@
 
 #include "core/contract_table.h"
 #include "core/error_code.h"
+#include "core/gateway.h"
 #include "core/protocol.h"
 #include "utils/misc.h"
 
