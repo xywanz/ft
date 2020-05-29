@@ -26,22 +26,14 @@ enum class OrderStatus {
 struct Order {
   OrderReq req;
 
-  /*
-   * 这个ID是给风控使用的，因为风控在发单前需要检查订单，如果后续发单失败，
-   * 需要通过某种途径通知风控模块该订单对应于之前的哪个请求。Gateway返回的
-   * 订单号要在发单之后才能知道，而风控在发单前就需要把订单能一一对应起来，
-   * 于是TradingEngine会维护这个engine_order_id
-   */
-  uint64_t engine_order_id;
-
-  /*
-   * 这个ID是策略发单的时候提供的，使策略能对应其订单回报
-   */
+  // 这个ID是策略发单的时候提供的，使策略能定位其订单，类似于备注
   uint32_t user_order_id;
 
+  // 这个是订单在经纪商的id，提供给用户用于撤单或改单
   uint64_t order_id;
 
   const Contract* contract = nullptr;
+  bool accepted = false;
   int traded_volume = 0;
   int canceled_volume = 0;
   OrderStatus status;

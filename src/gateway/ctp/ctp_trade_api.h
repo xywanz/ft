@@ -31,7 +31,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void logout();
 
-  uint64_t send_order(const OrderReq *order);
+  bool send_order(const OrderReq *order);
 
   bool cancel_order(uint64_t order_id);
 
@@ -137,7 +137,15 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   int next_req_id() { return next_req_id_++; }
 
-  int next_order_ref() { return next_order_ref_++; }
+  uint64_t get_engine_order_id(int order_ref) const {
+    return order_ref - order_ref_base_;
+  }
+
+  uint64_t get_order_id(uint32_t ticker_index, uint32_t order_sys_id) const {
+    return ((static_cast<uint64_t>(ticker_index) << 32) &
+            0xffffffff00000000ULL) |
+           (static_cast<uint64_t>(order_sys_id) & 0xffffffffULL);
+  }
 
   void done() { is_done_ = true; }
 
@@ -167,11 +175,11 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::string front_addr_;
   std::string broker_id_;
   std::string investor_id_;
-  int front_id_ = 0;
-  int session_id_ = 0;
+  int front_id_;
+  int session_id_;
+  int order_ref_base_;
 
   std::atomic<int> next_req_id_ = 0;
-  std::atomic<int> next_order_ref_ = 0;
 
   volatile bool is_error_ = false;
   volatile bool is_connected_ = false;
@@ -179,9 +187,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   volatile bool is_logon_ = false;
 
   std::map<uint32_t, Position> pos_cache_;
-  std::map<int, OrderDetail> order_details_;
   std::mutex query_mutex_;
-  std::mutex order_mutex_;
 };
 
 }  // namespace ft

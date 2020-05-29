@@ -43,7 +43,7 @@ catch_order:
 
 void NoSelfTradeRule::on_order_completed(const Order* order) {
   for (auto iter = orders_.begin(); iter != orders_.end(); ++iter) {
-    if (iter->engine_order_id == order->engine_order_id) {
+    if (iter->req.engine_order_id == order->req.engine_order_id) {
       orders_.erase(iter);
       return;
     }

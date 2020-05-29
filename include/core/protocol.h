@@ -18,12 +18,13 @@ using StrategyIdType = char[16];
 
 // 这个是TradingEngine发给Gateway的下单信息
 struct OrderReq {
+  uint64_t engine_order_id;
   uint32_t ticker_index;
   uint32_t type;
   uint32_t direction;
   uint32_t offset;
-  int volume = 0;
-  double price = 0;
+  int volume;
+  double price;
 } __attribute__((packed));
 
 /*

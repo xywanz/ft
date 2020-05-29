@@ -30,9 +30,9 @@ class VirtualGateway : public Gateway {
 
   void logout() override;
 
-  uint64_t send_order(const OrderReq* order) override;
+  bool send_order(const OrderReq* order) override;
 
-  bool cancel_order(uint64_t order_id) override;
+  bool cancel_order(uint64_t engine_order_id) override;
 
   bool query_contract(const std::string& ticker,
                       const std::string& exchange) override;
@@ -51,11 +51,11 @@ class VirtualGateway : public Gateway {
 
   bool query_commision_rate(const std::string& ticker) override;
 
-  void on_order_accepted(uint64_t order_id);
+  void on_order_accepted(uint64_t engine_order_id);
 
-  void on_order_traded(uint64_t order_id, int traded, double price);
+  void on_order_traded(uint64_t engine_order_id, int traded, double price);
 
-  void on_order_canceled(uint64_t order_id, int canceled);
+  void on_order_canceled(uint64_t engine_order_id, int canceled);
 
   void on_tick(const TickData* tick);
 

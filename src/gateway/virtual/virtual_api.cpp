@@ -14,20 +14,20 @@ namespace ft {
 
 VirtualApi::VirtualApi() {}
 
-uint64_t VirtualApi::insert_order(VirtualOrderReq* req) {
+bool VirtualApi::insert_order(VirtualOrderReq* req) {
   if (req->volume <= 0) {
     spdlog::error("[VirtualApi::insert_order] Invalid volume");
-    return 0;
+    return false;
   }
 
   if (req->type == OrderType::MARKET || req->type == OrderType::BEST) {
     spdlog::error("[VirtualApi::insert_order] unsupported order type");
-    return 0;
+    return false;
   }
 
   if (req->price < 1e-5) {
     spdlog::error("[VirtualApi::insert_order] Invalid price");
-    return 0;
+    return false;
   }
 
   if (req->direction != Direction::BUY && req->direction != Direction::SELL) {
@@ -38,15 +38,15 @@ uint64_t VirtualApi::insert_order(VirtualOrderReq* req) {
   auto contract = ContractTable::get_by_index(req->ticker_index);
   if (!contract) {
     spdlog::error("[VirtualApi::insert_order] Contract not found");
-    return 0;
+    return false;
   }
 
-  req->order_id = next_order_id_++;
   std::unique_lock<std::mutex> lock(mutex_);
   pendings_.emplace_back(*req);
   lock.unlock();
+
   cv_.notify_one();
-  return req->order_id;
+  return true;
 }
 
 void VirtualApi::update_quote(uint32_t ticker_index, double ask, double bid) {
@@ -70,7 +70,8 @@ void VirtualApi::update_quote(uint32_t ticker_index, double ask, double bid) {
          order.price >= quote.ask - 1e-5) ||
         (order.direction == Direction::SELL && quote.bid > 0 &&
          order.price <= quote.bid + 1e-5)) {
-      gateway_->on_order_traded(order.order_id, order.volume, order.price);
+      gateway_->on_order_traded(order.engine_order_id, order.volume,
+                                order.price);
       iter = order_list.erase(iter);
     } else {
       ++iter;
@@ -78,13 +79,13 @@ void VirtualApi::update_quote(uint32_t ticker_index, double ask, double bid) {
   }
 }
 
-bool VirtualApi::cancel_order(uint64_t order_id) {
+bool VirtualApi::cancel_order(uint64_t engine_order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (auto& [ticker_index, order_list] : limit_orders_) {
     UNUSED(ticker_index);
     for (auto iter = order_list.begin(); iter != order_list.end(); ++iter) {
       auto& order = *iter;
-      if (order_id == order.order_id) {
+      if (engine_order_id == order.engine_order_id) {
         order.to_canceled = true;
         pendings_.emplace_back(order);
         order_list.erase(iter);
@@ -118,17 +119,17 @@ void VirtualApi::process_pendings() {
          pending_iter != pendings_.end();) {
       auto& order = *pending_iter;
       if (order.to_canceled) {
-        gateway_->on_order_canceled(order.order_id, order.volume);
+        gateway_->on_order_canceled(order.engine_order_id, order.volume);
         pending_iter = pendings_.erase(pending_iter);
         continue;
       }
 
-      gateway_->on_order_accepted(order.order_id);
+      gateway_->on_order_accepted(order.engine_order_id);
 
       auto iter = lastest_quotes_.find(order.ticker_index);
       if (iter == lastest_quotes_.end()) {
         if (order.type == OrderType::FAK || order.type == OrderType::FOK) {
-          gateway_->on_order_canceled(order.order_id, order.volume);
+          gateway_->on_order_canceled(order.engine_order_id, order.volume);
           pending_iter = pendings_.erase(pending_iter);
           continue;
         }
@@ -139,11 +140,12 @@ void VirtualApi::process_pendings() {
            order.price >= quote.ask - 1e-5) ||
           (order.direction == Direction::SELL && quote.bid > 0 &&
            order.price <= quote.bid + 1e-5)) {
-        gateway_->on_order_traded(order.order_id, order.volume, quote.ask);
+        gateway_->on_order_traded(order.engine_order_id, order.volume,
+                                  quote.ask);
       } else if (order.type == OrderType::LIMIT) {
         limit_orders_[order.ticker_index].emplace_back(order);
       } else {
-        gateway_->on_order_canceled(order.order_id, order.volume);
+        gateway_->on_order_canceled(order.engine_order_id, order.volume);
       }
 
       pending_iter = pendings_.erase(pending_iter);

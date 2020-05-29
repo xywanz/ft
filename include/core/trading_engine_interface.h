@@ -38,28 +38,29 @@ class TradingEngineInterface {
   /*
    * 订单被交易所接受时回调（如果只是被柜台而非交易所接受则不回调）
    */
-  virtual void on_order_accepted(uint64_t order_id) {}
+  virtual void on_order_accepted(uint64_t engine_order_id, uint64_t order_id) {}
 
   /*
    * 订单被拒时回调
    */
-  virtual void on_order_rejected(uint64_t order_id) {}
+  virtual void on_order_rejected(uint64_t engine_order_id) {}
 
   /*
    * 订单成交时回调
    */
-  virtual void on_order_traded(uint64_t order_id, int this_traded,
-                               double traded_price) {}
+  virtual void on_order_traded(uint64_t engine_order_id, uint64_t order_id,
+                               int this_traded, double traded_price) {}
 
   /*
    * 撤单成功时回调
    */
-  virtual void on_order_canceled(uint64_t order_id, int canceled_volume) {}
+  virtual void on_order_canceled(uint64_t engine_order_id,
+                                 int canceled_volume) {}
 
   /*
    * 撤单被拒时回调
    */
-  virtual void on_order_cancel_rejected(uint64_t order_id) {}
+  virtual void on_order_cancel_rejected(uint64_t engine_order_id) {}
 };
 
 }  // namespace ft

@@ -29,7 +29,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
 
   void logout();
 
-  uint64_t send_order(const OrderReq* order);
+  bool send_order(const OrderReq* order);
 
   bool cancel_order(uint64_t order_id);
 
@@ -65,8 +65,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
                     int request_id, bool is_last, uint64_t session_id) override;
 
  private:
-  uint32_t next_client_order_id() { return next_client_order_id_++; }
-
   int next_req_id() { return next_req_id_++; }
 
   void done() { is_done_ = true; }
@@ -82,24 +80,12 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   }
 
  private:
-  struct OrderDetail {
-    const Contract* contract = nullptr;
-    bool accepted_ack = false;
-    int original_vol = 0;
-    int traded_vol = 0;
-    int canceled_vol = 0;
-  };
-
   TradingEngineInterface* engine_;
   std::unique_ptr<XTP::API::TraderApi, XtpApiDeleter> trade_api_;
 
   std::string investor_id_;
   uint64_t session_id_ = 0;
-  std::atomic<uint32_t> next_client_order_id_ = 1;
   std::atomic<uint32_t> next_req_id_ = 1;
-
-  std::map<uint64_t, OrderDetail> order_details_;
-  std::mutex order_mutex_;
 
   volatile bool is_done_ = false;
   volatile bool is_error_ = false;

@@ -24,7 +24,7 @@ class XtpGateway : public Gateway {
 
   void logout() override;
 
-  uint64_t send_order(const OrderReq* order) override;
+  bool send_order(const OrderReq* order) override;
 
   bool cancel_order(uint64_t order_id) override;
 

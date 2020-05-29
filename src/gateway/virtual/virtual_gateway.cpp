@@ -22,8 +22,9 @@ bool VirtualGateway::login(const Config& config) {
 
 void VirtualGateway::logout() {}
 
-uint64_t VirtualGateway::send_order(const OrderReq* order) {
+bool VirtualGateway::send_order(const OrderReq* order) {
   VirtualOrderReq req{};
+  req.engine_order_id = order->engine_order_id;
   req.ticker_index = order->ticker_index;
   req.direction = order->direction;
   req.offset = order->offset;
@@ -34,8 +35,8 @@ uint64_t VirtualGateway::send_order(const OrderReq* order) {
   return virtual_api_.insert_order(&req);
 }
 
-bool VirtualGateway::cancel_order(uint64_t order_id) {
-  return virtual_api_.cancel_order(order_id);
+bool VirtualGateway::cancel_order(uint64_t engine_order_id) {
+  return virtual_api_.cancel_order(engine_order_id);
 }
 
 bool VirtualGateway::query_contract(const std::string& ticker,
@@ -67,13 +68,13 @@ bool VirtualGateway::query_commision_rate(const std::string& ticker) {
   return true;
 }
 
-void VirtualGateway::on_order_accepted(uint64_t order_id) {
-  engine_->on_order_accepted(order_id);
+void VirtualGateway::on_order_accepted(uint64_t engine_order_id) {
+  engine_->on_order_accepted(engine_order_id, engine_order_id);
 }
 
-void VirtualGateway::on_order_traded(uint64_t order_id, int traded,
+void VirtualGateway::on_order_traded(uint64_t engine_order_id, int traded,
                                      double price) {
-  engine_->on_order_traded(order_id, traded, price);
+  engine_->on_order_traded(engine_order_id, engine_order_id, traded, price);
 }
 
 void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {

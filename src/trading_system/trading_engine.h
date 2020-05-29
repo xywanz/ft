@@ -53,16 +53,17 @@ class TradingEngine : public TradingEngineInterface {
 
   void on_tick(const TickData* tick) override;
 
-  void on_order_accepted(uint64_t order_id) override;
+  void on_order_accepted(uint64_t engine_order_id, uint64_t order_id) override;
 
-  void on_order_rejected(uint64_t order_id) override;
+  void on_order_rejected(uint64_t engine_order_id) override;
 
-  void on_order_traded(uint64_t order_id, int this_traded,
-                       double traded_price) override;
+  void on_order_traded(uint64_t engine_order_id, uint64_t order_id,
+                       int this_traded, double traded_price) override;
 
-  void on_order_canceled(uint64_t order_id, int canceled_volume) override;
+  void on_order_canceled(uint64_t engine_order_id,
+                         int canceled_volume) override;
 
-  void on_order_cancel_rejected(uint64_t order_id) override;
+  void on_order_cancel_rejected(uint64_t engine_order_id) override;
 
  private:
   uint64_t next_engine_order_id() { return next_engine_order_id_++; }

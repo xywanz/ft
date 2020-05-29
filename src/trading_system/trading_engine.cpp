@@ -129,13 +129,13 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
 
   Order order{};
   auto& req = order.req;
+  req.engine_order_id = next_engine_order_id();
   req.ticker_index = cmd->order_req.ticker_index;
   req.direction = cmd->order_req.direction;
   req.offset = cmd->order_req.offset;
   req.volume = cmd->order_req.volume;
   req.type = cmd->order_req.type;
   req.price = cmd->order_req.price;
-  order.engine_order_id = next_engine_order_id();
   order.user_order_id = cmd->order_req.user_order_id;
   order.contract = contract;
   order.status = OrderStatus::SUBMITTING;
@@ -163,8 +163,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
     return false;
   }
 
-  order.order_id = order_id;
-  order_map_.emplace(order_id, order);
+  order_map_.emplace((uint64_t)req.engine_order_id, order);
   risk_mgr_->on_order_sent(&order);
 
   spdlog::debug(
@@ -183,16 +182,18 @@ void TradingEngine::cancel_order(uint64_t order_id) {
 
 void TradingEngine::cancel_for_ticker(uint32_t ticker_index) {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (const auto& [order_id, order] : order_map_) {
-    if (ticker_index == order.contract->index) gateway_->cancel_order(order_id);
+  for (const auto& [engine_order_id, order] : order_map_) {
+    UNUSED(engine_order_id);
+    if (ticker_index == order.contract->index)
+      gateway_->cancel_order(order.order_id);
   }
 }
 
 void TradingEngine::cancel_all() {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (const auto& [order_id, order] : order_map_) {
-    UNUSED(order);
-    gateway_->cancel_order(order_id);
+  for (const auto& [engine_order_id, order] : order_map_) {
+    UNUSED(engine_order_id);
+    gateway_->cancel_order(order.order_id);
   }
 }
 
@@ -262,17 +263,22 @@ void TradingEngine::on_query_trade(const Trade* trade) {
  * 订单被市场接受后通知策略
  * 告知策略order_id，策略可通过此order_id撤单
  */
-void TradingEngine::on_order_accepted(uint64_t order_id) {
+void TradingEngine::on_order_accepted(uint64_t engine_order_id,
+                                      uint64_t order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(order_id);
+  auto iter = order_map_.find(engine_order_id);
   if (iter == order_map_.end()) {
-    spdlog::error(
+    spdlog::warn(
         "[TradingEngine::on_order_accepted] Order not found. OrderID: {}",
-        order_id);
+        engine_order_id);
     return;
   }
 
   auto& order = iter->second;
+  if (order.accepted) return;
+
+  order.order_id = order_id;
+  order.accepted = true;
   risk_mgr_->on_order_accepted(&order);
 
   spdlog::info(
@@ -282,13 +288,13 @@ void TradingEngine::on_order_accepted(uint64_t order_id) {
       offset_str(order.req.offset), order.req.volume, order.req.price);
 }
 
-void TradingEngine::on_order_rejected(uint64_t order_id) {
+void TradingEngine::on_order_rejected(uint64_t engine_order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(order_id);
+  auto iter = order_map_.find(engine_order_id);
   if (iter == order_map_.end()) {
-    spdlog::error(
+    spdlog::warn(
         "[TradingEngine::on_order_rejected] Order not found. OrderID: {}",
-        order_id);
+        engine_order_id);
     return;
   }
 
@@ -304,19 +310,31 @@ void TradingEngine::on_order_rejected(uint64_t order_id) {
   order_map_.erase(iter);
 }
 
-void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
-                                    double traded_price) {
+void TradingEngine::on_order_traded(uint64_t engine_order_id, uint64_t order_id,
+                                    int this_traded, double traded_price) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(order_id);
+  auto iter = order_map_.find(engine_order_id);
   if (iter == order_map_.end()) {
-    spdlog::error(
+    spdlog::warn(
         "[TradingEngine::on_order_traded] Order not found. OrderID: {}, "
         "Traded: {}, Price: {}",
-        order_id, this_traded, traded_price);
+        engine_order_id, this_traded, traded_price);
     return;
   }
 
   auto& order = iter->second;
+  if (!order.accepted) {
+    order.accepted = true;
+    risk_mgr_->on_order_accepted(&order);
+
+    spdlog::info(
+        "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, "
+        "Direction: {}, Offset: {}, Volume: {}, Price: {:.2f}",
+        order.contract->ticker, direction_str(order.req.direction),
+        offset_str(order.req.offset), order.req.volume, order.req.price);
+  }
+
+  order.order_id = order_id;
   order.traded_volume += this_traded;
 
   spdlog::info(
@@ -340,13 +358,14 @@ void TradingEngine::on_order_traded(uint64_t order_id, int this_traded,
   }
 }
 
-void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
+void TradingEngine::on_order_canceled(uint64_t engine_order_id,
+                                      int canceled_volume) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(order_id);
+  auto iter = order_map_.find(engine_order_id);
   if (iter == order_map_.end()) {
-    spdlog::error(
+    spdlog::warn(
         "[TradingEngine::on_order_canceled] Order not found. OrderID: {}",
-        order_id);
+        engine_order_id);
     return;
   }
 
@@ -373,11 +392,11 @@ void TradingEngine::on_order_canceled(uint64_t order_id, int canceled_volume) {
   }
 }
 
-void TradingEngine::on_order_cancel_rejected(uint64_t order_id) {
+void TradingEngine::on_order_cancel_rejected(uint64_t engine_order_id) {
   spdlog::warn(
       "[TradingEngine::on_order_cancel_rejected] Order cannot be canceled. "
       "OrderID: {}",
-      order_id);
+      engine_order_id);
 }
 
 }  // namespace ft

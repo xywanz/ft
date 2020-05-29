@@ -14,6 +14,7 @@
 namespace ft {
 
 struct VirtualOrderReq {
+  uint64_t engine_order_id;
   uint32_t ticker_index;
   uint32_t type;
   uint32_t direction;
@@ -22,7 +23,6 @@ struct VirtualOrderReq {
   double price;
 
   // used internally
-  uint64_t order_id;
   bool to_canceled;
 };
 
@@ -38,7 +38,7 @@ class VirtualApi {
 
   void start_quote_server();
 
-  uint64_t insert_order(VirtualOrderReq* req);
+  bool insert_order(VirtualOrderReq* req);
 
   bool cancel_order(uint64_t order_id);
 
@@ -61,8 +61,7 @@ class VirtualApi {
   std::condition_variable cv_;
   std::map<uint32_t, LatestQuote> lastest_quotes_;
   std::list<VirtualOrderReq> pendings_;
-  std::map<uint32_t, std::list<VirtualOrderReq>> limit_orders_;
-  std::atomic<uint64_t> next_order_id_ = 1;
+  std::map<uint64_t, std::list<VirtualOrderReq>> limit_orders_;
 };
 
 }  // namespace ft

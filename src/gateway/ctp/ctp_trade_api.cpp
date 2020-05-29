@@ -203,7 +203,7 @@ void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
   front_id_ = rsp_user_login->FrontID;
   session_id_ = rsp_user_login->SessionID;
   int max_order_ref = std::stoi(rsp_user_login->MaxOrderRef);
-  next_order_ref_ = max_order_ref + 1;
+  order_ref_base_ = max_order_ref + 1;
 
   spdlog::debug(
       "[CtpTradeApi::OnRspUserLogin] Success. Login as {}. "
@@ -256,7 +256,7 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
   reset();
 }
 
-uint64_t CtpTradeApi::send_order(const OrderReq *order) {
+bool CtpTradeApi::send_order(const OrderReq *order) {
   if (!is_logon_) {
     spdlog::error("[CtpTradeApi::send_order] Failed. Not logon");
     return false;
@@ -269,7 +269,7 @@ uint64_t CtpTradeApi::send_order(const OrderReq *order) {
     return false;
   }
 
-  int order_ref = next_order_ref();
+  int order_ref = static_cast<int>(order->engine_order_id) + order_ref_base_;
   CThostFtdcInputOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
@@ -299,23 +299,17 @@ uint64_t CtpTradeApi::send_order(const OrderReq *order) {
     req.VolumeCondition = THOST_FTDC_VC_AV;
   }
 
-  std::unique_lock<std::mutex> lock(order_mutex_);
   if (trade_api_->ReqOrderInsert(&req, next_req_id()) != 0) {
     spdlog::error("[CtpTradeApi::send_order] Failed to call ReqOrderInsert");
     return false;
   }
-
-  OrderDetail detail;
-  detail.contract = contract;
-  order_details_.emplace(order_ref, detail);
-  lock.unlock();
 
   spdlog::debug(
       "[CtpTradeApi::send_order] [{}-{}-{}{}] 订单发送成功. "
       "Volume:{}, Price:{:.3f}",
       order_ref, contract->ticker, direction_str(order->direction),
       offset_str(order->offset), order->volume, order->price);
-  return static_cast<uint64_t>(order_ref);
+  return true;
 }
 
 void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
@@ -346,18 +340,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
       "Rejected, ErrorMsg: {}",
       order->OrderRef, gb2312_to_utf8(rsp_info->ErrorMsg));
 
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (iter == order_details_.end()) {
-    spdlog::error(
-        "[CtpTradeApi::OnRspOrderInsert] Order not found. OrderRef: {}",
-        order_ref);
-    return;
-  }
-  order_details_.erase(iter);
-  lock.unlock();
-
-  engine_->on_order_rejected(order_ref);
+  engine_->on_order_rejected(get_engine_order_id(order_ref));
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
@@ -373,37 +356,17 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   }
 
   // CTP返回的OrderRef不会有问题吧？
-  int order_ref = std::stoi(order->OrderRef);
-
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (order_details_.find(order_ref) == order_details_.end()) {
-    // 出现这种情况应该是启动时撤销之前的未完成订单导致的，否则是bug
-    if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
-        order->OrderStatus == THOST_FTDC_OST_Canceled) {
-      spdlog::warn(
-          "[CtpTradeApi::OnRtnOrder] Outstanding order canceled. Ticker: {}, "
-          "OrderRef: {}, Traded/Total: {}/{}",
-          order->InstrumentID, order->OrderRef, order->VolumeTraded,
-          order->VolumeTotalOriginal);
-    } else {
-      spdlog::warn("[CtpTradeApi::OnRtnOrder] Order not found. OrderRef: {}",
-                   order->OrderRef);
-    }
-
-    return;
-  }
-  auto &detail = iter->second;
+  uint64_t engine_order_id = get_engine_order_id(std::stoi(order->OrderRef));
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
-    order_details_.erase(iter);
-    lock.unlock();
-    engine_->on_order_rejected(order_ref);
+    engine_->on_order_rejected(engine_order_id);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    lock.unlock();
-    engine_->on_order_cancel_rejected(order_ref);
+    engine_->on_order_cancel_rejected(engine_order_id);
+    return;
+  } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted ||
+             order->OrderSubmitStatus == THOST_FTDC_OSS_CancelSubmitted) {
     return;
   }
 
@@ -412,25 +375,17 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
       order->OrderStatus == THOST_FTDC_OST_NoTradeNotQueueing)
     return;
 
-  // 被交易所接收，则回调on_order_accepted
-  if (!detail.accepted_ack) {
-    engine_->on_order_accepted(order_ref);
-    detail.accepted_ack = true;
-  }
-
   // 处理撤单
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
-    // 撤单都是一次性撤销所有未成交订单
-    // 这里是为了防止重复收到撤单回执
-    if (detail.canceled_vol == 0) {
-      detail.canceled_vol = order->VolumeTotalOriginal - order->VolumeTraded;
-      engine_->on_order_canceled(order_ref, detail.canceled_vol);
-    }
-
-    // 这里是处理撤单比回调先到的情况，如果撤单比成交回执先到，则继续等待成交回执到来
-    if (detail.canceled_vol + detail.traded_vol == detail.original_vol)
-      order_details_.erase(iter);
+    engine_->on_order_canceled(
+        engine_order_id, order->VolumeTotalOriginal - order->VolumeTraded);
+  } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
+    auto contract = ContractTable::get_by_ticker(order->InstrumentID);
+    assert(contract);
+    engine_->on_order_accepted(
+        engine_order_id,
+        get_order_id(contract->index, std::stoi(order->OrderSysID)));
   }
 }
 
@@ -445,49 +400,33 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     return;
   }
 
-  int order_ref = std::stoi(trade->OrderRef);
+  auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
+  assert(contract);
 
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (iter == order_details_.end()) {
-    spdlog::error("[CtpTradeApi::OnRtnTrade] Order not found. OrderRef: {}",
-                  order_ref);
-    return;
-  }
-  auto &detail = iter->second;
-
-  if (!detail.accepted_ack) engine_->on_order_accepted(order_ref);
-
-  detail.traded_vol += trade->Volume;
-  engine_->on_order_traded(order_ref, trade->Volume, trade->Price);
-
-  if (detail.traded_vol + detail.canceled_vol == detail.original_vol)
-    order_details_.erase(iter);
+  engine_->on_order_traded(
+      get_engine_order_id(std::stoi(trade->OrderRef)),
+      get_order_id(contract->index, std::stoi(trade->OrderSysID)),
+      trade->Volume, trade->Price);
 }
 
 bool CtpTradeApi::cancel_order(uint64_t order_id) {
   if (!is_logon_) return false;
 
-  int order_ref = static_cast<int>(order_id);
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (!iter->second.accepted_ack) {
-    spdlog::error("[CtpTradeApi::cancel_order] 未被交易所接受的订单不可撤");
+  uint32_t ticker_index = (order_id >> 32) & 0xffffffffULL;
+  auto contract = ContractTable::get_by_index(ticker_index);
+  if (!contract) {
+    spdlog::error("[CtpTradeApi::cancel_order] Contract not found. OrderID:{}",
+                  order_id);
     return false;
   }
 
-  auto contract = iter->second.contract;
-  lock.unlock();
-
   CThostFtdcInputOrderActionField req{};
-  strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
-  snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
+  snprintf(req.OrderSysID, sizeof(req.OrderSysID), "%12llu",
+           order_id & 0xffffffffULL);
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   req.ActionFlag = THOST_FTDC_AF_Delete;
-  req.FrontID = front_id_;
-  req.SessionID = session_id_;
 
   if (trade_api_->ReqOrderAction(&req, next_req_id()) != 0) {
     spdlog::error(
@@ -512,24 +451,6 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
 
   spdlog::error("[CtpTradeApi::OnRspOrderAction] Failed. Rejected. Reason: {}",
                 gb2312_to_utf8(rsp_info->ErrorMsg));
-
-  int order_ref;
-  try {
-    order_ref = std::stoi(action->OrderRef);
-  } catch (...) {
-    spdlog::error("[CtpTradeApi::OnRspOrderAction] Invalid OrderRef");
-    return;
-  }
-
-  std::unique_lock<std::mutex> lock(order_mutex_);
-  auto iter = order_details_.find(order_ref);
-  if (iter == order_details_.end()) {
-    spdlog::error(
-        "[CtpTradeApi::OnRspOrderAction] Order not found. OrderRef: {}",
-        order_ref);
-    return;
-  }
-  engine_->on_order_cancel_rejected(order_ref);
 }
 
 bool CtpTradeApi::query_contract(const std::string &ticker,
@@ -718,7 +639,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
       trading_account->FrozenMargin, trading_account->CurrMargin);
 
   Account account;
-  account.account_id = std::stoul(trading_account->AccountID);
+  account.account_id = std::stoull(trading_account->AccountID);
   account.balance = trading_account->Balance;
   account.frozen = trading_account->FrozenCash + trading_account->FrozenMargin +
                    trading_account->FrozenCommission;
@@ -751,7 +672,6 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order,
         gb2312_to_utf8(order->StatusMsg));
 
     CThostFtdcInputOrderActionField req{};
-    strncpy(req.InstrumentID, order->InstrumentID, sizeof(req.InstrumentID));
     strncpy(req.ExchangeID, order->ExchangeID, sizeof(req.ExchangeID));
     strncpy(req.OrderSysID, order->OrderSysID, sizeof(req.OrderSysID));
     strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));

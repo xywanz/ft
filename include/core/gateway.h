@@ -39,7 +39,7 @@ class Gateway {
    * 发单成功返回大于0的订单号，这个订单号可传回给gateway用于撤单
    * 发单失败则返回0
    */
-  virtual uint64_t send_order(const OrderReq* order) { return 0; }
+  virtual bool send_order(const OrderReq* order) { return false; }
 
   virtual bool cancel_order(uint64_t order_id) { return false; }
 
