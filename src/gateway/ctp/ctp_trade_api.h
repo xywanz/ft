@@ -127,14 +127,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
  private:
-  struct OrderDetail {
-    const Contract *contract = nullptr;
-    bool accepted_ack = false;
-    int original_vol = 0;
-    int traded_vol = 0;
-    int canceled_vol = 0;
-  };
-
   int next_req_id() { return next_req_id_++; }
 
   uint64_t get_engine_order_id(int order_ref) const {
