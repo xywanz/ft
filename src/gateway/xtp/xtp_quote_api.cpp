@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "core/contract_table.h"
+#include "utils/misc.h"
 
 namespace ft {
 
@@ -38,6 +39,7 @@ bool XtpQuoteApi::login(const Config& config) {
   try {
     int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d",
                      protocol, ip, &port);
+    UNUSED(ret);
     assert(ret == 3);
   } catch (...) {
     assert(false);

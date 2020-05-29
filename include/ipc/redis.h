@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "utils/misc.h"
+
 namespace ft {
 
 using RedisReply = std::shared_ptr<redisReply>;
@@ -175,6 +177,7 @@ class AsyncRedisSession {
     argvlen[2] = size;
 
     auto status = redisAsyncCommandArgv(ctx_, cb, privdata, 3, argv, argvlen);
+    UNUSED(status);
     assert(status == REDIS_OK);
   }
 
@@ -190,6 +193,7 @@ class AsyncRedisSession {
     argvlen[1] = key.length();
 
     auto status = redisAsyncCommandArgv(ctx_, cb, privdata, 2, argv, argvlen);
+    UNUSED(status);
     assert(status == REDIS_OK);
   }
 
@@ -205,6 +209,7 @@ class AsyncRedisSession {
     argvlen[1] = pattern.length();
 
     auto status = redisAsyncCommandArgv(ctx_, cb, privdata, 2, argv, argvlen);
+    UNUSED(status);
     assert(status == REDIS_OK);
   }
 

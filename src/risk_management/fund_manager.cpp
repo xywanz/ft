@@ -21,7 +21,7 @@ int FundManager::check_order_req(const Order* order) {
   assert(contract->size > 0);
 
   double avl = account_->balance - account_->frozen - account_->margin;
-  double estimated;
+  double estimated = 0;
   if (req->direction == Direction::BUY) {
     estimated =
         req->price * req->volume * contract->size * contract->long_margin_rate;

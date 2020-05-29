@@ -41,6 +41,7 @@ bool XtpTradeApi::login(const Config& config) {
   try {
     int ret = sscanf(config.trade_server_address.c_str(), "%[^:]://%[^:]:%d",
                      protocol, ip, &port);
+    UNUSED(ret);
     assert(ret == 3);
   } catch (...) {
     assert(false);
