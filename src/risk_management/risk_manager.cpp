@@ -10,11 +10,12 @@
 
 namespace ft {
 
-RiskManager::RiskManager(Account* account, Portfolio* portfolio) {
+RiskManager::RiskManager(Account* account, Portfolio* portfolio,
+                         std::map<uint64_t, Order>* order_map) {
   // 先硬编码吧
   add_rule(std::make_shared<FundManager>(account));
   add_rule(std::make_shared<PositionManager>(portfolio));
-  add_rule(std::make_shared<NoSelfTradeRule>());
+  add_rule(std::make_shared<NoSelfTradeRule>(order_map));
   add_rule(std::make_shared<ThrottleRateLimit>(1000, 2, 100));
   add_rule(std::make_shared<StrategyNotifier>());
 }

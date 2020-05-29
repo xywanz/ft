@@ -3,8 +3,12 @@
 #include "risk_management/no_self_trade.h"
 
 #include "core/contract_table.h"
+#include "utils/misc.h"
 
 namespace ft {
+
+NoSelfTradeRule::NoSelfTradeRule(std::map<uint64_t, Order>* order_map)
+    : order_map_(order_map) {}
 
 int NoSelfTradeRule::check_order_req(const Order* order) {
   auto* req = &order->req;
@@ -13,7 +17,8 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
 
   uint64_t opp_d = opp_direction(req->direction);  // 对手方
   const OrderReq* pending_order;
-  for (auto& o : orders_) {
+  for (auto& [engine_order_id, o] : *order_map_) {
+    UNUSED(engine_order_id);
     pending_order = &o.req;
     if (pending_order->direction != opp_d) continue;
 
@@ -27,7 +32,6 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
     }
   }
 
-  orders_.emplace_back(*order);
   return NO_ERROR;
 
 catch_order:
@@ -39,15 +43,6 @@ catch_order:
       req->price, direction_str(pending_order->direction),
       ordertype_str(pending_order->type), pending_order->price);
   return ERR_SELF_TRADE;
-}
-
-void NoSelfTradeRule::on_order_completed(const Order* order) {
-  for (auto iter = orders_.begin(); iter != orders_.end(); ++iter) {
-    if (iter->req.engine_order_id == order->req.engine_order_id) {
-      orders_.erase(iter);
-      return;
-    }
-  }
 }
 
 }  // namespace ft

@@ -4,6 +4,7 @@
 #define FT_SRC_RISK_MANAGEMENT_RISK_MANAGER_H_
 
 #include <list>
+#include <map>
 #include <memory>
 #include <string>
 
@@ -16,7 +17,8 @@ namespace ft {
 
 class RiskManager {
  public:
-  RiskManager(Account* account, Portfolio* pos_mgr);
+  RiskManager(Account* account, Portfolio* pos_mgr,
+              std::map<uint64_t, Order>* order_map);
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 

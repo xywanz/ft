@@ -5,8 +5,8 @@
 
 #include <spdlog/spdlog.h>
 
+#include <map>
 #include <string>
-#include <vector>
 
 #include "risk_management/risk_rule_interface.h"
 
@@ -17,12 +17,12 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
+  explicit NoSelfTradeRule(std::map<uint64_t, Order>* order_map);
+
   int check_order_req(const Order* req) override;
 
-  void on_order_completed(const Order* order) override;
-
  private:
-  std::vector<Order> orders_;
+  std::map<uint64_t, Order>* order_map_;
 };
 
 }  // namespace ft

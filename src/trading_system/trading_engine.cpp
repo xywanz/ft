@@ -10,7 +10,8 @@
 namespace ft {
 
 TradingEngine::TradingEngine() : portfolio_("127.0.0.1", 6379) {
-  risk_mgr_ = std::make_unique<RiskManager>(&account_, &portfolio_);
+  risk_mgr_ =
+      std::make_unique<RiskManager>(&account_, &portfolio_, &order_map_);
 }
 
 TradingEngine::~TradingEngine() { close(); }
