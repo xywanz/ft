@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "core/position.h"
 #include "core/protocol.h"
@@ -24,6 +25,17 @@ class PositionHelper {
 
     memcpy(&pos, reply->str, sizeof(pos));
     return pos;
+  }
+
+  void get_all_positions(std::vector<Position>* pos_vec) const {
+    auto reply = redis_.keys(proto_.pos_key_prefix());
+    Position pos;
+
+    for (size_t i = 0; i < reply->elements; ++i) {
+      auto pos_reply = redis_.get(reply->element[i]->str);
+      memcpy(&pos, pos_reply->str, sizeof(pos));
+      pos_vec->emplace_back(pos);
+    }
   }
 
   double get_realized_pnl() const {
