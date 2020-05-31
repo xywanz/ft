@@ -360,6 +360,8 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
+    spdlog::error("[CtpTradeApi::OnRtnOrder] {}",
+                  gb2312_to_utf8(order->StatusMsg));
     engine_->on_order_rejected(engine_order_id);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
