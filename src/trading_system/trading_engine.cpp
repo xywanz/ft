@@ -117,11 +117,6 @@ void TradingEngine::close() {
 }
 
 bool TradingEngine::send_order(const TraderCommand* cmd) {
-  if (!is_logon_) {
-    spdlog::error("[TradingEngine::send_order] Failed. Not logon");
-    return false;
-  }
-
   auto contract = ContractTable::get_by_index(cmd->order_req.ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::send_order] Contract not found");
@@ -167,7 +162,8 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   risk_mgr_->on_order_sent(&order);
 
   spdlog::debug(
-      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, TEOrderID: {}, "
+      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, TEOrderID: "
+      "{}, "
       "Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: "
       "{:.2f}, Status: {}>",
       contract->ticker, req.engine_order_id, direction_str(req.direction),

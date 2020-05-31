@@ -76,7 +76,7 @@ class TradingEngine : public TradingEngineInterface {
 
   ProtocolQueryCenter proto_{};
   Account account_{};
-  Portfolio portfolio_;
+  Portfolio portfolio_{"127.0.0.1", 6379};
   std::unique_ptr<RiskManager> risk_mgr_{nullptr};
   std::map<uint64_t, Order> order_map_{};
   std::mutex mutex_{};
@@ -86,7 +86,7 @@ class TradingEngine : public TradingEngineInterface {
   RedisSession tick_redis_{};
   RedisSession order_redis_{};
 
-  std::atomic<bool> is_logon_{false};
+  volatile bool is_logon_{false};
 };
 
 }  // namespace ft
