@@ -56,7 +56,7 @@
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2020.5.24 | redis中交易相关的键值对都带上了account id的简称，在策略加载时也需要指定account id，表示该策略挂载在哪个账户上                                |
 | 2020.5.29 | 风控模块支持的事件更加丰富全面了，后续业务相关的逻辑都将作为风控模块的规则进行处理。现版本把仓位管理、资金管理、通知策略都移风控模块中去做了 |
-| 2020.5.29 | 性能优化：去掉了gateway中所有的订单管理、订单锁等操作                                                                                        |
+| 2020.5.29 | 性能优化：去掉了gateway中所有的订单管理、订单锁等操作，发布v0.1.0版                                                                          |
 
 ## 2. 运行示例
 下面是一个简单的演示图：
@@ -196,28 +196,46 @@ TM需要保存未完成的订单信息，以供外界进行查询以及撤单等
 因为保证金率不方便获取且可能经常变动，加上账户浮动盈亏会影响账户保证金率，所以资金的计算不能够保证时时刻刻都准确。这里采用了折中的方式，每隔一段时间触发一次资金查询操作，下单、成交、撤单等操作发生时，以估算的方式来更新资金信息即可。
 
 ### 4.3. 风险管理模块
-TM模块通过engine_order_id告知RM是哪个订单。RM关心以下4个事件：
-1. 订单发送前的检查。订单发送前RM需要对订单进行一些检查，比如如节流率检查、自成交合规检查等等，当不符合发送条件时，应该返回false将订单拦截。如果订单通过，RM可以保存或统计该订单信息，用于后续订单的风险检查
+RM也可通过engine_order_id来自行管理订单，RM关心以下7个事件：
+1. 订单发送前的检查。订单发送前RM需要对订单进行一些检查，比如如节流率检查、自成交合规检查、仓位检查、资金检查等等，当不符合发送条件时，应该返回错误码将订单拦截。如果订单通过，RM可以自行保存或统计该订单信息，用于后续订单的风险检查
 2. 订单发送成功。订单通过Gateway发送成功后，RM需要知道订单已经发送成功了，以更新RM所管理的一些订单或统计信息状态
-3. 订单成交。订单成交应告知RM，用以更新RM的上下文
-4. 订单完结。订单发送失败或是被拒单都应该告知RM，以更新RM的上下文
+3. 订单被拒绝。订单被拒绝有三种情况，一是被风控本身拒单，二是调用Gateway::send_order失败，三是收到拒单回报
+4. 订单被接纳。订单被交易所接纳后会回调，此时可通过order_id去操作订单
+5. 订单成交。订单成交应告知RM，用以更新RM的上下文
+6. 订单撤销。订单撤销成功后也应该告知RM，用以更新RM的上下单
+7. 订单完结。此状态仅在订单正常结束后（订单全成或撤销）予以通知，以更新RM的上下文
+
+通过上述7个事件可以完整地追踪到一个订单的所有流程，此时其实RM模块已经引申为业务模块，最新的实现中已经将仓位管理、资金管理也放在RM模块中去实现，TM模块只需要在适时地时候回调相应的RM函数即可，而RM模块的开发者只需要专注于业务，关注在哪个过程需要完成哪些工作即可。
 
 风控管理的接口如下所示：
 ```cpp
 class RiskManagementInterface {
- public:
-  // 订单发送前检查。返回false拦截订单，返回true表示该订单通过检查
-  // req里面带有engine_order_id
-  virtual bool check_order_req(const OrderReq* req);
 
-  // 订单发送成功后回调
-  virtual void on_order_sent(uint64_t engine_order_id);
+class RiskRuleInterface {
+ public:
+  virtual ~RiskRuleInterface() {}
+
+  // 订单发送前的检查，返回NO_ERROR表示通过，返回错误码则表示拦截订单
+  virtual int check_order_req(const Order* order) { return NO_ERROR; }
+
+  // 订单通过gateway成功发出后回调
+  virtual void on_order_sent(const Order* order) {}
+
+  // 订单被市场接受后回调
+  virtual void on_order_accepted(const Order* order) {}
 
   // 订单成交后回调
-  virtual void on_order_traded(uint64_t engine_order_id, int this_traded, double traded_price);
+  virtual void on_order_traded(const Order* order, int this_traded,
+                               double traded_price) {}
 
-  // 订单完结后回调
-  virtual void on_order_completed(uint64_t engine_order_id);
+  // 订单撤销后回调
+  virtual void on_order_canceled(const Order* order, int canceled) {}
+
+  // 订单完成后回调，撤掉（或全部成交）之后会先推送撤销（或全部成交），然后推送一个订单完成
+  virtual void on_order_completed(const Order* order) {}
+
+  // 订单被拒，可能被风控自己拒，也可能被gateway拒，也可能被服务器拒，可根据错误码判断
+  virtual void on_order_rejected(const Order* order, int error_code) {}
 };
 ```
 ### 4.4. 交易网关模块
