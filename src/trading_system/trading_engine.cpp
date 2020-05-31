@@ -234,14 +234,11 @@ void TradingEngine::on_tick(const TickData* tick) {
   if (!is_logon_) return;
 
   auto contract = ContractTable::get_by_index(tick->ticker_index);
-  if (!contract) {
-    spdlog::error("[TradingEngine::process_tick] Contract not found");
-    return;
-  }
+  assert(contract);
 
   tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
                       sizeof(TickData));
-  spdlog::debug("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
+  spdlog::trace("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
                 tick->ask[0], tick->bid[0]);
 }
 
