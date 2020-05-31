@@ -151,8 +151,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
     return false;
   }
 
-  uint64_t order_id = gateway_->send_order(&req);
-  if (order_id == 0) {
+  if (!gateway_->send_order(&req)) {
     spdlog::error(
         "[StrategyEngine::send_order] Failed to send_order. Order: <Ticker: "
         "{}, Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, "
@@ -168,10 +167,10 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   risk_mgr_->on_order_sent(&order);
 
   spdlog::debug(
-      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, OrderID: {}, "
+      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, TEOrderID: {}, "
       "Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: "
       "{:.2f}, Status: {}>",
-      contract->ticker, order_id, direction_str(req.direction),
+      contract->ticker, req.engine_order_id, direction_str(req.direction),
       offset_str(req.offset), ordertype_str(req.type), 0, req.volume, req.price,
       to_string(order.status));
   return true;
