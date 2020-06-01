@@ -69,9 +69,9 @@ void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
   if (is_close) {
     pos_detail.close_pending -= traded;
     pos_detail.holdings -= traded;
-    if (offset == Offset::CLOSE_YESTERDAY)
-      pos_detail.yd_holdings -= traded;
-    else if (offset == Offset::CLOSE)
+    // 这里close_yesterday也执行这个操作是为了防止有些交易所不区分昨今仓，
+    // 但用户平仓的时候却使用了close_yesterday
+    if (offset == Offset::CLOSE_YESTERDAY || offset == Offset::CLOSE)
       pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
     assert(pos_detail.yd_holdings >= 0);
     assert(pos_detail.holdings >= pos_detail.yd_holdings);
