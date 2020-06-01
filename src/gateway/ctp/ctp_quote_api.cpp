@@ -228,7 +228,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   tick.bid_volume[3] = md->BidVolume4;
   tick.bid_volume[4] = md->BidVolume5;
 
-  spdlog::debug(
+  spdlog::trace(
       "[CtpQuoteApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
       "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
       contract->ticker, tick.time_ms, tick.last_price, tick.volume,

@@ -239,7 +239,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   tick.bid_volume[3] = market_data->bid_qty[8];
   tick.bid_volume[4] = market_data->bid_qty[9];
 
-  spdlog::debug(
+  spdlog::trace(
       "[XtpQuoteApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
       "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
       market_data->ticker, tick.time_ms, tick.last_price, tick.volume,
