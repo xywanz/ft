@@ -19,6 +19,8 @@ TradingEngine::~TradingEngine() { close(); }
 bool TradingEngine::login(const Config& config) {
   if (is_logon_) return true;
 
+  config.show();
+
   gateway_.reset(create_gateway(config.api, this));
   if (!gateway_) {
     spdlog::error("[TradingEngine::login] Failed. Unknown gateway");

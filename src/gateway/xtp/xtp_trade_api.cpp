@@ -41,10 +41,15 @@ bool XtpTradeApi::login(const Config& config) {
   try {
     int ret = sscanf(config.trade_server_address.c_str(), "%[^:]://%[^:]:%d",
                      protocol, ip, &port);
-    UNUSED(ret);
-    assert(ret == 3);
+    if (ret != 3) {
+      spdlog::error("[XtpTradeApi::login] Invalid trade server: {}",
+                    config.trade_server_address);
+      return false;
+    }
   } catch (...) {
-    assert(false);
+    spdlog::error("[XtpTradeApi::login] Invalid trade server: {}",
+                  config.trade_server_address);
+    return false;
   }
 
   XTP_PROTOCOL_TYPE sock_type = XTP_PROTOCOL_TCP;
@@ -56,7 +61,7 @@ bool XtpTradeApi::login(const Config& config) {
   session_id_ = trade_api_->Login(ip, port, config.investor_id.c_str(),
                                   config.password.c_str(), sock_type);
   if (session_id_ == 0) {
-    spdlog::error("[XtpTradeApi::login] Failed to login: {}",
+    spdlog::error("[XtpTradeApi::login] Failed to Call API login: {}",
                   trade_api_->GetApiLastError()->error_msg);
     return false;
   }
@@ -64,7 +69,9 @@ bool XtpTradeApi::login(const Config& config) {
   if (config.cancel_outstanding_orders_on_startup) {
     spdlog::debug("[XtpTradeApi::login] Cancel outstanding orders on startup");
     if (!query_orders()) {
-      spdlog::error("[XtpTradeApi::login] 订单查询失败");
+      spdlog::error(
+          "[XtpTradeApi::login] Failed to query orders and cancel outstanding "
+          "orders");
       return false;
     }
   }
