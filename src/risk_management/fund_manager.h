@@ -3,6 +3,8 @@
 #ifndef FT_SRC_RISK_MANAGEMENT_FUND_MANAGER_H_
 #define FT_SRC_RISK_MANAGEMENT_FUND_MANAGER_H_
 
+#include <map>
+
 #include "common/order.h"
 #include "core/account.h"
 #include "risk_management/risk_rule_interface.h"
@@ -11,7 +13,8 @@ namespace ft {
 
 class FundManager : public RiskRuleInterface {
  public:
-  explicit FundManager(Account* account);
+  bool init(const Config& config, Account* account, Portfolio* portfolio,
+            std::map<uint64_t, Order>* order_map) override;
 
   int check_order_req(const Order* order) override;
 

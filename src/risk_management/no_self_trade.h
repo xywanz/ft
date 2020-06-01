@@ -17,7 +17,8 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
-  explicit NoSelfTradeRule(std::map<uint64_t, Order>* order_map);
+  bool init(const Config& config, Account* account, Portfolio* portfolio,
+            std::map<uint64_t, Order>* order_map) override;
 
   int check_order_req(const Order* req) override;
 

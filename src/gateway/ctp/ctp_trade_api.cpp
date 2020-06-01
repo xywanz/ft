@@ -355,8 +355,6 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     return;
   }
 
-  spdlog::warn("OOO: {}", order->CombOffsetFlag);
-
   // CTP返回的OrderRef不会有问题吧？
   uint64_t engine_order_id = get_engine_order_id(std::stoi(order->OrderRef));
 

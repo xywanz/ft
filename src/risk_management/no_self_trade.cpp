@@ -7,8 +7,12 @@
 
 namespace ft {
 
-NoSelfTradeRule::NoSelfTradeRule(std::map<uint64_t, Order>* order_map)
-    : order_map_(order_map) {}
+bool NoSelfTradeRule::init(const Config& config, Account* account,
+                           Portfolio* portfolio,
+                           std::map<uint64_t, Order>* order_map) {
+  order_map_ = order_map;
+  return true;
+}
 
 int NoSelfTradeRule::check_order_req(const Order* order) {
   auto* req = &order->req;

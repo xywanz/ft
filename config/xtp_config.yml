@@ -7,3 +7,7 @@ auth_code: 22222222222222222222222222222aa
 subscription_list: 
   - 600036
   - 600001
+
+throttle_rate_limit_period_ms: 1000
+throttle_rate_order_limit: 2
+throttle_rate_volume_limit: 1000

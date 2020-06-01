@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include <list>
+#include <map>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -22,8 +23,8 @@ inline uint64_t get_current_ms() {
 
 class ThrottleRateLimit : public RiskRuleInterface {
  public:
-  ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
-                    uint64_t volume_limit);
+  bool init(const Config& config, Account* account, Portfolio* portfolio,
+            std::map<uint64_t, Order>* order_map) override;
 
   int check_order_req(const Order* order) override;
 

@@ -9,10 +9,7 @@
 
 namespace ft {
 
-TradingEngine::TradingEngine() : portfolio_("127.0.0.1", 6379) {
-  risk_mgr_ =
-      std::make_unique<RiskManager>(&account_, &portfolio_, &order_map_);
-}
+TradingEngine::TradingEngine() { risk_mgr_ = std::make_unique<RiskManager>(); }
 
 TradingEngine::~TradingEngine() { close(); }
 
@@ -59,6 +56,7 @@ bool TradingEngine::login(const Config& config) {
   spdlog::info("[[TradingEngine::login] Querying trades done");
 
   proto_.set_account(account_.account_id);
+  risk_mgr_->init(config, &account_, &portfolio_, &order_map_);
 
   // 启动个线程去定时查询资金账户信息
   std::thread([this]() {

@@ -8,13 +8,16 @@
 
 namespace ft {
 
-FundManager::FundManager(Account* account) : account_(account) {}
+bool FundManager::init(const Config& config, Account* account,
+                       Portfolio* portfolio,
+                       std::map<uint64_t, Order>* order_map) {
+  account_ = account;
+  return true;
+}
 
 int FundManager::check_order_req(const Order* order) {
   auto* req = &order->req;
   if (is_offset_close(req->offset)) return NO_ERROR;
-
-  if (!account_) return ERR_FUND_NOT_ENOUGH;
 
   auto contract = ContractTable::get_by_index(req->ticker_index);
   assert(contract);
@@ -38,8 +41,6 @@ int FundManager::check_order_req(const Order* order) {
 }
 
 void FundManager::on_order_sent(const Order* order) {
-  if (!account_) return;
-
   auto contract = order->contract;
 
   if (is_offset_open(order->req.offset)) {
@@ -55,8 +56,6 @@ void FundManager::on_order_sent(const Order* order) {
 
 void FundManager::on_order_traded(const Order* order, int traded,
                                   double traded_price) {
-  if (!account_) return;
-
   auto contract = order->contract;
   if (is_offset_open(order->req.offset)) {
     auto margin_rate = order->req.direction == Direction::BUY
@@ -80,8 +79,6 @@ void FundManager::on_order_traded(const Order* order, int traded,
 }
 
 void FundManager::on_order_canceled(const Order* order, int canceled) {
-  if (!account_) return;
-
   if (is_offset_open(order->req.offset)) {
     auto contract = order->contract;
     auto margin_rate = order->req.direction == Direction::BUY

@@ -10,14 +10,22 @@
 
 namespace ft {
 
-RiskManager::RiskManager(Account* account, Portfolio* portfolio,
-                         std::map<uint64_t, Order>* order_map) {
-  // 先硬编码吧
-  add_rule(std::make_shared<FundManager>(account));
-  add_rule(std::make_shared<PositionManager>(portfolio));
-  add_rule(std::make_shared<NoSelfTradeRule>(order_map));
-  add_rule(std::make_shared<ThrottleRateLimit>(1000, 2, 100));
+RiskManager::RiskManager() {}
+
+bool RiskManager::init(const Config& config, Account* account,
+                       Portfolio* portfolio,
+                       std::map<uint64_t, Order>* order_map) {
+  add_rule(std::make_shared<FundManager>());
+  add_rule(std::make_shared<PositionManager>());
+  add_rule(std::make_shared<NoSelfTradeRule>());
+  add_rule(std::make_shared<ThrottleRateLimit>());
   add_rule(std::make_shared<StrategyNotifier>());
+
+  for (auto& rule : rules_) {
+    if (!rule->init(config, account, portfolio, order_map)) return false;
+  }
+
+  return true;
 }
 
 void RiskManager::add_rule(std::shared_ptr<RiskRuleInterface> rule) {

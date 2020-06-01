@@ -4,8 +4,12 @@
 
 namespace ft {
 
-PositionManager::PositionManager(Portfolio* portfolio)
-    : portfolio_(portfolio) {}
+bool PositionManager::init(const Config& config, Account* account,
+                           Portfolio* portfolio,
+                           std::map<uint64_t, Order>* order_map) {
+  portfolio_ = portfolio;
+  return true;
+}
 
 int PositionManager::check_order_req(const Order* order) {
   auto* req = &order->req;

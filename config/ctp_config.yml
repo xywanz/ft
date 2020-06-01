@@ -7,3 +7,7 @@ password: abc123456
 auth_code: 0000000000000000
 app_id: simnow_client_test
 subscription_list: [rb2009, rb2007]
+
+throttle_rate_limit_period_ms: 1000
+throttle_rate_order_limit: 2
+throttle_rate_volume_limit: 100

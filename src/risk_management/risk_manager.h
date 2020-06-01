@@ -11,14 +11,17 @@
 #include "common/order.h"
 #include "common/portfolio.h"
 #include "core/account.h"
+#include "core/config.h"
 #include "risk_management/risk_rule_interface.h"
 
 namespace ft {
 
 class RiskManager {
  public:
-  RiskManager(Account* account, Portfolio* pos_mgr,
-              std::map<uint64_t, Order>* order_map);
+  RiskManager();
+
+  bool init(const Config& config, Account* account, Portfolio* portfolio,
+            std::map<uint64_t, Order>* order_map);
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 

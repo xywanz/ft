@@ -6,11 +6,15 @@
 
 namespace ft {
 
-ThrottleRateLimit::ThrottleRateLimit(uint64_t period_ms, uint64_t order_limit,
-                                     uint64_t volume_limit)
-    : order_limit_(order_limit),
-      volume_limit_(volume_limit),
-      period_ms_(period_ms) {}
+bool ThrottleRateLimit::init(const Config& config, Account* account,
+                             Portfolio* portfolio,
+                             std::map<uint64_t, Order>* order_map) {
+  period_ms_ = config.throttle_rate_limit_period_ms;
+  order_limit_ = config.throttle_rate_order_limit;
+  volume_limit_ = config.throttle_rate_volume_limit;
+
+  return true;
+}
 
 int ThrottleRateLimit::check_order_req(const Order* order) {
   auto* req = &order->req;

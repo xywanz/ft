@@ -22,6 +22,10 @@ class Config {
 
   bool cancel_outstanding_orders_on_startup = true;
 
+  uint64_t throttle_rate_limit_period_ms = 0;
+  uint64_t throttle_rate_order_limit = 0;
+  uint64_t throttle_rate_volume_limit = 0;
+
   std::string arg0{""};
   std::string arg1{""};
   std::string arg2{""};

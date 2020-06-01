@@ -37,6 +37,13 @@ inline void load_config(const std::string& file, ft::Config* config) {
   config->cancel_outstanding_orders_on_startup =
       node["cancel_outstanding_orders_on_startup"].as<bool>(true);
 
+  config->throttle_rate_limit_period_ms =
+      node["throttle_rate_limit_period_ms"].as<uint64_t>(0);
+  config->throttle_rate_order_limit =
+      node["throttle_rate_order_limit"].as<uint64_t>(0);
+  config->throttle_rate_volume_limit =
+      node["throttle_rate_volume_limit"].as<uint64_t>(0);
+
   config->arg0 = node["arg0"].as<std::string>("");
   config->arg1 = node["arg1"].as<std::string>("");
   config->arg2 = node["arg2"].as<std::string>("");
