@@ -11,3 +11,6 @@ target_link_libraries(cancel-order common ${COMMON_LIB})
 
 add_executable(query-position query_position.cpp)
 target_link_libraries(query-position common ${COMMON_LIB})
+
+add_executable(etf-tool etf_tool.cpp)
+target_link_libraries(etf-tool common ${COMMON_LIB} ${GATEWAY_LIB})
