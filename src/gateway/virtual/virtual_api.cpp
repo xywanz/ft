@@ -164,10 +164,11 @@ void VirtualApi::disseminate_market_data() {
     tick.ticker_index = contract->index;
     tick.ask[0] = walker.next();
     tick.bid[0] = tick.ask[0] - 1;
+    tick.last_price = (random() & 0xf) >= 8 ? tick.ask[0] : tick.bid[0];
 
     update_quote(tick.ticker_index, tick.ask[0], tick.bid[0]);
     gateway_->on_tick(&tick);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
   }
 }
 

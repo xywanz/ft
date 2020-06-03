@@ -134,6 +134,8 @@ class ContractTable {
     return &contracts[ticker_index - 1];
   }
 
+  static std::size_t size() { return contracts.size(); }
+
  private:
   inline static std::vector<Contract> contracts;
   inline static std::map<std::string, Contract*> ticker2contract;

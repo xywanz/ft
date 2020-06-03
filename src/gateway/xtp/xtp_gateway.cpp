@@ -6,13 +6,17 @@
 
 namespace ft {
 
-XtpGateway::XtpGateway(TradingEngineInterface* engine)
-    : engine_(engine),
-      trade_api_(std::make_unique<XtpTradeApi>(engine)),
-      quote_api_(std::make_unique<XtpQuoteApi>(engine)) {}
+XtpGateway::XtpGateway() {}
 
-bool XtpGateway::login(const Config& config) {
+bool XtpGateway::login(TradingEngineInterface* engine, const Config& config) {
+  if (config.trade_server_address.empty() &&
+      config.quote_server_address.empty()) {
+    spdlog::error("[XtpGateway::login] 交易柜台和行情服务器地址都未设置");
+    return false;
+  }
+
   if (!config.trade_server_address.empty()) {
+    trade_api_ = std::make_unique<XtpTradeApi>(engine);
     if (!trade_api_->login(config)) {
       spdlog::error("[XtpGateway::login] Failed to login into the counter");
       return false;
@@ -20,6 +24,7 @@ bool XtpGateway::login(const Config& config) {
   }
 
   if (!config.quote_server_address.empty()) {
+    quote_api_ = std::make_unique<XtpQuoteApi>(engine);
     if (!quote_api_->login(config)) {
       spdlog::error("[XtpGateway::login] Failed to login into the md server");
       return false;

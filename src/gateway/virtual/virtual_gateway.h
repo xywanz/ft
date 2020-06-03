@@ -24,9 +24,9 @@ namespace ft {
 
 class VirtualGateway : public Gateway {
  public:
-  explicit VirtualGateway(TradingEngineInterface* engine);
+  VirtualGateway();
 
-  bool login(const Config& config) override;
+  bool login(TradingEngineInterface* engine, const Config& config) override;
 
   void logout() override;
 

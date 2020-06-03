@@ -19,7 +19,7 @@ class GridStrategy : public ft::Strategy {
     const auto& lp = pos.long_pos;
     const auto& sp = pos.short_pos;
 
-    buy_open(ticker_, 1, tick->ask[0]);
+    // buy_open(ticker_, trade_volume_each_, tick->ask[0]);
 
     spdlog::info(
         "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
@@ -54,8 +54,8 @@ class GridStrategy : public ft::Strategy {
 
  private:
   double last_grid_price_ = 0.0;
-  double grid_height_ = 2;
-  int trade_volume_each_ = 1;
+  double grid_height_ = 8;
+  int trade_volume_each_ = 20;
   int trade_counts_ = 0;
 
   std::string ticker_ = "rb2009";

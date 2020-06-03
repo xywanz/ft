@@ -11,13 +11,11 @@
 
 namespace ft {
 
-CtpGateway::CtpGateway(TradingEngineInterface *engine)
-    : trade_api_(std::make_unique<CtpTradeApi>(engine)),
-      quote_api_(std::make_unique<CtpQuoteApi>(engine)) {}
+CtpGateway::CtpGateway() {}
 
 CtpGateway::~CtpGateway() {}
 
-bool CtpGateway::login(const Config &config) {
+bool CtpGateway::login(TradingEngineInterface *engine, const Config &config) {
   if (config.broker_id.size() > sizeof(TThostFtdcBrokerIDType) ||
       config.broker_id.empty() ||
       config.investor_id.size() > sizeof(TThostFtdcUserIDType) ||
@@ -36,6 +34,7 @@ bool CtpGateway::login(const Config &config) {
 
   if (!config.trade_server_address.empty()) {
     spdlog::debug("[CtpGateway::login] Login into trading server");
+    trade_api_ = std::make_unique<CtpTradeApi>(engine);
     if (!trade_api_->login(config)) {
       spdlog::error("[CtpGateway::login] Failed to login into the counter");
       return false;
@@ -44,6 +43,7 @@ bool CtpGateway::login(const Config &config) {
 
   if (!config.quote_server_address.empty()) {
     spdlog::debug("[CtpGateway::login] Login into market data server");
+    quote_api_ = std::make_unique<CtpQuoteApi>(engine);
     if (!quote_api_->login(config)) {
       spdlog::error("[CtpGateway::login] Failed to login into the md server");
       return false;

@@ -14,17 +14,15 @@ TradingEngine::TradingEngine() { risk_mgr_ = std::make_unique<RiskManager>(); }
 TradingEngine::~TradingEngine() { close(); }
 
 bool TradingEngine::login(const Config& config) {
-  if (is_logon_) return true;
-
   config.show();
 
-  gateway_.reset(create_gateway(config.api, this));
+  gateway_.reset(create_gateway(config.api));
   if (!gateway_) {
     spdlog::error("[TradingEngine::login] Failed. Unknown gateway");
     return false;
   }
 
-  if (!gateway_->login(config)) {
+  if (!gateway_->login(this, config)) {
     spdlog::error("[TradingEngine::login] Failed to login");
     return false;
   }
@@ -59,12 +57,14 @@ bool TradingEngine::login(const Config& config) {
   risk_mgr_->init(config, &account_, &portfolio_, &order_map_);
 
   // 启动个线程去定时查询资金账户信息
-  std::thread([this]() {
-    for (;;) {
-      std::this_thread::sleep_for(std::chrono::seconds(15));
-      gateway_->query_account();
-    }
-  }).detach();
+  if (config.api != "virtual") {
+    std::thread([this]() {
+      for (;;) {
+        std::this_thread::sleep_for(std::chrono::seconds(15));
+        gateway_->query_account();
+      }
+    }).detach();
+  }
 
   spdlog::info("[TradingEngine::login] Init done");
 
@@ -207,11 +207,6 @@ void TradingEngine::on_query_account(const Account* account) {
 }
 
 void TradingEngine::on_query_position(const Position* position) {
-  if (is_logon_) {
-    spdlog::error("[TradingEngine::on_query_position] 只能在初始化时查询仓位");
-    return;
-  }
-
   auto contract = ContractTable::get_by_index(position->ticker_index);
   assert(contract);
 
@@ -243,11 +238,6 @@ void TradingEngine::on_tick(const TickData* tick) {
 }
 
 void TradingEngine::on_query_trade(const Trade* trade) {
-  if (is_logon_) {
-    spdlog::error("[TradingEngine::on_query_trade] 只能在初始化时查询交易");
-    return;
-  }
-
   portfolio_.update_on_query_trade(trade->ticker_index, trade->direction,
                                    trade->offset, trade->volume);
 }

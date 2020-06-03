@@ -11,10 +11,10 @@
 class ContractCollector : public ft::TradingEngineInterface {
  public:
   bool login(const ft::Config& config) {
-    gateway_.reset(ft::create_gateway(config.api, this));
+    gateway_.reset(ft::create_gateway(config.api));
     if (!gateway_) return false;
 
-    return gateway_->login(config);
+    return gateway_->login(this, config);
   }
 
   bool dump(const std::string& file = "./contracts.csv") {

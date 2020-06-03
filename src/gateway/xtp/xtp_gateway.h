@@ -18,9 +18,9 @@ namespace ft {
 
 class XtpGateway : public Gateway {
  public:
-  explicit XtpGateway(TradingEngineInterface* engine);
+  XtpGateway();
 
-  bool login(const Config& config) override;
+  bool login(TradingEngineInterface* engine, const Config& config) override;
 
   void logout() override;
 
@@ -44,7 +44,6 @@ class XtpGateway : public Gateway {
   bool query_orders();
 
  private:
-  TradingEngineInterface* engine_ = nullptr;
   std::unique_ptr<XtpTradeApi> trade_api_;
   std::unique_ptr<XtpQuoteApi> quote_api_;
 };

@@ -151,15 +151,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     return true;
   }
 
-  void reset() {
-    is_error_ = false;
-    is_connected_ = false;
-    is_logon_ = false;
-    is_done_ = false;
-
-    if (trade_api_) trade_api_.reset();
-  }
-
  private:
   TradingEngineInterface *engine_;
   std::unique_ptr<CThostFtdcTraderApi, CtpApiDeleter> trade_api_;
@@ -179,7 +170,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   volatile bool is_logon_ = false;
 
   std::map<uint32_t, Position> pos_cache_;
-  std::mutex query_mutex_;
 };
 
 }  // namespace ft

@@ -8,14 +8,15 @@
 
 namespace ft {
 
-VirtualGateway::VirtualGateway(TradingEngineInterface* engine)
-    : engine_(engine) {
+VirtualGateway::VirtualGateway() {
   virtual_api_.set_spi(this);
   virtual_api_.start_quote_server();
   virtual_api_.start_trade_server();
 }
 
-bool VirtualGateway::login(const Config& config) {
+bool VirtualGateway::login(TradingEngineInterface* engine,
+                           const Config& config) {
+  engine_ = engine;
   spdlog::info("[VirtualGateway::login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
   return true;
 }

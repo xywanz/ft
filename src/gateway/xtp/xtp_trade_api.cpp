@@ -11,7 +11,15 @@
 
 namespace ft {
 
-XtpTradeApi::XtpTradeApi(TradingEngineInterface* engine) : engine_(engine) {}
+XtpTradeApi::XtpTradeApi(TradingEngineInterface* engine) : engine_(engine) {
+  uint32_t seed = time(nullptr);
+  uint8_t client_id = rand_r(&seed) & 0xff;
+  trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
+  if (!trade_api_) {
+    spdlog::error("[XtpTradeApi::XtpTradeApi] Failed to CreateTraderApi");
+    exit(-1);
+  }
+}
 
 XtpTradeApi::~XtpTradeApi() {
   error();
@@ -19,20 +27,7 @@ XtpTradeApi::~XtpTradeApi() {
 }
 
 bool XtpTradeApi::login(const Config& config) {
-  if (session_id_ != 0) {
-    spdlog::error("[XtpTradeApi::login] Don't login twice");
-    return false;
-  }
-
   investor_id_ = config.investor_id;
-
-  uint32_t seed = time(nullptr);
-  uint8_t client_id = rand_r(&seed) & 0xff;
-  trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
-  if (!trade_api_) {
-    spdlog::error("[XtpTradeApi::login] Failed to CreateTraderApi");
-    return false;
-  }
 
   char protocol[32]{};
   char ip[32]{};
@@ -87,11 +82,6 @@ void XtpTradeApi::logout() {
 }
 
 bool XtpTradeApi::send_order(const OrderReq* order) {
-  if (session_id_ == 0) {
-    spdlog::error("[XtpTradeApi::send_order] Not logon");
-    return false;
-  }
-
   auto contract = ContractTable::get_by_index(order->ticker_index);
   if (!contract) {
     spdlog::error("[XtpTradeApi::send_order] Contract not found");
@@ -209,9 +199,6 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
 }
 
 bool XtpTradeApi::query_position(const std::string& ticker) {
-  if (session_id_ == 0) return false;
-
-  std::unique_lock<std::mutex> lock(query_mutex_);
   int res =
       trade_api_->QueryPosition(ticker.c_str(), session_id_, next_req_id());
   if (res != 0) {
@@ -273,9 +260,6 @@ check_last:
 }
 
 bool XtpTradeApi::query_account() {
-  if (session_id_ == 0) return false;
-
-  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->QueryAsset(session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_account] {}",
                   trade_api_->GetApiLastError()->error_msg);
@@ -315,11 +299,8 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
 }
 
 bool XtpTradeApi::query_orders() {
-  if (session_id_ == 0) return false;
-
   XTPQueryOrderReq req{};
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->QueryOrders(&req, session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_orders] {}",
                   trade_api_->GetApiLastError()->error_msg);
@@ -354,11 +335,8 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
 }
 
 bool XtpTradeApi::query_trades() {
-  if (session_id_ == 0) return false;
-
   XTPQueryTraderReq req{};
 
-  std::unique_lock<std::mutex> lock(query_mutex_);
   if (trade_api_->QueryTrades(&req, session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::query_trades] {}",
                   trade_api_->GetApiLastError()->error_msg);

@@ -18,24 +18,24 @@ namespace ft {
 
 class CtpGateway : public Gateway {
  public:
-  explicit CtpGateway(TradingEngineInterface *engine);
+  CtpGateway();
 
   ~CtpGateway();
 
-  bool login(const Config &config);
+  bool login(TradingEngineInterface *engine, const Config &config) override;
 
-  void logout();
+  void logout() override;
 
-  bool send_order(const OrderReq *order);
+  bool send_order(const OrderReq *order) override;
 
-  bool cancel_order(uint64_t order_id);
+  bool cancel_order(uint64_t order_id) override;
 
   bool query_contract(const std::string &ticker,
                       const std::string &exchange) override;
 
   bool query_contracts() override;
 
-  bool query_position(const std::string &ticker);
+  bool query_position(const std::string &ticker) override;
 
   bool query_positions() override;
 

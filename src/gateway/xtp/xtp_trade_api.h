@@ -89,7 +89,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
 
   volatile bool is_done_ = false;
   volatile bool is_error_ = false;
-  std::mutex query_mutex_;
 
   std::map<uint64_t, Position> pos_cache_;
 };

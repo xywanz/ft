@@ -28,10 +28,9 @@ class Gateway {
  public:
   virtual ~Gateway() {}
 
-  /*
-   * 一个Gateway只能登录一次，并不保证重复调用或同时调用能产生正确的行为
-   */
-  virtual bool login(const Config& config) { return false; }
+  virtual bool login(TradingEngineInterface* engine, const Config& config) {
+    return false;
+  }
 
   virtual void logout() {}
 
@@ -63,21 +62,17 @@ class Gateway {
   virtual bool query_commision_rate(const std::string& ticker) { return true; }
 };
 
-using __GATEWAY_CREATE_FUNC = std::function<Gateway*(TradingEngineInterface*)>;
+using __GATEWAY_CREATE_FUNC = std::function<Gateway*()>;
 std::map<std::string, __GATEWAY_CREATE_FUNC>& __get_api_map();
-Gateway* create_gateway(const std::string& name,
-                        TradingEngineInterface* engine);
+Gateway* create_gateway(const std::string& name);
 void destroy_gateway(Gateway* api);
 
-#define REGISTER_GATEWAY(name, type)                    \
-  static inline ::ft::Gateway* __create_##type(         \
-      ::ft::TradingEngineInterface* engine) {           \
-    return new type(engine);                            \
-  }                                                     \
-  static inline bool __is_##type##_registered = [] {    \
-    auto& type_map = ::ft::__get_api_map();             \
-    auto res = type_map.emplace(name, __create_##type); \
-    return res.second;                                  \
+#define REGISTER_GATEWAY(name, type)                                    \
+  static inline ::ft::Gateway* __create_##type() { return new type(); } \
+  static inline bool __is_##type##_registered = [] {                    \
+    auto& type_map = ::ft::__get_api_map();                             \
+    auto res = type_map.emplace(name, __create_##type);                 \
+    return res.second;                                                  \
   }()
 
 }  // namespace ft
