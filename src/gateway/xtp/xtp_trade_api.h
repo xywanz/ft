@@ -29,7 +29,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
 
   void logout();
 
-  bool send_order(const OrderReq* order);
+  bool send_order(const OrderReq& order);
 
   bool cancel_order(uint64_t order_id);
 

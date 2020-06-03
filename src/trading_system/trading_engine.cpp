@@ -91,7 +91,7 @@ void TradingEngine::run() {
     switch (cmd->type) {
       case NEW_ORDER:
         spdlog::info("new order");
-        send_order(cmd);
+        send_order(*cmd);
         break;
       case CANCEL_ORDER:
         spdlog::info("cancel order");
@@ -116,8 +116,8 @@ void TradingEngine::close() {
   if (gateway_) gateway_->logout();
 }
 
-bool TradingEngine::send_order(const TraderCommand* cmd) {
-  auto contract = ContractTable::get_by_index(cmd->order_req.ticker_index);
+bool TradingEngine::send_order(const TraderCommand& cmd) {
+  auto contract = ContractTable::get_by_index(cmd.order_req.ticker_index);
   if (!contract) {
     spdlog::error("[TradingEngine::send_order] Contract not found");
     return false;
@@ -126,16 +126,16 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
   Order order{};
   auto& req = order.req;
   req.engine_order_id = next_engine_order_id();
-  req.ticker_index = cmd->order_req.ticker_index;
-  req.direction = cmd->order_req.direction;
-  req.offset = cmd->order_req.offset;
-  req.volume = cmd->order_req.volume;
-  req.type = cmd->order_req.type;
-  req.price = cmd->order_req.price;
-  order.user_order_id = cmd->order_req.user_order_id;
+  req.ticker_index = cmd.order_req.ticker_index;
+  req.direction = cmd.order_req.direction;
+  req.offset = cmd.order_req.offset;
+  req.volume = cmd.order_req.volume;
+  req.type = cmd.order_req.type;
+  req.price = cmd.order_req.price;
+  order.user_order_id = cmd.order_req.user_order_id;
   order.contract = contract;
   order.status = OrderStatus::SUBMITTING;
-  order.strategy_id = cmd->strategy_id;
+  order.strategy_id = cmd.strategy_id;
 
   std::unique_lock<std::mutex> lock(mutex_);
   int error_code = risk_mgr_->check_order_req(&order);
@@ -146,7 +146,7 @@ bool TradingEngine::send_order(const TraderCommand* cmd) {
     return false;
   }
 
-  if (!gateway_->send_order(&req)) {
+  if (!gateway_->send_order(req)) {
     spdlog::error(
         "[StrategyEngine::send_order] Failed to send_order. Order: <Ticker: "
         "{}, Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, "
@@ -193,25 +193,25 @@ void TradingEngine::cancel_all() {
   }
 }
 
-void TradingEngine::on_query_contract(const Contract* contract) {}
+void TradingEngine::on_query_contract(const Contract& contract) {}
 
-void TradingEngine::on_query_account(const Account* account) {
+void TradingEngine::on_query_account(const Account& account) {
   std::unique_lock<std::mutex> lock(mutex_);
-  account_ = *account;
+  account_ = account;
   lock.unlock();
 
   spdlog::info(
       "[TradingEngine::on_query_account] balance:{:.3f}, frozen:{:.3f}, "
       "margin:{:.3f}",
-      account->balance, account->frozen, account->margin);
+      account.balance, account.frozen, account.margin);
 }
 
-void TradingEngine::on_query_position(const Position* position) {
-  auto contract = ContractTable::get_by_index(position->ticker_index);
+void TradingEngine::on_query_position(const Position& position) {
+  auto contract = ContractTable::get_by_index(position.ticker_index);
   assert(contract);
 
-  auto& lp = position->long_pos;
-  auto& sp = position->short_pos;
+  auto& lp = position.long_pos;
+  auto& sp = position.short_pos;
   spdlog::info(
       "[TradingEngine::on_query_position] Ticker: {}, "
       "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
@@ -225,21 +225,21 @@ void TradingEngine::on_query_position(const Position* position) {
   portfolio_.set_position(position);
 }
 
-void TradingEngine::on_tick(const TickData* tick) {
+void TradingEngine::on_tick(const TickData& tick) {
   if (!is_logon_) return;
 
-  auto contract = ContractTable::get_by_index(tick->ticker_index);
+  auto contract = ContractTable::get_by_index(tick.ticker_index);
   assert(contract);
 
-  tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
+  tick_redis_.publish(proto_.quote_key(contract->ticker), &tick,
                       sizeof(TickData));
   spdlog::trace("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
-                tick->ask[0], tick->bid[0]);
+                tick.ask[0], tick.bid[0]);
 }
 
-void TradingEngine::on_query_trade(const Trade* trade) {
-  portfolio_.update_on_query_trade(trade->ticker_index, trade->direction,
-                                   trade->offset, trade->volume);
+void TradingEngine::on_query_trade(const Trade& trade) {
+  portfolio_.update_on_query_trade(trade.ticker_index, trade.direction,
+                                   trade.offset, trade.volume);
 }
 
 /*

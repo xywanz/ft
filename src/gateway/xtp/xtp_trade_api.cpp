@@ -81,21 +81,21 @@ void XtpTradeApi::logout() {
   }
 }
 
-bool XtpTradeApi::send_order(const OrderReq* order) {
-  auto contract = ContractTable::get_by_index(order->ticker_index);
+bool XtpTradeApi::send_order(const OrderReq& order) {
+  auto contract = ContractTable::get_by_index(order.ticker_index);
   if (!contract) {
     spdlog::error("[XtpTradeApi::send_order] Contract not found");
     return false;
   }
 
   XTPOrderInsertInfo req{};
-  req.side = xtp_side(order->direction);
+  req.side = xtp_side(order.direction);
   if (req.side == XTP_SIDE_UNKNOWN) {
     spdlog::error("[XtpTradeApi::send_order] 不支持的交易类型");
     return false;
   }
 
-  req.price_type = xtp_price_type(order->type);
+  req.price_type = xtp_price_type(order.type);
   if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
     spdlog::error("[XtpTradeApi::send_order] 不支持的订单价格类型");
     return false;
@@ -107,10 +107,10 @@ bool XtpTradeApi::send_order(const OrderReq* order) {
     return false;
   }
 
-  req.order_client_id = order->engine_order_id;
+  req.order_client_id = order.engine_order_id;
   strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
-  req.price = order->price;
-  req.quantity = order->volume;
+  req.price = order.price;
+  req.quantity = order.volume;
   req.business_type = XTP_BUSINESS_TYPE_CASH;
 
   uint64_t xtp_order_id = trade_api_->InsertOrder(&req, session_id_);
@@ -252,7 +252,7 @@ check_last:
   if (is_last) {
     for (auto& [ticker_index, pos] : pos_cache_) {
       UNUSED(ticker_index);
-      engine_->on_query_position(&pos);
+      engine_->on_query_position(pos);
     }
     pos_cache_.clear();
     done();
@@ -293,7 +293,7 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
   Account account{};
   account.account_id = std::stoull(investor_id_);
   account.balance = asset->total_asset;
-  engine_->on_query_account(&account);
+  engine_->on_query_account(account);
 
   if (is_last) done();
 }
@@ -376,7 +376,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
     } else {
       assert(false);
     }
-    engine_->on_query_trade(&trade);
+    engine_->on_query_trade(trade);
   }
 
   if (is_last) done();

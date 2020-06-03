@@ -16,24 +16,24 @@ class TradingEngineInterface {
   /*
    * 查询到合约时回调
    */
-  virtual void on_query_contract(const Contract* contract) {}
+  virtual void on_query_contract(const Contract& contract) {}
 
   /*
    * 查询到账户信息时回调
    */
-  virtual void on_query_account(const Account* account) {}
+  virtual void on_query_account(const Account& account) {}
 
   /*
    * 查询到仓位信息时回调
    */
-  virtual void on_query_position(const Position* position) {}
+  virtual void on_query_position(const Position& position) {}
 
-  virtual void on_query_trade(const Trade* trade) {}
+  virtual void on_query_trade(const Trade& trade) {}
 
   /*
    * 有新的tick数据到来时回调
    */
-  virtual void on_tick(const TickData* tick) {}
+  virtual void on_tick(const TickData& tick) {}
 
   /*
    * 订单被交易所接受时回调（如果只是被柜台而非交易所接受则不回调）

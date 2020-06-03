@@ -247,31 +247,31 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
   is_logon_ = false;
 }
 
-bool CtpTradeApi::send_order(const OrderReq *order) {
+bool CtpTradeApi::send_order(const OrderReq &order) {
   if (!is_logon_) {
     spdlog::error("[CtpTradeApi::send_order] Failed. Not logon");
     return false;
   }
 
-  const auto *contract = ContractTable::get_by_index(order->ticker_index);
+  const auto *contract = ContractTable::get_by_index(order.ticker_index);
   if (!contract) {
     spdlog::error("[CtpTradeApi::send_order] Contract not found. Index: {}",
-                  order->ticker_index);
+                  order.ticker_index);
     return false;
   }
 
-  int order_ref = static_cast<int>(order->engine_order_id) + order_ref_base_;
+  int order_ref = static_cast<int>(order.engine_order_id) + order_ref_base_;
   CThostFtdcInputOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
   strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
   strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
   snprintf(req.OrderRef, sizeof(req.OrderRef), "%d", order_ref);
-  req.OrderPriceType = order_type(order->type);
-  req.Direction = direction(order->direction);
-  req.CombOffsetFlag[0] = offset(order->offset);
-  req.LimitPrice = order->price;
-  req.VolumeTotalOriginal = order->volume;
+  req.OrderPriceType = order_type(order.type);
+  req.Direction = direction(order.direction);
+  req.CombOffsetFlag[0] = offset(order.offset);
+  req.LimitPrice = order.price;
+  req.VolumeTotalOriginal = order.volume;
   req.CombHedgeFlag[0] = THOST_FTDC_HF_Speculation;
   req.ContingentCondition = THOST_FTDC_CC_Immediately;
   req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
@@ -279,10 +279,10 @@ bool CtpTradeApi::send_order(const OrderReq *order) {
   req.IsAutoSuspend = 0;
   req.UserForceClose = 0;
 
-  if (order->type == OrderType::FAK) {
+  if (order.type == OrderType::FAK) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_AV;
-  } else if (order->type == OrderType::FOK) {
+  } else if (order.type == OrderType::FOK) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_CV;
   } else {
@@ -298,8 +298,8 @@ bool CtpTradeApi::send_order(const OrderReq *order) {
   spdlog::debug(
       "[CtpTradeApi::send_order] [{}-{}-{}{}] 订单发送成功. "
       "Volume:{}, Price:{:.3f}",
-      order_ref, contract->ticker, direction_str(order->direction),
-      offset_str(order->offset), order->volume, order->price);
+      order_ref, contract->ticker, direction_str(order.direction),
+      offset_str(order.offset), order.volume, order.price);
   return true;
 }
 
@@ -503,7 +503,7 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   contract.delivery_year = instrument->DeliveryYear;
   contract.delivery_month = instrument->DeliveryMonth;
 
-  engine_->on_query_contract(&contract);
+  engine_->on_query_contract(contract);
 
   if (is_last) done();
 }
@@ -584,7 +584,7 @@ check_last:
   if (is_last) {
     for (auto &[ticker_index, pos] : pos_cache_) {
       UNUSED(ticker_index);
-      engine_->on_query_position(&pos);
+      engine_->on_query_position(pos);
     }
     pos_cache_.clear();
     done();
@@ -631,7 +631,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
                    trading_account->FrozenCommission;
   account.margin = trading_account->CurrMargin;
 
-  engine_->on_query_account(&account);
+  engine_->on_query_account(account);
   done();
 }
 
@@ -708,7 +708,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
     td.price = trade->Price;
     td.direction = direction(trade->Direction);
     td.offset = offset(trade->OffsetFlag);
-    engine_->on_query_trade(&td);
+    engine_->on_query_trade(td);
   }
 
   if (is_last) done();

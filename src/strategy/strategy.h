@@ -16,6 +16,7 @@
 #include "core/protocol.h"
 #include "core/tick_data.h"
 #include "ipc/redis.h"
+#include "strategy/order_manager.h"
 
 namespace ft {
 
@@ -27,9 +28,9 @@ class Strategy {
 
   virtual void on_init() {}
 
-  virtual void on_tick(const TickData* tick) {}
+  virtual void on_tick(const TickData& tick) {}
 
-  virtual void on_order_rsp(const OrderResponse* order) {}
+  virtual void on_order_rsp(const OrderResponse& order) {}
 
   virtual void on_exit() {}
 
@@ -102,10 +103,10 @@ class Strategy {
  private:
   StrategyIdType strategy_id_;
   OrderSender sender_;
-  RedisSession tick_redis_;
-  RedisSession rsp_redis_;
+  RedisSession redis_;
   ProtocolQueryCenter proto_;
   PositionHelper pos_helper_;
+  OrderManager order_mgr_;
 };
 
 #define EXPORT_STRATEGY(type) \

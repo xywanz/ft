@@ -8,30 +8,28 @@
 
 namespace ft {
 
-VirtualGateway::VirtualGateway() {
-  virtual_api_.set_spi(this);
-  virtual_api_.start_quote_server();
-  virtual_api_.start_trade_server();
-}
+VirtualGateway::VirtualGateway() { virtual_api_.set_spi(this); }
 
 bool VirtualGateway::login(TradingEngineInterface* engine,
                            const Config& config) {
   engine_ = engine;
+  virtual_api_.start_quote_server();
+  virtual_api_.start_trade_server();
   spdlog::info("[VirtualGateway::login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
   return true;
 }
 
 void VirtualGateway::logout() {}
 
-bool VirtualGateway::send_order(const OrderReq* order) {
+bool VirtualGateway::send_order(const OrderReq& order) {
   VirtualOrderReq req{};
-  req.engine_order_id = order->engine_order_id;
-  req.ticker_index = order->ticker_index;
-  req.direction = order->direction;
-  req.offset = order->offset;
-  req.type = order->type;
-  req.volume = order->volume;
-  req.price = order->price;
+  req.engine_order_id = order.engine_order_id;
+  req.ticker_index = order.ticker_index;
+  req.direction = order.direction;
+  req.offset = order.offset;
+  req.type = order.type;
+  req.volume = order.volume;
+  req.price = order.price;
 
   return virtual_api_.insert_order(&req);
 }
@@ -55,7 +53,7 @@ bool VirtualGateway::query_account() {
   Account account{};
   account.account_id = 1234;
   account.balance = 100000000;
-  engine_->on_query_account(&account);
+  engine_->on_query_account(account);
   return true;
 }
 
@@ -82,6 +80,6 @@ void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {
   engine_->on_order_canceled(order_id, canceled);
 }
 
-void VirtualGateway::on_tick(const TickData* tick) { engine_->on_tick(tick); }
+void VirtualGateway::on_tick(const TickData& tick) { engine_->on_tick(tick); }
 
 }  // namespace ft

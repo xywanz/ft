@@ -30,7 +30,7 @@ class VirtualGateway : public Gateway {
 
   void logout() override;
 
-  bool send_order(const OrderReq* order) override;
+  bool send_order(const OrderReq& order) override;
 
   bool cancel_order(uint64_t engine_order_id) override;
 
@@ -57,7 +57,7 @@ class VirtualGateway : public Gateway {
 
   void on_order_canceled(uint64_t engine_order_id, int canceled);
 
-  void on_tick(const TickData* tick);
+  void on_tick(const TickData& tick);
 
  private:
   TradingEngineInterface* engine_;

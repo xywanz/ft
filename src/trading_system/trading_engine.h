@@ -35,7 +35,7 @@ class TradingEngine : public TradingEngineInterface {
   void close();
 
  private:
-  bool send_order(const TraderCommand* cmd);
+  bool send_order(const TraderCommand& cmd);
 
   void cancel_order(uint64_t order_id);
 
@@ -43,15 +43,15 @@ class TradingEngine : public TradingEngineInterface {
 
   void cancel_all();
 
-  void on_query_contract(const Contract* contract) override;
+  void on_query_contract(const Contract& contract) override;
 
-  void on_query_account(const Account* account) override;
+  void on_query_account(const Account& account) override;
 
-  void on_query_position(const Position* position) override;
+  void on_query_position(const Position& position) override;
 
-  void on_query_trade(const Trade* trade) override;
+  void on_query_trade(const Trade& trade) override;
 
-  void on_tick(const TickData* tick) override;
+  void on_tick(const TickData& tick) override;
 
   void on_order_accepted(uint64_t engine_order_id, uint64_t order_id) override;
 
@@ -67,9 +67,6 @@ class TradingEngine : public TradingEngineInterface {
 
  private:
   uint64_t next_engine_order_id() { return next_engine_order_id_++; }
-
-  void respond_send_order_error(const TraderCommand* cmd,
-                                int error_code = NO_ERROR);
 
  private:
   std::unique_ptr<Gateway> gateway_{nullptr};

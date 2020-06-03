@@ -58,7 +58,7 @@ void CtpGateway::logout() {
   quote_api_->logout();
 }
 
-bool CtpGateway::send_order(const OrderReq *order) {
+bool CtpGateway::send_order(const OrderReq& order) {
   return trade_api_->send_order(order);
 }
 

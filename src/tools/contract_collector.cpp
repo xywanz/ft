@@ -23,8 +23,8 @@ class ContractCollector : public ft::TradingEngineInterface {
     return true;
   }
 
-  void on_query_contract(const ft::Contract* contract) override {
-    contracts_.emplace_back(*contract);
+  void on_query_contract(const ft::Contract& contract) override {
+    contracts_.emplace_back(contract);
   }
 
  private:

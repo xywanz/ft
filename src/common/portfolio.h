@@ -19,7 +19,7 @@ class Portfolio {
 
   void init(uint64_t account);
 
-  void set_position(const Position* pos);
+  void set_position(const Position& pos);
 
   void update_pending(uint32_t ticker_index, uint32_t direction,
                       uint32_t offset, int changed);

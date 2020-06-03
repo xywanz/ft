@@ -18,13 +18,13 @@ void Portfolio::init(uint64_t account) {
     redis_.del(reply->element[i]->str);
 }
 
-void Portfolio::set_position(const Position* pos) {
-  pos_map_.emplace(pos->ticker_index, *pos);
+void Portfolio::set_position(const Position& pos) {
+  pos_map_.emplace(pos.ticker_index, pos);
 
-  const auto* contract = ContractTable::get_by_index(pos->ticker_index);
+  const auto* contract = ContractTable::get_by_index(pos.ticker_index);
   assert(contract);
   auto key = proto_.pos_key(contract->ticker);
-  redis_.set(key, pos, sizeof(Position));
+  redis_.set(key, &pos, sizeof(Position));
 }
 
 void Portfolio::update_pending(uint32_t ticker_index, uint32_t direction,
