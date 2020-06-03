@@ -16,7 +16,6 @@
 #include "core/protocol.h"
 #include "core/tick_data.h"
 #include "ipc/redis.h"
-#include "strategy/order_manager.h"
 
 namespace ft {
 
@@ -106,7 +105,6 @@ class Strategy {
   RedisSession redis_;
   ProtocolQueryCenter proto_;
   PositionHelper pos_helper_;
-  OrderManager order_mgr_;
 };
 
 #define EXPORT_STRATEGY(type) \

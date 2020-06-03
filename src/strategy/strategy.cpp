@@ -14,7 +14,6 @@ void Strategy::run() {
       if (strcmp(reply->element[1]->str, strategy_id_) == 0) {
         auto rsp =
             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        order_mgr_.update_order_status(*rsp);
         on_order_rsp(*rsp);
       } else {
         auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
