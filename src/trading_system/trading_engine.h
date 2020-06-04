@@ -43,29 +43,31 @@ class TradingEngine : public TradingEngineInterface {
 
   void cancel_all();
 
-  void on_query_contract(const Contract& contract) override;
+  void on_query_contract(Contract* contract) override;
 
-  void on_query_account(const Account& account) override;
+  void on_query_account(Account* account) override;
 
-  void on_query_position(const Position& position) override;
+  void on_query_position(Position* position) override;
 
-  void on_query_trade(const Trade& trade) override;
+  void on_query_trade(OrderTradedRsp* trade) override;
 
-  void on_tick(const TickData& tick) override;
+  void on_tick(TickData* tick) override;
 
-  void on_order_accepted(uint64_t engine_order_id, uint64_t order_id) override;
+  void on_order_accepted(OrderAcceptedRsp* rsp) override;
 
-  void on_order_rejected(uint64_t engine_order_id) override;
+  void on_order_rejected(OrderRejectedRsp* rsp) override;
 
-  void on_order_traded(uint64_t engine_order_id, uint64_t order_id,
-                       int this_traded, double traded_price) override;
+  void on_order_traded(OrderTradedRsp* rsp) override;
 
-  void on_order_canceled(uint64_t engine_order_id,
-                         int canceled_volume) override;
+  void on_order_canceled(OrderCanceledRsp* rsp) override;
 
-  void on_order_cancel_rejected(uint64_t engine_order_id) override;
+  void on_order_cancel_rejected(OrderCancelRejectedRsp* rsp) override;
 
  private:
+  void on_primary_market_traded(OrderTradedRsp* rsp);  // ETF申赎
+
+  void on_secondary_market_traded(OrderTradedRsp* rsp);  // 二级市场买卖
+
   uint64_t next_engine_order_id() { return next_engine_order_id_++; }
 
  private:

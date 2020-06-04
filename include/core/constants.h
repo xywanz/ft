@@ -93,6 +93,25 @@ inline const uint32_t CLOSE_TODAY = 4;
 inline const uint32_t CLOSE_YESTERDAY = 8;
 }  // namespace Offset
 
+namespace TradeType {
+
+// 二级市场买卖
+inline const uint32_t SECONDARY_MARKET = 0;
+
+// 一级市场成交，如申赎完成会返回此类型
+inline const uint32_t PRIMARY_MARKET = 1;
+
+// ETF申赎的现金替代，也会以回报的形式通知
+inline const uint32_t CASH_SUBSTITUTION = 2;
+
+// ETF赎回获得股票，获得成分股的回报
+inline const uint32_t ACQUIRED_STOCK = 3;
+
+// ETF申购消耗股票，消耗成分股的回报
+inline const uint32_t RELEASED_STOCK = 4;
+
+}  // namespace TradeType
+
 /*
  * 对手方，只针买卖方向有效
  */
@@ -113,14 +132,23 @@ inline bool is_offset_close(uint32_t offset) {
          (Offset::CLOSE | Offset::CLOSE_TODAY | Offset::CLOSE_YESTERDAY);
 }
 
+namespace internal {
+static inline const std::string __empty_str = "";
+}
 /*
  * 交易方向转为string
  */
 inline const std::string& direction_str(uint32_t d) {
   static const std::map<uint32_t, std::string> d_str = {
-      {Direction::BUY, "Buy"}, {Direction::SELL, "Sell"}};
+      {Direction::BUY, "Buy"},
+      {Direction::SELL, "Sell"},
+      {Direction::PURCHASE, "Purchase"},
+      {Direction::REDEEM, "Redeem"},
+  };
 
-  return d_str.find(d)->second;
+  auto iter = d_str.find(d);
+  if (iter == d_str.end()) return internal::__empty_str;
+  return iter->second;
 }
 
 /*
@@ -133,7 +161,9 @@ inline const std::string& offset_str(uint32_t off) {
       {Offset::CLOSE_TODAY, "CloseToday"},
       {Offset::CLOSE_YESTERDAY, "CloseYesterday"}};
 
-  return off_str.find(off)->second;
+  auto iter = off_str.find(off);
+  if (iter == off_str.end()) return internal::__empty_str;
+  return iter->second;
 }
 
 /*
@@ -141,13 +171,14 @@ inline const std::string& offset_str(uint32_t off) {
  */
 inline const std::string& ordertype_str(uint32_t t) {
   static const std::map<uint32_t, std::string> t_str = {
-      {OrderType::LIMIT, "Limit"},
-      {OrderType::MARKET, "Market"},
-      {OrderType::BEST, "Best"},
-      {OrderType::FAK, "FAK"},
-      {OrderType::FOK, "FOK"}};
+      {OrderType::LIMIT, "Limit"}, {OrderType::MARKET, "Market"},
+      {OrderType::BEST, "Best"},   {OrderType::FAK, "FAK"},
+      {OrderType::FOK, "FOK"},
+  };
 
-  return t_str.find(t)->second;
+  auto iter = t_str.find(t);
+  if (iter == t_str.end()) return internal::__empty_str;
+  return iter->second;
 }
 
 /*

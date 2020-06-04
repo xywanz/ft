@@ -95,10 +95,17 @@ bool XtpTradeApi::send_order(const OrderReq& order) {
     return false;
   }
 
-  req.price_type = xtp_price_type(order.type);
-  if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
-    spdlog::error("[XtpTradeApi::send_order] 不支持的订单价格类型");
-    return false;
+  if (order.direction == Direction::BUY || order.direction == Direction::SELL) {
+    req.price_type = xtp_price_type(order.type);
+    if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
+      spdlog::error("[XtpTradeApi::send_order] 不支持的订单价格类型");
+      return false;
+    }
+    req.business_type = XTP_BUSINESS_TYPE_CASH;
+    req.price = order.price;
+  } else {
+    req.price_type = XTP_PRICE_LIMIT;
+    req.business_type = XTP_BUSINESS_TYPE_ETF;
   }
 
   req.market = xtp_market_type(contract->exchange);
@@ -109,9 +116,7 @@ bool XtpTradeApi::send_order(const OrderReq& order) {
 
   req.order_client_id = order.engine_order_id;
   strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
-  req.price = order.price;
   req.quantity = order.volume;
-  req.business_type = XTP_BUSINESS_TYPE_CASH;
 
   uint64_t xtp_order_id = trade_api_->InsertOrder(&req, session_id_);
   if (xtp_order_id == 0) {
@@ -141,22 +146,25 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
-    engine_->on_order_rejected(order_info->order_client_id);
+    OrderRejectedRsp rsp = {order_info->order_client_id};
+    engine_->on_order_rejected(&rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_UNKNOWN) return;
 
   if (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING) {
-    engine_->on_order_accepted(order_info->order_client_id,
-                               order_info->order_xtp_id);
+    OrderAcceptedRsp rsp = {order_info->order_client_id,
+                            order_info->order_xtp_id};
+    engine_->on_order_accepted(&rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_CANCELED ||
       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
-    engine_->on_order_canceled(order_info->order_client_id,
-                               order_info->qty_left);
+    OrderCanceledRsp rsp = {order_info->order_client_id,
+                            static_cast<int>(order_info->qty_left)};
+    engine_->on_order_canceled(&rsp);
   }
 }
 
@@ -169,9 +177,26 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     return;
   }
 
-  engine_->on_order_traded(trade_info->order_client_id,
-                           trade_info->order_xtp_id, trade_info->quantity,
-                           trade_info->price);
+  OrderTradedRsp rsp{};
+  if (trade_info->business_type == XTP_BUSINESS_TYPE_ETF) {
+    auto contract = ContractTable::get_by_ticker(trade_info->ticker);
+    if (!contract) {
+      spdlog::warn("[XtpTradeApi::OnTradeEvent] Contract not found: {}",
+                   contract->ticker);
+      return;
+    }
+    rsp.ticker_index = contract->index;
+    rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
+    rsp.amount = trade_info->trade_amount;
+  } else {
+    rsp.trade_type = TradeType::SECONDARY_MARKET;
+  }
+
+  rsp.engine_order_id = trade_info->order_client_id;
+  rsp.order_id = trade_info->order_xtp_id;
+  rsp.volume = trade_info->quantity;
+  rsp.price = trade_info->price;
+  engine_->on_order_traded(&rsp);
 }
 
 bool XtpTradeApi::cancel_order(uint64_t order_id) {
@@ -252,7 +277,7 @@ check_last:
   if (is_last) {
     for (auto& [ticker_index, pos] : pos_cache_) {
       UNUSED(ticker_index);
-      engine_->on_query_position(pos);
+      engine_->on_query_position(&pos);
     }
     pos_cache_.clear();
     done();
@@ -293,7 +318,7 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
   Account account{};
   account.account_id = std::stoull(investor_id_);
   account.balance = asset->total_asset;
-  engine_->on_query_account(account);
+  engine_->on_query_account(&account);
 
   if (is_last) done();
 }
@@ -359,11 +384,12 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
     return;
   }
 
-  if (trade_info) {
+  if (trade_info &&
+      (trade_info->side == XTP_SIDE_BUY || trade_info->side == XTP_SIDE_SELL)) {
     auto contract = ContractTable::get_by_ticker(trade_info->ticker);
     assert(contract);
 
-    Trade trade{};
+    OrderTradedRsp trade{};
     trade.ticker_index = contract->index;
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;
@@ -373,10 +399,9 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
     } else if (trade_info->side == XTP_SIDE_SELL) {
       trade.direction = Direction::SELL;
       trade.offset = Offset::CLOSE_YESTERDAY;
-    } else {
-      assert(false);
     }
-    engine_->on_query_trade(trade);
+
+    engine_->on_query_trade(&trade);
   }
 
   if (is_last) done();

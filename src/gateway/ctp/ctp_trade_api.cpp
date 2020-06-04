@@ -331,7 +331,8 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
       "Rejected, ErrorMsg: {}",
       order->OrderRef, gb2312_to_utf8(rsp_info->ErrorMsg));
 
-  engine_->on_order_rejected(get_engine_order_id(order_ref));
+  OrderRejectedRsp rsp = {get_engine_order_id(order_ref)};
+  engine_->on_order_rejected(&rsp);
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
@@ -353,10 +354,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
     spdlog::error("[CtpTradeApi::OnRtnOrder] {}",
                   gb2312_to_utf8(order->StatusMsg));
-    engine_->on_order_rejected(engine_order_id);
+    OrderRejectedRsp rsp = {engine_order_id};
+    engine_->on_order_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    engine_->on_order_cancel_rejected(engine_order_id);
+    OrderCancelRejectedRsp rsp = {engine_order_id};
+    engine_->on_order_cancel_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted ||
              order->OrderSubmitStatus == THOST_FTDC_OSS_CancelSubmitted) {
@@ -371,14 +374,16 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   // 处理撤单
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
-    engine_->on_order_canceled(
-        engine_order_id, order->VolumeTotalOriginal - order->VolumeTraded);
+    OrderCanceledRsp rsp = {engine_order_id,
+                            order->VolumeTotalOriginal - order->VolumeTraded};
+    engine_->on_order_canceled(&rsp);
   } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
     auto contract = ContractTable::get_by_ticker(order->InstrumentID);
     assert(contract);
-    engine_->on_order_accepted(
+    OrderAcceptedRsp rsp = {
         engine_order_id,
-        get_order_id(contract->index, std::stoi(order->OrderSysID)));
+        get_order_id(contract->index, std::stoi(order->OrderSysID))};
+    engine_->on_order_accepted(&rsp);
   }
 }
 
@@ -396,10 +401,13 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
   assert(contract);
 
-  engine_->on_order_traded(
-      get_engine_order_id(std::stoi(trade->OrderRef)),
-      get_order_id(contract->index, std::stoi(trade->OrderSysID)),
-      trade->Volume, trade->Price);
+  OrderTradedRsp rsp{};
+  rsp.engine_order_id = get_engine_order_id(std::stoi(trade->OrderRef));
+  rsp.order_id = get_order_id(contract->index, std::stoi(trade->OrderSysID));
+  rsp.volume = trade->Volume;
+  rsp.price = trade->Price;
+  rsp.trade_type = TradeType::SECONDARY_MARKET;
+  engine_->on_order_traded(&rsp);
 }
 
 bool CtpTradeApi::cancel_order(uint64_t order_id) {
@@ -503,7 +511,7 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   contract.delivery_year = instrument->DeliveryYear;
   contract.delivery_month = instrument->DeliveryMonth;
 
-  engine_->on_query_contract(contract);
+  engine_->on_query_contract(&contract);
 
   if (is_last) done();
 }
@@ -584,7 +592,7 @@ check_last:
   if (is_last) {
     for (auto &[ticker_index, pos] : pos_cache_) {
       UNUSED(ticker_index);
-      engine_->on_query_position(pos);
+      engine_->on_query_position(&pos);
     }
     pos_cache_.clear();
     done();
@@ -631,7 +639,7 @@ void CtpTradeApi::OnRspQryTradingAccount(
                    trading_account->FrozenCommission;
   account.margin = trading_account->CurrMargin;
 
-  engine_->on_query_account(account);
+  engine_->on_query_account(&account);
   done();
 }
 
@@ -702,13 +710,13 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
     auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
     assert(contract);
 
-    Trade td{};
+    OrderTradedRsp td{};
     td.ticker_index = contract->index;
     td.volume = trade->Volume;
     td.price = trade->Price;
     td.direction = direction(trade->Direction);
     td.offset = offset(trade->OffsetFlag);
-    engine_->on_query_trade(td);
+    engine_->on_query_trade(&td);
   }
 
   if (is_last) done();

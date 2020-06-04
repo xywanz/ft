@@ -193,25 +193,25 @@ void TradingEngine::cancel_all() {
   }
 }
 
-void TradingEngine::on_query_contract(const Contract& contract) {}
+void TradingEngine::on_query_contract(Contract* contract) {}
 
-void TradingEngine::on_query_account(const Account& account) {
+void TradingEngine::on_query_account(Account* account) {
   std::unique_lock<std::mutex> lock(mutex_);
-  account_ = account;
+  account_ = *account;
   lock.unlock();
 
   spdlog::info(
       "[TradingEngine::on_query_account] balance:{:.3f}, frozen:{:.3f}, "
       "margin:{:.3f}",
-      account.balance, account.frozen, account.margin);
+      account->balance, account->frozen, account->margin);
 }
 
-void TradingEngine::on_query_position(const Position& position) {
-  auto contract = ContractTable::get_by_index(position.ticker_index);
+void TradingEngine::on_query_position(Position* position) {
+  auto contract = ContractTable::get_by_index(position->ticker_index);
   assert(contract);
 
-  auto& lp = position.long_pos;
-  auto& sp = position.short_pos;
+  auto& lp = position->long_pos;
+  auto& sp = position->short_pos;
   spdlog::info(
       "[TradingEngine::on_query_position] Ticker: {}, "
       "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
@@ -222,45 +222,44 @@ void TradingEngine::on_query_position(const Position& position) {
   if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0)
     return;
 
-  portfolio_.set_position(position);
+  portfolio_.set_position(*position);
 }
 
-void TradingEngine::on_tick(const TickData& tick) {
+void TradingEngine::on_tick(TickData* tick) {
   if (!is_logon_) return;
 
-  auto contract = ContractTable::get_by_index(tick.ticker_index);
+  auto contract = ContractTable::get_by_index(tick->ticker_index);
   assert(contract);
 
   tick_redis_.publish(proto_.quote_key(contract->ticker), &tick,
                       sizeof(TickData));
   spdlog::trace("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
-                tick.ask[0], tick.bid[0]);
+                tick->ask[0], tick->bid[0]);
 }
 
-void TradingEngine::on_query_trade(const Trade& trade) {
-  portfolio_.update_on_query_trade(trade.ticker_index, trade.direction,
-                                   trade.offset, trade.volume);
+void TradingEngine::on_query_trade(OrderTradedRsp* trade) {
+  portfolio_.update_on_query_trade(trade->ticker_index, trade->direction,
+                                   trade->offset, trade->volume);
 }
 
 /*
  * 订单被市场接受后通知策略
  * 告知策略order_id，策略可通过此order_id撤单
  */
-void TradingEngine::on_order_accepted(uint64_t engine_order_id,
-                                      uint64_t order_id) {
+void TradingEngine::on_order_accepted(OrderAcceptedRsp* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(engine_order_id);
+  auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
         "[TradingEngine::on_order_accepted] Order not found. OrderID: {}",
-        engine_order_id);
+        rsp->engine_order_id);
     return;
   }
 
   auto& order = iter->second;
   if (order.accepted) return;
 
-  order.order_id = order_id;
+  order.order_id = rsp->order_id;
   order.accepted = true;
   risk_mgr_->on_order_accepted(&order);
 
@@ -271,13 +270,13 @@ void TradingEngine::on_order_accepted(uint64_t engine_order_id,
       offset_str(order.req.offset), order.req.volume, order.req.price);
 }
 
-void TradingEngine::on_order_rejected(uint64_t engine_order_id) {
+void TradingEngine::on_order_rejected(OrderRejectedRsp* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(engine_order_id);
+  auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
         "[TradingEngine::on_order_rejected] Order not found. OrderID: {}",
-        engine_order_id);
+        rsp->engine_order_id);
     return;
   }
 
@@ -293,15 +292,55 @@ void TradingEngine::on_order_rejected(uint64_t engine_order_id) {
   order_map_.erase(iter);
 }
 
-void TradingEngine::on_order_traded(uint64_t engine_order_id, uint64_t order_id,
-                                    int this_traded, double traded_price) {
+void TradingEngine::on_order_traded(OrderTradedRsp* rsp) {
+  if (rsp->trade_type == TradeType::SECONDARY_MARKET)
+    on_secondary_market_traded(rsp);
+  else
+    on_primary_market_traded(rsp);
+}
+
+void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(engine_order_id);
+  auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[TradingEngine::on_order_traded] Order not found. OrderID: {}, "
-        "Traded: {}, Price: {}",
-        engine_order_id, this_traded, traded_price);
+        "[TradingEngine::on_primary_market_traded] Order not found. OrderID: "
+        "{}, Traded: {}, Price: {}",
+        rsp->engine_order_id, rsp->volume, rsp->price);
+    return;
+  }
+
+  auto order = iter->second;
+  if (!order.accepted) {
+    order.accepted = true;
+    risk_mgr_->on_order_accepted(&order);
+
+    spdlog::info(
+        "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, "
+        "Direction: {}, Offset: {}, Volume: {}, Price: {:.2f}",
+        order.contract->ticker, direction_str(order.req.direction),
+        offset_str(order.req.offset), order.req.volume, order.req.price);
+  }
+
+  order.order_id = rsp->order_id;
+  if (rsp->trade_type == TradeType::ACQUIRED_STOCK) {
+  } else if (rsp->trade_type == TradeType::RELEASED_STOCK) {
+  } else if (rsp->trade_type == TradeType::CASH_SUBSTITUTION) {
+  } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
+    spdlog::info("[TradingEngine::on_primary_market_traded] done. {}, {}",
+                 order.contract->ticker, direction_str(order.req.direction));
+    order_map_.erase(iter);
+  }
+}
+
+void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  auto iter = order_map_.find(rsp->engine_order_id);
+  if (iter == order_map_.end()) {
+    spdlog::warn(
+        "[TradingEngine::on_secondary_market_traded] Order not found. OrderID: "
+        "{}, Traded: {}, Price: {}",
+        rsp->engine_order_id, rsp->volume, rsp->price);
     return;
   }
 
@@ -317,16 +356,16 @@ void TradingEngine::on_order_traded(uint64_t engine_order_id, uint64_t order_id,
         offset_str(order.req.offset), order.req.volume, order.req.price);
   }
 
-  order.order_id = order_id;
-  order.traded_volume += this_traded;
+  order.order_id = rsp->order_id;
+  order.traded_volume += rsp->volume;
 
   spdlog::info(
       "[TradingEngine::on_order_traded] 报单成交. Ticker: {}, Direction: {}, "
       "Offset: {}, Traded: {}, Price: {}",
       order.contract->ticker, direction_str(order.req.direction),
-      offset_str(order.req.offset), this_traded, traded_price);
+      offset_str(order.req.offset), rsp->volume, rsp->price);
 
-  risk_mgr_->on_order_traded(&order, this_traded, traded_price);
+  risk_mgr_->on_order_traded(&order, rsp->volume, rsp->price);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
@@ -341,27 +380,26 @@ void TradingEngine::on_order_traded(uint64_t engine_order_id, uint64_t order_id,
   }
 }
 
-void TradingEngine::on_order_canceled(uint64_t engine_order_id,
-                                      int canceled_volume) {
+void TradingEngine::on_order_canceled(OrderCanceledRsp* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(engine_order_id);
+  auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
         "[TradingEngine::on_order_canceled] Order not found. OrderID: {}",
-        engine_order_id);
+        rsp->engine_order_id);
     return;
   }
 
   auto& order = iter->second;
-  order.canceled_volume = canceled_volume;
+  order.canceled_volume = rsp->canceled_volume;
 
   spdlog::info(
       "[TradingEngine::on_order_canceled] 报单已撤. Ticker: {}, Direction: {}, "
       "Offset: {}, Canceled: {}",
       order.contract->ticker, direction_str(order.req.direction),
-      offset_str(order.req.offset), canceled_volume);
+      offset_str(order.req.offset), rsp->canceled_volume);
 
-  risk_mgr_->on_order_canceled(&order, canceled_volume);
+  risk_mgr_->on_order_canceled(&order, rsp->canceled_volume);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
@@ -375,11 +413,11 @@ void TradingEngine::on_order_canceled(uint64_t engine_order_id,
   }
 }
 
-void TradingEngine::on_order_cancel_rejected(uint64_t engine_order_id) {
+void TradingEngine::on_order_cancel_rejected(OrderCancelRejectedRsp* rsp) {
   spdlog::warn(
       "[TradingEngine::on_order_cancel_rejected] Order cannot be canceled. "
       "OrderID: {}",
-      engine_order_id);
+      rsp->engine_order_id);
 }
 
 }  // namespace ft

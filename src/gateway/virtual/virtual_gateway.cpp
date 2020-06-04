@@ -53,7 +53,7 @@ bool VirtualGateway::query_account() {
   Account account{};
   account.account_id = 1234;
   account.balance = 100000000;
-  engine_->on_query_account(account);
+  engine_->on_query_account(&account);
   return true;
 }
 
@@ -68,18 +68,25 @@ bool VirtualGateway::query_commision_rate(const std::string& ticker) {
 }
 
 void VirtualGateway::on_order_accepted(uint64_t engine_order_id) {
-  engine_->on_order_accepted(engine_order_id, engine_order_id);
+  OrderAcceptedRsp rsp = {engine_order_id, engine_order_id};
+  engine_->on_order_accepted(&rsp);
 }
 
 void VirtualGateway::on_order_traded(uint64_t engine_order_id, int traded,
                                      double price) {
-  engine_->on_order_traded(engine_order_id, engine_order_id, traded, price);
+  OrderTradedRsp rsp{};
+  rsp.engine_order_id = engine_order_id;
+  rsp.order_id = engine_order_id;
+  rsp.volume = traded;
+  rsp.price = price;
+  engine_->on_order_traded(&rsp);
 }
 
 void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {
-  engine_->on_order_canceled(order_id, canceled);
+  OrderCanceledRsp rsp = {order_id, canceled};
+  engine_->on_order_canceled(&rsp);
 }
 
-void VirtualGateway::on_tick(const TickData& tick) { engine_->on_tick(tick); }
+void VirtualGateway::on_tick(TickData* tick) { engine_->on_tick(tick); }
 
 }  // namespace ft

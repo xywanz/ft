@@ -234,7 +234,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
       contract->ticker, tick.time_ms, tick.last_price, tick.volume,
       tick.turnover, tick.open_interest);
 
-  engine_->on_tick(tick);
+  engine_->on_tick(&tick);
 }
 
 void CtpQuoteApi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) {}

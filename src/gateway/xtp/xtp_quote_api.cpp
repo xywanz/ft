@@ -155,7 +155,7 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
     else if (ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)
       contract.product_type = ProductType::FUND;
     contract.size = 1;
-    engine_->on_query_contract(contract);
+    engine_->on_query_contract(&contract);
   }
 
   if (is_last) done();
@@ -245,7 +245,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
       market_data->ticker, tick.time_ms, tick.last_price, tick.volume,
       tick.turnover, tick.open_interest);
 
-  engine_->on_tick(tick);
+  engine_->on_tick(&tick);
 }
 
 }  // namespace ft

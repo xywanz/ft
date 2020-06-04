@@ -57,7 +57,7 @@ class VirtualGateway : public Gateway {
 
   void on_order_canceled(uint64_t engine_order_id, int canceled);
 
-  void on_tick(const TickData& tick);
+  void on_tick(TickData* tick);
 
  private:
   TradingEngineInterface* engine_;

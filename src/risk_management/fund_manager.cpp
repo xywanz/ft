@@ -16,6 +16,12 @@ bool FundManager::init(const Config& config, Account* account,
 }
 
 int FundManager::check_order_req(const Order* order) {
+  // 暂时只针对买卖进行管理，申赎等操作由其他模块计算资金占用
+  // 融资融券暂不支持
+  if (order->req.direction != Direction::BUY ||
+      order->req.direction != Direction::SELL)
+    return NO_ERROR;
+
   auto* req = &order->req;
   if (is_offset_close(req->offset)) return NO_ERROR;
 
@@ -31,8 +37,6 @@ int FundManager::check_order_req(const Order* order) {
   } else if (req->direction == Direction::SELL) {
     estimated =
         req->price * req->volume * contract->size * contract->short_margin_rate;
-  } else {
-    assert(false);
   }
 
   if (avl < estimated) return ERR_FUND_NOT_ENOUGH;
