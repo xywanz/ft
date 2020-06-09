@@ -177,10 +177,10 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     return;
   }
 
-  spdlog::info("{},{},{},{},{},{}", trade_info->ticker,
-               trade_info->business_type, trade_info->trade_type,
-               trade_info->quantity, trade_info->price,
-               trade_info->trade_amount);
+  spdlog::trace("ETF purchase/redeem: {},{},{},{},{},{}", trade_info->ticker,
+                trade_info->business_type, trade_info->trade_type,
+                trade_info->quantity, trade_info->price,
+                trade_info->trade_amount);
 
   OrderTradedRsp rsp{};
   if (trade_info->business_type == XTP_BUSINESS_TYPE_ETF) {
