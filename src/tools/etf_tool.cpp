@@ -6,8 +6,32 @@
 
 #include <fstream>
 
+#include "risk_management/etf_arbitrage/etf.h"
 #include "trading_system/config_loader.h"
 #include "utils/misc.h"
+
+const char* xtp_market_str(XTP_MARKET_TYPE market) {
+  return market == XTP_MKT_SZ_A ? "SZ" : "SH";
+}
+
+ft::ReplaceType replace_type(ETF_REPLACE_TYPE type) {
+  if (type == ERT_CASH_FORBIDDEN)
+    return ft::FORBIDDEN;
+  else if (type == ERT_CASH_OPTIONAL)
+    return ft::OPTIONAL;
+  else if (type == ERT_CASH_MUST || type == ERT_CASH_MUST_INTER_OTHER ||
+           type == ERT_CASH_MUST_INTER_SZ)
+    return ft::MUST;
+  else if (type == ERT_CASH_RECOMPUTE_INTER_OTHER ||
+           type == ERT_CASH_RECOMPUTE_INTER_SZ)
+    return ft::RECOMPUTE;
+  assert(false);
+}
+
+struct EtfInfo {
+  std::string ticker;
+  XTP_MARKET_TYPE market;
+};
 
 class EtfTool : public XTP::API::TraderSpi {
  public:
@@ -44,9 +68,9 @@ class EtfTool : public XTP::API::TraderSpi {
     trade_api_->SubscribePublicTopic(XTP_TERT_QUICK);
     trade_api_->RegisterSpi(this);
     trade_api_->SetSoftwareKey(config.auth_code.c_str());
-    session_id_ = trade_api_->Login(ip, port, config.investor_id.c_str(),
-                                    config.password.c_str(), sock_type);
-    if (session_id_ == 0) {
+    sess_ = trade_api_->Login(ip, port, config.investor_id.c_str(),
+                              config.password.c_str(), sock_type);
+    if (sess_ == 0) {
       spdlog::error("[EtfTools::login] Failed to Call API login: {}",
                     trade_api_->GetApiLastError()->error_msg);
       return false;
@@ -71,7 +95,7 @@ class EtfTool : public XTP::API::TraderSpi {
             "cash_component\n";
 
     XTPQueryETFBaseReq req{};
-    if (trade_api_->QueryETF(&req, session_id_, next_req_id()) != 0) {
+    if (trade_api_->QueryETF(&req, sess_, next_req_id()) != 0) {
       spdlog::error("[XtpTradeApi::query_trades] {}",
                     trade_api_->GetApiLastError()->error_msg);
       return false;
@@ -88,16 +112,64 @@ class EtfTool : public XTP::API::TraderSpi {
 
     if (error_info && error_info->error_id != 0) {
       spdlog::error("[XtpTradeApi::OnQueryETF] {}", error_info->error_msg);
-      done();
-      return;
+      exit(-1);
     }
 
     if (etf_info) {
+      etf_list_.push_back({etf_info->etf, etf_info->market});
       ofs_ << fmt::format("{},{},{},{},{},{},{}\n", etf_info->etf,
-                          etf_info->market == 1 ? "SZ" : "SH", etf_info->unit,
+                          xtp_market_str(etf_info->market), etf_info->unit,
                           etf_info->subscribe_status,
                           etf_info->redemption_status, etf_info->max_cash_ratio,
                           etf_info->cash_component);
+    }
+
+    if (is_last) done();
+  }
+
+  bool query_etf_baskets() {
+    auto file = fmt::format("{}/etf_components.csv", output_path_);
+    ofs_.open(file);
+    if (!ofs_) {
+      spdlog::error("[EtfToool::query_etf_baskets] Failed to create {}", file);
+      return false;
+    }
+    ofs_ << "etf,component,etf_market,component_market,replace_type,quantity,"
+            "amount\n";
+
+    for (const auto& etf : etf_list_) {
+      spdlog::info("export components of {} ...", etf.ticker);
+      XTPQueryETFComponentReq req{};
+      req.market = etf.market;
+      strncpy(req.ticker, etf.ticker.c_str(), sizeof(req.ticker));
+      if (trade_api_->QueryETFTickerBasket(&req, sess_, next_req_id()) != 0) {
+        return false;
+      }
+
+      if (!wait_sync()) return false;
+      usleep(300000);
+    }
+
+    ofs_.close();
+    return true;
+  }
+
+  void OnQueryETFBasket(XTPQueryETFComponentRsp* etf_component_info,
+                        XTPRI* error_info, int request_id, bool is_last,
+                        uint64_t session_id) override {
+    if (error_info && error_info->error_id != 0) {
+      spdlog::error("[XtpTradeApi::OnQueryETF] {}", error_info->error_msg);
+      exit(-1);
+    }
+
+    if (etf_component_info) {
+      ofs_ << fmt::format("{},{},{},{},{},{},{}\n", etf_component_info->ticker,
+                          etf_component_info->component_ticker,
+                          xtp_market_str(etf_component_info->market),
+                          xtp_market_str(etf_component_info->component_market),
+                          replace_type(etf_component_info->replace_type),
+                          etf_component_info->quantity,
+                          etf_component_info->amount);
     }
 
     if (is_last) done();
@@ -121,12 +193,14 @@ class EtfTool : public XTP::API::TraderSpi {
  private:
   XTP::API::TraderApi* trade_api_;
 
-  uint64_t session_id_;
+  uint64_t sess_;
   std::atomic<uint32_t> next_req_id_ = 1;
   volatile bool is_done_ = false;
   volatile bool is_error_ = false;
   std::string output_path_ = ".";
   std::ofstream ofs_;
+
+  std::list<EtfInfo> etf_list_;
 };
 
 int main() {
@@ -138,10 +212,16 @@ int main() {
     spdlog::error("failed to login");
     return -1;
   }
+
   if (!etf_tool.query_etf_list()) {
     spdlog::error("failed to query etf list");
     return -1;
   }
-
   spdlog::info("successfully export etf list");
+
+  if (!etf_tool.query_etf_baskets()) {
+    spdlog::error("failed to query etf baskets");
+    return -1;
+  }
+  spdlog::info("successfully export etf baskets");
 }
