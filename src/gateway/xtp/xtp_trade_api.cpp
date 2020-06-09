@@ -177,13 +177,22 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     return;
   }
 
+  spdlog::info("{},{},{},{},{},{}", trade_info->ticker,
+               trade_info->business_type, trade_info->trade_type,
+               trade_info->quantity, trade_info->price,
+               trade_info->trade_amount);
+
   OrderTradedRsp rsp{};
   if (trade_info->business_type == XTP_BUSINESS_TYPE_ETF) {
     auto contract = ContractTable::get_by_ticker(trade_info->ticker);
     if (!contract) {
-      spdlog::warn("[XtpTradeApi::OnTradeEvent] Contract not found: {}",
-                   contract->ticker);
-      return;
+      trade_info->ticker[5] = '0';
+      contract = ContractTable::get_by_ticker(trade_info->ticker);
+      if (!contract) {
+        spdlog::warn("[XtpTradeApi::OnTradeEvent] Contract not found: {}",
+                     trade_info->ticker);
+        return;
+      }
     }
     rsp.ticker_index = contract->index;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);

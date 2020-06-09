@@ -2,6 +2,8 @@
 
 #include "risk_management/position_manager.h"
 
+#include "core/contract_table.h"
+
 namespace ft {
 
 bool PositionManager::init(const Config& config, Account* account,
@@ -45,10 +47,26 @@ void PositionManager::on_order_sent(const Order* order) {
                              order->req.offset, order->req.volume);
 }
 
-void PositionManager::on_order_traded(const Order* order, int this_traded,
-                                      double traded_price) {
-  portfolio_->update_traded(order->contract->index, order->req.direction,
-                            order->req.offset, this_traded, traded_price);
+void PositionManager::on_order_traded(const Order* order,
+                                      const OrderTradedRsp* trade) {
+  if (trade->trade_type == TradeType::SECONDARY_MARKET) {
+    portfolio_->update_traded(order->contract->index, order->req.direction,
+                              order->req.offset, trade->volume, trade->price);
+  } else if (trade->trade_type == TradeType::ACQUIRED_STOCK) {
+    auto contract = ContractTable::get_by_index(trade->ticker_index);
+    assert(contract);
+    portfolio_->update_traded(contract->index, Direction::BUY, Offset::OPEN,
+                              trade->volume, trade->price);
+  } else if (trade->trade_type == TradeType::RELEASED_STOCK) {
+    auto contract = ContractTable::get_by_index(trade->ticker_index);
+    assert(contract);
+    portfolio_->update_traded(contract->index, Direction::SELL,
+                              Offset::CLOSE_YESTERDAY, trade->volume,
+                              trade->price);
+  } else if (trade->trade_type == TradeType::PRIMARY_MARKET) {
+    portfolio_->update_traded(order->contract->index, Direction::SELL,
+                              Offset::CLOSE_TODAY, trade->volume, trade->price);
+  }
 }
 
 void PositionManager::on_order_canceled(const Order* order, int canceled) {

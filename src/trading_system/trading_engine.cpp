@@ -310,7 +310,7 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
     return;
   }
 
-  auto order = iter->second;
+  auto& order = iter->second;
   if (!order.accepted) {
     order.accepted = true;
     risk_mgr_->on_order_accepted(&order);
@@ -324,9 +324,13 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
 
   order.order_id = rsp->order_id;
   if (rsp->trade_type == TradeType::ACQUIRED_STOCK) {
+    risk_mgr_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::RELEASED_STOCK) {
+    risk_mgr_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::CASH_SUBSTITUTION) {
+    risk_mgr_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
+    risk_mgr_->on_order_completed(&order);
     spdlog::info("[TradingEngine::on_primary_market_traded] done. {}, {}",
                  order.contract->ticker, direction_str(order.req.direction));
     order_map_.erase(iter);
@@ -365,7 +369,7 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
       order.contract->ticker, direction_str(order.req.direction),
       offset_str(order.req.offset), rsp->volume, rsp->price);
 
-  risk_mgr_->on_order_traded(&order, rsp->volume, rsp->price);
+  risk_mgr_->on_order_traded(&order, rsp);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(

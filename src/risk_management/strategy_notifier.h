@@ -12,8 +12,8 @@ class StrategyNotifier : public RiskRuleInterface {
  public:
   void on_order_accepted(const Order* order);
 
-  void on_order_traded(const Order* order, int this_traded,
-                       double traded_price) override;
+  void on_order_traded(const Order* order,
+                       const OrderTradedRsp* trade) override;
 
   void on_order_canceled(const Order* order, int canceled) override;
 

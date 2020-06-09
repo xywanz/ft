@@ -20,8 +20,8 @@ class FundManager : public RiskRuleInterface {
 
   void on_order_sent(const Order* order) override;
 
-  void on_order_traded(const Order* order, int traded,
-                       double traded_price) override;
+  void on_order_traded(const Order* order,
+                       const OrderTradedRsp* trade) override;
 
   void on_order_canceled(const Order* order, int canceled) override;
 

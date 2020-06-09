@@ -51,10 +51,9 @@ void RiskManager::on_order_accepted(const Order* order) {
   for (auto& rule : rules_) rule->on_order_accepted(order);
 }
 
-void RiskManager::on_order_traded(const Order* order, int this_traded,
-                                  double traded_price) {
-  for (auto& rule : rules_)
-    rule->on_order_traded(order, this_traded, traded_price);
+void RiskManager::on_order_traded(const Order* order,
+                                  const OrderTradedRsp* trade) {
+  for (auto& rule : rules_) rule->on_order_traded(order, trade);
 }
 
 void RiskManager::on_order_canceled(const Order* order, int canceled) {

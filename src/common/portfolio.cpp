@@ -43,12 +43,12 @@ void Portfolio::update_pending(uint32_t ticker_index, uint32_t direction,
 
   if (pos_detail.open_pending < 0) {
     pos_detail.open_pending = 0;
-    spdlog::warn("[Portfolio::update_pending] correct open_pending");
+    // spdlog::warn("[Portfolio::update_pending] correct open_pending");
   }
 
   if (pos_detail.close_pending < 0) {
     pos_detail.close_pending = 0;
-    spdlog::warn("[Portfolio::update_pending] correct close_pending");
+    // spdlog::warn("[Portfolio::update_pending] correct close_pending");
   }
 
   const auto* contract = ContractTable::get_by_index(pos.ticker_index);
@@ -88,12 +88,12 @@ void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
 
   if (pos_detail.open_pending < 0) {
     pos_detail.open_pending = 0;
-    spdlog::warn("[Portfolio::update_traded] correct open_pending");
+    // spdlog::warn("[Portfolio::update_traded] correct open_pending");
   }
 
   if (pos_detail.close_pending < 0) {
     pos_detail.close_pending = 0;
-    spdlog::warn("[Portfolio::update_traded] correct close_pending");
+    // spdlog::warn("[Portfolio::update_traded] correct close_pending");
   }
 
   const auto* contract = ContractTable::get_by_index(ticker_index);

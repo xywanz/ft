@@ -58,27 +58,33 @@ void FundManager::on_order_sent(const Order* order) {
   }
 }
 
-void FundManager::on_order_traded(const Order* order, int traded,
-                                  double traded_price) {
-  auto contract = order->contract;
-  if (is_offset_open(order->req.offset)) {
-    auto margin_rate = order->req.direction == Direction::BUY
-                           ? contract->long_margin_rate
-                           : contract->short_margin_rate;
-    auto frozen_released =
-        contract->size * traded * order->req.price * margin_rate;
-    auto margin = order->contract->size * traded * traded_price * margin_rate;
-    account_->frozen -= frozen_released;
-    account_->margin += margin;
-  } else if (is_offset_close(order->req.offset)) {
-    auto margin_rate = order->req.direction == Direction::BUY
-                           ? contract->long_margin_rate
-                           : contract->short_margin_rate;
-    auto margin = contract->size * traded * traded_price * margin_rate;
-    account_->margin -= margin;
-    if (account_->margin < 0) account_->margin = 0;
-    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                  account_->balance, account_->frozen, account_->margin);
+void FundManager::on_order_traded(const Order* order,
+                                  const OrderTradedRsp* trade) {
+  if (trade->trade_type == TradeType::SECONDARY_MARKET) {
+    auto contract = order->contract;
+
+    if (is_offset_open(order->req.offset)) {
+      auto margin_rate = order->req.direction == Direction::BUY
+                             ? contract->long_margin_rate
+                             : contract->short_margin_rate;
+      auto frozen_released =
+          contract->size * trade->volume * order->req.price * margin_rate;
+      auto margin =
+          order->contract->size * trade->volume * trade->price * margin_rate;
+      account_->frozen -= frozen_released;
+      account_->margin += margin;
+    } else if (is_offset_close(order->req.offset)) {
+      auto margin_rate = order->req.direction == Direction::BUY
+                             ? contract->long_margin_rate
+                             : contract->short_margin_rate;
+      auto margin = contract->size * trade->volume * trade->price * margin_rate;
+      account_->margin -= margin;
+      if (account_->margin < 0) account_->margin = 0;
+      spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+                    account_->balance, account_->frozen, account_->margin);
+    }
+  } else if (trade->trade_type == TradeType::CASH_SUBSTITUTION) {
+    account_->margin -= trade->amount;
   }
 }
 

@@ -11,6 +11,7 @@
 #include "core/account.h"
 #include "core/config.h"
 #include "core/error_code.h"
+#include "core/trading_engine_interface.h"
 
 namespace ft {
 
@@ -30,8 +31,8 @@ class RiskRuleInterface {
 
   virtual void on_order_accepted(const Order* order) {}
 
-  virtual void on_order_traded(const Order* order, int this_traded,
-                               double traded_price) {}
+  virtual void on_order_traded(const Order* order,
+                               const OrderTradedRsp* trade) {}
 
   virtual void on_order_canceled(const Order* order, int canceled) {}
 
