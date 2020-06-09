@@ -75,14 +75,14 @@ inline uint32_t ft_trade_type(XTP_SIDE_TYPE side, TXTPTradeTypeType type) {
   if (side == XTP_SIDE_PURCHASE) {
     if (type == XTP_TRDT_COMMON)
       return TradeType::RELEASED_STOCK;
-    else if (type == XTP_TRDT_CASH)
+    else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
       return TradeType::CASH_SUBSTITUTION;
     else if (type == XTP_TRDT_PRIMARY)
       return TradeType::PRIMARY_MARKET;
   } else if (side == XTP_SIDE_REDEMPTION) {
     if (type == XTP_TRDT_COMMON)
       return TradeType::ACQUIRED_STOCK;
-    else if (type == XTP_TRDT_CASH)
+    else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
       return TradeType::CASH_SUBSTITUTION;
     else if (type == XTP_TRDT_PRIMARY)
       return TradeType::PRIMARY_MARKET;
