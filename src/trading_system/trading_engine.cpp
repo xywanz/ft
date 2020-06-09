@@ -30,31 +30,35 @@ bool TradingEngine::login(const Config& config) {
   spdlog::info("[TradingEngine::login] Success. Login as {}",
                config.investor_id);
 
-  spdlog::info("[[TradingEngine::login] Querying account");
+  spdlog::info("[TradingEngine::login] Querying account");
   if (!gateway_->query_account()) {
     spdlog::error("[TradingEngine::login] Failed to query account");
     return false;
   }
-  spdlog::info("[[TradingEngine::login] Querying account done");
+  spdlog::info("[TradingEngine::login] Querying account done");
 
   // query all positions
-  spdlog::info("[[TradingEngine::login] Querying positions");
+  spdlog::info("[TradingEngine::login] Querying positions");
   portfolio_.init(account_.account_id);
   if (!gateway_->query_positions()) {
     spdlog::error("[TradingEngine::login] Failed to query positions");
     return false;
   }
-  spdlog::info("[[TradingEngine::login] Querying positions done");
+  spdlog::info("[TradingEngine::login] Querying positions done");
 
-  spdlog::info("[[TradingEngine::login] Querying trades");
+  spdlog::info("[TradingEngine::login] Querying trades");
   if (!gateway_->query_trades()) {
     spdlog::error("[TradingEngine::login] Failed to query trades");
     return false;
   }
-  spdlog::info("[[TradingEngine::login] Querying trades done");
+  spdlog::info("[TradingEngine::login] Querying trades done");
 
   proto_.set_account(account_.account_id);
-  risk_mgr_->init(config, &account_, &portfolio_, &order_map_);
+
+  if (!risk_mgr_->init(config, &account_, &portfolio_, &order_map_)) {
+    spdlog::error("[TradingEngine::login] 风险管理对象初始化失败");
+    return false;
+  }
 
   // 启动个线程去定时查询资金账户信息
   if (config.api != "virtual") {

@@ -2,6 +2,7 @@
 
 #include "risk_management/risk_manager.h"
 
+#include "risk_management/etf_arbitrage/arbitrage_manager.h"
 #include "risk_management/fund_manager.h"
 #include "risk_management/no_self_trade.h"
 #include "risk_management/position_manager.h"
@@ -20,6 +21,7 @@ bool RiskManager::init(const Config& config, Account* account,
   add_rule(std::make_shared<NoSelfTradeRule>());
   add_rule(std::make_shared<ThrottleRateLimit>());
   add_rule(std::make_shared<StrategyNotifier>());
+  if (config.api == "xtp") add_rule(std::make_shared<ArbitrageManager>());
 
   for (auto& rule : rules_) {
     if (!rule->init(config, account, portfolio, order_map)) return false;

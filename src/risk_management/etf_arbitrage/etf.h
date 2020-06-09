@@ -3,6 +3,10 @@
 #ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_H_
 #define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_H_
 
+#include <map>
+
+#include "core/contract.h"
+
 namespace ft {
 
 enum ReplaceType {
@@ -12,9 +16,24 @@ enum ReplaceType {
   RECOMPUTE = 3,
 };
 
-struct ComponentStock {};
+struct ComponentStock {
+  const Contract* contract;
+  const Contract* etf_contract;
+  uint32_t replace_type;
+  int replace_volume;
+};
 
-struct ETF {};
+struct ETF {
+  const Contract* contract;
+  bool purchase_allowed;
+  bool redeem_allowed;
+  int unit;
+  double max_cash_ratio;
+  double cash_component;
+  double must_cash_substitution;
+
+  std::map<uint32_t, ComponentStock> components;
+};
 
 }  // namespace ft
 
