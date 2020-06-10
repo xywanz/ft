@@ -153,11 +153,10 @@ bool TradingEngine::send_order(const TraderCommand& cmd) {
 
   if (!gateway_->send_order(req)) {
     spdlog::error(
-        "[StrategyEngine::send_order] Failed to send_order. Order: <Ticker: "
-        "{}, Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, "
-        "Price: {:.2f}, Status: Failed>",
+        "[StrategyEngine::send_order] Failed to send_order. {}, {}{}, {}, "
+        "Volume:{}, Price:{:.3f}",
         contract->ticker, direction_str(req.direction), offset_str(req.offset),
-        ordertype_str(req.type), 0, req.volume, req.price);
+        ordertype_str(req.type), req.volume, req.price);
 
     risk_mgr_->on_order_rejected(&order, ERR_SEND_FAILED);
     return false;
@@ -167,13 +166,10 @@ bool TradingEngine::send_order(const TraderCommand& cmd) {
   risk_mgr_->on_order_sent(&order);
 
   spdlog::debug(
-      "[StrategyEngine::send_order] Success. Order: <Ticker: {}, TEOrderID: "
-      "{}, "
-      "Direction: {}, Offset: {}, OrderType: {}, Traded: {}, Total: {}, Price: "
-      "{:.2f}, Status: {}>",
-      contract->ticker, req.engine_order_id, direction_str(req.direction),
-      offset_str(req.offset), ordertype_str(req.type), 0, req.volume, req.price,
-      to_string(order.status));
+      "[StrategyEngine::send_order] Success. {}, {}{}, {}, EngineOrderID:{}, "
+      "Volume:{}, Price: {:.3f}",
+      contract->ticker, direction_str(req.direction), offset_str(req.offset),
+      ordertype_str(req.type), req.engine_order_id, req.volume, req.price);
   return true;
 }
 
@@ -291,9 +287,9 @@ void TradingEngine::on_order_rejected(OrderRejectedRsp* rsp) {
   risk_mgr_->on_order_rejected(&order, ERR_REJECTED);
 
   spdlog::error(
-      "[TradingEngine::on_order_rejected] 报单被拒. Ticker: {}, Direction: "
-      "{}, Offset: {}, Volume: {}, Price: {:.2f}",
-      order.contract->ticker, direction_str(order.req.direction),
+      "[TradingEngine::on_order_rejected] 报单被拒：{}. {}, {}{}, Volume:{}, "
+      "Price:{:.3f}",
+      rsp->reason, order.contract->ticker, direction_str(order.req.direction),
       offset_str(order.req.offset), order.req.volume, order.req.price);
 
   order_map_.erase(iter);
@@ -311,9 +307,9 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
   auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[TradingEngine::on_primary_market_traded] Order not found. OrderID: "
-        "{}, Traded: {}, Price: {}",
-        rsp->engine_order_id, rsp->volume, rsp->price);
+        "[TradingEngine::on_primary_market_traded] Order not found. "
+        "OrderID:{}, Traded:{}, Price:{:.3f}",
+        rsp->order_id, rsp->volume, rsp->price);
     return;
   }
 
@@ -323,10 +319,11 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
     risk_mgr_->on_order_accepted(&order);
 
     spdlog::info(
-        "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, "
-        "Direction: {}, Offset: {}, Volume: {}, Price: {:.2f}",
+        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, "
+        "OrderID:{}, Volume:{}, Price:{:.3f}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.req.volume, order.req.price);
+        offset_str(order.req.offset), order.order_id, order.req.volume,
+        order.req.price);
   }
 
   order.order_id = rsp->order_id;
@@ -338,8 +335,10 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
     risk_mgr_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
     risk_mgr_->on_order_completed(&order);
-    spdlog::info("[TradingEngine::on_primary_market_traded] done. {}, {}",
-                 order.contract->ticker, direction_str(order.req.direction));
+    spdlog::info(
+        "[TradingEngine::on_primary_market_traded] done. {}, {}, Volume:{}",
+        order.contract->ticker, direction_str(order.req.direction),
+        order.req.volume);
     order_map_.erase(iter);
   }
 }
@@ -349,9 +348,9 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
   auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[TradingEngine::on_secondary_market_traded] Order not found. OrderID: "
-        "{}, Traded: {}, Price: {}",
-        rsp->engine_order_id, rsp->volume, rsp->price);
+        "[TradingEngine::on_secondary_market_traded] Order not found. "
+        "OrderID:{}, Traded:{}, Price:{:.3f}",
+        rsp->order_id, rsp->volume, rsp->price);
     return;
   }
 
@@ -361,18 +360,19 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
     risk_mgr_->on_order_accepted(&order);
 
     spdlog::info(
-        "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, "
-        "Direction: {}, Offset: {}, Volume: {}, Price: {:.2f}",
+        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, "
+        "OrderID:{}, Volume:{}, Price:{:.3f}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.req.volume, order.req.price);
+        offset_str(order.req.offset), order.order_id, order.req.volume,
+        order.req.price);
   }
 
   order.order_id = rsp->order_id;
   order.traded_volume += rsp->volume;
 
   spdlog::info(
-      "[TradingEngine::on_order_traded] 报单成交. Ticker: {}, Direction: {}, "
-      "Offset: {}, Traded: {}, Price: {}",
+      "[TradingEngine::on_order_traded] 报单成交. {}, {}{}, Traded:{}, "
+      "Price:{:.3f}",
       order.contract->ticker, direction_str(order.req.direction),
       offset_str(order.req.offset), rsp->volume, rsp->price);
 
@@ -380,10 +380,11 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
-        "[TradingEngine::on_order_traded] 报单完成. Ticker: {}, Direction: {}, "
-        "Offset: {}, Traded/Original: {}/{}",
+        "[TradingEngine::on_order_traded] 报单完成. {}, {}{}, OrderID:{}, "
+        "Traded/Original: {}/{}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.traded_volume, order.req.volume);
+        offset_str(order.req.offset), order.order_id, order.traded_volume,
+        order.req.volume);
 
     // 订单结束，通知风控模块
     risk_mgr_->on_order_completed(&order);
@@ -396,7 +397,7 @@ void TradingEngine::on_order_canceled(OrderCanceledRsp* rsp) {
   auto iter = order_map_.find(rsp->engine_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[TradingEngine::on_order_canceled] Order not found. OrderID: {}",
+        "[TradingEngine::on_order_canceled] Order not found. EngineOrderID:{}",
         rsp->engine_order_id);
     return;
   }
@@ -405,19 +406,20 @@ void TradingEngine::on_order_canceled(OrderCanceledRsp* rsp) {
   order.canceled_volume = rsp->canceled_volume;
 
   spdlog::info(
-      "[TradingEngine::on_order_canceled] 报单已撤. Ticker: {}, Direction: {}, "
-      "Offset: {}, Canceled: {}",
+      "[TradingEngine::on_order_canceled] 报单已撤. {}, {}{}, OrderID:{}, "
+      "Canceled:{}",
       order.contract->ticker, direction_str(order.req.direction),
-      offset_str(order.req.offset), rsp->canceled_volume);
+      offset_str(order.req.offset), order.order_id, rsp->canceled_volume);
 
   risk_mgr_->on_order_canceled(&order, rsp->canceled_volume);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
-        "[TradingEngine::on_order_canceled] 报单完成. Ticker: {}, Direction: "
-        "{}, Offset: {}, Traded/Original: {}/{}",
+        "[TradingEngine::on_order_canceled] 报单完成. {}, {}{}, OrderID:{}, "
+        "Traded/Original:{}/{}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.traded_volume, order.req.volume);
+        offset_str(order.req.offset), order.order_id, order.traded_volume,
+        order.req.volume);
 
     risk_mgr_->on_order_completed(&order);
     order_map_.erase(iter);
@@ -426,9 +428,9 @@ void TradingEngine::on_order_canceled(OrderCanceledRsp* rsp) {
 
 void TradingEngine::on_order_cancel_rejected(OrderCancelRejectedRsp* rsp) {
   spdlog::warn(
-      "[TradingEngine::on_order_cancel_rejected] Order cannot be canceled. "
-      "OrderID: {}",
-      rsp->engine_order_id);
+      "[TradingEngine::on_order_cancel_rejected] 订单不可撤：{}. "
+      "EngineOrderID: {}",
+      rsp->reason, rsp->engine_order_id);
 }
 
 }  // namespace ft

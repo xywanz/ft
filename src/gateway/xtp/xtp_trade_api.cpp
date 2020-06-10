@@ -140,15 +140,13 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   }
 
   if (is_error_rsp(error_info)) {
-    spdlog::error("[XtpTradeApi::OnOrderEvent] ErrorMsg: {}",
-                  error_info->error_msg);
-    OrderRejectedRsp rsp = {order_info->order_client_id};
+    OrderRejectedRsp rsp = {order_info->order_client_id, error_info->error_msg};
     engine_->on_order_rejected(&rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
-    OrderRejectedRsp rsp = {order_info->order_client_id};
+    OrderRejectedRsp rsp = {order_info->order_client_id, error_info->error_msg};
     engine_->on_order_rejected(&rsp);
     return;
   }

@@ -3,6 +3,8 @@
 #ifndef FT_INCLUDE_CORE_TRADING_ENGINE_INTERFACE_H_
 #define FT_INCLUDE_CORE_TRADING_ENGINE_INTERFACE_H_
 
+#include <string>
+
 #include "core/account.h"
 #include "core/contract.h"
 #include "core/position.h"
@@ -29,6 +31,7 @@ struct OrderTradedRsp {
 
 struct OrderRejectedRsp {
   uint64_t engine_order_id;
+  std::string reason;
 };
 
 struct OrderCanceledRsp {
@@ -38,6 +41,7 @@ struct OrderCanceledRsp {
 
 struct OrderCancelRejectedRsp {
   uint64_t engine_order_id;
+  std::string reason;
 };
 
 class TradingEngineInterface {

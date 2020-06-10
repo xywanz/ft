@@ -326,12 +326,8 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
     return;
   }
 
-  spdlog::error(
-      "[CtpTradeApi::OnRspOrderInsert] Rejected. OrderRef: {}, Status: "
-      "Rejected, ErrorMsg: {}",
-      order->OrderRef, gb2312_to_utf8(rsp_info->ErrorMsg));
-
-  OrderRejectedRsp rsp = {get_engine_order_id(order_ref)};
+  OrderRejectedRsp rsp = {get_engine_order_id(order_ref),
+                          gb2312_to_utf8(rsp_info->ErrorMsg)};
   engine_->on_order_rejected(&rsp);
 }
 
@@ -352,13 +348,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
-    spdlog::error("[CtpTradeApi::OnRtnOrder] {}",
-                  gb2312_to_utf8(order->StatusMsg));
-    OrderRejectedRsp rsp = {engine_order_id};
+    OrderRejectedRsp rsp = {engine_order_id, gb2312_to_utf8(order->StatusMsg)};
     engine_->on_order_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    OrderCancelRejectedRsp rsp = {engine_order_id};
+    OrderCancelRejectedRsp rsp = {engine_order_id,
+                                  gb2312_to_utf8(order->StatusMsg)};
     engine_->on_order_cancel_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted ||
