@@ -372,9 +372,10 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
 
   spdlog::info(
       "[TradingEngine::on_order_traded] 报单成交. {}, {}{}, Traded:{}, "
-      "Price:{:.3f}",
+      "Price:{:.3f}, TotalTraded/Original:{}/{}",
       order.contract->ticker, direction_str(order.req.direction),
-      offset_str(order.req.offset), rsp->volume, rsp->price);
+      offset_str(order.req.offset), rsp->volume, rsp->price,
+      order.traded_volume, order.req.volume);
 
   risk_mgr_->on_order_traded(&order, rsp);
 
