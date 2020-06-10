@@ -196,6 +196,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   tick.pre_close_price = market_data->pre_close_price;
   tick.upper_limit_price = market_data->upper_limit_price;
   tick.lower_limit_price = market_data->lower_limit_price;
+  tick.etf.iopv = market_data->stk.iopv;  // 只对于ETF有效
 
   tick.level = 10;
   tick.ask[0] = market_data->ask[0];

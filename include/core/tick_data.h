@@ -32,6 +32,10 @@ struct TickData {
   double bid[kMarketLevel]{0};
   int ask_volume[kMarketLevel]{0};
   int bid_volume[kMarketLevel]{0};
+
+  struct {
+    double iopv;
+  } etf;
 };
 
 }  // namespace ft

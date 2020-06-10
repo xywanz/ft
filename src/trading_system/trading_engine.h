@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "common/md_snapshot.h"
 #include "common/order.h"
 #include "common/portfolio.h"
 #include "core/account.h"
@@ -84,6 +85,8 @@ class TradingEngine : public TradingEngineInterface {
 
   RedisSession tick_redis_{};
   RedisSession order_redis_{};
+
+  MdSnapshot md_snapshot_;
 
   volatile bool is_logon_{false};
 };

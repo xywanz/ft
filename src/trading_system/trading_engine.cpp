@@ -235,8 +235,10 @@ void TradingEngine::on_tick(TickData* tick) {
   auto contract = ContractTable::get_by_index(tick->ticker_index);
   assert(contract);
 
-  tick_redis_.publish(proto_.quote_key(contract->ticker), &tick,
+  tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
                       sizeof(TickData));
+
+  md_snapshot_.update_snapshot(*tick);
   spdlog::trace("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
                 tick->ask[0], tick->bid[0]);
 }

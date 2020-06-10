@@ -28,7 +28,7 @@ class EtfTable {
       return false;
     }
 
-    etf_vec_.reserve(ContractTable::size());
+    etf_vec_.resize(ContractTable::size());
 
     std::string line;
     std::vector<std::string> tokens;
@@ -77,6 +77,8 @@ class EtfTable {
         auto contract = ContractTable::get_by_ticker(tokens[1]);
         // 查找不到成分股信息，直接禁止该ETF的申赎
         if (!contract) {
+          spdlog::warn("[etf] {} is not allowed to purchase/redeem",
+                       etf->contract->ticker);
           etf_vec_[etf->contract->index] = nullptr;
           etf_map_.erase(iter);
           delete etf;
