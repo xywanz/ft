@@ -12,7 +12,8 @@ namespace ft {
 class ArbitrageManager : public RiskRuleInterface {
  public:
   bool init(const Config& config, Account* account, Portfolio* portfolio,
-            std::map<uint64_t, Order>* order_map) override;
+            std::map<uint64_t, Order>* order_map,
+            const MdSnapshot* md_snapshot) override;
 
   int check_order_req(const Order* order) override;
 
@@ -29,6 +30,10 @@ class ArbitrageManager : public RiskRuleInterface {
   void on_order_rejected(const Order* order, int error_code) {}
 
  private:
+  Account* account_;
+  Portfolio* portfolio_;
+  std::map<uint64_t, Order>* order_map_;
+  const MdSnapshot* md_snapshot_;
 };
 
 }  // namespace ft

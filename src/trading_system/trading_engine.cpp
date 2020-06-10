@@ -55,7 +55,8 @@ bool TradingEngine::login(const Config& config) {
 
   proto_.set_account(account_.account_id);
 
-  if (!risk_mgr_->init(config, &account_, &portfolio_, &order_map_)) {
+  if (!risk_mgr_->init(config, &account_, &portfolio_, &order_map_,
+                       &md_snapshot_)) {
     spdlog::error("[TradingEngine::login] 风险管理对象初始化失败");
     return false;
   }

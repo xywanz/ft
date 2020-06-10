@@ -15,7 +15,8 @@ RiskManager::RiskManager() {}
 
 bool RiskManager::init(const Config& config, Account* account,
                        Portfolio* portfolio,
-                       std::map<uint64_t, Order>* order_map) {
+                       std::map<uint64_t, Order>* order_map,
+                       const MdSnapshot* md_snapshot) {
   add_rule(std::make_shared<FundManager>());
   add_rule(std::make_shared<PositionManager>());
   add_rule(std::make_shared<NoSelfTradeRule>());
@@ -24,7 +25,8 @@ bool RiskManager::init(const Config& config, Account* account,
   if (config.api == "xtp") add_rule(std::make_shared<ArbitrageManager>());
 
   for (auto& rule : rules_) {
-    if (!rule->init(config, account, portfolio, order_map)) return false;
+    if (!rule->init(config, account, portfolio, order_map, md_snapshot))
+      return false;
   }
 
   return true;

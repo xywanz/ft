@@ -18,7 +18,8 @@ namespace ft {
 class NoSelfTradeRule : public RiskRuleInterface {
  public:
   bool init(const Config& config, Account* account, Portfolio* portfolio,
-            std::map<uint64_t, Order>* order_map) override;
+            std::map<uint64_t, Order>* order_ma,
+            const MdSnapshot* md_snapshotp) override;
 
   int check_order_req(const Order* req) override;
 

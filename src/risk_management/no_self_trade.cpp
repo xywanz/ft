@@ -9,7 +9,8 @@ namespace ft {
 
 bool NoSelfTradeRule::init(const Config& config, Account* account,
                            Portfolio* portfolio,
-                           std::map<uint64_t, Order>* order_map) {
+                           std::map<uint64_t, Order>* order_map,
+                           const MdSnapshot* md_snapshot) {
   order_map_ = order_map;
   return true;
 }

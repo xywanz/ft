@@ -8,7 +8,8 @@ namespace ft {
 
 bool ThrottleRateLimit::init(const Config& config, Account* account,
                              Portfolio* portfolio,
-                             std::map<uint64_t, Order>* order_map) {
+                             std::map<uint64_t, Order>* order_map,
+                             const MdSnapshot* md_snapshot) {
   period_ms_ = config.throttle_rate_limit_period_ms;
   order_limit_ = config.throttle_rate_order_limit;
   volume_limit_ = config.throttle_rate_volume_limit;

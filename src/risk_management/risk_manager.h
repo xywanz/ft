@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "common/md_snapshot.h"
 #include "common/order.h"
 #include "common/portfolio.h"
 #include "core/account.h"
@@ -22,7 +23,8 @@ class RiskManager {
   RiskManager();
 
   bool init(const Config& config, Account* account, Portfolio* portfolio,
-            std::map<uint64_t, Order>* order_map);
+            std::map<uint64_t, Order>* order_map,
+            const MdSnapshot* md_snapshot);
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 

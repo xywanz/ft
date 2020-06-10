@@ -10,7 +10,8 @@ namespace ft {
 
 bool FundManager::init(const Config& config, Account* account,
                        Portfolio* portfolio,
-                       std::map<uint64_t, Order>* order_map) {
+                       std::map<uint64_t, Order>* order_map,
+                       const MdSnapshot* md_snapshot) {
   account_ = account;
   return true;
 }
