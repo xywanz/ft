@@ -21,7 +21,7 @@ struct TickDataSnapshot {
 
 class MdSnapshot {
  public:
-  MdSnapshot() { snapshot_.resize(ContractTable::size()); }
+  MdSnapshot() { snapshot_.resize(ContractTable::size() + 1, nullptr); }
 
   const TickDataSnapshot* get(uint32_t ticker_index) const {
     return snapshot_[ticker_index];

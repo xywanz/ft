@@ -28,7 +28,7 @@ class EtfTable {
       return false;
     }
 
-    etf_vec_.resize(ContractTable::size());
+    etf_vec_.resize(ContractTable::size() + 1);
 
     std::string line;
     std::vector<std::string> tokens;
