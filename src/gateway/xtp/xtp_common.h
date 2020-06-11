@@ -63,7 +63,7 @@ inline XTP_PRICE_TYPE xtp_price_type(uint32_t order_type) {
   else if (order_type == OrderType::BEST)
     return XTP_PRICE_REVERSE_BEST_LIMIT;
   else if (order_type == OrderType::FAK)
-    return XTP_PRICE_BEST_OR_CANCEL;
+    return XTP_PRICE_BEST5_OR_CANCEL;
   else if (order_type == OrderType::FOK)
     return XTP_PRICE_ALL_OR_CANCEL;
   else
