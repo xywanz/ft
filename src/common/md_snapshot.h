@@ -17,6 +17,9 @@ struct TickDataSnapshot {
   double ask;
   double bid;
   double iopv;
+
+  double upper_limit_price;
+  double lower_limit_price;
 };
 
 class MdSnapshot {
@@ -40,6 +43,8 @@ class MdSnapshot {
       data->bid = tick.bid[0];
       data->ask = tick.ask[0];
       data->iopv = tick.etf.iopv;
+      data->upper_limit_price = tick.upper_limit_price;
+      data->lower_limit_price = tick.lower_limit_price;
       snapshot_[tick.ticker_index] = data;
     }
   }

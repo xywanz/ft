@@ -236,8 +236,8 @@ void TradingEngine::on_tick(TickData* tick) {
                       sizeof(TickData));
 
   md_snapshot_.update_snapshot(*tick);
-  spdlog::trace("[TradingEngine::process_tick] ask:{:.3f}  bid:{:.3f}",
-                tick->ask[0], tick->bid[0]);
+  spdlog::trace("[TradingEngine::process_tick] {}  ask:{:.3f}  bid:{:.3f}",
+                contract->ticker, tick->ask[0], tick->bid[0]);
 }
 
 void TradingEngine::on_query_trade(OrderTradedRsp* trade) {

@@ -172,7 +172,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
 
   auto contract = ContractTable::get_by_ticker(market_data->ticker);
   if (!contract) {
-    spdlog::warn(
+    spdlog::trace(
         "[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
         market_data->ticker);
     return;
