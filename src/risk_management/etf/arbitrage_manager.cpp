@@ -1,8 +1,8 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "risk_management/etf_arbitrage/arbitrage_manager.h"
+#include "risk_management/etf/arbitrage_manager.h"
 
-#include "risk_management/etf_arbitrage/etf_table.h"
+#include "risk_management/etf/etf_table.h"
 
 namespace ft {
 

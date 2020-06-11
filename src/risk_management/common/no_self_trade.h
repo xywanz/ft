@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_NO_SELF_TRADE_H_
-#define FT_SRC_RISK_MANAGEMENT_NO_SELF_TRADE_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_COMMON_NO_SELF_TRADE_H_
+#define FT_SRC_RISK_MANAGEMENT_COMMON_NO_SELF_TRADE_H_
 
 #include <spdlog/spdlog.h>
 
@@ -29,4 +29,4 @@ class NoSelfTradeRule : public RiskRuleInterface {
 
 }  // namespace ft
 
-#endif  // FT_SRC_RISK_MANAGEMENT_NO_SELF_TRADE_H_
+#endif  // FT_SRC_RISK_MANAGEMENT_COMMON_NO_SELF_TRADE_H_

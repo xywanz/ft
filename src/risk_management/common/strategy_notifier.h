@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_STRATEGY_NOTIFIER_H_
-#define FT_SRC_RISK_MANAGEMENT_STRATEGY_NOTIFIER_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
+#define FT_SRC_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
 
 #include "ipc/redis.h"
 #include "risk_management/risk_rule_interface.h"

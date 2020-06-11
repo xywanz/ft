@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "risk_management/strategy_notifier.h"
+#include "risk_management/common/strategy_notifier.h"
 
 namespace ft {
 

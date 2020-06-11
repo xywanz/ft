@@ -2,12 +2,12 @@
 
 #include "risk_management/risk_manager.h"
 
-#include "risk_management/etf_arbitrage/arbitrage_manager.h"
-#include "risk_management/fund_manager.h"
-#include "risk_management/no_self_trade.h"
-#include "risk_management/position_manager.h"
-#include "risk_management/strategy_notifier.h"
-#include "risk_management/throttle_rate_limit.h"
+#include "risk_management/common/fund_manager.h"
+#include "risk_management/common/no_self_trade.h"
+#include "risk_management/common/strategy_notifier.h"
+#include "risk_management/common/throttle_rate_limit.h"
+#include "risk_management/etf/arbitrage_manager.h"
+#include "risk_management/futures/position_manager.h"
 
 namespace ft {
 

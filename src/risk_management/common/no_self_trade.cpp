@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "risk_management/no_self_trade.h"
+#include "risk_management/common/no_self_trade.h"
 
 #include "core/contract_table.h"
 #include "utils/misc.h"

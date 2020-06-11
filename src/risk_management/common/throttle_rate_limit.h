@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_THROTTLE_RATE_LIMIT_H_
-#define FT_SRC_RISK_MANAGEMENT_THROTTLE_RATE_LIMIT_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_COMMON_THROTTLE_RATE_LIMIT_H_
+#define FT_SRC_RISK_MANAGEMENT_COMMON_THROTTLE_RATE_LIMIT_H_
 
 #include <spdlog/spdlog.h>
 

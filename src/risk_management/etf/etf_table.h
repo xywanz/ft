@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_TABLE_H_
-#define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_TABLE_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_ETF_ETF_TABLE_H_
+#define FT_SRC_RISK_MANAGEMENT_ETF_ETF_TABLE_H_
 
 #include <spdlog/spdlog.h>
 
@@ -13,7 +13,7 @@
 
 #include "core/contract.h"
 #include "core/contract_table.h"
-#include "risk_management/etf_arbitrage/etf.h"
+#include "risk_management/etf/etf.h"
 #include "utils/string_utils.h"
 
 namespace ft {
@@ -115,4 +115,4 @@ class EtfTable {
 
 }  // namespace ft
 
-#endif  // FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_TABLE_H_
+#endif  // FT_SRC_RISK_MANAGEMENT_ETF_ETF_TABLE_H_

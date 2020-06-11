@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "risk_management/throttle_rate_limit.h"
+#include "risk_management/common/throttle_rate_limit.h"
 
 #include "core/error_code.h"
 

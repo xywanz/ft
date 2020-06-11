@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ARBITRAGE_H_
-#define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ARBITRAGE_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_H_
+#define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_H_
 
 #include <map>
 
@@ -25,4 +25,4 @@ class Arbitrage {
 
 }  // namespace ft
 
-#endif  // FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ARBITRAGE_H_
+#endif  // FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_H_

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_RISK_MANAGEMENT_FUND_MANAGER_H_
-#define FT_SRC_RISK_MANAGEMENT_FUND_MANAGER_H_
+#ifndef FT_SRC_RISK_MANAGEMENT_COMMON_FUND_MANAGER_H_
+#define FT_SRC_RISK_MANAGEMENT_COMMON_FUND_MANAGER_H_
 
 #include <map>
 
@@ -34,4 +34,4 @@ class FundManager : public RiskRuleInterface {
 
 }  // namespace ft
 
-#endif  // FT_SRC_RISK_MANAGEMENT_FUND_MANAGER_H_
+#endif  // FT_SRC_RISK_MANAGEMENT_COMMON_FUND_MANAGER_H_
