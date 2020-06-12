@@ -334,7 +334,9 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
   } else if (rsp->trade_type == TradeType::CASH_SUBSTITUTION) {
     risk_mgr_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
-    risk_mgr_->on_order_completed(&order);
+    order.traded_volume = rsp->volume;
+    risk_mgr_->on_order_traded(&order, rsp);
+    // risk_mgr_->on_order_completed(&order);
     spdlog::info(
         "[TradingEngine::on_primary_market_traded] done. {}, {}, Volume:{}",
         order.contract->ticker, direction_str(order.req.direction),

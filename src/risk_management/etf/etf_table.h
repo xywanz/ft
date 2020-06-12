@@ -89,7 +89,7 @@ class EtfTable {
         component.contract = contract;
         component.etf_contract = etf->contract;
         component.replace_type = replace_type;
-        component.replace_volume = std::stod(tokens[5]);
+        component.volume = std::stod(tokens[5]);
         etf->components.emplace(contract->index, component);
       }
     }

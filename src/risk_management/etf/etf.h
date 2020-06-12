@@ -20,7 +20,8 @@ struct ComponentStock {
   const Contract* contract;
   const Contract* etf_contract;
   uint32_t replace_type;
-  int replace_volume;
+  int volume;
+  int replace_amount;
 };
 
 struct ETF {
