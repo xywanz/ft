@@ -33,7 +33,7 @@ int main() {
       EtfTable::init("../config/etf_list.csv", "../config/etf_components.csv");
   spdlog::info("init_res: {}", init_res);
 
-  auto etf = EtfTable::get_by_ticker("512930");
+  auto etf = EtfTable::get_by_ticker("159901");
   RedisSession redis;
   OrderSender sender;
 
