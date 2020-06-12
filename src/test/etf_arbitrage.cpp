@@ -16,9 +16,10 @@ int wait_for_receipt(RedisSession* redis, int volume) {
         auto rsp =
             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         auto contract = ContractTable::get_by_index(rsp->ticker_index);
-        spdlog::info("rsp: {} {} {}/{} completed:{}", rsp->user_order_id,
-                     contract->ticker, rsp->traded_volume, rsp->original_volume,
-                     rsp->completed);
+        spdlog::info("rsp: {} {} {}{} {}/{} completed:{}", rsp->user_order_id,
+                     contract->ticker, direction_str(rsp->direction),
+                     offset_str(rsp->offset), rsp->traded_volume,
+                     rsp->original_volume, rsp->completed);
         if (rsp->completed) return volume - rsp->traded_volume;
       }
     }
@@ -32,7 +33,7 @@ int main() {
       EtfTable::init("../config/etf_list.csv", "../config/etf_components.csv");
   spdlog::info("init_res: {}", init_res);
 
-  auto etf = EtfTable::get_by_ticker("159901");
+  auto etf = EtfTable::get_by_ticker("512930");
   RedisSession redis;
   OrderSender sender;
 

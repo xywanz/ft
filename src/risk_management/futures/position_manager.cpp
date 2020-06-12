@@ -65,12 +65,12 @@ void PositionManager::on_order_traded(const Order* order,
                               Offset::CLOSE_YESTERDAY, trade->volume,
                               trade->price);
   } else if (trade->trade_type == TradeType::PRIMARY_MARKET) {
-    if (trade->direction == Direction::PURCHASE) {
+    if (order->req.direction == Direction::PURCHASE) {
       portfolio_->update_traded(order->contract->index, Direction::BUY,
                                 Offset::OPEN, trade->volume, trade->price);
-    } else if (trade->direction == Direction::REDEEM) {
+    } else if (order->req.direction == Direction::REDEEM) {
       portfolio_->update_traded(order->contract->index, Direction::SELL,
-                                Offset::CLOSE_TODAY, trade->volume,
+                                Offset::CLOSE_YESTERDAY, trade->volume,
                                 trade->price);
     }
   }

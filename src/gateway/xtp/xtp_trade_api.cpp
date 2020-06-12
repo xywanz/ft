@@ -177,9 +177,9 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     return;
   }
 
-  spdlog::trace("ETF purchase/redeem: {},{},{},{},{},{}", trade_info->ticker,
+  spdlog::trace("ETF purchase/redeem: {},{},{},{},{},{},{}", trade_info->ticker,
                 trade_info->business_type, trade_info->trade_type,
-                trade_info->quantity, trade_info->price,
+                trade_info->side, trade_info->quantity, trade_info->price,
                 trade_info->trade_amount);
 
   OrderTradedRsp rsp{};
@@ -194,7 +194,14 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
         return;
       }
     }
+
+    if (contract->product_type == ProductType::FUND &&
+        trade_info->trade_type == XTP_TRDT_COMMON)
+      return;
+
     rsp.ticker_index = contract->index;
+    rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE
+                                                          : Direction::REDEEM;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
   } else {
