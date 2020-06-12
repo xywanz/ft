@@ -9,7 +9,7 @@ subscription_list:
   - 600001
 
 throttle_rate_limit_period_ms: 1000
-throttle_rate_order_limit: 12
+throttle_rate_order_limit: 20
 throttle_rate_volume_limit: 0
 
 arg0: ../config/etf_list.csv         # etf清单文件，用于etf套利

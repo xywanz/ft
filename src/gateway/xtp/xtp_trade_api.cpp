@@ -327,6 +327,8 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
   Account account{};
   account.account_id = std::stoull(investor_id_);
   account.balance = asset->total_asset;
+  account.margin = 0;
+  account.frozen = 0;
   engine_->on_query_account(&account);
 
   if (is_last) done();

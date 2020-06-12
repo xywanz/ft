@@ -6,11 +6,28 @@
 
 using namespace ft;
 
+const char* strategy_id = "etf_arb";
+
+int wait_for_receipt(RedisSession* redis, int volume) {
+  for (;;) {
+    auto reply = redis->get_sub_reply();
+    if (reply) {
+      if (strcmp(reply->element[1]->str, strategy_id) == 0) {
+        auto rsp =
+            reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
+        auto contract = ContractTable::get_by_index(rsp->ticker_index);
+        spdlog::info("rsp: {} {} {}/{} completed:{}", rsp->user_order_id,
+                     contract->ticker, rsp->traded_volume, rsp->original_volume,
+                     rsp->completed);
+        if (rsp->completed) return volume - rsp->traded_volume;
+      }
+    }
+  }
+}
+
 int main() {
-  const std::string strategy_id = "etf_arb";
   ContractTable::init("../config/xtp_contracts.csv");
   spdlog::set_level(spdlog::level::from_str("debug"));
-
   bool init_res =
       EtfTable::init("../config/etf_list.csv", "../config/etf_components.csv");
   spdlog::info("init_res: {}", init_res);
@@ -23,99 +40,41 @@ int main() {
   sender.set_id(strategy_id);
   redis.subscribe({strategy_id});
 
-  // std::thread([&] {
-  //   for (;;) {
-  //     auto reply = redis.get_sub_reply();
-  //     if (reply) {
-  //       if (strcmp(reply->element[1]->str, strategy_id.c_str()) == 0) {
-  //         auto rsp =
-  //             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-  //         auto contract = ContractTable::get_by_index(rsp->ticker_index);
-  //         spdlog::info("rsp: {} {}/{} completed:{}", contract->ticker,
-  //                      rsp->traded_volume, rsp->original_volume,
-  //                      rsp->completed);
-  //       }
-  //     }
-  //   }
-  // }).detach();
-
-  // sender.send_order("159901", 10000, Direction::BUY, Offset::OPEN,
-  //                   OrderType::MARKET, 0, 0);
-  // for (;;) {
-  // }
-
   uint32_t user_order_id = 1;
+  int left;
+
   for (const auto& [ticker_index, component] : etf->components) {
     UNUSED(ticker_index);
-    int left = component.volume;
-    sender.send_order(component.contract->ticker, component.volume,
-                      Direction::BUY, Offset::OPEN, OrderType::MARKET, 0,
-                      user_order_id);
+    left = component.volume;
     for (;;) {
-      auto reply = redis.get_sub_reply();
-      if (reply) {
-        if (strcmp(reply->element[1]->str, strategy_id.c_str()) == 0) {
-          auto rsp =
-              reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-          spdlog::info("rsp: {} {} {}/{} completed:{}", rsp->user_order_id,
-                       component.contract->ticker, rsp->traded_volume,
-                       rsp->original_volume, rsp->completed);
-          if (rsp->completed == true) {
-            left -= rsp->traded_volume;
-            if (left == 0) break;
-            sender.send_order(component.contract->ticker, left, Direction::BUY,
-                              Offset::OPEN, OrderType::MARKET, 0,
-                              user_order_id);
-          }
-        }
-      }
+      sender.send_order(component.contract->ticker, left, Direction::BUY,
+                        Offset::OPEN, OrderType::MARKET, 0, user_order_id);
+      left = wait_for_receipt(&redis, left);
+      if (left == 0) break;
     }
 
     ++user_order_id;
-    usleep(100000);
+    usleep(50000);
   }
 
   ++user_order_id;
-  sender.send_order(etf->contract->ticker, etf->unit, Direction::PURCHASE,
-                    Offset::OPEN, OrderType::LIMIT, 0, user_order_id);
+  left = etf->unit;
   for (;;) {
-    auto reply = redis.get_sub_reply();
-    if (reply) {
-      if (strcmp(reply->element[1]->str, strategy_id.c_str()) == 0) {
-        auto rsp =
-            reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        spdlog::info("rsp: {} {} {}/{} completed:{}", rsp->user_order_id,
-                     etf->contract->ticker, rsp->traded_volume,
-                     rsp->original_volume, rsp->completed);
-        if (rsp->completed == true) break;
-      }
-    }
+    sender.send_order(etf->contract->ticker, left, Direction::PURCHASE,
+                      Offset::OPEN, OrderType::LIMIT, 0, user_order_id);
+    left = wait_for_receipt(&redis, left);
+    if (left == 0) break;
   }
 
   ++user_order_id;
-  int left = etf->unit;
-  sender.send_order(etf->contract->ticker, etf->unit, Direction::SELL,
-                    Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
-                    user_order_id);
+  left = etf->unit;
   for (;;) {
-    auto reply = redis.get_sub_reply();
-    if (reply) {
-      if (strcmp(reply->element[1]->str, strategy_id.c_str()) == 0) {
-        auto rsp =
-            reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        spdlog::info("rsp: {} {} {}/{} completed:{}", rsp->user_order_id,
-                     etf->contract->ticker, rsp->traded_volume,
-                     rsp->original_volume, rsp->completed);
-        if (rsp->completed == true) {
-          left -= rsp->traded_volume;
-          if (left == 0) break;
-          sender.send_order(etf->contract->ticker, left, Direction::SELL,
-                            Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
-                            user_order_id);
-        }
-      }
-    }
+    sender.send_order(etf->contract->ticker, left, Direction::SELL,
+                      Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
+                      user_order_id);
+    left = wait_for_receipt(&redis, left);
+    if (left == 0) break;
   }
 
-  spdlog::info("done");
+  spdlog::info("premium arbitrage of etf is done");
 }
