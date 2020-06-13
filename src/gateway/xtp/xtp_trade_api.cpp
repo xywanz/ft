@@ -202,16 +202,23 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
       }
     }
 
+    // 申赎时第一个返回的回报可能是这个类型的
+    // 即ETF的普通成交类型
+    // 这个信息对我们来说没有用处，反而会扰乱仓位的计算
+    // 所以在此处过滤掉该回报
     if (contract->product_type == ProductType::FUND &&
         trade_info->trade_type == XTP_TRDT_COMMON)
       return;
 
+    // 收到成分股回报，需要设置ticker_index, direction等信息
     rsp.ticker_index = contract->index;
     rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE
                                                           : Direction::REDEEM;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
   } else {
+    // 二级市场成交，这里无需设置ticker_index，因为该ticker_index和order_req中
+    // 的是一样的；direction和offset同理
     rsp.trade_type = TradeType::SECONDARY_MARKET;
   }
 
