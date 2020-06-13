@@ -91,8 +91,8 @@ FT是一个基于C++的低延迟交易系统，它包含两部分，一是交易
 <center>图3.1 整体架构图</center>
 
 从上图可看出，对于交易引擎可分为3个主要模块
-1. 交易信息管理模块：将订单转发给其他模块，同时管理相关的订单、仓位、资金等信息
-2. 风险管理模块：对订单做合规管理等
+1. 交易信息管理模块（TM模块）：将订单转发给其他模块，其他模块之间交互的中介
+2. 风险管理模块（RM模块）：对订单做合规管理。现已经扩展为业务模块，所有业务逻辑均在RM中进行处理，包括仓位管理、资金管理，但模块名字暂时保证不变
 3. 交易网关模块：用于对接各大交易接口
 
 而对于策略方面，则需要关注如何通过redis与交易引擎进行交互，即协议的解析
@@ -114,52 +114,52 @@ FT是一个基于C++的低延迟交易系统，它包含两部分，一是交易
 
 ### 4.2. 交易管理模块
 #### 4.2.1. 接口设计
-TM关心以下事件：
+TM主要负责各个模块之间的通信，而通信的主要驱动源在于策略及gateway，从策略收取订单的部分不在这个接口内，后面会讲到。TM关心gateway发来的以下事件：
 ```cpp
 class TradingEngineInterface {
  public:
   // 查询到合约时回调，这个现在不用实现
   // 因为合约都是在启动时从文件加载了，不需要启动时查询
-  virtual void on_query_contract(const Contract* contract) {}
+  virtual void on_query_contract(Contract* contract) {}
 
   // 查询到账户信息时回调，查询资金账户信息后回调
   // 通常在初始化时查询一次即可，后续的资金由本地计算
   // 本地计算可能存在小小的偏差，但影响不会太大
-  virtual void on_query_account(const Account* account) {}
+  virtual void on_query_account(Account* account) {}
 
   // 查询到仓位信息时回调
   // 也只是在启动时查询一次，后续通过本地计算
   // 仓位信息应该保存在共享内存或redis等IPC中供策略查询
-  virtual void on_query_position(const Position* position) {}
+  virtual void on_query_position(Position* position) {}
 
   // 查询到成交信息时回调
   // 也只是在启动时查询一次用于统计一些当日的交易信息
-  virtual void on_query_trade(const Trade* trade) {}
+  virtual void on_query_trade(OrderTradedRsp* trade) {}
 
   // 有新的tick数据到来时回调
   // 应该通过IPC通知策略以驱动策略运行
   // 由Gateway回调
-  virtual void on_tick(const TickData* tick) {}
+  virtual void on_tick(TickData* tick) {}
 
   // 订单被交易所接受时回调（如果只是被柜台而非交易所接受则不回调）
   // 由Gateway回调
-  virtual void on_order_accepted(uint64_t order_id) {}
+  virtual void on_order_accepted(OrderAcceptedRsp* rsp) {}
 
   // 订单被拒时回调
   // 由Gateway回调
-  virtual void on_order_rejected(uint64_t order_id) {}
+  virtual void on_order_rejected(OrderRejectedRsp* rsp) {}
 
   // 订单成交时回调
   // 由Gateway回调
-  virtual void on_order_traded(uint64_t order_id, int this_traded, double traded_price) {}
+  virtual void on_order_traded(OrderTradedRsp* rsp) {}
 
   // 撤单成功时回调
   // 由Gateway回调
-  virtual void on_order_canceled(uint64_t order_id, int canceled_volume) {}
+  virtual void on_order_canceled(OrderCanceledRsp* rsp) {}
 
   // 撤单被拒时回调
   // 由Gateway回调
-  virtual void on_order_cancel_rejected(uint64_t order_id) {}
+  virtual void on_order_cancel_rejected(OrderCancelRejectedRsp* rsp) {}
 };
 ```
 
@@ -172,39 +172,45 @@ def listen_and_trasmit_order():
     if RM.check_order(order_req):
       continue
     if not Gateway.send(order_req):
-      notify_RM()
+      RM.on_order_rejected(order_req)
       continue
-    update_position()
-    update_orders()
+    RM.on_order_sent(order_req)
 ```
 
-#### 4.2.3. 仓位管理
+#### 4.2.3. 仓位管理（RM模块的子规则）
+仓位管理现在是作为RM的一个子规则实现的，RM现在所关系的事件已经涵盖了仓位管理关心的事件。
+
+
 仓位分为多头仓位和空头仓位，目前多空的仓位信息主要有以下几个字段：
 1. 当前持仓量
-2. 当前待平仓量（订单已发出而未收到成交回报）
-3. 当前待开仓量（订单已发出而未收到成交回报）
-4. 持仓成本
-5. 浮动盈亏
+2. 昨仓持有量（对于某些有昨仓概念的品种有效）
+3. 当前待平仓量（订单已发出而未收到成交回报）
+4. 当前待开仓量（订单已发出而未收到成交回报）
+5. 持仓成本
+6. 浮动盈亏
 
 以下情形下需要对仓位信息进行更新：
 1. 交易引擎初始化时，查询到仓位后，需要对仓位信息进行初始化设置
-2. 订单通过Gateway发送成功后，需要对待开平量进行更新
-3. 被柜台或交易所拒单后，需要对待开平量进行更新
-4. 收到成交回报后，需要对待开平量、持仓量以及持仓成本进行更新
-5. 收到撤单回报后，需要对待开平量进行更新
-6. 收到tick数据后，需要对浮动盈亏进行更新。这个可选，因为tick数据变动频繁，频繁地对仓位进行更新可能会影响性能，目前没有对浮动盈亏进行更新，策略需要的话可自行计算
+2. 交易引擎初始化时，通过查询今日成交明细，更新昨仓等信息
+3. 订单通过Gateway发送成功后，需要对待开平量进行更新
+4. 被柜台或交易所拒单后，需要对待开平量进行更新
+5. 收到成交回报后，需要对待开平量、持仓量以及持仓成本进行更新
+6. 收到撤单回报后，需要对待开平量进行更新
+7. 收到tick数据后，需要对浮动盈亏进行更新。这个可选，因为tick数据变动频繁，频繁地对仓位进行更新可能会影响性能，目前没有对浮动盈亏进行更新，策略需要的话可自行计算
 
 流程如下图所示：
 ![仓位更新流程](img/PosMgr.png)
 <center>图4.2 仓位更新流程</center>
 
-#### 4.2.4. 订单管理
+#### 4.2.4. 订单管理（RM模块的子规则）
 TM需要保存未完成的订单信息，以供外界进行查询以及撤单等操作。目前订单信息保存在map中，以Gateway返回的order_id为key，订单的详细状态结构体为value。以下情形需要更新订单的map：
 1. 订单通过Gateway发送成功后，将订单信息添加到map中
 2. 收到订单成交回执后，如发现订单已完成，将订单信息从map中移除
 3. 收到订单的撤单回执后，如发现订单已完成，将订单信息从map中移除
 
-#### 4.2.5. 资金管理
+需要说明的是，后续订单管理也会放到RM模块中
+
+#### 4.2.5. 资金管理（RM模块的子规则）
 因为保证金率不方便获取且可能经常变动，加上账户浮动盈亏会影响账户保证金率，所以资金的计算不能够保证时时刻刻都准确。这里采用了折中的方式，每隔一段时间触发一次资金查询操作，下单、成交、撤单等操作发生时，以估算的方式来更新资金信息即可。
 
 ### 4.3. 风险管理模块
@@ -221,11 +227,18 @@ RM也可通过engine_order_id来自行管理订单，RM关心以下7个事件：
 
 风控管理的接口如下所示：
 ```cpp
-class RiskManagementInterface {
-
 class RiskRuleInterface {
  public:
   virtual ~RiskRuleInterface() {}
+
+  // 风险管理规则初始化
+  virtual bool init(const Config& config,
+                    Account* account,
+                    Portfolio* portfolio,
+                    std::map<uint64_t, Order>* order_map,
+                    const MdSnapshot* md_snapshot) {
+    return true;
+  }
 
   // 订单发送前的检查，返回NO_ERROR表示通过，返回错误码则表示拦截订单
   virtual int check_order_req(const Order* order) { return NO_ERROR; }
@@ -237,8 +250,7 @@ class RiskRuleInterface {
   virtual void on_order_accepted(const Order* order) {}
 
   // 订单成交后回调
-  virtual void on_order_traded(const Order* order, int this_traded,
-                               double traded_price) {}
+  virtual void on_order_traded(const Order* order, const OrderTradedRsp* trade) {}
 
   // 订单撤销后回调
   virtual void on_order_canceled(const Order* order, int canceled) {}
@@ -257,13 +269,13 @@ class Gateway {
  public:
   // 根据配置登录到交易柜台或行情服务器或二者都登录
   // Gateway只登录一次，可以不用做安全性保证
-  virtual bool login(const Config& config) { return false; }
+  virtual bool login(TradingEngineInterface* engine, const Config& config) { return false; }
 
   // 登出
   virtual void logout() {}
 
   // 发单成功返回大于0的订单号，这个订单号可传回给gateway用于撤单。发单失败则返回0
-  virtual uint64_t send_order(const OrderReq* order) { return 0; }
+  virtual bool send_order(const OrderReq* order) { return 0; }
 
   // 取消订单，传入的订单号是send_order所返回的，只能撤销被市场接受的订单
   virtual bool cancel_order(uint64_t order_id) { return false; }
@@ -309,25 +321,25 @@ class Gateway {
 * StringUtils.h 字符串处理函数
 
 ### 6.2. src
-##### Gateway
+##### gateway
 Gateway里是各个经纪商的交易网关的具体实现，可参考CTP Gateway的实现来对接自己所需要的交易接口。目前支持CTP、XTP、以及模拟的交易网关VirtualGateway
-* Ctp：上期CTP
-* Xtp：中泰XTP
-* Virtual：模拟交易或回测用
-##### TradingSystem
-TradingSystem是本人实现的一个交易引擎，向上通过redis和策略进行交互，向下通过Gateway和交易所进行交互
-##### RiskManagement
-* RiskManager.h/cpp 风险管理的总入口
-* RiskRuleInterface.h 风险管理规则接口，需要注册到RiskManager中
-* NoSelfTrade.h/cpp 禁止自成交规则
-* ThrottleRateLimit.h/cpp 节流率控制
+* ctp：上期CTP
+* xtp：中泰XTP
+* virtual：模拟交易或回测用
+##### trading_system
+trading_system内是本人实现的一个交易引擎，向上通过redis和策略进行交互，向下通过Gateway和交易所进行交互
+##### risk_management
+* risk_manager.h/cpp 风险管理的总入口
+* risk_rule_interface.h 风险管理规则接口，需要注册到RiskManager中
+* no_self_trade.h/cpp 禁止自成交规则
+* throttle_rate_limit.h/cpp 节流率控制
 ##### Strategy
-* Strategy.h 一个数据驱动的策略基类
-* StrategyLoader.cpp 策略加载器
-* OrderSender.h 对协议进行了封装，可以向交易引擎发送订单指令
-##### Tools
+* strategy.h 一个数据驱动的策略基类
+* strategy_loader.cpp 策略加载器
+* order_sender.h 对协议进行了封装，可以向交易引擎发送订单指令
+##### tools
 一些小工具，但是很必要。主要是contract-collector，用于查询所有的合约信息并保存到本地，供ContractTable使用。要注意的是，使用contract-collector时务必只配置相关的登录信息
-##### Test
+##### test
 一些测试用例及简单的策略实现
 
 ## 7. 使用方式
@@ -403,7 +415,7 @@ class MyStrategy : public ft::Strategy {
   }
 
   // 收到本策略发出的订单的订单回报
-  void on_order_rsp(const ft::OrderResponse* order) override {
+  void on_order_rsp(const ft::OrderResponse* rsp) override {
     // do sth.
   }
 

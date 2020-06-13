@@ -3,34 +3,44 @@
 title 仓位更新流程
 
 participant PosMgr
+participant RM
 participant TM
 participant Gateway
 
 == 启动时初始化仓位 ==
 TM --> Gateway: query_positions
 TM <-- Gateway: on_query_position(ticker_1)
-TM -> PosMgr: init_position(ticker_1)
+RM <-- TM: on_query_position(ticker_1)
+PosMgr <- RM: init_position(ticker_1)
 ...
+TM --> Gateway: query_positions
 TM <-- Gateway: on_query_position(ticker_n)
-TM -> PosMgr: init_position(ticker_n)
+RM <-- TM: on_query_position(ticker_n)
+PosMgr <- RM: init_position(ticker_n)
 
 == 这里以订单发送成功为例 ==
-TM -> PosMgr: check_order_req
-TM <- PosMgr: NO_ERROR
+RM <-- TM: check_order_req
+PosMgr <- RM: check_order_req
+PosMgr -> RM: NO_ERROR
+RM --> RM: other checks (NO ERROR)
 TM --> Gateway: send_order
 TM <-- Gateway: success
-TM -> PosMgr: update_pending（pending增加）
+RM <-- TM: on_order_sent
+PosMgr <- RM: update_pending（pending增加）
 
 == 收到拒单 ==
 TM <-- Gateway: on_order_rejected
-TM -> PosMgr: update_pending（pending减少）
+RM <-- TM: on_order_rejected
+PosMgr <- RM: update_pending（pending减少）
 
 == 收到成交回报 ==
 TM <-- Gateway: on_order_traded
-TM -> PosMgr: update_traded（pending减少持仓量根据开平标志更新）
+RM <-- TM: on_order_traded
+PosMgr <- RM: update_traded
 
 == 收到撤单回报 ==
 TM <-- Gateway: on_order_canceled
-TM -> PosMgr: update_pending（pending减少）
+RM <-- TM: on_order_canceled
+PosMgr <- RM: update_pending（pending减少）
 
 @enduml
