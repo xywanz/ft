@@ -16,7 +16,7 @@ void Strategy::run() {
             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         on_order_rsp(*rsp);
       } else {
-        auto tick = reinterpret_cast<const TickData*>(reply->element[2]->str);
+        auto tick = reinterpret_cast<TickData*>(reply->element[2]->str);
         on_tick(*tick);
       }
     }

@@ -5,3 +5,6 @@ target_link_libraries(grid-strategy strategy ${COMMON_LIB})
 
 add_executable(etf-arbitrage etf_arbitrage.cpp)
 target_link_libraries(etf-arbitrage ${COMMON_LIB})
+
+add_library(etf-monitor SHARED etf_monitor.cpp)
+target_link_libraries(etf-monitor strategy ${COMMON_LIB})
