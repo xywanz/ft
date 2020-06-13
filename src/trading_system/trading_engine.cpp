@@ -2,6 +2,8 @@
 
 #include "trading_system/trading_engine.h"
 
+#include <spdlog/spdlog.h>
+
 #include "core/contract_table.h"
 #include "core/error_code.h"
 #include "core/protocol.h"

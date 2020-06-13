@@ -5,7 +5,6 @@
 
 #include <async.h>
 #include <hiredis.h>
-#include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <memory>

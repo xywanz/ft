@@ -2,6 +2,8 @@
 
 #include "common/portfolio.h"
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 
 #include "core/constants.h"
