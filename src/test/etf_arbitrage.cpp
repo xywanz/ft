@@ -16,10 +16,11 @@ int wait_for_receipt(RedisSession* redis, int volume) {
         auto rsp =
             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         auto contract = ContractTable::get_by_index(rsp->ticker_index);
-        spdlog::info("rsp: {} {} {}{} {}/{} completed:{}", rsp->user_order_id,
-                     contract->ticker, direction_str(rsp->direction),
-                     offset_str(rsp->offset), rsp->traded_volume,
-                     rsp->original_volume, rsp->completed);
+        spdlog::info(
+            "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
+            rsp->user_order_id, contract->ticker, direction_str(rsp->direction),
+            offset_str(rsp->offset), rsp->traded_volume, rsp->original_volume,
+            rsp->this_traded, rsp->this_traded_price, rsp->completed);
         if (rsp->completed) return volume - rsp->traded_volume;
       }
     }
