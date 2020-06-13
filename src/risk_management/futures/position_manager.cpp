@@ -2,6 +2,8 @@
 
 #include "risk_management/futures/position_manager.h"
 
+#include <spdlog/spdlog.h>
+
 #include "core/contract_table.h"
 
 namespace ft {
