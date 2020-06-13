@@ -9,7 +9,6 @@
 
 #include <cassert>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -115,14 +114,11 @@ class RedisSession {
   void subscribe(const std::vector<std::string>& topics) {
     if (topics.empty()) return;
 
-    std::stringstream ss;
-    std::string args;
-    for (const auto& topic : topics) ss << topic << " ";
-    ss >> args;
-
-    auto* reply = reinterpret_cast<redisReply*>(
-        redisCommand(ctx_, "subscribe %s", args.c_str()));
-    freeReplyObject(reply);
+    for (const auto& topic : topics) {
+      auto* reply = reinterpret_cast<redisReply*>(
+          redisCommand(ctx_, "subscribe %s", topic.c_str()));
+      freeReplyObject(reply);
+    }
   }
 
   RedisReply get_sub_reply() {
