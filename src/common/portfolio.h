@@ -25,8 +25,9 @@ class Portfolio {
                       uint32_t offset, int changed);
 
   void update_traded(uint32_t ticker_index, uint32_t direction, uint32_t offset,
-                     int traded, double traded_price,
-                     bool to_update_pending = true);
+                     int traded, double traded_price);
+
+  void update_component_stock(uint32_t ticker_index, int traded, bool acquire);
 
   void update_float_pnl(uint32_t ticker_index, double last_price);
 
@@ -45,8 +46,7 @@ class Portfolio {
                                          uint32_t direction, int changed);
 
   void update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
-                          uint32_t offset, int traded, double traded_price,
-                          bool to_update_pending = true);
+                          uint32_t offset, int traded, double traded_price);
 
   void update_purchase_or_redeem(uint32_t ticker_index, uint32_t direction,
                                  int traded);

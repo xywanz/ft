@@ -99,13 +99,12 @@ void Portfolio::update_purchase_or_redeem_pending(uint32_t ticker_index,
 }
 
 void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
-                              uint32_t offset, int traded, double traded_price,
-                              bool to_update_pending) {
+                              uint32_t offset, int traded,
+                              double traded_price) {
   if (traded <= 0) return;
 
   if (direction == Direction::BUY || direction == Direction::SELL) {
-    update_buy_or_sell(ticker_index, direction, offset, traded, traded_price,
-                       to_update_pending);
+    update_buy_or_sell(ticker_index, direction, offset, traded, traded_price);
   } else if (direction == Direction::PURCHASE ||
              direction == Direction::REDEEM) {
     update_purchase_or_redeem(ticker_index, direction, traded);
@@ -114,8 +113,7 @@ void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
 
 void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
                                    uint32_t offset, int traded,
-                                   double traded_price,
-                                   bool to_update_pending) {
+                                   double traded_price) {
   bool is_close = is_offset_close(offset);
   if (is_close) direction = opp_direction(direction);
 
@@ -123,7 +121,7 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
   auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
 
   if (is_close) {
-    if (to_update_pending) pos_detail.close_pending -= traded;
+    pos_detail.close_pending -= traded;
     pos_detail.holdings -= traded;
     // 这里close_yesterday也执行这个操作是为了防止有些交易所不区分昨今仓，
     // 但用户平仓的时候却使用了close_yesterday
@@ -132,7 +130,7 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
     assert(pos_detail.yd_holdings >= 0);
     assert(pos_detail.holdings >= pos_detail.yd_holdings);
   } else {
-    if (to_update_pending) pos_detail.open_pending -= traded;
+    pos_detail.open_pending -= traded;
     pos_detail.holdings += traded;
   }
 
@@ -202,6 +200,28 @@ void Portfolio::update_purchase_or_redeem(uint32_t ticker_index,
       pos_detail.float_pnl = 0;
       pos_detail.cost_price = 0;
     }
+  }
+
+  const auto* contract = ContractTable::get_by_index(ticker_index);
+  if (!contract) {
+    spdlog::error("[Position::update_purchase_or_redeem] Contract not found");
+    return;
+  }
+  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
+}
+
+void Portfolio::update_component_stock(uint32_t ticker_index, int traded,
+                                       bool acquire) {
+  auto& pos = find_or_create_pos(ticker_index);
+  auto& pos_detail = pos.long_pos;
+
+  if (acquire) {
+    pos_detail.holdings += traded;
+    pos_detail.yd_holdings += traded;
+  } else {
+    int td_pos = pos_detail.holdings - pos_detail.yd_holdings;
+    pos_detail.holdings -= traded;
+    pos_detail.yd_holdings -= std::max(traded - td_pos, 0);
   }
 
   const auto* contract = ContractTable::get_by_index(ticker_index);

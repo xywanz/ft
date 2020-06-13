@@ -57,14 +57,11 @@ void PositionManager::on_order_traded(const Order* order,
   } else if (trade->trade_type == TradeType::ACQUIRED_STOCK) {
     auto contract = ContractTable::get_by_index(trade->ticker_index);
     assert(contract);
-    portfolio_->update_traded(contract->index, Direction::BUY, Offset::OPEN,
-                              trade->volume, trade->price, false);
+    portfolio_->update_component_stock(contract->index, trade->volume, true);
   } else if (trade->trade_type == TradeType::RELEASED_STOCK) {
     auto contract = ContractTable::get_by_index(trade->ticker_index);
     assert(contract);
-    portfolio_->update_traded(contract->index, Direction::SELL,
-                              Offset::CLOSE_YESTERDAY, trade->volume,
-                              trade->price, false);
+    portfolio_->update_component_stock(contract->index, trade->volume, false);
   }
 }
 
