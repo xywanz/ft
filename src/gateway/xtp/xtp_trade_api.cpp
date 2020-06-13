@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "core/contract_table.h"
@@ -82,6 +83,12 @@ void XtpTradeApi::logout() {
 }
 
 bool XtpTradeApi::send_order(const OrderReq& order) {
+  if ((order.direction == Direction::BUY && is_offset_close(order.offset)) ||
+      (order.direction == Direction::SELL && is_offset_open(order.offset))) {
+    spdlog::info("[XtpTradeApi::send_order] 不支持BuyClose或是SellOpen");
+    return false;
+  }
+
   auto contract = ContractTable::get_by_index(order.ticker_index);
   if (!contract) {
     spdlog::error("[XtpTradeApi::send_order] Contract not found");
@@ -284,7 +291,7 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
     // 暂时只支持普通股票
     auto& pos_detail = pos.long_pos;
     pos_detail.yd_holdings = position->sellable_qty;
-    pos_detail.holdings = position->total_qty;
+    pos_detail.holdings = std::max(position->sellable_qty, position->total_qty);
     pos_detail.float_pnl = position->unrealized_pnl;
     pos_detail.cost_price = position->avg_price;
   }

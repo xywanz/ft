@@ -214,11 +214,12 @@ void TradingEngine::on_query_position(Position* position) {
   auto& lp = position->long_pos;
   auto& sp = position->short_pos;
   spdlog::info(
-      "[TradingEngine::on_query_position] Ticker: {}, "
-      "Long Volume: {}, Long Price: {:.2f}, Long Frozen: {}, Long PNL: {}, "
-      "Short Volume: {}, Short Price: {:.2f}, Short Frozen: {}, Short PNL: {}",
-      contract->ticker, lp.holdings, lp.cost_price, lp.frozen, lp.float_pnl,
-      sp.holdings, sp.cost_price, sp.frozen, sp.float_pnl);
+      "[TradingEngine::on_query_position] {}, LongVol:{}, LongYdVol:{}, "
+      "LongPrice:{:.2f}, LongFrozen:{}, LongPNL:{}, ShortVol:{}, "
+      "ShortYdVol:{}, ShortPrice:{:.2f}, ShortFrozen:{}, ShortPNL:{}",
+      contract->ticker, lp.holdings, lp.yd_holdings, lp.cost_price, lp.frozen,
+      lp.float_pnl, sp.holdings, sp.yd_holdings, sp.cost_price, sp.frozen,
+      sp.float_pnl);
 
   if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0)
     return;

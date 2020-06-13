@@ -25,7 +25,8 @@ class Portfolio {
                       uint32_t offset, int changed);
 
   void update_traded(uint32_t ticker_index, uint32_t direction, uint32_t offset,
-                     int traded, double traded_price);
+                     int traded, double traded_price,
+                     bool to_update_pending = true);
 
   void update_float_pnl(uint32_t ticker_index, double last_price);
 
@@ -35,6 +36,20 @@ class Portfolio {
   const Position* find(uint32_t ticker_index) const {
     return const_cast<Portfolio*>(this)->find(ticker_index);
   }
+
+ private:
+  void update_buy_or_sell_pending(uint32_t ticker_index, uint32_t direction,
+                                  uint32_t offset, int changed);
+
+  void update_purchase_or_redeem_pending(uint32_t ticker_index,
+                                         uint32_t direction, int changed);
+
+  void update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
+                          uint32_t offset, int traded, double traded_price,
+                          bool to_update_pending = true);
+
+  void update_purchase_or_redeem(uint32_t ticker_index, uint32_t direction,
+                                 int traded);
 
  private:
   Position* find(uint32_t ticker_index) {
