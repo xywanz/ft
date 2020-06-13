@@ -25,7 +25,7 @@ ft::ReplaceType replace_type(ETF_REPLACE_TYPE type) {
   else if (type == ERT_CASH_RECOMPUTE_INTER_OTHER ||
            type == ERT_CASH_RECOMPUTE_INTER_SZ)
     return ft::RECOMPUTE;
-  assert(false);
+  abort();
 }
 
 struct EtfInfo {
