@@ -321,11 +321,10 @@ void TradingEngine::on_primary_market_traded(OrderTradedRsp* rsp) {
     risk_mgr_->on_order_accepted(&order);
 
     spdlog::info(
-        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, "
-        "OrderID:{}, Volume:{}, Price:{:.3f}",
+        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}, "
+        "OrderID:{}, Volume:{}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.order_id, order.req.volume,
-        order.req.price);
+        order.order_id, order.req.volume);
   }
 
   order.order_id = rsp->order_id;
@@ -364,11 +363,11 @@ void TradingEngine::on_secondary_market_traded(OrderTradedRsp* rsp) {
     risk_mgr_->on_order_accepted(&order);
 
     spdlog::info(
-        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, "
-        "OrderID:{}, Volume:{}, Price:{:.3f}",
+        "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, Volume:{}, "
+        "Price:{:.2f}, OrderType:{}",
         order.contract->ticker, direction_str(order.req.direction),
-        offset_str(order.req.offset), order.order_id, order.req.volume,
-        order.req.price);
+        offset_str(order.req.offset), order.req.volume, order.req.price,
+        ordertype_str(order.req.type));
   }
 
   order.order_id = rsp->order_id;
