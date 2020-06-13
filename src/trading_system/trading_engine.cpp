@@ -268,10 +268,11 @@ void TradingEngine::on_order_accepted(OrderAcceptedRsp* rsp) {
   risk_mgr_->on_order_accepted(&order);
 
   spdlog::info(
-      "[TradingEngine::on_order_accepted] 报单委托成功. Ticker: {}, Direction: "
-      "{}, Offset: {}, Volume: {}, Price: {:.2f}",
+      "[TradingEngine::on_order_accepted] 报单委托成功. {}, {}{}, Volume:{}, "
+      "Price:{:.2f}, OrderType:{}",
       order.contract->ticker, direction_str(order.req.direction),
-      offset_str(order.req.offset), order.req.volume, order.req.price);
+      offset_str(order.req.offset), order.req.volume, order.req.price,
+      ordertype_str(order.req.type));
 }
 
 void TradingEngine::on_order_rejected(OrderRejectedRsp* rsp) {
