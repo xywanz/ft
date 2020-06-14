@@ -13,9 +13,9 @@
 
 #include "core/config.h"
 #include "core/constants.h"
-#include "core/gateway.h"
-#include "core/trading_engine_interface.h"
 #include "gateway/ctp/ctp_common.h"
+#include "interface/gateway.h"
+#include "interface/trading_engine_interface.h"
 
 namespace ft {
 
@@ -31,7 +31,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void logout();
 
-  bool send_order(const OrderReq& order);
+  bool send_order(const OrderReq &order);
 
   bool cancel_order(uint64_t order_id);
 

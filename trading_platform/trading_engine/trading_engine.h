@@ -16,8 +16,8 @@
 #include "core/account.h"
 #include "core/config.h"
 #include "core/error_code.h"
-#include "core/gateway.h"
-#include "core/trading_engine_interface.h"
+#include "interface/gateway.h"
+#include "interface/trading_engine_interface.h"
 #include "ipc/redis.h"
 #include "risk_management/risk_manager.h"
 

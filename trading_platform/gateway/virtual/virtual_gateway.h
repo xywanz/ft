@@ -14,9 +14,9 @@
 #include "core/constants.h"
 #include "core/contract.h"
 #include "core/contract_table.h"
-#include "core/gateway.h"
 #include "core/position.h"
 #include "gateway/virtual/virtual_api.h"
+#include "interface/gateway.h"
 
 namespace ft {
 

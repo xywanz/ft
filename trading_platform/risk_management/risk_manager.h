@@ -13,7 +13,7 @@
 #include "common/portfolio.h"
 #include "core/account.h"
 #include "core/config.h"
-#include "core/trading_engine_interface.h"
+#include "interface/trading_engine_interface.h"
 #include "risk_management/risk_rule_interface.h"
 
 namespace ft {

@@ -5,8 +5,8 @@
 #include <getopt.hpp>
 
 #include "core/contract_table.h"
-#include "core/gateway.h"
-#include "trading_system/config_loader.h"
+#include "interface/gateway.h"
+#include "trading_engine/config_loader.h"
 
 class ContractCollector : public ft::TradingEngineInterface {
  public:

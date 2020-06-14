@@ -9,10 +9,10 @@
 #include <memory>
 #include <string>
 
-#include "core/gateway.h"
 #include "gateway/xtp/xtp_common.h"
 #include "gateway/xtp/xtp_quote_api.h"
 #include "gateway/xtp/xtp_trade_api.h"
+#include "interface/gateway.h"
 
 namespace ft {
 

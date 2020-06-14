@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "core/gateway.h"
+#include "interface/gateway.h"
 
 #include <functional>
 #include <map>

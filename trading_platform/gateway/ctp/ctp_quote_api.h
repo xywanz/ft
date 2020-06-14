@@ -13,8 +13,8 @@
 
 #include "core/config.h"
 #include "core/tick_data.h"
-#include "core/trading_engine_interface.h"
 #include "gateway/ctp/ctp_common.h"
+#include "interface/trading_engine_interface.h"
 
 namespace ft {
 

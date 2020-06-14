@@ -5,8 +5,8 @@
 #include <getopt.hpp>
 
 #include "core/contract_table.h"
-#include "trading_system/config_loader.h"
-#include "trading_system/trading_engine.h"
+#include "trading_engine/config_loader.h"
+#include "trading_engine/trading_engine.h"
 
 ft::TradingEngine* engine = nullptr;
 

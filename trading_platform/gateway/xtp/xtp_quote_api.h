@@ -14,8 +14,8 @@
 
 #include "core/config.h"
 #include "core/protocol.h"
-#include "core/trading_engine_interface.h"
 #include "gateway/xtp/xtp_common.h"
+#include "interface/trading_engine_interface.h"
 
 namespace ft {
 

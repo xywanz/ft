@@ -9,10 +9,10 @@
 #include <memory>
 #include <string>
 
-#include "core/gateway.h"
 #include "gateway/ctp/ctp_common.h"
 #include "gateway/ctp/ctp_quote_api.h"
 #include "gateway/ctp/ctp_trade_api.h"
+#include "interface/gateway.h"
 
 namespace ft {
 
@@ -26,7 +26,7 @@ class CtpGateway : public Gateway {
 
   void logout() override;
 
-  bool send_order(const OrderReq& order) override;
+  bool send_order(const OrderReq &order) override;
 
   bool cancel_order(uint64_t order_id) override;
 

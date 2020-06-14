@@ -7,7 +7,7 @@
 #include <fstream>
 
 #include "risk_management/etf/etf.h"
-#include "trading_system/config_loader.h"
+#include "trading_engine/config_loader.h"
 #include "utils/misc.h"
 
 const char* xtp_market_str(XTP_MARKET_TYPE market) {
