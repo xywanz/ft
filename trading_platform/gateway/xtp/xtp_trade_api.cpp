@@ -343,13 +343,29 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
     return;
   }
 
-  spdlog::debug("[XtpTradeApi::OnQueryAsset] TotalAsset: {}. Balance: {}",
-                asset->total_asset, asset->banlance);
+  spdlog::debug(
+      "[XtpTradeApi::OnQueryAsset] total_asset:{}, buying_power:{}, "
+      "security_asset:{}, fund_buy_amount:{}, fund_buy_fee:{}, "
+      "fund_sell_amount:{}, fund_sell_fee:{}, withholding_amount:{}, "
+      "account_type:{}, frozen_margin:{}, frozen_exec_cash:{}, "
+      "frozen_exec_fee:{}, pay_later:{}, preadva_pay:{}, orig_banlance:{}, "
+      "banlance:{}, deposit_withdraw:{}, trade_netting:{}, captial_asset:{}, "
+      "force_freeze_amount:{}, preferred_amount:{}, "
+      "repay_stock_aval_banlance:{}",
+      asset->total_asset, asset->buying_power, asset->security_asset,
+      asset->fund_buy_amount, asset->fund_buy_fee, asset->fund_sell_amount,
+      asset->fund_sell_fee, asset->withholding_amount, asset->account_type,
+      asset->frozen_margin, asset->frozen_exec_cash, asset->frozen_exec_fee,
+      asset->pay_later, asset->preadva_pay, asset->orig_banlance,
+      asset->banlance, asset->deposit_withdraw, asset->trade_netting,
+      asset->captial_asset, asset->force_freeze_amount, asset->preferred_amount,
+      asset->repay_stock_aval_banlance);
   Account account{};
   account.account_id = std::stoull(investor_id_);
-  account.balance = asset->total_asset;
+  account.total_asset = asset->total_asset;
+  account.cash = asset->buying_power;
   account.margin = 0;
-  account.frozen = 0;
+  account.frozen = asset->withholding_amount;
   engine_->on_query_account(&account);
 
   if (is_last) done();

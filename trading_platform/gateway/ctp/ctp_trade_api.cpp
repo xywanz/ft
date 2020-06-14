@@ -629,10 +629,11 @@ void CtpTradeApi::OnRspQryTradingAccount(
 
   Account account;
   account.account_id = std::stoull(trading_account->AccountID);
-  account.balance = trading_account->Balance;
+  account.total_asset = trading_account->Balance;
+  account.margin = trading_account->CurrMargin;
   account.frozen = trading_account->FrozenCash + trading_account->FrozenMargin +
                    trading_account->FrozenCommission;
-  account.margin = trading_account->CurrMargin;
+  account.cash = account.total_asset - account.margin - account.frozen;
 
   engine_->on_query_account(&account);
   done();

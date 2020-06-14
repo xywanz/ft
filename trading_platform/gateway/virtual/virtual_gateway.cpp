@@ -52,7 +52,7 @@ bool VirtualGateway::query_positions() { return true; }
 bool VirtualGateway::query_account() {
   Account account{};
   account.account_id = 1234;
-  account.balance = 100000000;
+  account.total_asset = 100000000;
   engine_->on_query_account(&account);
   return true;
 }

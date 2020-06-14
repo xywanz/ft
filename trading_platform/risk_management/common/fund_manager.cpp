@@ -30,7 +30,7 @@ int FundManager::check_order_req(const Order* order) {
   assert(contract);
   assert(contract->size > 0);
 
-  double avl = account_->balance - account_->frozen - account_->margin;
+  double avl = account_->total_asset - account_->frozen - account_->margin;
   double estimated = 0;
   if (req->direction == Direction::BUY) {
     estimated =
@@ -55,7 +55,7 @@ void FundManager::on_order_sent(const Order* order) {
     account_->frozen +=
         contract->size * order->req.volume * order->req.price * margin_rate;
     spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                  account_->balance, account_->frozen, account_->margin);
+                  account_->total_asset, account_->frozen, account_->margin);
   }
 }
 
@@ -82,10 +82,13 @@ void FundManager::on_order_traded(const Order* order,
       account_->margin -= margin;
       if (account_->margin < 0) account_->margin = 0;
       spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                    account_->balance, account_->frozen, account_->margin);
+                    account_->total_asset, account_->frozen, account_->margin);
     }
   } else if (trade->trade_type == TradeType::CASH_SUBSTITUTION) {
-    account_->margin -= trade->amount;
+    if (order->req.direction == Direction::PURCHASE)
+      account_->margin -= trade->amount;
+    else if (order->req.direction == Direction::REDEEM)
+      account_->margin += trade->amount;
   }
 }
 
@@ -98,7 +101,7 @@ void FundManager::on_order_canceled(const Order* order, int canceled) {
     account_->frozen -=
         contract->size * canceled * order->req.price * margin_rate;
     spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                  account_->balance, account_->frozen, account_->margin);
+                  account_->total_asset, account_->frozen, account_->margin);
   }
 }
 

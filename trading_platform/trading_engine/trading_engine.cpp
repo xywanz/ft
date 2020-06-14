@@ -204,9 +204,9 @@ void TradingEngine::on_query_account(Account* account) {
   lock.unlock();
 
   spdlog::info(
-      "[TradingEngine::on_query_account] balance:{:.3f}, frozen:{:.3f}, "
+      "[TradingEngine::on_query_account] total_asset:{:.3f}, frozen:{:.3f}, "
       "margin:{:.3f}",
-      account->balance, account->frozen, account->margin);
+      account->total_asset, account->frozen, account->margin);
 }
 
 void TradingEngine::on_query_position(Position* position) {
