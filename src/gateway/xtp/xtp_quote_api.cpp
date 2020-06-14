@@ -71,25 +71,21 @@ bool XtpQuoteApi::login(const Config& config) {
       sub_list_sz.emplace_back(const_cast<char*>(ticker.c_str()));
   }
 
-  // if (sub_list_sh.size() > 0) {
-  //   if (quote_api_->SubscribeMarketData(sub_list_sh.data(),
-  //   sub_list_sh.size(),
-  //                                       XTP_EXCHANGE_SH) != 0) {
-  //     spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
-  //     return false;
-  //   }
-  // }
+  if (sub_list_sh.size() > 0) {
+    if (quote_api_->SubscribeMarketData(sub_list_sh.data(), sub_list_sh.size(),
+                                        XTP_EXCHANGE_SH) != 0) {
+      spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
+      return false;
+    }
+  }
 
-  // if (sub_list_sz.size() > 0) {
-  //   if (quote_api_->SubscribeMarketData(sub_list_sz.data(),
-  //   sub_list_sz.size(),
-  //                                       XTP_EXCHANGE_SZ) != 0) {
-  //     spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
-  //     return false;
-  //   }
-  // }
-
-  quote_api_->SubscribeAllMarketData();
+  if (sub_list_sz.size() > 0) {
+    if (quote_api_->SubscribeMarketData(sub_list_sz.data(), sub_list_sz.size(),
+                                        XTP_EXCHANGE_SZ) != 0) {
+      spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
+      return false;
+    }
+  }
 
   return true;
 }

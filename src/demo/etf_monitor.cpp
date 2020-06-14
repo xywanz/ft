@@ -52,9 +52,9 @@ class EtfMonitor : public Strategy {
         value += component.volume * snapshot.last_price;
       }
 
-      double value_L2 = value / etf_->unit;
-      spdlog::info("L1:{:.4f}  L2:{:.4f}",
-                   snapshots_[etf_contract_->index].iopv, value_L2);
+      double value_L1 = value / etf_->unit;
+      spdlog::info("L1:{:.4f}  L2:{:.4f}", value_L1,
+                   snapshots_[etf_contract_->index].last_price);
     }
   }
 
