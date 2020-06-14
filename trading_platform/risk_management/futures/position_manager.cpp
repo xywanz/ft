@@ -17,7 +17,7 @@ bool PositionManager::init(const Config& config, Account* account,
 }
 
 int PositionManager::check_order_req(const Order* order) {
-  if (order->req.direction != Direction::BUY ||
+  if (order->req.direction != Direction::BUY &&
       order->req.direction != Direction::SELL)
     return NO_ERROR;
 
