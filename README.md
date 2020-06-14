@@ -4,6 +4,7 @@
 | Linux    | [![Build Status](https://travis-ci.com/DuckDuckDuck0/ft.svg?branch=master)](https://travis-ci.com/DuckDuckDuck0/ft) |
 
 不断更新中，大家有什么想法或是发现了bug，可以一起在issue上面自由讨论，也欢迎大家加入到开发中。如有问题我将全力提供支持。  
+ft的目标是打造一个从交易平台到成熟的策略开发、以及提供开箱即用的策略框架的完整交易系统，目前正在着手开发策略模块（算法模块）。
 
 目录
 =================
