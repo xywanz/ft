@@ -129,8 +129,11 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
     // 但用户平仓的时候却使用了close_yesterday
     if (offset == Offset::CLOSE_YESTERDAY || offset == Offset::CLOSE)
       pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
-    assert(pos_detail.yd_holdings >= 0);
-    assert(pos_detail.holdings >= pos_detail.yd_holdings);
+    
+    if (pos_detail.holdings < pos_detail.yd_holdings) {
+      spdlog::warn("yd pos fixed");
+      pos_detail.yd_holdingd = pos_detail.holdings;
+    }
   } else {
     pos_detail.open_pending -= traded;
     pos_detail.holdings += traded;
