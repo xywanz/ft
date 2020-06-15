@@ -132,7 +132,7 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
     
     if (pos_detail.holdings < pos_detail.yd_holdings) {
       spdlog::warn("yd pos fixed");
-      pos_detail.yd_holdingd = pos_detail.holdings;
+      pos_detail.yd_holdings = pos_detail.holdings;
     }
   } else {
     pos_detail.open_pending -= traded;
