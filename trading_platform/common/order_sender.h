@@ -62,6 +62,7 @@ class OrderSender {
     cmd.order_req.offset = offset;
     cmd.order_req.type = type;
     cmd.order_req.price = price;
+    cmd.order_req.without_check = false;
 
     cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
   }

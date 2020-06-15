@@ -6,6 +6,7 @@
 
 #include "risk_management/etf/etf_table.h"
 #include "strategy/strategy.h"
+#include "utils/misc.h"
 
 using namespace ft;
 
@@ -26,8 +27,10 @@ class EtfMonitor : public Strategy {
 
     std::vector<std::string> sub_list;
     sub_list.emplace_back("159901");
-    for (const auto& [ticker_index, component] : etf->components)
+    for (const auto& [ticker_index, component] : etf->components) {
+      UNUSED(ticker_index);
       sub_list.emplace_back(component.contract->ticker);
+    }
     subscribe(sub_list);
 
     etf_ = etf;

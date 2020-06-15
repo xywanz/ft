@@ -145,12 +145,15 @@ bool TradingEngine::send_order(const TraderCommand& cmd) {
   order.strategy_id = cmd.strategy_id;
 
   std::unique_lock<std::mutex> lock(mutex_);
-  int error_code = risk_mgr_->check_order_req(&order);
-  if (error_code != NO_ERROR) {
-    spdlog::error("[TradingEngine::send_order] 风控未通过: {}",
-                  error_code_str(error_code));
-    risk_mgr_->on_order_rejected(&order, error_code);
-    return false;
+  // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
+  if (!cmd.order_req.without_check) {
+    int error_code = risk_mgr_->check_order_req(&order);
+    if (error_code != NO_ERROR) {
+      spdlog::error("[TradingEngine::send_order] 风控未通过: {}",
+                    error_code_str(error_code));
+      risk_mgr_->on_order_rejected(&order, error_code);
+      return false;
+    }
   }
 
   if (!gateway_->send_order(req)) {

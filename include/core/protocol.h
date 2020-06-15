@@ -44,6 +44,8 @@ struct TraderOrderReq {
   uint32_t type;
   int volume;
   double price;
+
+  bool without_check;
 } __attribute__((packed));
 
 struct TraderCancelReq {
