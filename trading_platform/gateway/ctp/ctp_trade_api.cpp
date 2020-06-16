@@ -285,9 +285,13 @@ bool CtpTradeApi::send_order(const OrderReq &order) {
   } else if (order.type == OrderType::FOK) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_CV;
-  } else {
+  } else if (order.type == OrderType::LIMIT) {
     req.TimeCondition = THOST_FTDC_TC_GFD;
     req.VolumeCondition = THOST_FTDC_VC_AV;
+  } else if (order.type == OrderType::MARKET) {
+    req.TimeCondition = THOST_FTDC_TC_IOC;
+    req.VolumeCondition = THOST_FTDC_VC_AV;
+    req.LimitPrice = 0.0;
   }
 
   if (trade_api_->ReqOrderInsert(&req, next_req_id()) != 0) {
