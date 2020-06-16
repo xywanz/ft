@@ -181,10 +181,11 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   TickData tick{};
   tick.ticker_index = contract->index;
 
-  // market_data->data_time
-  // strptime(md->UpdateTime, "%H:%M:%S", &_tm);
-  // tick.time_sec = _tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600;
-  // tick.time_ms = md->UpdateMillisec;
+  uint64_t sec = (market_data->data_time / 1000) % 100;
+  uint64_t min = (market_data->data_time / 100000) % 100;
+  uint64_t hour = (market_data->data_time / 10000000) % 100;
+  tick.time_sec = sec + 60 * min + 3600 * hour;
+  tick.time_ms = market_data->data_time % 1000;
 
   tick.volume = market_data->qty;
   tick.turnover = market_data->turnover;
@@ -241,8 +242,8 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   tick.bid_volume[4] = market_data->bid_qty[9];
 
   spdlog::trace(
-      "[XtpQuoteApi::OnRtnDepthMarketData] Ticker: {}, Time MS: {}, "
-      "LastPrice: {:.2f}, Volume: {}, Turnover: {}, Open Interest: {}",
+      "[XtpQuoteApi::OnRtnDepthMarketData] {}, TimeMs: {}, LastPrice:{:.2f}, "
+      "Volume:{}, Turnover:{}, Open Interest:{}",
       market_data->ticker, tick.time_ms, tick.last_price, tick.volume,
       tick.turnover, tick.open_interest);
 

@@ -11,7 +11,6 @@ static const std::size_t kMarketLevel = 10;
 
 struct TickData {
   uint32_t ticker_index;
-  // std::string date;
   uint64_t date;
   uint64_t time_sec;
   uint64_t time_ms;
