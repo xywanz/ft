@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <string>
 
+#include "core/contract.h"
+
 namespace ft {
 
 using StrategyIdType = char[16];
@@ -19,7 +21,7 @@ using StrategyIdType = char[16];
 // 这个是TradingEngine发给Gateway的下单信息
 struct OrderReq {
   uint64_t engine_order_id;
-  uint32_t ticker_index;
+  const Contract* contract;
   uint32_t type;
   uint32_t direction;
   uint32_t offset;

@@ -89,11 +89,7 @@ bool XtpTradeApi::send_order(const OrderReq& order) {
     return false;
   }
 
-  auto contract = ContractTable::get_by_index(order.ticker_index);
-  if (!contract) {
-    spdlog::error("[XtpTradeApi::send_order] Contract not found");
-    return false;
-  }
+  auto contract = order.contract;
 
   XTPOrderInsertInfo req{};
   req.side = xtp_side(order.direction);

@@ -25,7 +25,7 @@ int PositionManager::check_order_req(const Order* order) {
   if (is_offset_close(req->offset)) {
     int available = 0;
     auto pos =
-        const_cast<const Portfolio*>(portfolio_)->find(req->ticker_index);
+        const_cast<const Portfolio*>(portfolio_)->find(req->contract->index);
 
     if (pos) {
       uint32_t d = opp_direction(req->direction);
@@ -46,7 +46,7 @@ int PositionManager::check_order_req(const Order* order) {
 }
 
 void PositionManager::on_order_sent(const Order* order) {
-  portfolio_->update_pending(order->contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->index, order->req.direction,
                              order->req.offset, order->req.volume);
 }
 
@@ -54,7 +54,7 @@ void PositionManager::on_order_traded(const Order* order,
                                       const OrderTradedRsp* trade) {
   if (trade->trade_type == TradeType::SECONDARY_MARKET ||
       trade->trade_type == TradeType::PRIMARY_MARKET) {
-    portfolio_->update_traded(order->req.ticker_index, order->req.direction,
+    portfolio_->update_traded(order->req.contract->index, order->req.direction,
                               order->req.offset, trade->volume, trade->price);
   } else if (trade->trade_type == TradeType::ACQUIRED_STOCK) {
     auto contract = ContractTable::get_by_index(trade->ticker_index);
@@ -68,14 +68,14 @@ void PositionManager::on_order_traded(const Order* order,
 }
 
 void PositionManager::on_order_canceled(const Order* order, int canceled) {
-  portfolio_->update_pending(order->contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->index, order->req.direction,
                              order->req.offset, 0 - canceled);
 }
 
 void PositionManager::on_order_rejected(const Order* order, int error_code) {
   if (error_code <= ERR_SEND_FAILED) return;
 
-  portfolio_->update_pending(order->contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->index, order->req.direction,
                              order->req.offset, 0 - order->req.volume);
 }
 

@@ -32,7 +32,6 @@ struct Order {
   // 这个是订单在经纪商的id，提供给用户用于撤单或改单
   uint64_t order_id;
 
-  const Contract* contract = nullptr;
   bool accepted = false;
   int traded_volume = 0;
   int canceled_volume = 0;

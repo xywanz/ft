@@ -20,9 +20,8 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
       order->req.direction != Direction::SELL)
     return NO_ERROR;
 
-  auto* req = &order->req;
-  const auto* contract = ContractTable::get_by_index(req->ticker_index);
-  assert(contract);
+  auto req = &order->req;
+  auto contract = req->contract;
 
   uint64_t opp_d = opp_direction(req->direction);  // 对手方
   const OrderReq* pending_order;

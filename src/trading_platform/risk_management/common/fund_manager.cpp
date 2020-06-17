@@ -27,7 +27,7 @@ int FundManager::check_order_req(const Order* order) {
   auto* req = &order->req;
   if (is_offset_close(req->offset)) return NO_ERROR;
 
-  auto contract = ContractTable::get_by_index(req->ticker_index);
+  auto contract = ContractTable::get_by_index(req->contract->index);
   assert(contract);
   assert(contract->size > 0);
 
@@ -46,7 +46,7 @@ int FundManager::check_order_req(const Order* order) {
 }
 
 void FundManager::on_order_sent(const Order* order) {
-  auto contract = order->contract;
+  auto contract = order->req.contract;
 
   if (is_offset_open(order->req.offset)) {
     auto margin_rate = order->req.direction == Direction::BUY
@@ -64,7 +64,7 @@ void FundManager::on_order_sent(const Order* order) {
 void FundManager::on_order_traded(const Order* order,
                                   const OrderTradedRsp* trade) {
   if (trade->trade_type == TradeType::SECONDARY_MARKET) {
-    auto contract = order->contract;
+    auto contract = order->req.contract;
 
     if (is_offset_open(order->req.offset)) {
       auto margin_rate = order->req.direction == Direction::BUY
@@ -72,8 +72,7 @@ void FundManager::on_order_traded(const Order* order,
                              : contract->short_margin_rate;
       auto frozen_released =
           contract->size * trade->volume * order->req.price * margin_rate;
-      auto margin =
-          order->contract->size * trade->volume * trade->price * margin_rate;
+      auto margin = contract->size * trade->volume * trade->price * margin_rate;
       account_->frozen -= frozen_released;
       account_->margin += margin;
       // 如果冻结的时候冻结多了需要释放，冻结少了则需要回补
@@ -102,7 +101,7 @@ void FundManager::on_order_traded(const Order* order,
 
 void FundManager::on_order_canceled(const Order* order, int canceled) {
   if (is_offset_open(order->req.offset)) {
-    auto contract = order->contract;
+    auto contract = order->req.contract;
     auto margin_rate = order->req.direction == Direction::BUY
                            ? contract->long_margin_rate
                            : contract->short_margin_rate;

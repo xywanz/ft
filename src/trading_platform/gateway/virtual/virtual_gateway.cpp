@@ -24,7 +24,7 @@ void VirtualGateway::logout() {}
 bool VirtualGateway::send_order(const OrderReq& order) {
   VirtualOrderReq req{};
   req.engine_order_id = order.engine_order_id;
-  req.ticker_index = order.ticker_index;
+  req.ticker_index = order.contract->index;
   req.direction = order.direction;
   req.offset = order.offset;
   req.type = order.type;

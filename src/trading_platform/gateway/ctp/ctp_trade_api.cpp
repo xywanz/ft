@@ -248,17 +248,7 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
 }
 
 bool CtpTradeApi::send_order(const OrderReq &order) {
-  if (!is_logon_) {
-    spdlog::error("[CtpTradeApi::send_order] Failed. Not logon");
-    return false;
-  }
-
-  const auto *contract = ContractTable::get_by_index(order.ticker_index);
-  if (!contract) {
-    spdlog::error("[CtpTradeApi::send_order] Contract not found. Index: {}",
-                  order.ticker_index);
-    return false;
-  }
+  auto contract = order.contract;
 
   int order_ref = static_cast<int>(order.engine_order_id) + order_ref_base_;
   CThostFtdcInputOrderField req{};
@@ -300,7 +290,7 @@ bool CtpTradeApi::send_order(const OrderReq &order) {
   }
 
   spdlog::debug(
-      "[CtpTradeApi::send_order] [{}-{}-{}{}] 订单发送成功. "
+      "[CtpTradeApi::send_order] 订单发送成功. {}, {}, {}{}"
       "Volume:{}, Price:{:.3f}",
       order_ref, contract->ticker, direction_str(order.direction),
       offset_str(order.offset), order.volume, order.price);
@@ -410,8 +400,6 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
 }
 
 bool CtpTradeApi::cancel_order(uint64_t order_id) {
-  if (!is_logon_) return false;
-
   uint32_t ticker_index = (order_id >> 32) & 0xffffffffULL;
   auto contract = ContractTable::get_by_index(ticker_index);
   if (!contract) {
