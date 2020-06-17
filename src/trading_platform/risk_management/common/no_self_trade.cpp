@@ -32,26 +32,24 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
     if (pending_order->direction != opp_d) continue;
 
     // 存在市价单直接拒绝
-    if (pending_order->type == OrderType::MARKET) goto catch_order;
-
-    if (req->direction == Direction::BUY) {
-      if (req->price > pending_order->price - 1e-5) goto catch_order;
-    } else {
-      if (req->price < pending_order->price + 1e-5) goto catch_order;
+    if (pending_order->type == OrderType::MARKET ||
+        (req->direction == Direction::BUY &&
+         req->price > pending_order->price - 1e-5) ||
+        (req->direction == Direction::SELL &&
+         req->price < pending_order->price + 1e-5)) {
+      spdlog::error(
+          "[RiskMgr] Self trade! Ticker: {}. This Order: "
+          "[Direction: {}, Type: {}, Price: {:.2f}]. "
+          "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
+          contract->ticker, direction_str(req->direction),
+          ordertype_str(req->type), req->price,
+          direction_str(pending_order->direction),
+          ordertype_str(pending_order->type), pending_order->price);
+      return ERR_SELF_TRADE;
     }
   }
 
   return NO_ERROR;
-
-catch_order:
-  spdlog::error(
-      "[RiskMgr] Self trade! Ticker: {}. This Order: "
-      "[Direction: {}, Type: {}, Price: {:.2f}]. "
-      "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
-      contract->ticker, direction_str(req->direction), ordertype_str(req->type),
-      req->price, direction_str(pending_order->direction),
-      ordertype_str(pending_order->type), pending_order->price);
-  return ERR_SELF_TRADE;
 }
 
 }  // namespace ft
