@@ -62,75 +62,54 @@ inline PriceType adjust_price(PriceType price) {
   return ret;
 }
 
-inline uint32_t order_type(char ctp_type) {
-  static std::map<char, uint32_t> ctp2ft = {
-      {THOST_FTDC_OPT_AnyPrice, OrderType::MARKET},
-      {THOST_FTDC_OPT_LimitPrice, OrderType::LIMIT},
-      {THOST_FTDC_OPT_BestPrice, OrderType::BEST}};
-
-  return ctp2ft[ctp_type];
-}
-
 inline char order_type(uint32_t type) {
-  static std::map<uint32_t, char> ft2ctp = {
-      {OrderType::MARKET, THOST_FTDC_OPT_AnyPrice},
-      {OrderType::FAK, THOST_FTDC_OPT_LimitPrice},
-      {OrderType::FOK, THOST_FTDC_OPT_LimitPrice},
-      {OrderType::LIMIT, THOST_FTDC_OPT_LimitPrice},
-      {OrderType::BEST, THOST_FTDC_OPT_BestPrice}};
+  static const char ft2ctp[] = {
+      0,
+      THOST_FTDC_OPT_AnyPrice,    // MARKET
+      THOST_FTDC_OPT_LimitPrice,  // LIMIT
+      THOST_FTDC_OPT_BestPrice,   // BEST
+      THOST_FTDC_OPT_LimitPrice,  // LIMIT
+      THOST_FTDC_OPT_LimitPrice   // LIMIT
+  };
 
   return ft2ctp[type];
 }
 
-inline uint32_t direction(char ctp_type) {
-  static std::map<char, uint32_t> ctp2ft = {
-      {THOST_FTDC_D_Buy, Direction::BUY},
-      {THOST_FTDC_D_Sell, Direction::SELL},
-      {THOST_FTDC_PD_Long, Direction::BUY},
-      {THOST_FTDC_PD_Short, Direction::SELL}};
+inline uint32_t direction(char ctp_type) { return ctp_type - '0' + 1; }
 
-  return ctp2ft[ctp_type];
-}
-
-inline char direction(uint32_t type) {
-  static std::map<uint32_t, char> ft2ctp = {
-      {Direction::BUY, THOST_FTDC_D_Buy}, {Direction::SELL, THOST_FTDC_D_Sell}};
-
-  return ft2ctp[type];
-}
+inline char direction(uint32_t type) { return type + '0' - 1; }
 
 inline uint32_t offset(char ctp_type) {
-  static std::map<char, uint32_t> ctp2ft = {
-      {THOST_FTDC_OF_Open, Offset::OPEN},
-      {THOST_FTDC_OF_Close, Offset::CLOSE},
-      {THOST_FTDC_OF_CloseToday, Offset::CLOSE_TODAY},
-      {THOST_FTDC_OF_CloseYesterday, Offset::CLOSE_YESTERDAY}};
-  return ctp2ft[ctp_type];
+  static const uint32_t ctp2ft[] = {Offset::OPEN, Offset::CLOSE, 0,
+                                    Offset::CLOSE_TODAY,
+                                    Offset::CLOSE_YESTERDAY};
+
+  return ctp2ft[ctp_type - '0'];
 }
 
 inline char offset(uint32_t type) {
-  static std::map<uint32_t, char> ft2ctp = {
-      {Offset::OPEN, THOST_FTDC_OF_Open},
-      {Offset::CLOSE, THOST_FTDC_OF_Close},
-      {Offset::CLOSE_TODAY, THOST_FTDC_OF_CloseToday},
-      {Offset::CLOSE_YESTERDAY, THOST_FTDC_OF_CloseYesterday}};
+  static const uint32_t ft2ctp[] = {0,
+                                    THOST_FTDC_OF_Open,
+                                    THOST_FTDC_OF_Close,
+                                    0,
+                                    THOST_FTDC_OF_CloseToday,
+                                    0,
+                                    0,
+                                    0,
+                                    THOST_FTDC_OF_CloseYesterday};
   return ft2ctp[type];
 }
 
 inline ProductType product_type(char ctp_type) {
-  static std::map<char, ProductType> ctp2ft = {
-      {THOST_FTDC_PC_Futures, ProductType::FUTURES},
-      {THOST_FTDC_PC_Options, ProductType::OPTIONS}};
+  static const ProductType ctp2ft[] = {ProductType::FUTURES,
+                                       ProductType::OPTIONS};
 
-  return ctp2ft[ctp_type];
+  return ctp2ft[ctp_type - '1'];
 }
 
 inline char product_type(ProductType type) {
-  static std::map<ProductType, char> ft2ctp = {
-      {ProductType::FUTURES, THOST_FTDC_PC_Futures},
-      {ProductType::OPTIONS, THOST_FTDC_PC_Options}};
-
-  return ft2ctp[type];
+  return type == ProductType::FUTURES ? THOST_FTDC_PC_Futures
+                                      : THOST_FTDC_PC_Options;
 }
 
 }  // namespace ft

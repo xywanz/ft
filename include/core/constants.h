@@ -39,11 +39,12 @@ inline const std::string SZE = "SZ";
  * 订单价格类型还需要继续细分
  */
 namespace OrderType {
-// 限价单，指定价格的挂单，订单时限为当日有效
-inline const uint32_t LIMIT = 1;
 
 // 市价单，不同的平台对市价单的支持不同
-inline const uint32_t MARKET = 2;
+inline const uint32_t MARKET = 1;
+
+// 限价单，指定价格的挂单，订单时限为当日有效
+inline const uint32_t LIMIT = 2;
 
 // 对方最优价格的限价单
 inline const uint32_t BEST = 3;
