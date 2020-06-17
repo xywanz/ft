@@ -66,9 +66,9 @@ void Portfolio::update_buy_or_sell_pending(uint32_t ticker_index,
     // close_pending");
   }
 
-  const auto* contract = ContractTable::get_by_index(pos.ticker_index);
-  assert(contract);
-  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
+  // const auto* contract = ContractTable::get_by_index(pos.ticker_index);
+  // assert(contract);
+  // redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void Portfolio::update_purchase_or_redeem_pending(uint32_t ticker_index,
@@ -95,9 +95,9 @@ void Portfolio::update_purchase_or_redeem_pending(uint32_t ticker_index,
     // close_pending");
   }
 
-  const auto* contract = ContractTable::get_by_index(pos.ticker_index);
-  assert(contract);
-  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
+  // const auto* contract = ContractTable::get_by_index(pos.ticker_index);
+  // assert(contract);
+  // redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void Portfolio::update_traded(uint32_t ticker_index, uint32_t direction,
@@ -129,7 +129,7 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
     // 但用户平仓的时候却使用了close_yesterday
     if (offset == Offset::CLOSE_YESTERDAY || offset == Offset::CLOSE)
       pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
-    
+
     if (pos_detail.holdings < pos_detail.yd_holdings) {
       spdlog::warn("yd pos fixed");
       pos_detail.yd_holdings = pos_detail.holdings;
