@@ -97,19 +97,19 @@ void TradingEngine::run() {
 
     switch (cmd->type) {
       case NEW_ORDER:
-        spdlog::info("new order");
+        spdlog::debug("new order");
         send_order(*cmd);
         break;
       case CANCEL_ORDER:
-        spdlog::info("cancel order");
+        spdlog::debug("cancel order");
         cancel_order(cmd->cancel_req.order_id);
         break;
       case CANCEL_TICKER:
-        spdlog::info("cancel all for ticker");
+        spdlog::debug("cancel all for ticker");
         cancel_for_ticker(cmd->cancel_ticker_req.ticker_index);
         break;
       case CANCEL_ALL:
-        spdlog::info("cancel all");
+        spdlog::debug("cancel all");
         cancel_all();
         break;
       default:
