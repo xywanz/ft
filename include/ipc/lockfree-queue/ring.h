@@ -1,8 +1,9 @@
 #ifndef _LOCKFREEQUEUE_RING_H_
 #define _LOCKFREEQUEUE_RING_H_
 
-#include <stdatomic.h>
 #include <stdint.h>
+
+#include "ipc/lockfree-queue/misc.h"
 
 #define CACHE_ALIGNED   __attribute__((aligned(64)))
 
