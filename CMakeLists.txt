@@ -11,7 +11,7 @@ set(GATEWAY_LIB thostmduserapi_se thosttraderapi_se xtptraderapi xtpquoteapi)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/trading_platform
+    ${CMAKE_SOURCE_DIR}/src/trading_platform
     ${CTP_PATH}
     ${XTP_PATH}/include
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
@@ -36,10 +36,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_definitions(-DFMT_HEADER_ONLY)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-add_subdirectory(trading_platform/common)
-add_subdirectory(trading_platform/demo)
-add_subdirectory(trading_platform/gateway)
-add_subdirectory(trading_platform/trading_engine)
-add_subdirectory(trading_platform/risk_management)
-add_subdirectory(trading_platform/strategy)
-add_subdirectory(trading_platform/tools)
+add_subdirectory(src/trading_platform/common)
+add_subdirectory(src/trading_platform/demo)
+add_subdirectory(src/trading_platform/gateway)
+add_subdirectory(src/trading_platform/trading_engine)
+add_subdirectory(src/trading_platform/risk_management)
+add_subdirectory(src/trading_platform/strategy)
+add_subdirectory(src/trading_platform/tools)
+add_subdirectory(src/ipc)
