@@ -3,7 +3,7 @@
 #ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_H_
 #define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_ETF_H_
 
-#include <map>
+#include <unordered_map>
 
 #include "core/contract.h"
 
@@ -33,7 +33,7 @@ struct ETF {
   double cash_component;
   double must_cash_substitution;
 
-  std::map<uint32_t, ComponentStock> components;
+  std::unordered_map<uint32_t, ComponentStock> components;
 };
 
 }  // namespace ft

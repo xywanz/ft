@@ -9,6 +9,7 @@
 #include "common/md_snapshot.h"
 #include "common/order.h"
 #include "common/portfolio.h"
+#include "common/types.h"
 #include "core/account.h"
 #include "core/config.h"
 #include "core/error_code.h"
@@ -21,7 +22,7 @@ class RiskRuleInterface {
   virtual ~RiskRuleInterface() {}
 
   virtual bool init(const Config& config, Account* account,
-                    Portfolio* portfolio, std::map<uint64_t, Order>* order_map,
+                    Portfolio* portfolio, OrderMap* order_map,
                     const MdSnapshot* md_snapshot) {
     return true;
   }

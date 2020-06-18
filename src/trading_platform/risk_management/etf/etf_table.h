@@ -110,7 +110,7 @@ class EtfTable {
 
  private:
   static inline std::vector<ETF*> etf_vec_;
-  static inline std::map<std::string, ETF*> etf_map_;
+  static inline std::unordered_map<std::string, ETF*> etf_map_;
 };
 
 }  // namespace ft

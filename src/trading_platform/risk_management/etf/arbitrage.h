@@ -3,7 +3,7 @@
 #ifndef FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_H_
 #define FT_SRC_RISK_MANAGEMENT_ETF_ARBITRAGE_H_
 
-#include <map>
+#include <unordered_map>
 
 namespace ft {
 
@@ -20,7 +20,7 @@ class Arbitrage {
   explicit Arbitrage(uint32_t etf_ticker_index);
 
  private:
-  std::map<uint32_t, DemandDetail> demands_;
+  std::unordered_map<uint32_t, DemandDetail> demands_;
 };
 
 }  // namespace ft

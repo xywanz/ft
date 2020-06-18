@@ -13,6 +13,7 @@
 #include "common/md_snapshot.h"
 #include "common/order.h"
 #include "common/portfolio.h"
+#include "common/types.h"
 #include "core/account.h"
 #include "core/config.h"
 #include "core/error_code.h"
@@ -77,8 +78,8 @@ class TradingEngine : public TradingEngineInterface {
   ProtocolQueryCenter proto_{};
   Account account_{};
   Portfolio portfolio_{"127.0.0.1", 6379};
+  OrderMap order_map_{};
   std::unique_ptr<RiskManager> risk_mgr_{nullptr};
-  std::map<uint64_t, Order> order_map_{};
   std::mutex mutex_{};
 
   uint64_t next_engine_order_id_{1};

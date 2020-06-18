@@ -3,7 +3,7 @@
 #ifndef FT_SRC_STRATEGY_ORDER_MANAGER_H_
 #define FT_SRC_STRATEGY_ORDER_MANAGER_H_
 
-#include <map>
+#include <unordered_map>
 
 #include "core/protocol.h"
 #include "utils/misc.h"
@@ -32,7 +32,7 @@ class OrderManager {
   }
 
  private:
-  std::map<uint64_t, OrderInfo> order_map_;
+  std::unordered_map<uint64_t, OrderInfo> order_map_;
 };
 
 }  // namespace ft

@@ -63,8 +63,8 @@ class EtfMonitor : public Strategy {
 
  private:
   const ETF* etf_;
-  const std::map<uint32_t, ComponentStock>* components_;
-  std::map<uint32_t, Snapshot> snapshots_;
+  const std::unordered_map<uint32_t, ComponentStock>* components_;
+  std::unordered_map<uint32_t, Snapshot> snapshots_;
   const Contract* etf_contract_;
 };
 

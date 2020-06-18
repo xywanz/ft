@@ -14,8 +14,7 @@ namespace ft {
 class FundManager : public RiskRuleInterface {
  public:
   bool init(const Config& config, Account* account, Portfolio* portfolio,
-            std::map<uint64_t, Order>* order_map,
-            const MdSnapshot* md_snapshot) override;
+            OrderMap* order_map, const MdSnapshot* md_snapshot) override;
 
   int check_order_req(const Order* order) override;
 

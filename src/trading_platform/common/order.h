@@ -40,19 +40,6 @@ struct Order {
   std::string strategy_id;
 };
 
-inline const std::string& to_string(OrderStatus s) {
-  static const std::map<OrderStatus, std::string> s_str = {
-      {OrderStatus::SUBMITTING, "Submitting"},
-      {OrderStatus::REJECTED, "Rejected"},
-      {OrderStatus::NO_TRADED, "No traded"},
-      {OrderStatus::PART_TRADED, "Part traded"},
-      {OrderStatus::ALL_TRADED, "All traded"},
-      {OrderStatus::CANCELED, "Canceled"},
-      {OrderStatus::CANCEL_REJECTED, "Cancel rejected"}};
-
-  return s_str.find(s)->second;
-}
-
 }  // namespace ft
 
 #endif  // FT_SRC_COMMON_ORDER_H_

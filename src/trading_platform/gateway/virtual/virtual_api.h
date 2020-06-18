@@ -6,8 +6,8 @@
 #include <atomic>
 #include <condition_variable>
 #include <list>
-#include <map>
 #include <mutex>
+#include <unordered_map>
 
 #include "core/constants.h"
 
@@ -59,9 +59,9 @@ class VirtualApi {
   VirtualGateway* gateway_;
   std::mutex mutex_;
   std::condition_variable cv_;
-  std::map<uint32_t, LatestQuote> lastest_quotes_;
+  std::unordered_map<uint32_t, LatestQuote> lastest_quotes_;
   std::list<VirtualOrderReq> pendings_;
-  std::map<uint64_t, std::list<VirtualOrderReq>> limit_orders_;
+  std::unordered_map<uint64_t, std::list<VirtualOrderReq>> limit_orders_;
 };
 
 }  // namespace ft

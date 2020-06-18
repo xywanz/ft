@@ -7,8 +7,7 @@
 namespace ft {
 
 bool ArbitrageManager::init(const Config& config, Account* account,
-                            Portfolio* portfolio,
-                            std::map<uint64_t, Order>* order_map,
+                            Portfolio* portfolio, OrderMap* order_map,
                             const MdSnapshot* md_snapshot) {
   if (config.arg0.empty() || config.arg1.empty()) return false;
 

@@ -11,6 +11,7 @@
 #include "common/md_snapshot.h"
 #include "common/order.h"
 #include "common/portfolio.h"
+#include "common/types.h"
 #include "core/account.h"
 #include "core/config.h"
 #include "interface/trading_engine_interface.h"
@@ -23,8 +24,7 @@ class RiskManager {
   RiskManager();
 
   bool init(const Config& config, Account* account, Portfolio* portfolio,
-            std::map<uint64_t, Order>* order_map,
-            const MdSnapshot* md_snapshot);
+            OrderMap* order_map, const MdSnapshot* md_snapshot);
 
   void add_rule(std::shared_ptr<RiskRuleInterface> rule);
 

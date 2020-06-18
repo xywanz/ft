@@ -84,7 +84,6 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   std::atomic<bool> is_logon_ = false;
 
   std::vector<std::string> sub_list_;
-  std::map<std::string, const Contract *> symbol2contract_;
 };
 
 }  // namespace ft

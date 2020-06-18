@@ -6,9 +6,9 @@
 #include <fmt/format.h>
 
 #include <fstream>
-#include <map>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -138,7 +138,7 @@ class ContractTable {
 
  private:
   inline static std::vector<Contract> contracts;
-  inline static std::map<std::string, Contract*> ticker2contract;
+  inline static std::unordered_map<std::string, Contract*> ticker2contract;
 };
 
 }  // namespace ft

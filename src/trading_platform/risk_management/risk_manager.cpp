@@ -14,8 +14,7 @@ namespace ft {
 RiskManager::RiskManager() {}
 
 bool RiskManager::init(const Config& config, Account* account,
-                       Portfolio* portfolio,
-                       std::map<uint64_t, Order>* order_map,
+                       Portfolio* portfolio, OrderMap* order_map,
                        const MdSnapshot* md_snapshot) {
   add_rule(std::make_shared<FundManager>());
   add_rule(std::make_shared<PositionManager>());

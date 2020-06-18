@@ -3,9 +3,9 @@
 #ifndef FT_SRC_COMMON_PORTFOLIO_H_
 #define FT_SRC_COMMON_PORTFOLIO_H_
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "core/position.h"
 #include "core/protocol.h"
@@ -66,7 +66,7 @@ class Portfolio {
 
  private:
   RedisSession redis_;
-  std::map<uint32_t, Position> pos_map_;
+  std::unordered_map<uint32_t, Position> pos_map_;
   double realized_pnl_ = 0;
   ProtocolQueryCenter proto_;
 };
