@@ -140,46 +140,34 @@ static inline const std::string __empty_str = "";
  * 交易方向转为string
  */
 inline const std::string& direction_str(uint32_t d) {
-  static const std::map<uint32_t, std::string> d_str = {
-      {Direction::BUY, "Buy"},
-      {Direction::SELL, "Sell"},
-      {Direction::PURCHASE, "Purchase"},
-      {Direction::REDEEM, "Redeem"},
-  };
+  static const std::string d_str[] = {"Unknown", "Buy",      "Sell",
+                                      "Unknown", "Purchase", "Redeem"};
 
-  auto iter = d_str.find(d);
-  if (iter == d_str.end()) return internal::__empty_str;
-  return iter->second;
+  if (d > Direction::REDEEM) return internal::__empty_str;
+  return d_str[d];
 }
 
 /*
  * 开平类型转为string
  */
 inline const std::string& offset_str(uint32_t off) {
-  static const std::map<uint32_t, std::string> off_str = {
-      {Offset::OPEN, "Open"},
-      {Offset::CLOSE, "Close"},
-      {Offset::CLOSE_TODAY, "CloseToday"},
-      {Offset::CLOSE_YESTERDAY, "CloseYesterday"}};
+  static const std::string off_str[] = {
+      "Unknown", "Open",    "Close",   "Unknown",       "CloseToday",
+      "Unknown", "Unknown", "Unknown", "CloseYesterday"};
 
-  auto iter = off_str.find(off);
-  if (iter == off_str.end()) return internal::__empty_str;
-  return iter->second;
+  if (off > Offset::CLOSE_YESTERDAY) return internal::__empty_str;
+  return off_str[off];
 }
 
 /*
  * 订单价格类型转string
  */
 inline const std::string& ordertype_str(uint32_t t) {
-  static const std::map<uint32_t, std::string> t_str = {
-      {OrderType::LIMIT, "Limit"}, {OrderType::MARKET, "Market"},
-      {OrderType::BEST, "Best"},   {OrderType::FAK, "FAK"},
-      {OrderType::FOK, "FOK"},
-  };
+  static const std::string t_str[] = {"Unknown", "Market", "Limit",
+                                      "Best",    "FAK",    "FOK"};
 
-  auto iter = t_str.find(t);
-  if (iter == t_str.end()) return internal::__empty_str;
-  return iter->second;
+  if (t > OrderType::FOK) return internal::__empty_str;
+  return t_str[t];
 }
 
 /*

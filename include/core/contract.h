@@ -3,14 +3,22 @@
 #ifndef FT_INCLUDE_CORE_CONTRACT_H_
 #define FT_INCLUDE_CORE_CONTRACT_H_
 
-#include <map>
 #include <string>
 
 namespace ft {
 
-enum class ProductType { FUTURES = 0, OPTIONS, STOCK, FUND };
+enum class ProductType {
+  FUTURES = 0,
+  OPTIONS,
+  STOCK,
+  FUND,
+  UNKNOWN,
+};
 
-enum SpecTickerIndex : uint32_t { NONE_TICKER = 0, ALL_TICKERS = UINT32_MAX };
+enum SpecTickerIndex : uint32_t {
+  NONE_TICKER = 0,
+  ALL_TICKERS = UINT32_MAX,
+};
 
 struct Contract {
   std::string ticker;
@@ -34,24 +42,22 @@ struct Contract {
   uint32_t index;  // local index
 };
 
-inline const std::string& to_string(ProductType product) {
-  static const std::map<ProductType, std::string> product_str = {
-      {ProductType::FUTURES, "Futures"},
-      {ProductType::OPTIONS, "Options"},
-      {ProductType::STOCK, "Stock"},
-      {ProductType::FUND, "Fund"}};
+inline std::string to_string(ProductType product) {
+  if (product == ProductType::FUTURES) return "Futures";
+  if (product == ProductType::OPTIONS) return "Options";
+  if (product == ProductType::STOCK) return "Stock";
+  if (product == ProductType::FUND) return "Fund";
 
-  return product_str.find(product)->second;
+  return "Unknown";
 }
 
 inline ProductType string2product(const std::string& product) {
-  static const std::map<std::string, ProductType> product_map = {
-      {"Futures", ProductType::FUTURES},
-      {"Options", ProductType::OPTIONS},
-      {"Stock", ProductType::STOCK},
-      {"Fund", ProductType::FUND}};
+  if (product == "Futures") return ProductType::FUTURES;
+  if (product == "Options") return ProductType::OPTIONS;
+  if (product == "Stock") return ProductType::STOCK;
+  if (product == "Fund") return ProductType::FUND;
 
-  return product_map.find(product)->second;
+  return ProductType::UNKNOWN;
 }
 
 }  // namespace ft
