@@ -56,7 +56,7 @@ int LFQueue_pop(LFQueue *queue, void *buf, uint64_t *size, uint64_t *seq)
                 if (header->pause)
                         return -3;
                 id = LFRing_pop(queue->node_ring, &pop_seq);
-        } while (id < 0);
+        } while (id == LFRING_INVALID_ID);
 
         n = (LFNode *)(queue->nodes + header->node_total_size * id);
         memcpy(buf, n->data, n->size);
@@ -123,7 +123,7 @@ int LFQueue_get_pop_ptr(LFQueue *queue,
                 if (header->pause)
                         return -3;
                 id = LFRing_pop(queue->node_ring, &pop_seq);
-        } while (id < 0);
+        } while (id == LFRING_INVALID_ID);
 
         n = (LFNode *)(queue->nodes + header->node_total_size * id);
         
