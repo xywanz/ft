@@ -20,6 +20,8 @@
 #include "interface/gateway.h"
 #include "interface/trading_engine_interface.h"
 #include "ipc/redis.h"
+#include "ipc/redis_md_helper.h"
+#include "ipc/redis_trader_cmd_helper.h"
 #include "risk_management/risk_manager.h"
 
 namespace ft {
@@ -75,17 +77,16 @@ class TradingEngine : public TradingEngineInterface {
  private:
   std::unique_ptr<Gateway> gateway_{nullptr};
 
-  ProtocolQueryCenter proto_{};
-  Account account_{};
-  Portfolio portfolio_{"127.0.0.1", 6379};
-  OrderMap order_map_{};
+  Account account_;
+  Portfolio portfolio_;
+  OrderMap order_map_;
   std::unique_ptr<RiskManager> risk_mgr_{nullptr};
-  std::mutex mutex_{};
+  std::mutex mutex_;
 
   uint64_t next_engine_order_id_{1};
 
-  RedisSession tick_redis_{};
-  RedisSession order_redis_{};
+  RedisMdPusher md_pusher_;
+  RedisTraderCmdPuller cmd_puller_;
 
   MdSnapshot md_snapshot_;
 

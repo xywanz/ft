@@ -92,39 +92,6 @@ struct OrderResponse {
   double this_traded_price;
 } __attribute__((packed));
 
-class ProtocolQueryCenter {
- public:
-  void set_account(uint64_t account_id) {
-    account_id_ = account_id;
-    account_abbreviation_ = std::to_string(account_id).substr(0, 4);
-    trader_cmd_topic_ = fmt::format("trader_cmd-{}", account_abbreviation_);
-    realized_pnl_key_ = fmt::format("rpnl-{}", account_abbreviation_);
-    float_pnl_key_ = fmt::format("fpnl-{}", account_abbreviation_);
-    pos_key_prefix_ = fmt::format("pos-{}-", account_abbreviation_);
-  }
-
-  const std::string& trader_cmd_topic() const { return trader_cmd_topic_; }
-  const std::string& rpnl_key() const { return realized_pnl_key_; }
-  const std::string& fpnl_key() const { return float_pnl_key_; }
-  const std::string& pos_key_prefix() const { return pos_key_prefix_; }
-
-  std::string pos_key(const std::string& ticker) const {
-    return fmt::format("{}{}", pos_key_prefix_, ticker);
-  }
-
-  std::string quote_key(const std::string& ticker) const {
-    return fmt::format("quote-{}", ticker);
-  }
-
- private:
-  uint64_t account_id_;
-  std::string account_abbreviation_;
-  std::string trader_cmd_topic_;
-  std::string realized_pnl_key_;
-  std::string float_pnl_key_;
-  std::string pos_key_prefix_;
-};
-
 }  // namespace ft
 
 #endif  // FT_INCLUDE_CORE_PROTOCOL_H_

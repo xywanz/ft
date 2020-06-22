@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "common/order_sender.h"
-#include "common/position_helper.h"
 #include "core/constants.h"
 #include "core/contract.h"
 #include "core/contract_table.h"
@@ -16,6 +15,8 @@
 #include "core/protocol.h"
 #include "core/tick_data.h"
 #include "ipc/redis.h"
+#include "ipc/redis_md_helper.h"
+#include "ipc/redis_position_helper.h"
 
 namespace ft {
 
@@ -43,9 +44,8 @@ class Strategy {
   }
 
   void set_account_id(uint64_t account_id) {
-    proto_.set_account(account_id);
     sender_.set_account(account_id);
-    pos_helper_.set_account(account_id);
+    pos_getter_.set_account(account_id);
   }
 
  protected:
@@ -84,12 +84,10 @@ class Strategy {
   void cancel_all() { sender_.cancel_all(); }
 
   Position get_position(const std::string& ticker) const {
-    return pos_helper_.get_position(ticker);
+    Position pos{};
+    pos_getter_.get(ticker, &pos);
+    return pos;
   }
-
-  double get_realized_pnl() const { return pos_helper_.get_realized_pnl(); }
-
-  double get_float_pnl() const { return pos_helper_.get_float_pnl(); }
 
  private:
   void send_order(const std::string& ticker, int volume, uint32_t direction,
@@ -102,9 +100,8 @@ class Strategy {
  private:
   StrategyIdType strategy_id_;
   OrderSender sender_;
-  RedisSession redis_;
-  ProtocolQueryCenter proto_;
-  PositionHelper pos_helper_;
+  RedisPositionGetter pos_getter_;
+  RedisTERspPuller puller_;
 };
 
 #define EXPORT_STRATEGY(type) \

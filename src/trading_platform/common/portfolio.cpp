@@ -11,22 +11,25 @@
 
 namespace ft {
 
-Portfolio::Portfolio(const std::string& ip, int port) : redis_(ip, port) {}
+Portfolio::Portfolio(bool sync_to_redis) {
+  if (sync_to_redis) redis_ = std::make_unique<RedisPositionSetter>();
+}
 
-void Portfolio::init(uint64_t account) {
-  proto_.set_account(account);
-  auto reply = redis_.keys(fmt::format("{}*", proto_.pos_key_prefix()));
-  for (size_t i = 0; i < reply->elements; ++i)
-    redis_.del(reply->element[i]->str);
+void Portfolio::set_account(uint64_t account) {
+  if (redis_) {
+    redis_->set_account(account);
+    redis_->clear();
+  }
 }
 
 void Portfolio::set_position(const Position& pos) {
   pos_map_.emplace(pos.ticker_index, pos);
 
-  const auto* contract = ContractTable::get_by_index(pos.ticker_index);
-  assert(contract);
-  auto key = proto_.pos_key(contract->ticker);
-  redis_.set(key, &pos, sizeof(Position));
+  if (redis_) {
+    auto contract = ContractTable::get_by_index(pos.ticker_index);
+    assert(contract);
+    redis_->set(contract->ticker, pos);
+  }
 }
 
 void Portfolio::update_pending(uint32_t ticker_index, uint32_t direction,
@@ -162,14 +165,8 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
   }
   assert(contract->size > 0);
 
-  if (is_close) {  // 如果是平仓则计算已实现的盈亏
-    if (direction == Direction::BUY)
-      realized_pnl_ =
-          contract->size * traded * (traded_price - pos_detail.cost_price);
-    else
-      realized_pnl_ =
-          contract->size * traded * (pos_detail.cost_price - traded_price);
-  } else if (pos_detail.holdings > 0) {  // 如果是开仓则计算当前持仓的成本价
+  // 如果是开仓则计算当前持仓的成本价
+  if (is_offset_open(offset) && pos_detail.holdings > 0) {
     double cost = contract->size * (pos_detail.holdings - traded) *
                       pos_detail.cost_price +
                   contract->size * traded * traded_price;
@@ -177,12 +174,10 @@ void Portfolio::update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
   }
 
   if (pos_detail.holdings == 0) {
-    pos_detail.float_pnl = 0;
     pos_detail.cost_price = 0;
   }
 
-  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
-  redis_.set("realized_pnl", &realized_pnl_, sizeof(realized_pnl_));
+  if (redis_) redis_->set(contract->ticker, pos);
 }
 
 void Portfolio::update_purchase_or_redeem(uint32_t ticker_index,
@@ -207,12 +202,14 @@ void Portfolio::update_purchase_or_redeem(uint32_t ticker_index,
     }
   }
 
-  const auto* contract = ContractTable::get_by_index(ticker_index);
-  if (!contract) {
-    spdlog::error("[Position::update_purchase_or_redeem] Contract not found");
-    return;
+  if (redis_) {
+    const auto* contract = ContractTable::get_by_index(ticker_index);
+    if (!contract) {
+      spdlog::error("[Position::update_purchase_or_redeem] Contract not found");
+      return;
+    }
+    redis_->set(contract->ticker, pos);
   }
-  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void Portfolio::update_component_stock(uint32_t ticker_index, int traded,
@@ -229,12 +226,14 @@ void Portfolio::update_component_stock(uint32_t ticker_index, int traded,
     pos_detail.yd_holdings -= std::max(traded - td_pos, 0);
   }
 
-  const auto* contract = ContractTable::get_by_index(ticker_index);
-  if (!contract) {
-    spdlog::error("[Position::update_purchase_or_redeem] Contract not found");
-    return;
+  if (redis_) {
+    const auto* contract = ContractTable::get_by_index(ticker_index);
+    if (!contract) {
+      spdlog::error("[Position::update_purchase_or_redeem] Contract not found");
+      return;
+    }
+    redis_->set(contract->ticker, pos);
   }
-  redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
 }
 
 void Portfolio::update_float_pnl(uint32_t ticker_index, double last_price) {
@@ -254,8 +253,11 @@ void Portfolio::update_float_pnl(uint32_t ticker_index, double last_price) {
       sp.float_pnl =
           sp.holdings * contract->size * (sp.cost_price - last_price);
 
-    if (lp.holdings > 0 || sp.holdings > 0)
-      redis_.set(proto_.pos_key(contract->ticker), pos, sizeof(*pos));
+    if (redis_) {
+      if (lp.holdings > 0 || sp.holdings > 0) {
+        redis_->set(contract->ticker, *pos);
+      }
+    }
   }
 }
 

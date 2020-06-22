@@ -9,15 +9,15 @@
 
 #include "core/position.h"
 #include "core/protocol.h"
-#include "ipc/redis.h"
+#include "ipc/redis_position_helper.h"
 
 namespace ft {
 
 class Portfolio {
  public:
-  Portfolio(const std::string& ip, int port);
+  explicit Portfolio(bool sync_to_redis = false);
 
-  void init(uint64_t account);
+  void set_account(uint64_t account);
 
   void set_position(const Position& pos);
 
@@ -65,10 +65,8 @@ class Portfolio {
   }
 
  private:
-  RedisSession redis_;
   std::unordered_map<uint32_t, Position> pos_map_;
-  double realized_pnl_ = 0;
-  ProtocolQueryCenter proto_;
+  std::unique_ptr<RedisPositionSetter> redis_;
 };
 
 }  // namespace ft

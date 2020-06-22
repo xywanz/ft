@@ -6,10 +6,10 @@ namespace ft {
 
 void Strategy::run() {
   on_init();
-  redis_.subscribe({strategy_id_});
+  puller_.subscribe_order_rsp(strategy_id_);
 
   for (;;) {
-    auto reply = redis_.get_sub_reply();
+    auto reply = puller_.pull();
     if (reply) {
       if (strcmp(reply->element[1]->str, strategy_id_) == 0) {
         auto rsp =
@@ -24,10 +24,7 @@ void Strategy::run() {
 }
 
 void Strategy::subscribe(const std::vector<std::string>& sub_list) {
-  std::vector<std::string> topics;
-  for (const auto& ticker : sub_list)
-    topics.emplace_back(proto_.quote_key(ticker));
-  redis_.subscribe(topics);
+  puller_.subscribe_md(sub_list);
 }
 
 }  // namespace ft

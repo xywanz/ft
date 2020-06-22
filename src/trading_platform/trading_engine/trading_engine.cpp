@@ -28,35 +28,28 @@ bool TradingEngine::login(const Config& config) {
     spdlog::error("[TradingEngine::login] Failed to login");
     return false;
   }
-
   spdlog::info("[TradingEngine::login] Success. Login as {}",
                config.investor_id);
 
-  spdlog::info("[TradingEngine::login] Querying account");
   if (!gateway_->query_account()) {
     spdlog::error("[TradingEngine::login] Failed to query account");
     return false;
   }
-  spdlog::info("[TradingEngine::login] Querying account done");
 
   // query all positions
-  spdlog::info("[TradingEngine::login] Querying positions");
-  portfolio_.init(account_.account_id);
+  portfolio_.set_account(account_.account_id);
   if (!gateway_->query_positions()) {
     spdlog::error("[TradingEngine::login] Failed to query positions");
     return false;
   }
-  spdlog::info("[TradingEngine::login] Querying positions done");
 
-  spdlog::info("[TradingEngine::login] Querying trades");
+  // query trades to update position
   if (!gateway_->query_trades()) {
     spdlog::error("[TradingEngine::login] Failed to query trades");
     return false;
   }
-  spdlog::info("[TradingEngine::login] Querying trades done");
 
-  proto_.set_account(account_.account_id);
-
+  // init risk manager
   if (!risk_mgr_->init(config, &account_, &portfolio_, &order_map_,
                        &md_snapshot_)) {
     spdlog::error("[TradingEngine::login] 风险管理对象初始化失败");
@@ -80,13 +73,12 @@ bool TradingEngine::login(const Config& config) {
 }
 
 void TradingEngine::run() {
+  cmd_puller_.set_account(account_.account_id);
   spdlog::info("[TradingEngine::run] Start to recv order req from topic: {}",
-               proto_.trader_cmd_topic());
-
-  order_redis_.subscribe({proto_.trader_cmd_topic()});
+               cmd_puller_.get_topic());
 
   for (;;) {
-    auto reply = order_redis_.get_sub_reply();
+    auto reply = cmd_puller_.pull();
     if (!reply) continue;
 
     auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
@@ -236,9 +228,7 @@ void TradingEngine::on_tick(TickData* tick) {
 
   auto contract = ContractTable::get_by_index(tick->ticker_index);
   assert(contract);
-
-  tick_redis_.publish(proto_.quote_key(contract->ticker), tick,
-                      sizeof(TickData));
+  md_pusher_.push(contract->ticker, *tick);
 
   md_snapshot_.update_snapshot(*tick);
   spdlog::trace("[TradingEngine::process_tick] {}  ask:{:.3f}  bid:{:.3f}",

@@ -8,7 +8,7 @@
 #include "core/constants.h"
 #include "core/contract_table.h"
 #include "core/protocol.h"
-#include "ipc/redis.h"
+#include "ipc/redis_trader_cmd_helper.h"
 
 namespace ft {
 
@@ -18,7 +18,7 @@ class OrderSender {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
-  void set_account(uint64_t account_id) { proto_.set_account(account_id); }
+  void set_account(uint64_t account_id) { cmd_pusher_.set_account(account_id); }
 
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
@@ -84,7 +84,7 @@ class OrderSender {
     cmd.order_req.price = price;
     cmd.order_req.without_check = false;
 
-    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
+    cmd_pusher_.push(cmd);
   }
 
   void send_order(const std::string& ticker, int volume, uint32_t direction,
@@ -104,7 +104,7 @@ class OrderSender {
     cmd.type = CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
 
-    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
+    cmd_pusher_.push(cmd);
   }
 
   void cancel_for_ticker(const std::string& ticker) {
@@ -115,7 +115,7 @@ class OrderSender {
     cmd.type = CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_index = contract->index;
 
-    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
+    cmd_pusher_.push(cmd);
   }
 
   void cancel_all() {
@@ -123,13 +123,12 @@ class OrderSender {
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CANCEL_ALL;
 
-    cmd_redis_.publish(proto_.trader_cmd_topic(), &cmd, sizeof(cmd));
+    cmd_pusher_.push(cmd);
   }
 
  private:
   StrategyIdType strategy_id_;
-  RedisSession cmd_redis_;
-  ProtocolQueryCenter proto_;
+  RedisTraderCmdPusher cmd_pusher_;
 };
 
 }  // namespace ft

@@ -2,7 +2,7 @@
 
 #include <getopt.hpp>
 
-#include "common/position_helper.h"
+#include "ipc/redis_position_helper.h"
 
 int main() {
   std::string ticker = getarg("", "--ticker");
@@ -13,10 +13,11 @@ int main() {
     exit(-1);
   }
 
-  ft::PositionHelper pos_helper;
+  ft::RedisPositionGetter pos_helper;
   pos_helper.set_account(account);
 
-  auto pos = pos_helper.get_position(ticker);
+  ft::Position pos{};
+  pos_helper.get(ticker, &pos);
   auto& lp = pos.long_pos;
   auto& sp = pos.short_pos;
   printf("Position: %s\n", ticker.c_str());

@@ -23,9 +23,9 @@ class GridStrategy : public ft::Strategy {
 
     spdlog::info(
         "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
-        "short: {}, trades: {}, realized_pnl: {}, float_pnl: {}",
+        "short: {}, trades: {}",
         tick.last_price, last_grid_price_, lp.holdings, sp.holdings,
-        trade_counts_, get_realized_pnl(), get_float_pnl());
+        trade_counts_);
 
     if (tick.last_price - last_grid_price_ > grid_height_ - 1e-6) {
       sell_open(ticker_, trade_volume_each_, tick.bid[0]);
