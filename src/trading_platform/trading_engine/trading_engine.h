@@ -19,9 +19,7 @@
 #include "core/error_code.h"
 #include "interface/gateway.h"
 #include "interface/trading_engine_interface.h"
-#include "ipc/redis.h"
 #include "ipc/redis_md_helper.h"
-#include "ipc/redis_trader_cmd_helper.h"
 #include "risk_management/risk_manager.h"
 
 namespace ft {
@@ -34,11 +32,19 @@ class TradingEngine : public TradingEngineInterface {
 
   bool login(const Config& config);
 
-  void run();
+  void process_cmd();
 
   void close();
 
+  static uint64_t version() { return 202006222311; }
+
  private:
+  void process_cmd_from_redis();
+
+  void process_cmd_from_queue();
+
+  void execute_cmd(const TraderCommand& cmd);
+
   bool send_order(const TraderCommand& cmd);
 
   void cancel_order(uint64_t order_id);
@@ -77,20 +83,18 @@ class TradingEngine : public TradingEngineInterface {
  private:
   std::unique_ptr<Gateway> gateway_{nullptr};
 
+  volatile bool is_logon_{false};
+  uint64_t next_engine_order_id_{1};
+
   Account account_;
   Portfolio portfolio_;
   OrderMap order_map_;
   std::unique_ptr<RiskManager> risk_mgr_{nullptr};
+  RedisMdPusher md_pusher_;
+  MdSnapshot md_snapshot_;
   std::mutex mutex_;
 
-  uint64_t next_engine_order_id_{1};
-
-  RedisMdPusher md_pusher_;
-  RedisTraderCmdPuller cmd_puller_;
-
-  MdSnapshot md_snapshot_;
-
-  volatile bool is_logon_{false};
+  int cmd_queue_key_ = 0;
 };
 
 }  // namespace ft

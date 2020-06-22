@@ -26,6 +26,8 @@ class Config {
   uint64_t throttle_rate_order_limit = 0;
   uint64_t throttle_rate_volume_limit = 0;
 
+  int key_of_cmd_queue = 0;  // <= 0 means not to use order queue
+
   std::string arg0{""};
   std::string arg1{""};
   std::string arg2{""};

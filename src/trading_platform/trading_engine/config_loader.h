@@ -44,6 +44,8 @@ inline void load_config(const std::string& file, ft::Config* config) {
   config->throttle_rate_volume_limit =
       node["throttle_rate_volume_limit"].as<uint64_t>(0);
 
+  config->key_of_cmd_queue = node["key_of_cmd_queue"].as<int>(0);
+
   config->arg0 = node["arg0"].as<std::string>("");
   config->arg1 = node["arg1"].as<std::string>("");
   config->arg2 = node["arg2"].as<std::string>("");

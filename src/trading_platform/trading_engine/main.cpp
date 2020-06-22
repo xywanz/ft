@@ -46,5 +46,5 @@ int main() {
 
   if (!engine->login(config)) exit(-1);
 
-  engine->run();
+  engine->process_cmd();
 }

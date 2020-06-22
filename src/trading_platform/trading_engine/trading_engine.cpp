@@ -7,6 +7,8 @@
 #include "core/contract_table.h"
 #include "core/error_code.h"
 #include "core/protocol.h"
+#include "ipc/lockfree-queue/queue.h"
+#include "ipc/redis_trader_cmd_helper.h"
 #include "utils/misc.h"
 
 namespace ft {
@@ -16,7 +18,13 @@ TradingEngine::TradingEngine() { risk_mgr_ = std::make_unique<RiskManager>(); }
 TradingEngine::~TradingEngine() { close(); }
 
 bool TradingEngine::login(const Config& config) {
+  printf("***************TradingEngine****************\n");
+  printf("* version: %lu\n", version());
+  printf("* compiling time: %s %s\n", __TIME__, __DATE__);
+  printf("********************************************\n");
   config.show();
+
+  cmd_queue_key_ = config.key_of_cmd_queue;
 
   gateway_.reset(create_gateway(config.api));
   if (!gateway_) {
@@ -72,47 +80,103 @@ bool TradingEngine::login(const Config& config) {
   return true;
 }
 
-void TradingEngine::run() {
-  cmd_puller_.set_account(account_.account_id);
-  spdlog::info("[TradingEngine::run] Start to recv order req from topic: {}",
-               cmd_puller_.get_topic());
+void TradingEngine::process_cmd() {
+  if (cmd_queue_key_ > 0)
+    process_cmd_from_queue();
+  else
+    process_cmd_from_redis();
+}
+
+void TradingEngine::process_cmd_from_redis() {
+  RedisTraderCmdPuller cmd_puller;
+  cmd_puller.set_account(account_.account_id);
+  spdlog::info("[TradingEngine::run] Start to recv cmd from topic: {}",
+               cmd_puller.get_topic());
 
   for (;;) {
-    auto reply = cmd_puller_.pull();
+    auto reply = cmd_puller.pull();
     if (!reply) continue;
 
     auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
-    if (cmd->magic != TRADER_CMD_MAGIC) {
-      spdlog::error("[TradingEngine::run] Recv unknown cmd: error magic num");
-      continue;
+    execute_cmd(*cmd);
+  }
+}
+
+void TradingEngine::process_cmd_from_queue() {
+  // 创建Queue的时候存在隐患，如果该key之前被其他应用创建且没有释放，
+  // TradingEngine还是会依附在这个key的共享内存上，大概率导致内存访问越界。
+  // 如果都是同版本的TradingEngine创建的则没有问题，可以重复使用。
+  // 释放队列暂时需要手动释放，请使用ipcrm。
+  // TODO(kevin): 在LFQueue_create和LFQueue_open的时候加上检验信息。 Done!
+
+  // user_id用于验证是否是trading engine创建的queue
+  uint32_t te_user_id = static_cast<uint32_t>(version());
+  LFQueue* cmd_queue;
+  if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
+    int res = LFQueue_create(cmd_queue_key_, te_user_id, sizeof(TraderCommand),
+                             4096 * 4, false);
+    if (res != 0) {
+      spdlog::info("TradingEngine::run_with_queue] Failed to create cmd queue");
+      abort();
     }
 
-    switch (cmd->type) {
-      case NEW_ORDER:
-        spdlog::debug("new order");
-        send_order(*cmd);
-        break;
-      case CANCEL_ORDER:
-        spdlog::debug("cancel order");
-        cancel_order(cmd->cancel_req.order_id);
-        break;
-      case CANCEL_TICKER:
-        spdlog::debug("cancel all for ticker");
-        cancel_for_ticker(cmd->cancel_ticker_req.ticker_index);
-        break;
-      case CANCEL_ALL:
-        spdlog::debug("cancel all");
-        cancel_all();
-        break;
-      default:
-        spdlog::error("[StrategyEngine::run] Unknown cmd");
-        break;
+    if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
+      spdlog::info("TradingEngine::run_with_queue] Failed to open cmd queue");
+      abort();
     }
+  }
+
+  LFQueue_reset(cmd_queue);
+  spdlog::info("[TradingEngine::run] Start to recv cmd from queue: {:#x}",
+               cmd_queue_key_);
+
+  TraderCommand cmd{};
+  int res;
+  for (;;) {
+    // 这里没有使用零拷贝的方式，性能影响甚微
+    res = LFQueue_pop(cmd_queue, &cmd, nullptr, nullptr);
+    if (res != 0) continue;
+
+    execute_cmd(cmd);
   }
 }
 
 void TradingEngine::close() {
   if (gateway_) gateway_->logout();
+}
+
+void TradingEngine::execute_cmd(const TraderCommand& cmd) {
+  if (cmd.magic != TRADER_CMD_MAGIC) {
+    spdlog::error("[TradingEngine::run] Recv unknown cmd: error magic num");
+    return;
+  }
+
+  switch (cmd.type) {
+    case NEW_ORDER: {
+      spdlog::debug("new order");
+      send_order(cmd);
+      break;
+    }
+    case CANCEL_ORDER: {
+      spdlog::debug("cancel order");
+      cancel_order(cmd.cancel_req.order_id);
+      break;
+    }
+    case CANCEL_TICKER: {
+      spdlog::debug("cancel all for ticker");
+      cancel_for_ticker(cmd.cancel_ticker_req.ticker_index);
+      break;
+    }
+    case CANCEL_ALL: {
+      spdlog::debug("cancel all");
+      cancel_all();
+      break;
+    }
+    default: {
+      spdlog::error("[StrategyEngine::run] Unknown cmd");
+      break;
+    }
+  }
 }
 
 bool TradingEngine::send_order(const TraderCommand& cmd) {

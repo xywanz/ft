@@ -34,7 +34,7 @@ typedef struct
     uint64_t        node_count;
     uint64_t        node_total_size;
     bool            overwrite;
-    uint32_t        padding;
+    uint32_t        user_id;
 
     volatile bool   pause;
     int             key;
@@ -102,7 +102,8 @@ void LFQueue_confirm_pop(LFQueue *queue, uint32_t id);
     @param count 队列能容纳的最大数据条数，会向上扩展为2的幂
     @return 0表示创建成功，-1表示创建失败
  */
-int LFQueue_create(int key, uint64_t data_size, uint32_t count, bool overwrite);
+int LFQueue_create(int key, uint32_t user_id, uint64_t data_size,
+                   uint32_t count, bool overwrite);
 
 /*
     销毁队列，回收共享内存
@@ -119,12 +120,12 @@ void LFQueue_reset(LFQueue *queue);
 /*
     对于一块已创建并初始化成为队列的内存，调用该函数将队列注册到queue中
  */
-int LFQueue_init(LFQueue *queue, void *mem);
+int LFQueue_init(LFQueue *queue, void *mem, uint32_t user_id);
 
 /*
     分配一个LFQueue结构体并打开队列
  */
-LFQueue *LFQueue_open(int key);
+LFQueue *LFQueue_open(int key, uint32_t user_id);
 
 /*
     关闭一个队列并回收LFQueue

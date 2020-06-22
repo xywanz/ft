@@ -147,7 +147,8 @@ void LFQueue_confirm_pop(LFQueue *queue, uint32_t id)
         LFRing_push(queue->resc_ring, id);
 }
 
-int LFQueue_create(int key, uint64_t data_size, uint32_t count, bool overwrite)
+int LFQueue_create(int key, uint32_t user_id, uint64_t data_size,
+                   uint32_t count, bool overwrite)
 {
         int shmid;
         uint64_t queue_size = 0;
@@ -176,6 +177,7 @@ int LFQueue_create(int key, uint64_t data_size, uint32_t count, bool overwrite)
         header->node_data_size = data_size;
         header->node_total_size = node_size;
         header->overwrite = overwrite;
+        header->user_id = user_id;
         header->key = key;
 
         m += sizeof(LFHeader);
@@ -211,13 +213,15 @@ void LFQueue_reset(LFQueue *queue)
         memset(m, 0, node_size * count);
 }
 
-int LFQueue_init(LFQueue *queue, void *mem)
+int LFQueue_init(LFQueue *queue, void *mem, uint32_t user_id)
 {
         char *m = (char *)mem;
         uint64_t ring_total_size;
 
         queue->header = (LFHeader *)m;
         if (queue->header->magic != QUEUE_MAGIC)
+                return -1;
+        if (queue->header->user_id != user_id)
                 return -1;
         ring_total_size = sizeof(LFRing) +
                           queue->header->node_count * sizeof(LFRingNode);
@@ -242,7 +246,7 @@ int LFQueue_destroy(int key)
         return shmctl(shmid, IPC_RMID, NULL);
 }
 
-LFQueue *LFQueue_open(int key)
+LFQueue *LFQueue_open(int key, uint32_t user_id)
 {
         int shmid;
         char *m;
@@ -259,7 +263,7 @@ LFQueue *LFQueue_open(int key)
                 return NULL;
         }
 
-        if (LFQueue_init(queue, m) != 0) {
+        if (LFQueue_init(queue, m, user_id) != 0) {
                 shmdt(m);
                 free(queue);
                 return NULL;
