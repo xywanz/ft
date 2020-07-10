@@ -152,22 +152,22 @@ void TradingEngine::execute_cmd(const TraderCommand& cmd) {
   }
 
   switch (cmd.type) {
-    case NEW_ORDER: {
+    case CMD_NEW_ORDER: {
       spdlog::debug("new order");
       send_order(cmd);
       break;
     }
-    case CANCEL_ORDER: {
+    case CMD_CANCEL_ORDER: {
       spdlog::debug("cancel order");
       cancel_order(cmd.cancel_req.order_id);
       break;
     }
-    case CANCEL_TICKER: {
+    case CMD_CANCEL_TICKER: {
       spdlog::debug("cancel all for ticker");
       cancel_for_ticker(cmd.cancel_ticker_req.ticker_index);
       break;
     }
-    case CANCEL_ALL: {
+    case CMD_CANCEL_ALL: {
       spdlog::debug("cancel all");
       cancel_all();
       break;

@@ -37,10 +37,10 @@ struct OrderReq {
 inline const uint32_t TRADER_CMD_MAGIC = 0x1709394;
 
 enum TraderCmdType {
-  NEW_ORDER = 1,
-  CANCEL_ORDER,
-  CANCEL_TICKER,
-  CANCEL_ALL,
+  CMD_NEW_ORDER = 1,
+  CMD_CANCEL_ORDER,
+  CMD_CANCEL_TICKER,
+  CMD_CANCEL_ALL,
 };
 
 struct TraderOrderReq {

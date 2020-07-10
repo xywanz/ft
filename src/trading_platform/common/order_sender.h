@@ -73,7 +73,7 @@ class OrderSender {
                   uint32_t user_order_id) {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
-    cmd.type = NEW_ORDER;
+    cmd.type = CMD_NEW_ORDER;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.user_order_id = user_order_id;
     cmd.order_req.ticker_index = ticker_index;
@@ -101,7 +101,7 @@ class OrderSender {
   void cancel_order(uint64_t order_id) {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
-    cmd.type = CANCEL_ORDER;
+    cmd.type = CMD_CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
 
     cmd_pusher_.push(cmd);
@@ -112,7 +112,7 @@ class OrderSender {
     assert(contract);
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
-    cmd.type = CANCEL_TICKER;
+    cmd.type = CMD_CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_index = contract->index;
 
     cmd_pusher_.push(cmd);
@@ -121,7 +121,7 @@ class OrderSender {
   void cancel_all() {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
-    cmd.type = CANCEL_ALL;
+    cmd.type = CMD_CANCEL_ALL;
 
     cmd_pusher_.push(cmd);
   }

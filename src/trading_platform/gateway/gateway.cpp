@@ -5,7 +5,9 @@
 #include <functional>
 #include <map>
 
+#include "broker/broker.h"
 #include "gateway/ctp/ctp_gateway.h"
+#include "gateway/ocg_bss/broker/broker.h"
 #include "gateway/virtual/virtual_gateway.h"
 #include "gateway/xtp/xtp_gateway.h"
 
@@ -31,5 +33,6 @@ void destroy_api(Gateway* api) {
 REGISTER_GATEWAY("ctp", CtpGateway);
 REGISTER_GATEWAY("xtp", XtpGateway);
 REGISTER_GATEWAY("virtual", VirtualGateway);
+REGISTER_GATEWAY("ocg-bss", Broker);
 
 }  // namespace ft

@@ -22,6 +22,23 @@ struct Account {
   double frozen;        // 冻结金额
 };
 
+class FundAccount {
+ public:
+  bool reserve(double amount);
+  void release_reserved(double amount);
+
+  bool freeze(double amount);
+  void release_frozen(double amount);
+
+ private:
+  uint64_t account_id_;  // 账户ID，用于标识一个Account
+  double total_asset_;  // 总资产，包括现金资产+证券资产+冻结资产
+  double cash_;         // 现金，可用于购买证券资产的金额
+  double reserved_;     // 预留资金
+  double float_pnl_;     // 当前浮动盈亏
+  double realized_pnl_;  // 当日已实现盈亏
+};
+
 }  // namespace ft
 
 #endif  // FT_INCLUDE_CORE_ACCOUNT_H_
