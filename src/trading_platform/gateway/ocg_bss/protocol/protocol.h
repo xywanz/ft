@@ -90,6 +90,13 @@ enum BssSessionStatus {
   SESSION_STATUS_OTHER = 101
 };
 
+enum TimeInForce {
+  TIF_DAY = 0,
+  TIF_IOC = 3,
+  TIF_FOK = 4,
+  TIF_AT_CROSSING = 9,
+};
+
 template <std::size_t N>
 using AlphanumericFixedLength = char[N];
 
@@ -1077,6 +1084,6 @@ struct QuoteStatusReport {
 //  BrokerId broker_id;
 //};
 
-}  // namespace ft
+}  // namespace ft::bss
 
 #endif  // OCG_BSS_PROTOCOL_H_

@@ -31,7 +31,7 @@ class Broker : public Gateway {
 
   void logout();
 
-  uint32_t next_order_id(uint32_t ticker_index);
+  bool query_account() override;
 
   bool send_order(const OrderReq& order) override;
 
@@ -41,24 +41,6 @@ class Broker : public Gateway {
 
   bool mass_cancel();
 
- public:
-  void on_order_accepted(const bss::ExecutionReport& msg);
-
-  void on_order_rejected(const bss::ExecutionReport& msg);
-
-  void on_order_executed(const bss::ExecutionReport& msg);
-
-  void on_order_cancelled(const bss::ExecutionReport& msg);
-
-  void on_order_cancel_rejected(const bss::ExecutionReport& msg);
-
-  void on_order_amended(const bss::ExecutionReport& msg);
-
-  void on_order_amend_rejected(const bss::ExecutionReport& msg);
-
-  void on_order_expired(const bss::ExecutionReport& msg);
-
- public:
   void on_msg(const bss::LogonMessage& msg);
 
   void on_msg(const bss::LogoutMessage& msg);
@@ -90,14 +72,34 @@ class Broker : public Gateway {
 
   bool check_config() const;
 
+  void on_order_accepted(const bss::ExecutionReport& msg);
+
+  void on_order_rejected(const bss::ExecutionReport& msg);
+
+  void on_order_executed(const bss::ExecutionReport& msg);
+
+  void on_order_cancelled(const bss::ExecutionReport& msg);
+
+  void on_order_cancel_rejected(const bss::ExecutionReport& msg);
+
+  void on_order_amended(const bss::ExecutionReport& msg);
+
+  void on_order_amend_rejected(const bss::ExecutionReport& msg);
+
+  void on_order_expired(const bss::ExecutionReport& msg);
+
  private:
+  TradingEngineInterface* engine_;
   bss::SessionConfig sess_conf_;
   bool is_logon_{false};
   std::unique_ptr<bss::Session> session_;
-  bss::BrokerId m_oBrokerId;
-  uint32_t next_order_id_{1};
-  char date_[32]{};
+  bss::BrokerId broker_id_;
+  char date_[9]{};
 };
+
+namespace bss_detail {
+inline bss::Side diroff2side(uint32_t direction, uint32_t offset) { return 1; }
+}  // namespace bss_detail
 
 }  // namespace ft
 

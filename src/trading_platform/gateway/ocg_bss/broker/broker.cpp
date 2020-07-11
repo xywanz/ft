@@ -8,17 +8,17 @@
 #include "broker/cmd_processor.h"
 #include "broker/connection_manager.h"
 #include "broker/session.h"
+#include "core/contract.h"
 #include "core/contract_table.h"
 
 namespace ft {
 
 // YYYYMMDD-HH:MM:SS.sss
 static time_t convert_str_to_tm(const char *str_time) {
-  char year_str[5] = {'\0'};
-  char mon_str[4] = {'\0'};
-  char day_str[4] = {'\0'};
-  struct tm tt;
-  memset(&tt, 0, sizeof(tt));
+  char year_str[5];
+  char mon_str[4];
+  char day_str[4];
+  struct tm tt {};
 
   strncpy(year_str, str_time, 4);
   tt.tm_year = atoi(year_str) - 1900;
@@ -65,20 +65,15 @@ static bool verify_passwd(const std::string &passwd) {
 Broker::Broker() {
   //   time_t t = wqutil::getWallTime();
   time_t t = time(nullptr);
-  struct tm *_tm = localtime(&t);
-  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm->tm_mday + 1900,
-           _tm->tm_mon + 1, _tm->tm_mday);
-}
-
-uint32_t Broker::next_order_id(uint32_t ticker_index) {
-  next_order_id_ += 10000;
-  next_order_id_ -= next_order_id_ % 10000;
-  next_order_id_ += ticker_index;
-  return next_order_id_;
+  struct tm _tm;
+  localtime_r(&t, &_tm);
+  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm.tm_mday + 1900,
+           _tm.tm_mon + 1, _tm.tm_mday);
 }
 
 /* TODO: read config from a config file */
 bool Broker::login(TradingEngineInterface *engine, const Config &config) {
+  engine_ = engine;
   /* for test */
   {
     sess_conf_.comp_id = "CO99999902";
@@ -139,6 +134,18 @@ void Broker::logon(const std::string &passwd, const std::string &new_passwd) {
 
 void Broker::logout() { session_->disable(); }
 
+bool Broker::query_account() {
+  // test
+  {
+    Account acc{};
+    acc.account_id = 1234;
+    acc.total_asset = acc.cash = 10000000;
+    engine_->on_query_account(&acc);
+  }
+
+  return true;
+}
+
 bool Broker::send_order(const OrderReq &order) {
   if (!is_logon_) {
     printf("Broker::send_order: not logon\n");
@@ -146,6 +153,60 @@ bool Broker::send_order(const OrderReq &order) {
   }
 
   auto contract = order.contract;
+
+  bss::NewOrderRequest req{};
+  snprintf(req.client_order_id, sizeof(req.client_order_id), "%u",
+           static_cast<uint32_t>(order.engine_order_id));
+  strncpy(req.submitting_broker_id, broker_id_,
+          sizeof(req.submitting_broker_id));
+  strncpy(req.security_id, contract->ticker.c_str(), sizeof(req.security_id));
+  req.side = bss_detail::diroff2side(order.direction, order.offset);
+  switch (order.type) {
+    case ::ft::OrderType::hkex::MO_AT_CROSSING: {
+      req.tif = bss::TIF_AT_CROSSING;
+      req.order_type = bss::ORDER_TYPE_MARKET;
+      break;
+    }
+    case ::ft::OrderType::hkex::LO_AT_CROSSING: {
+      req.tif = bss::TIF_AT_CROSSING;
+      req.order_type = bss::ORDER_TYPE_LIMIT;
+      break;
+    }
+    case ::ft::OrderType::hkex::LO: {
+      req.tif = bss::TIF_DAY;
+      req.order_type = bss::ORDER_TYPE_LIMIT;
+      req.max_price_levels = 1;
+      break;
+    }
+    case ::ft::OrderType::hkex::ELO: {
+      req.tif = bss::TIF_DAY;
+      req.order_type = bss::ORDER_TYPE_LIMIT;
+      break;
+    }
+    case ::ft::OrderType::hkex::SLO: {
+      req.tif = bss::TIF_IOC;
+      req.order_type = bss::ORDER_TYPE_LIMIT;
+      break;
+    }
+    default: {
+      return false;
+    }
+  }
+  if (req.order_type == bss::ORDER_TYPE_LIMIT)
+    req.price = (order.price + 0.0005) * 1e3 * 1e5;
+
+  req.order_quantity = order.volume * 1e8;
+  req.security_id_source = 8;
+  snprintf(req.security_exchange, sizeof(req.security_exchange), "%s", "XHKG");
+  get_transaction_time(req.transaction_time);
+  // todo
+  req.position_effect = 0;
+  req.disclosure_instructions = 0;
+
+  if (!session_->send_business_msg(req)) {
+    printf("Broker::send_order: failed\n");
+    return false;
+  }
   return true;
 }
 
@@ -157,10 +218,10 @@ bool Broker::amend_order(uint64_t order_id, const OrderReq &order) {
 
 bool mass_cancel() { return true; }
 
-// TODO: 如果在登录成功后网络断线，密码更改成功通知没有收到，会导致本地登录密码
-//       没有被更新，使得下次登录因密码错误而失败
+// TODO(kevin):
+// 如果在登录成功后网络断线，密码更改成功通知没有收到，
+// 会导致本地登录密码没有被更新，使得下次登录因密码错误而失败
 void Broker::on_msg(const bss::LogonMessage &msg) {
-  next_order_id_ = msg.next_expected_message_sequence;
   is_logon_ = true;
   if (msg.session_status == bss::BssSessionStatus::SESSION_PASSWORD_CHANGE) {
     sess_conf_.password = sess_conf_.new_password;
@@ -242,13 +303,19 @@ void Broker::on_order_accepted(const bss::ExecutionReport &msg) {
       msg.client_order_id, msg.security_id, msg.order_quantity / 100000000,
       static_cast<double>(msg.price) / 1e8);
 
-  uint32_t client_order_id = atoi(msg.client_order_id);
+  OrderAcceptedRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.client_order_id);
+  rsp.order_id = std::stoul(msg.order_id);
+  engine_->on_order_accepted(&rsp);
 }
 
 void Broker::on_order_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_rejected: RejectReason:%d Reason:%s\n",
          msg.order_reject_code, msg.reason.data);
-  uint32_t client_order_id = atoi(msg.client_order_id);
+
+  OrderRejectedRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.client_order_id);
+  engine_->on_order_rejected(&rsp);
 }
 
 void Broker::on_order_executed(const bss::ExecutionReport &msg) {
@@ -258,26 +325,36 @@ void Broker::on_order_executed(const bss::ExecutionReport &msg) {
       "Broker::on_order_executed: OrderID[%s] ClOrdToken[%s] LastQty[%d] "
       "LastPrice[%lf]\n",
       msg.order_id, msg.client_order_id, qty, price);
-  uint32_t client_order_id = atoi(msg.client_order_id);
+
+  OrderTradedRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.client_order_id);
+  rsp.order_id = std::stoul(msg.order_id);
+  rsp.volume = qty;
+  rsp.price = price;
+  rsp.trade_type = TradeType::SECONDARY_MARKET;
+  engine_->on_order_traded(&rsp);
 }
 
 void Broker::on_order_cancelled(const bss::ExecutionReport &msg) {
-  int qty = msg.execution_quantity / 100000000;
+  // TODO(kevin): 可能没有order_quantity这个字段
+  int total = msg.order_quantity / 100000000;
+  int traded = msg.cumulative_quantity / 100000000;
 
-  printf(
-      "Broker::on_order_cancelled: ClientOrderID[%s] OriginalOrderID[%s] "
-      "FilledQty[%d] LeavesQty[%lu]\n",
-      msg.client_order_id, msg.original_client_order_id, qty,
-      msg.leaves_quantity / 100000000);
-  uint32_t client_order_id = atoi(msg.client_order_id);
+  OrderCanceledRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.client_order_id);
+  rsp.canceled_volume = total - traded;
+  engine_->on_order_canceled(&rsp);
 }
 
 void Broker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_cancel_rejected: RejectReason:%d Reason:%s\n",
          msg.cancel_reject_code, msg.reason.data);
-  uint32_t client_order_id = atoi(msg.original_client_order_id);
+  OrderCancelRejectedRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.original_client_order_id);
+  engine_->on_order_cancel_rejected(&rsp);
 }
 
+// 暂未支持
 void Broker::on_order_amended(const bss::ExecutionReport &msg) {
   int qty = msg.execution_quantity / 100000000;
   double price = static_cast<double>(msg.execution_price) / 1e8;
@@ -285,9 +362,11 @@ void Broker::on_order_amended(const bss::ExecutionReport &msg) {
       "Broker::on_order_amend: ClientOrderID[%s] OriginalOrderID[%s] Qty[%d] "
       "Price[%lf]\n",
       msg.client_order_id, msg.original_client_order_id, qty, price);
+
   uint32_t client_order_id = atoi(msg.original_client_order_id);
 }
 
+// 暂未支持
 void Broker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_amend_rejected: RejectReason:%d Reason:%s\n",
          msg.amend_reject_code, msg.reason.data);
@@ -297,7 +376,10 @@ void Broker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
 void Broker::on_order_expired(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_expired: RejectReason:%d Reason:%s\n",
          msg.order_reject_code, msg.reason.data);
-  uint32_t client_order_id = atoi(msg.client_order_id);
+
+  OrderRejectedRsp rsp{};
+  rsp.engine_order_id = std::stoul(msg.client_order_id);
+  engine_->on_order_rejected(&rsp);
 }
 
 }  // namespace ft

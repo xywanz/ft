@@ -275,7 +275,7 @@ class VirtualOcg : public OcgHandler {
   OcgState state_;
   bool should_disconnect_ = false;
   std::string comp_id_ = "CO99999902";
-  char date_[32];
+  char date_[10];
 
   ResendVisitor resend_visitor_;
   ConsumerVisitor consumer_visitor_;

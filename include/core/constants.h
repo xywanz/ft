@@ -56,6 +56,27 @@ inline const uint32_t FAK = 4;
 // 立即成交剩余部分立即撤单，不同平台的实现也不同
 // 对于CTP来说是限价单，需要指定价格
 inline const uint32_t FOK = 5;
+
+// 下面是港交所的订单类型
+namespace hkex {
+
+// 竞价盘
+inline const uint32_t MO_AT_CROSSING = 10;
+
+// 竞价现价盘
+inline const uint32_t LO_AT_CROSSING = 11;
+
+// 限价盘
+inline const uint32_t LO = 12;
+
+// 增强现价盘
+inline const uint32_t ELO = 13;
+
+// 特殊限价盘
+inline const uint32_t SLO = 14;
+
+}  // namespace hkex
+
 }  // namespace OrderType
 
 /*
