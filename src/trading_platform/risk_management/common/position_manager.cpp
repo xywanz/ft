@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "risk_management/futures/position_manager.h"
+#include "risk_management/common/position_manager.h"
 
 #include <spdlog/spdlog.h>
 

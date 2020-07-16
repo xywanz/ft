@@ -4,10 +4,10 @@
 
 #include "risk_management/common/fund_manager.h"
 #include "risk_management/common/no_self_trade.h"
+#include "risk_management/common/position_manager.h"
 #include "risk_management/common/strategy_notifier.h"
 #include "risk_management/common/throttle_rate_limit.h"
 #include "risk_management/etf/arbitrage_manager.h"
-#include "risk_management/futures/position_manager.h"
 
 namespace ft {
 
