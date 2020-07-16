@@ -2,6 +2,8 @@
 
 #include "broker/broker.h"
 
+#include <spdlog/spdlog.h>
+
 #include <cstdio>
 #include <thread>
 
@@ -104,27 +106,28 @@ bool BssBroker::login(TradingEngineInterface *engine, const Config &config) {
 
 bool BssBroker::check_config() const {
   if (!verify_passwd(sess_conf_.password)) {
-    printf("error: invalid password\n");
+    spdlog::error("[BssBroker::check_config] invalid password");
     return false;
   }
   if (!sess_conf_.new_password.empty() &&
       (!verify_passwd(sess_conf_.new_password) ||
        sess_conf_.password == sess_conf_.new_password)) {
-    printf("error: invalid new password\n");
+    spdlog::error("[BssBroker::check_config] invalid new password");
     return false;
   }
 
   return true;
 }
 
-void BssBroker::logon(const std::string &passwd, const std::string &new_passwd) {
+void BssBroker::logon(const std::string &passwd,
+                      const std::string &new_passwd) {
   if (!verify_passwd(passwd)) {
-    printf("failed to logon. invalid password\n");
+    spdlog::error("[BssBroker::logon] invalid password");
     return;
   }
   if (!new_passwd.empty() &&
       (!verify_passwd(new_passwd) || passwd == new_passwd)) {
-    printf("failed to logon. invalid new password\n");
+    spdlog::error("[BssBroker::logon] invalid new password");
     return;
   }
 
@@ -148,7 +151,7 @@ bool BssBroker::query_account() {
 
 bool BssBroker::send_order(const OrderReq &order) {
   if (!is_logon_) {
-    printf("Broker::send_order: not logon\n");
+    spdlog::error("[BssBroker::send_order]: not logon");
     return false;
   }
 
@@ -204,7 +207,7 @@ bool BssBroker::send_order(const OrderReq &order) {
   req.disclosure_instructions = 0;
 
   if (!session_->send_business_msg(req)) {
-    printf("Broker::send_order: failed\n");
+    spdlog::error("[BssBroker::send_order] failed to send order");
     return false;
   }
   return true;
@@ -228,7 +231,7 @@ void BssBroker::on_msg(const bss::LogonMessage &msg) {
     sess_conf_.new_password = "";
     session_->set_password(sess_conf_.password, sess_conf_.new_password);
   }
-  if (msg.text.len > 0) printf("logon text: %s\n", msg.text.data);
+  if (msg.text.len > 0) spdlog::info("logon text: {}", msg.text.data);
 }
 
 void BssBroker::on_msg(const bss::LogoutMessage &msg) {
@@ -243,18 +246,18 @@ void BssBroker::on_msg(const bss::LogoutMessage &msg) {
     session_->disable();
   }
   if (msg.logout_text.len > 0)
-    printf("logout text: %s\n", msg.logout_text.data);
+    spdlog::info("logout text: {}", msg.logout_text.data);
 }
 
 void BssBroker::on_msg(const bss::RejectMessage &msg) {
-  printf("Broker::on_session_rejected: RejectReason:%d Reason:%s\n",
-         msg.message_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_session_rejected] RejectCode:{} Reason:{}",
+                msg.message_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.client_order_id);
 }
 
 void BssBroker::on_msg(const bss::BusinessRejectMessage &msg) {
-  printf("Broker::on_business_rejected: RejectReason:%d Reason:%s\n",
-         msg.business_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_business_rejected] RejectCode:{} Reason:{}",
+                msg.business_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.business_reject_reference_id);
 }
 
@@ -295,8 +298,8 @@ void BssBroker::on_msg(const bss::ExecutionReport &report) {
     case bss::OcgExecType::EXEC_TYPE_TRADE_CANCEL: {
     }
     default: {
-      printf("Broker::on_msg: not support this ExecType[%d]\n",
-             report.exec_type);
+      spdlog::error("[BssBroker::on_ep]: exec type not supported. type:{}",
+                    report.exec_type);
       break;
     }
   }
@@ -311,9 +314,9 @@ void BssBroker::on_msg(const bss::TradeCaptureReport &report) {}
 void BssBroker::on_msg(const bss::TradeCaptureReportAck &ack) {}
 
 void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
-  printf(
-      "Broker::on_order_accepted: ClientOrderID[%s] security[%s] OrderQty[%lu] "
-      "Price[%lf]\n",
+  spdlog::debug(
+      "[BssBroker::on_order_accepted] ClientOrderID:{} Security:{} "
+      "OrderQty:{} Price:{}",
       msg.client_order_id, msg.security_id, msg.order_quantity / 100000000,
       static_cast<double>(msg.price) / 1e8);
 
@@ -324,8 +327,8 @@ void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
 }
 
 void BssBroker::on_order_rejected(const bss::ExecutionReport &msg) {
-  printf("Broker::on_order_rejected: RejectReason:%d Reason:%s\n",
-         msg.order_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_order_rejected] RejectCode:{} Reason:{}",
+                msg.order_reject_code, msg.reason.data);
 
   OrderRejectedRsp rsp{};
   rsp.engine_order_id = std::stoul(msg.client_order_id);
@@ -335,9 +338,9 @@ void BssBroker::on_order_rejected(const bss::ExecutionReport &msg) {
 void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
   int qty = msg.execution_quantity / 100000000;
   double price = static_cast<double>(msg.execution_price) / 1e8;
-  printf(
-      "Broker::on_order_executed: OrderID[%s] ClOrdToken[%s] LastQty[%d] "
-      "LastPrice[%lf]\n",
+  spdlog::debug(
+      "[BssBroker::on_order_executed] OrderID:{} ClOrdToken:{} LastQty:{} "
+      "LastPrice:{}",
       msg.order_id, msg.client_order_id, qty, price);
 
   OrderTradedRsp rsp{};
@@ -361,8 +364,8 @@ void BssBroker::on_order_cancelled(const bss::ExecutionReport &msg) {
 }
 
 void BssBroker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
-  printf("Broker::on_order_cancel_rejected: RejectReason:%d Reason:%s\n",
-         msg.cancel_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_order_cancel_rejected] RejectCode:{} Reason:{}",
+                msg.cancel_reject_code, msg.reason.data);
   OrderCancelRejectedRsp rsp{};
   rsp.engine_order_id = std::stoul(msg.original_client_order_id);
   engine_->on_order_cancel_rejected(&rsp);
@@ -372,9 +375,9 @@ void BssBroker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
 void BssBroker::on_order_amended(const bss::ExecutionReport &msg) {
   int qty = msg.execution_quantity / 100000000;
   double price = static_cast<double>(msg.execution_price) / 1e8;
-  printf(
-      "Broker::on_order_amend: ClientOrderID[%s] OriginalOrderID[%s] Qty[%d] "
-      "Price[%lf]\n",
+  spdlog::debug(
+      "[BssBroker::on_order_amended] ClientOrderID:{} OriginalOrderID:{} "
+      "Qty:{} Price:{}",
       msg.client_order_id, msg.original_client_order_id, qty, price);
 
   uint32_t client_order_id = atoi(msg.original_client_order_id);
@@ -382,14 +385,14 @@ void BssBroker::on_order_amended(const bss::ExecutionReport &msg) {
 
 // 暂未支持
 void BssBroker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
-  printf("Broker::on_order_amend_rejected: RejectReason:%d Reason:%s\n",
-         msg.amend_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_order_amend_rejected] RejectCode:{} Reason:{}",
+                msg.amend_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.original_client_order_id);
 }
 
 void BssBroker::on_order_expired(const bss::ExecutionReport &msg) {
-  printf("Broker::on_order_expired: RejectReason:%d Reason:%s\n",
-         msg.order_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_order_expired] RejectReason:{} Reason:{}",
+                msg.order_reject_code, msg.reason.data);
 
   OrderRejectedRsp rsp{};
   rsp.engine_order_id = std::stoul(msg.client_order_id);
