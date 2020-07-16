@@ -1,5 +1,5 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-aux_source_directory(. BROKER_SRC)
-add_library(broker SHARED ${BROKER_SRC})
-target_link_libraries(broker proto-codec pthread)
+aux_source_directory(. BSS_BROKER_SRC)
+add_library(bss-broker SHARED ${BSS_BROKER_SRC})
+target_link_libraries(bss-broker proto-codec pthread)

@@ -62,7 +62,7 @@ static bool verify_passwd(const std::string &passwd) {
   return true;
 }
 
-Broker::Broker() {
+BssBroker::BssBroker() {
   //   time_t t = wqutil::getWallTime();
   time_t t = time(nullptr);
   struct tm _tm;
@@ -72,7 +72,7 @@ Broker::Broker() {
 }
 
 /* TODO: read config from a config file */
-bool Broker::login(TradingEngineInterface *engine, const Config &config) {
+bool BssBroker::login(TradingEngineInterface *engine, const Config &config) {
   engine_ = engine;
   /* for test */
   {
@@ -102,7 +102,7 @@ bool Broker::login(TradingEngineInterface *engine, const Config &config) {
   return true;
 }
 
-bool Broker::check_config() const {
+bool BssBroker::check_config() const {
   if (!verify_passwd(sess_conf_.password)) {
     printf("error: invalid password\n");
     return false;
@@ -117,7 +117,7 @@ bool Broker::check_config() const {
   return true;
 }
 
-void Broker::logon(const std::string &passwd, const std::string &new_passwd) {
+void BssBroker::logon(const std::string &passwd, const std::string &new_passwd) {
   if (!verify_passwd(passwd)) {
     printf("failed to logon. invalid password\n");
     return;
@@ -132,9 +132,9 @@ void Broker::logon(const std::string &passwd, const std::string &new_passwd) {
   session_->enable();
 }
 
-void Broker::logout() { session_->disable(); }
+void BssBroker::logout() { session_->disable(); }
 
-bool Broker::query_account() {
+bool BssBroker::query_account() {
   // test
   {
     Account acc{};
@@ -146,7 +146,7 @@ bool Broker::query_account() {
   return true;
 }
 
-bool Broker::send_order(const OrderReq &order) {
+bool BssBroker::send_order(const OrderReq &order) {
   if (!is_logon_) {
     printf("Broker::send_order: not logon\n");
     return false;
@@ -210,9 +210,9 @@ bool Broker::send_order(const OrderReq &order) {
   return true;
 }
 
-bool Broker::cancel_order(uint64_t order_id) { return true; }
+bool BssBroker::cancel_order(uint64_t order_id) { return true; }
 
-bool Broker::amend_order(uint64_t order_id, const OrderReq &order) {
+bool BssBroker::amend_order(uint64_t order_id, const OrderReq &order) {
   return true;
 }
 
@@ -221,30 +221,44 @@ bool mass_cancel() { return true; }
 // TODO(kevin):
 // 如果在登录成功后网络断线，密码更改成功通知没有收到，
 // 会导致本地登录密码没有被更新，使得下次登录因密码错误而失败
-void Broker::on_msg(const bss::LogonMessage &msg) {
+void BssBroker::on_msg(const bss::LogonMessage &msg) {
   is_logon_ = true;
   if (msg.session_status == bss::BssSessionStatus::SESSION_PASSWORD_CHANGE) {
     sess_conf_.password = sess_conf_.new_password;
     sess_conf_.new_password = "";
     session_->set_password(sess_conf_.password, sess_conf_.new_password);
   }
+  if (msg.text.len > 0) printf("logon text: %s\n", msg.text.data);
 }
 
-void Broker::on_msg(const bss::LogoutMessage &msg) { is_logon_ = false; }
+void BssBroker::on_msg(const bss::LogoutMessage &msg) {
+  is_logon_ = false;
+  if (msg.session_status ==
+          bss::BssSessionStatus::INVAILD_USERNAME_OR_PASSWORD ||
+      msg.session_status == bss::BssSessionStatus::ACCOUNT_LOCKED ||
+      msg.session_status ==
+          bss::BssSessionStatus::LOGONS_NOT_ALLOWED_AT_THIS_TIME ||
+      msg.session_status == bss::BssSessionStatus::PASSWORD_EXPIRED ||
+      msg.session_status == bss::BssSessionStatus::PASSWORD_CHANGE_REQUIRED) {
+    session_->disable();
+  }
+  if (msg.logout_text.len > 0)
+    printf("logout text: %s\n", msg.logout_text.data);
+}
 
-void Broker::on_msg(const bss::RejectMessage &msg) {
+void BssBroker::on_msg(const bss::RejectMessage &msg) {
   printf("Broker::on_session_rejected: RejectReason:%d Reason:%s\n",
          msg.message_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.client_order_id);
 }
 
-void Broker::on_msg(const bss::BusinessRejectMessage &msg) {
+void BssBroker::on_msg(const bss::BusinessRejectMessage &msg) {
   printf("Broker::on_business_rejected: RejectReason:%d Reason:%s\n",
          msg.business_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.business_reject_reference_id);
 }
 
-void Broker::on_msg(const bss::ExecutionReport &report) {
+void BssBroker::on_msg(const bss::ExecutionReport &report) {
   switch (report.exec_type) {
     case bss::OcgExecType::EXEC_TYPE_NEW: {
       on_order_accepted(report);
@@ -288,15 +302,15 @@ void Broker::on_msg(const bss::ExecutionReport &report) {
   }
 }
 
-void Broker::on_msg(const bss::OrderMassCancelReport &report) {}
+void BssBroker::on_msg(const bss::OrderMassCancelReport &report) {}
 
-void Broker::on_msg(const bss::QuoteStatusReport &report) {}
+void BssBroker::on_msg(const bss::QuoteStatusReport &report) {}
 
-void Broker::on_msg(const bss::TradeCaptureReport &report) {}
+void BssBroker::on_msg(const bss::TradeCaptureReport &report) {}
 
-void Broker::on_msg(const bss::TradeCaptureReportAck &ack) {}
+void BssBroker::on_msg(const bss::TradeCaptureReportAck &ack) {}
 
-void Broker::on_order_accepted(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
   printf(
       "Broker::on_order_accepted: ClientOrderID[%s] security[%s] OrderQty[%lu] "
       "Price[%lf]\n",
@@ -309,7 +323,7 @@ void Broker::on_order_accepted(const bss::ExecutionReport &msg) {
   engine_->on_order_accepted(&rsp);
 }
 
-void Broker::on_order_rejected(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_rejected: RejectReason:%d Reason:%s\n",
          msg.order_reject_code, msg.reason.data);
 
@@ -318,7 +332,7 @@ void Broker::on_order_rejected(const bss::ExecutionReport &msg) {
   engine_->on_order_rejected(&rsp);
 }
 
-void Broker::on_order_executed(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
   int qty = msg.execution_quantity / 100000000;
   double price = static_cast<double>(msg.execution_price) / 1e8;
   printf(
@@ -335,7 +349,7 @@ void Broker::on_order_executed(const bss::ExecutionReport &msg) {
   engine_->on_order_traded(&rsp);
 }
 
-void Broker::on_order_cancelled(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_cancelled(const bss::ExecutionReport &msg) {
   // TODO(kevin): 可能没有order_quantity这个字段
   int total = msg.order_quantity / 100000000;
   int traded = msg.cumulative_quantity / 100000000;
@@ -346,7 +360,7 @@ void Broker::on_order_cancelled(const bss::ExecutionReport &msg) {
   engine_->on_order_canceled(&rsp);
 }
 
-void Broker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_cancel_rejected: RejectReason:%d Reason:%s\n",
          msg.cancel_reject_code, msg.reason.data);
   OrderCancelRejectedRsp rsp{};
@@ -355,7 +369,7 @@ void Broker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
 }
 
 // 暂未支持
-void Broker::on_order_amended(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_amended(const bss::ExecutionReport &msg) {
   int qty = msg.execution_quantity / 100000000;
   double price = static_cast<double>(msg.execution_price) / 1e8;
   printf(
@@ -367,13 +381,13 @@ void Broker::on_order_amended(const bss::ExecutionReport &msg) {
 }
 
 // 暂未支持
-void Broker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_amend_rejected: RejectReason:%d Reason:%s\n",
          msg.amend_reject_code, msg.reason.data);
   uint32_t client_order_id = atoi(msg.original_client_order_id);
 }
 
-void Broker::on_order_expired(const bss::ExecutionReport &msg) {
+void BssBroker::on_order_expired(const bss::ExecutionReport &msg) {
   printf("Broker::on_order_expired: RejectReason:%d Reason:%s\n",
          msg.order_reject_code, msg.reason.data);
 

@@ -6,14 +6,14 @@
 #include "broker/command.h"
 
 namespace ft {
-class Broker;
+class BssBroker;
 }
 
 namespace ft::bss {
 
 class CmdProcessor {
  public:
-  CmdProcessor(::ft::Broker* broker);
+  CmdProcessor(::ft::BssBroker* broker);
 
   void start(int port);
 
@@ -27,7 +27,7 @@ class CmdProcessor {
   void process_mass_cancel(const MassCancelCmd& cmd);
 
  private:
-  ::ft::Broker* broker_;
+  ::ft::BssBroker* broker_;
 };
 
 }  // namespace ft::bss

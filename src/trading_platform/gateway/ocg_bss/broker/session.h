@@ -37,7 +37,7 @@ namespace ft::bss {
  */
 class Session : public MessageHandler {
  public:
-  explicit Session(Broker* broker);
+  explicit Session(BssBroker* broker);
 
   bool init(const SessionConfig& conf);
 
@@ -287,6 +287,8 @@ class Session : public MessageHandler {
 
   bool update_throttle();
 
+  void encrypt_password();
+
  private:
   struct ResendVisitor {
     void init(Session* self) { self_ = self; }
@@ -320,9 +322,11 @@ class Session : public MessageHandler {
  private:
   std::string comp_id_;
   LogonMessage logon_msg_;
+  std::string password_;
+  std::string new_password_;
   SessionState state_;
   BinaryMessageEncoder encoder_;
-  Broker* broker_{nullptr};
+  BssBroker* broker_{nullptr};
   SocketSender* socket_sender_{nullptr};
   std::unique_ptr<PasswordEncrptor> passwd_encrypto_;
   std::mutex mutex_;

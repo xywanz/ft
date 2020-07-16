@@ -16,4 +16,4 @@ include_directories(ocg_bss)
 add_subdirectory(ocg_bss)
 
 add_library(gateway STATIC gateway.cpp)
-target_link_libraries(gateway ctp-gateway xtp-gateway virtual-gateway broker)
+target_link_libraries(gateway ctp-gateway xtp-gateway virtual-gateway bss-broker)

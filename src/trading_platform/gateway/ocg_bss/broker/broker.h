@@ -21,9 +21,9 @@ class Session;
  *
  * Broker所收到的消息都是连续且正确的，Broker内部只需要专注于处理业务逻辑
  */
-class Broker : public Gateway {
+class BssBroker : public Gateway {
  public:
-  Broker();
+  BssBroker();
 
   bool login(TradingEngineInterface* engine, const Config& config);
 

@@ -9,7 +9,7 @@
 
 namespace ft::bss {
 
-Session::Session(Broker* broker) : broker_(broker) {
+Session::Session(BssBroker* broker) : broker_(broker) {
   resend_visitor_.init(this);
   consumer_visitor_.init(this);
 }
@@ -30,14 +30,27 @@ bool Session::init(const SessionConfig& conf) {
  */
 void Session::set_password(const std::string& passwd,
                            const std::string& new_passwd) {
-  passwd_encrypto_->encrypt(passwd.c_str(), passwd.length(),
+  password_ = passwd;
+  new_password_ = new_passwd;
+}
+
+void Session::encrypt_password() {
+  memset(logon_msg_.password, 0, sizeof(logon_msg_.password));
+  memset(logon_msg_.new_password, 0, sizeof(logon_msg_.new_password));
+
+  tm _tm{};
+  auto utc = time(nullptr);
+  gmtime_r(&utc, &_tm);
+
+  char buf[64];
+  strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", &_tm);
+  std::string password = std::string(buf) + password_;
+  passwd_encrypto_->encrypt(password.c_str(), password.length(),
                             logon_msg_.password);
 
-  // 如果新密码为空，下次登录将不会更新密码
-  if (new_passwd.empty()) {
-    memset(logon_msg_.new_password, 0, sizeof(logon_msg_.new_password));
-  } else {
-    passwd_encrypto_->encrypt(new_passwd.c_str(), new_passwd.length(),
+  if (!new_password_.empty()) {
+    std::string new_password = std::string(buf) + new_password_;
+    passwd_encrypto_->encrypt(new_password.c_str(), new_password.length(),
                               logon_msg_.new_password);
   }
 }
@@ -364,6 +377,7 @@ void Session::consume_cached_msgs() {
 
 void Session::send_logon_msg() {
   logon_msg_.next_expected_message_sequence = state_.next_recv_msg_seq;
+  encrypt_password();
 
   // 这里判断返回值是为了使登录消息未发送成功时能够再一次地发送
   // 因为发送登录消息的时候socket_sender可能还未注册，导致发送失败

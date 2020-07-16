@@ -53,7 +53,7 @@ restart:
   return sockfd;
 }
 
-CmdProcessor::CmdProcessor(::ft::Broker* broker) : broker_(broker) {
+CmdProcessor::CmdProcessor(::ft::BssBroker* broker) : broker_(broker) {
   assert(broker);
 }
 

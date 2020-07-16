@@ -33,6 +33,6 @@ void destroy_api(Gateway* api) {
 REGISTER_GATEWAY("ctp", CtpGateway);
 REGISTER_GATEWAY("xtp", XtpGateway);
 REGISTER_GATEWAY("virtual", VirtualGateway);
-REGISTER_GATEWAY("ocg-bss", Broker);
+REGISTER_GATEWAY("ocg-bss", BssBroker);
 
 }  // namespace ft
