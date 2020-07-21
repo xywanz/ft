@@ -356,7 +356,7 @@ void Session::resend(uint32_t start_seq_num, uint32_t end_seq_num) {
 
   // 至此消息全部重传完毕，NextSendSeqNum已经恢复到该函数调用前的状态
   // 需要重置PossDupFlag
-  encoder_.set_poss_resend_flag(0);
+  encoder_.set_poss_dup_flag(0);
   state_.next_send_msg_seq = cur_next_send_seq;
 }
 
