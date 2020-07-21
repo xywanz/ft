@@ -195,6 +195,7 @@ bool TradingEngine::send_order(const TraderCommand& cmd) {
   req.volume = cmd.order_req.volume;
   req.type = cmd.order_req.type;
   req.price = cmd.order_req.price;
+  req.flags = cmd.order_req.flags;
   order.user_order_id = cmd.order_req.user_order_id;
   order.status = OrderStatus::SUBMITTING;
   order.strategy_id = cmd.strategy_id;

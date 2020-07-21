@@ -262,7 +262,9 @@ bool CtpTradeApi::send_order(const OrderReq &order) {
   req.CombOffsetFlag[0] = offset(order.offset);
   req.LimitPrice = order.price;
   req.VolumeTotalOriginal = order.volume;
-  req.CombHedgeFlag[0] = THOST_FTDC_HF_Speculation;
+  req.CombHedgeFlag[0] = order.flags & OrderFlag::HEDGE
+                             ? THOST_FTDC_HF_Hedge
+                             : THOST_FTDC_HF_Speculation;
   req.ContingentCondition = THOST_FTDC_CC_Immediately;
   req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
   req.MinVolume = 1;

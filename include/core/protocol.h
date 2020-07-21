@@ -27,6 +27,7 @@ struct OrderReq {
   uint32_t offset;
   int volume;
   double price;
+  uint32_t flags;
 } __attribute__((packed));
 
 /*
@@ -52,6 +53,7 @@ struct TraderOrderReq {
   int volume;
   double price;
 
+  uint32_t flags;
   bool without_check;
 } __attribute__((packed));
 

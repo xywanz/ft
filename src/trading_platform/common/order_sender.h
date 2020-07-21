@@ -20,6 +20,8 @@ class OrderSender {
 
   void set_account(uint64_t account_id) { cmd_pusher_.set_account(account_id); }
 
+  void set_order_flags(uint32_t flags) { flags_ = flags; }
+
   void buy_open(const std::string& ticker, int volume, double price,
                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
     send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price,
@@ -82,6 +84,7 @@ class OrderSender {
     cmd.order_req.offset = offset;
     cmd.order_req.type = type;
     cmd.order_req.price = price;
+    cmd.order_req.flags = flags_;
     cmd.order_req.without_check = false;
 
     cmd_pusher_.push(cmd);
@@ -129,6 +132,7 @@ class OrderSender {
  private:
   StrategyIdType strategy_id_;
   RedisTraderCmdPusher cmd_pusher_;
+  uint32_t flags_{0};
 };
 
 }  // namespace ft

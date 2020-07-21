@@ -115,6 +115,14 @@ inline const uint32_t CLOSE_TODAY = 4;
 inline const uint32_t CLOSE_YESTERDAY = 8;
 }  // namespace Offset
 
+/*
+ * 订单的一些标志位，如CTP的套保等
+ */
+namespace OrderFlag {
+// 套保标志
+inline const uint32_t HEDGE = 0x1;
+}
+
 namespace TradeType {
 
 // 二级市场买卖
