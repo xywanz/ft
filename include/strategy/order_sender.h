@@ -23,61 +23,63 @@ class OrderSender {
   void set_order_flags(uint32_t flags) { flags_ = flags; }
 
   void buy_open(const std::string& ticker, int volume, double price,
-                uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker, volume, Direction::BUY, Offset::OPEN, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void buy_open(uint32_t ticker_index, int volume, double price,
-                uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker_index, volume, Direction::BUY, Offset::OPEN, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void buy_close(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void buy_close(uint32_t ticker_index, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker_index, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
-               price, user_order_id);
+               price, client_order_id);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker, volume, Direction::SELL, Offset::OPEN, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void sell_open(uint32_t ticker_index, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     send_order(ticker_index, volume, Direction::SELL, Offset::OPEN, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void sell_close(const std::string& ticker, int volume, double price,
-                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                  uint64_t type = OrderType::FAK,
+                  uint32_t client_order_id = 0) {
     send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
-               price, user_order_id);
+               price, client_order_id);
   }
 
   void sell_close(uint32_t ticker_index, int volume, double price,
-                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                  uint64_t type = OrderType::FAK,
+                  uint32_t client_order_id = 0) {
     send_order(ticker_index, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
-               price, user_order_id);
+               price, client_order_id);
   }
 
   void send_order(uint32_t ticker_index, int volume, uint32_t direction,
                   uint32_t offset, uint32_t type, double price,
-                  uint32_t user_order_id) {
+                  uint32_t client_order_id) {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CMD_NEW_ORDER;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
-    cmd.order_req.user_order_id = user_order_id;
+    cmd.order_req.client_order_id = client_order_id;
     cmd.order_req.ticker_index = ticker_index;
     cmd.order_req.volume = volume;
     cmd.order_req.direction = direction;
@@ -92,13 +94,13 @@ class OrderSender {
 
   void send_order(const std::string& ticker, int volume, uint32_t direction,
                   uint32_t offset, uint32_t type, double price,
-                  uint32_t user_order_id) {
+                  uint32_t client_order_id) {
     const Contract* contract;
     contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
     send_order(contract->index, volume, direction, offset, type, price,
-               user_order_id);
+               client_order_id);
   }
 
   void cancel_order(uint64_t order_id) {

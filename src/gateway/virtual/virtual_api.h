@@ -14,7 +14,7 @@
 namespace ft {
 
 struct VirtualOrderReq {
-  uint64_t engine_order_id;
+  uint64_t oms_order_id;
   uint32_t ticker_index;
   uint32_t type;
   uint32_t direction;

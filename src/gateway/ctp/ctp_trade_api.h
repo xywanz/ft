@@ -126,7 +126,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
  private:
   int next_req_id() { return next_req_id_++; }
 
-  uint64_t get_engine_order_id(int order_ref) const {
+  uint64_t get_oms_order_id(int order_ref) const {
     return order_ref - order_ref_base_;
   }
 

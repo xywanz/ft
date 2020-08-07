@@ -37,10 +37,10 @@ class ThrottleRateLimit : public RiskRule {
 
   uint64_t volume_count_ = 0;
 
-  // (time_ms, engine_order_id)
+  // (time_ms, oms_order_id)
   std::list<std::tuple<uint64_t, uint64_t>> order_tm_record_;
 
-  // (time_ms, volume, engine_order_id)
+  // (time_ms, volume, oms_order_id)
   std::list<std::tuple<uint64_t, int, uint64_t>> volume_tm_record_;
 };
 

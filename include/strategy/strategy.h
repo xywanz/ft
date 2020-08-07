@@ -52,27 +52,28 @@ class Strategy {
   void subscribe(const std::vector<std::string>& sub_list);
 
   void buy_open(const std::string& ticker, int volume, double price,
-                uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     sender_.send_order(ticker, volume, Direction::BUY, Offset::OPEN, type,
-                       price, user_order_id);
+                       price, client_order_id);
   }
 
   void buy_close(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     sender_.send_order(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY,
-                       type, price, user_order_id);
+                       type, price, client_order_id);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
     sender_.send_order(ticker, volume, Direction::SELL, Offset::OPEN, type,
-                       price, user_order_id);
+                       price, client_order_id);
   }
 
   void sell_close(const std::string& ticker, int volume, double price,
-                  uint64_t type = OrderType::FAK, uint32_t user_order_id = 0) {
+                  uint64_t type = OrderType::FAK,
+                  uint32_t client_order_id = 0) {
     sender_.send_order(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY,
-                       type, price, user_order_id);
+                       type, price, client_order_id);
   }
 
   void cancel_order(uint64_t order_id) { sender_.cancel_order(order_id); }
@@ -92,9 +93,9 @@ class Strategy {
  private:
   void send_order(const std::string& ticker, int volume, uint32_t direction,
                   uint32_t offset, uint32_t type, double price,
-                  uint32_t user_order_id) {
+                  uint32_t client_order_id) {
     sender_.send_order(ticker, volume, direction, offset, type, price,
-                       user_order_id);
+                       client_order_id);
   }
 
  private:

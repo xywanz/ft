@@ -7,7 +7,7 @@ namespace ft {
 void StrategyNotifier::on_order_accepted(const Order* order) {
   if (order->strategy_id[0] != 0) {
     OrderResponse rsp{};
-    rsp.user_order_id = order->user_order_id;
+    rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
     rsp.ticker_index = order->req.contract->index;
     rsp.direction = order->req.direction;
@@ -21,7 +21,7 @@ void StrategyNotifier::on_order_accepted(const Order* order) {
 void StrategyNotifier::on_order_traded(const Order* order, const Trade* trade) {
   if (order->strategy_id[0] != 0) {
     OrderResponse rsp{};
-    rsp.user_order_id = order->user_order_id;
+    rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
     rsp.ticker_index = order->req.contract->index;
     rsp.direction = order->req.direction;
@@ -45,7 +45,7 @@ void StrategyNotifier::on_order_canceled(const Order* order, int canceled) {
 void StrategyNotifier::on_order_rejected(const Order* order, int error_code) {
   if (order->strategy_id[0] != 0) {
     OrderResponse rsp{};
-    rsp.user_order_id = order->user_order_id;
+    rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
     rsp.ticker_index = order->req.contract->index;
     rsp.direction = order->req.direction;

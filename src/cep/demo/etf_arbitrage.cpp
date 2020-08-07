@@ -20,9 +20,10 @@ int wait_for_receipt(RedisSession* redis, int volume) {
         auto contract = ContractTable::get_by_index(rsp->ticker_index);
         spdlog::info(
             "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
-            rsp->user_order_id, contract->ticker, direction_str(rsp->direction),
-            offset_str(rsp->offset), rsp->traded_volume, rsp->original_volume,
-            rsp->this_traded, rsp->this_traded_price, rsp->completed);
+            rsp->client_order_id, contract->ticker,
+            direction_str(rsp->direction), offset_str(rsp->offset),
+            rsp->traded_volume, rsp->original_volume, rsp->this_traded,
+            rsp->this_traded_price, rsp->completed);
         if (rsp->completed) return volume - rsp->traded_volume;
       }
     }
@@ -44,7 +45,7 @@ int main() {
   sender.set_id(strategy_id);
   redis.subscribe({strategy_id});
 
-  uint32_t user_order_id = 1;
+  uint32_t client_order_id = 1;
   int left;
 
   for (const auto& [ticker_index, component] : etf->components) {
@@ -52,30 +53,30 @@ int main() {
     left = component.volume;
     for (;;) {
       sender.send_order(component.contract->ticker, left, Direction::BUY,
-                        Offset::OPEN, OrderType::MARKET, 0, user_order_id);
+                        Offset::OPEN, OrderType::MARKET, 0, client_order_id);
       left = wait_for_receipt(&redis, left);
       if (left == 0) break;
     }
 
-    ++user_order_id;
+    ++client_order_id;
     usleep(50000);
   }
 
-  ++user_order_id;
+  ++client_order_id;
   left = etf->unit;
   for (;;) {
     sender.send_order(etf->contract->ticker, left, Direction::PURCHASE,
-                      Offset::OPEN, OrderType::LIMIT, 0, user_order_id);
+                      Offset::OPEN, OrderType::LIMIT, 0, client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }
 
-  ++user_order_id;
+  ++client_order_id;
   left = etf->unit;
   for (;;) {
     sender.send_order(etf->contract->ticker, left, Direction::SELL,
                       Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
-                      user_order_id);
+                      client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }
@@ -85,9 +86,9 @@ int main() {
   //   UNUSED(ticker_index);
   //   sender.send_order(component.contract->ticker, component.volume,
   //                     Direction::BUY, Offset::OPEN, OrderType::MARKET, 0,
-  //                     user_order_id);
+  //                     client_order_id);
 
-  //   ++user_order_id;
+  //   ++client_order_id;
   // }
 
   // uint32_t count = 0;
@@ -100,7 +101,7 @@ int main() {
   //       auto contract = ContractTable::get_by_index(rsp->ticker_index);
   //       spdlog::info(
   //           "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
-  //           rsp->user_order_id, contract->ticker,
+  //           rsp->client_order_id, contract->ticker,
   //           direction_str(rsp->direction), offset_str(rsp->offset),
   //           rsp->traded_volume, rsp->original_volume, rsp->this_traded,
   //           rsp->this_traded_price, rsp->completed);
@@ -113,28 +114,28 @@ int main() {
   //           sender.send_order(contract->ticker,
   //                             rsp->original_volume - rsp->traded_volume,
   //                             Direction::BUY, Offset::OPEN,
-  //                             OrderType::MARKET, 0, rsp->user_order_id);
+  //                             OrderType::MARKET, 0, rsp->client_order_id);
   //         }
   //       }
   //     }
   //   }
   // }
 
-  // ++user_order_id;
+  // ++client_order_id;
   // left = etf->unit;
   // for (;;) {
   //   sender.send_order(etf->contract->ticker, left, Direction::PURCHASE,
-  //                     Offset::OPEN, OrderType::LIMIT, 0, user_order_id);
+  //                     Offset::OPEN, OrderType::LIMIT, 0, client_order_id);
   //   left = wait_for_receipt(&redis, left);
   //   if (left == 0) break;
   // }
 
-  // ++user_order_id;
+  // ++client_order_id;
   // left = etf->unit;
   // for (;;) {
   //   sender.send_order(etf->contract->ticker, left, Direction::SELL,
   //                     Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
-  //                     user_order_id);
+  //                     client_order_id);
   //   left = wait_for_receipt(&redis, left);
   //   if (left == 0) break;
   // }

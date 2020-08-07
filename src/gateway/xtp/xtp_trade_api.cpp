@@ -117,7 +117,7 @@ bool XtpTradeApi::send_order(const OrderRequest& order) {
     return false;
   }
 
-  req.order_client_id = order.engine_order_id;
+  req.order_client_id = order.oms_order_id;
   strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
   req.quantity = order.volume;
 
@@ -218,7 +218,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     rsp.trade_type = TradeType::SECONDARY_MARKET;
   }
 
-  rsp.engine_order_id = trade_info->order_client_id;
+  rsp.oms_order_id = trade_info->order_client_id;
   rsp.order_id = trade_info->order_xtp_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;

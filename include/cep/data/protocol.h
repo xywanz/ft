@@ -27,7 +27,7 @@ enum TraderCmdType {
 };
 
 struct TraderOrderReq {
-  uint32_t user_order_id;
+  uint32_t client_order_id;
   uint32_t ticker_index;
   uint32_t direction;
   uint32_t offset;
@@ -62,7 +62,7 @@ struct TraderCommand {
  *
  */
 struct OrderResponse {
-  uint32_t user_order_id;
+  uint32_t client_order_id;
   uint32_t order_id;
   uint32_t ticker_index;
   uint32_t direction;

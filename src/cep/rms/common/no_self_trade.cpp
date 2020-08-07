@@ -24,8 +24,8 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
 
   uint64_t opp_d = opp_direction(req->direction);  // 对手方
   const OrderRequest* pending_order;
-  for (auto& [engine_order_id, o] : *order_map_) {
-    UNUSED(engine_order_id);
+  for (auto& [oms_order_id, o] : *order_map_) {
+    UNUSED(oms_order_id);
     pending_order = &o.req;
     if (pending_order->direction != opp_d) continue;
 

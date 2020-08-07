@@ -250,7 +250,7 @@ void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
 bool CtpTradeApi::send_order(const OrderRequest &order) {
   auto contract = order.contract;
 
-  int order_ref = static_cast<int>(order.engine_order_id) + order_ref_base_;
+  int order_ref = static_cast<int>(order.oms_order_id) + order_ref_base_;
   CThostFtdcInputOrderField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
@@ -322,7 +322,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
     return;
   }
 
-  OrderRejection rsp{get_engine_order_id(order_ref),
+  OrderRejection rsp{get_oms_order_id(order_ref),
                      gb2312_to_utf8(rsp_info->ErrorMsg)};
   oms_->on_order_rejected(&rsp);
 }
@@ -340,16 +340,15 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   }
 
   // CTP返回的OrderRef不会有问题吧？
-  uint64_t engine_order_id = get_engine_order_id(std::stoi(order->OrderRef));
+  uint64_t oms_order_id = get_oms_order_id(std::stoi(order->OrderRef));
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
-    OrderRejection rsp{engine_order_id, gb2312_to_utf8(order->StatusMsg)};
+    OrderRejection rsp{oms_order_id, gb2312_to_utf8(order->StatusMsg)};
     oms_->on_order_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    OrderCancelRejection rsp = {engine_order_id,
-                                gb2312_to_utf8(order->StatusMsg)};
+    OrderCancelRejection rsp = {oms_order_id, gb2312_to_utf8(order->StatusMsg)};
     oms_->on_order_cancel_rejected(&rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted ||
@@ -365,14 +364,14 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   // 处理撤单
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
-    OrderCancellation rsp = {engine_order_id,
+    OrderCancellation rsp = {oms_order_id,
                              order->VolumeTotalOriginal - order->VolumeTraded};
     oms_->on_order_canceled(&rsp);
   } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
     auto contract = ContractTable::get_by_ticker(order->InstrumentID);
     assert(contract);
     OrderAcceptance rsp = {
-        engine_order_id,
+        oms_order_id,
         get_order_id(contract->index, std::stoi(order->OrderSysID))};
     oms_->on_order_accepted(&rsp);
   }
@@ -393,7 +392,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   assert(contract);
 
   Trade rsp{};
-  rsp.engine_order_id = get_engine_order_id(std::stoi(trade->OrderRef));
+  rsp.oms_order_id = get_oms_order_id(std::stoi(trade->OrderRef));
   rsp.order_id = get_order_id(contract->index, std::stoi(trade->OrderSysID));
   rsp.volume = trade->Volume;
   rsp.price = trade->Price;

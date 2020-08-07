@@ -11,7 +11,7 @@
 namespace ft {
 
 struct OrderInfo {
-  uint32_t user_order_id = 0;
+  uint32_t client_order_id = 0;
   uint32_t order_id = 0;
   uint32_t ticker_index = 0;
   uint32_t direction = 0;

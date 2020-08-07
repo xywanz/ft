@@ -193,7 +193,7 @@ bool OMS::send_order(const TraderCommand& cmd) {
 
   Order order{};
   auto& req = order.req;
-  req.engine_order_id = next_engine_order_id();
+  req.oms_order_id = next_oms_order_id();
   req.contract = contract;
   req.direction = cmd.order_req.direction;
   req.offset = cmd.order_req.offset;
@@ -201,7 +201,7 @@ bool OMS::send_order(const TraderCommand& cmd) {
   req.type = cmd.order_req.type;
   req.price = cmd.order_req.price;
   req.flags = cmd.order_req.flags;
-  order.user_order_id = cmd.order_req.user_order_id;
+  order.client_order_id = cmd.order_req.client_order_id;
   order.status = OrderStatus::SUBMITTING;
   order.strategy_id = cmd.strategy_id;
 
@@ -228,14 +228,14 @@ bool OMS::send_order(const TraderCommand& cmd) {
     return false;
   }
 
-  order_map_.emplace((uint64_t)req.engine_order_id, order);
+  order_map_.emplace((uint64_t)req.oms_order_id, order);
   risk_mgr_->on_order_sent(&order);
 
   spdlog::debug(
       "[StrategyEngine::send_order] Success. {}, {}{}, {}, EngineOrderID:{}, "
       "Volume:{}, Price: {:.3f}",
       contract->ticker, direction_str(req.direction), offset_str(req.offset),
-      ordertype_str(req.type), req.engine_order_id, req.volume, req.price);
+      ordertype_str(req.type), req.oms_order_id, req.volume, req.price);
   return true;
 }
 
@@ -243,8 +243,8 @@ void OMS::cancel_order(uint64_t order_id) { gateway_->cancel_order(order_id); }
 
 void OMS::cancel_for_ticker(uint32_t ticker_index) {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (const auto& [engine_order_id, order] : order_map_) {
-    UNUSED(engine_order_id);
+  for (const auto& [oms_order_id, order] : order_map_) {
+    UNUSED(oms_order_id);
     if (ticker_index == order.req.contract->index)
       gateway_->cancel_order(order.order_id);
   }
@@ -252,8 +252,8 @@ void OMS::cancel_for_ticker(uint32_t ticker_index) {
 
 void OMS::cancel_all() {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (const auto& [engine_order_id, order] : order_map_) {
-    UNUSED(engine_order_id);
+  for (const auto& [oms_order_id, order] : order_map_) {
+    UNUSED(oms_order_id);
     gateway_->cancel_order(order.order_id);
   }
 }
@@ -317,10 +317,10 @@ void OMS::handle_trades(std::vector<Trade>* trades) {
  */
 void OMS::on_order_accepted(OrderAcceptance* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(rsp->engine_order_id);
+  auto iter = order_map_.find(rsp->oms_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OMS::on_order_accepted] Order not found. OrderID: {}",
-                 rsp->engine_order_id);
+                 rsp->oms_order_id);
     return;
   }
 
@@ -341,10 +341,10 @@ void OMS::on_order_accepted(OrderAcceptance* rsp) {
 
 void OMS::on_order_rejected(OrderRejection* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(rsp->engine_order_id);
+  auto iter = order_map_.find(rsp->oms_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OMS::on_order_rejected] Order not found. OrderID: {}",
-                 rsp->engine_order_id);
+                 rsp->oms_order_id);
     return;
   }
 
@@ -370,7 +370,7 @@ void OMS::on_order_traded(Trade* rsp) {
 
 void OMS::on_primary_market_traded(Trade* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(rsp->engine_order_id);
+  auto iter = order_map_.find(rsp->oms_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
         "[OMS::on_primary_market_traded] Order not found. "
@@ -411,7 +411,7 @@ void OMS::on_primary_market_traded(Trade* rsp) {
 
 void OMS::on_secondary_market_traded(Trade* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(rsp->engine_order_id);
+  auto iter = order_map_.find(rsp->oms_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
         "[OMS::on_secondary_market_traded] Order not found. "
@@ -461,10 +461,10 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
 
 void OMS::on_order_canceled(OrderCancellation* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto iter = order_map_.find(rsp->engine_order_id);
+  auto iter = order_map_.find(rsp->oms_order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OMS::on_order_canceled] Order not found. EngineOrderID:{}",
-                 rsp->engine_order_id);
+                 rsp->oms_order_id);
     return;
   }
 
@@ -496,7 +496,7 @@ void OMS::on_order_cancel_rejected(OrderCancelRejection* rsp) {
   spdlog::warn(
       "[OMS::on_order_cancel_rejected] 订单不可撤：{}. "
       "EngineOrderID: {}",
-      rsp->reason, rsp->engine_order_id);
+      rsp->reason, rsp->oms_order_id);
 }
 
 }  // namespace ft
