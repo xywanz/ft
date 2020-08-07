@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "core/contract_table.h"
-#include "core/protocol.h"
+#include "cep/data/contract_table.h"
+#include "cep/data/protocol.h"
 #include "ipc/redis.h"
 
 namespace ft {

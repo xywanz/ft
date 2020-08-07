@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "core/position.h"
+#include "cep/data/position.h"
 #include "fmt/format.h"
 #include "ipc/redis.h"
 
