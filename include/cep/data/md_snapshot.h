@@ -24,7 +24,9 @@ struct TickDataSnapshot {
 
 class MdSnapshot {
  public:
-  MdSnapshot() { snapshot_.resize(ContractTable::size() + 1, nullptr); }
+  MdSnapshot() {}
+
+  void init() { snapshot_.resize(ContractTable::size() + 1, nullptr); }
 
   const TickDataSnapshot* get(uint32_t tid) const { return snapshot_[tid]; }
 

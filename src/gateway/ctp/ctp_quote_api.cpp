@@ -78,7 +78,7 @@ bool CtpQuoteApi::subscribe(const std::vector<std::string> &_sub_list) {
   if (sub_list.size() > 0) {
     if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) !=
         0) {
-      spdlog::error("[CtpQuoteApi::login] Failed to subscribe");
+      spdlog::error("[CtpQuoteApi::subscribe] Failed to subscribe");
       return false;
     }
   }

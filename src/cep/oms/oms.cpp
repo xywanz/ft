@@ -54,6 +54,7 @@ bool OMS::login(const Config& config) {
     ContractTable::store("./contracts.csv");
   }
 
+  md_snapshot_.init();
   if (!gateway_->subscribe(config.subscription_list)) {
     spdlog::error("[OMS::login] Failed to subscribe market data");
     return false;
