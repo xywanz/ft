@@ -66,6 +66,10 @@ bool CtpGateway::cancel_order(uint64_t order_id) {
   return trade_api_->cancel_order(order_id);
 }
 
+bool CtpGateway::subscribe(const std::vector<std::string> &sub_list) {
+  return quote_api_->subscribe(sub_list);
+}
+
 bool CtpGateway::query_contracts(std::vector<Contract> *result) {
   return trade_api_->query_contracts(result);
 }

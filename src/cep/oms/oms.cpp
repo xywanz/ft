@@ -18,11 +18,17 @@ OMS::OMS() { risk_mgr_ = std::make_unique<RMS>(); }
 OMS::~OMS() { close(); }
 
 bool OMS::login(const Config& config) {
-  printf("***************OMS****************\n");
-  printf("* version: %lu\n", version());
-  printf("* compiling time: %s %s\n", __TIME__, __DATE__);
-  printf("********************************************\n");
+  spdlog::info("***************OMS****************");
+  spdlog::info("* version: %lu", version());
+  spdlog::info("* compiling time: %s %s\n", __TIME__, __DATE__);
+  spdlog::info("********************************************");
   config.show();
+
+  // 如果有配置contracts file的路径，则尝试从文件加载
+  if (!config.contracts_file.empty()) {
+    if (!ContractTable::init(config.contracts_file))
+      spdlog::warn("[OMS::OMS] Failed to init contract table");
+  }
 
   cmd_queue_key_ = config.key_of_cmd_queue;
 
@@ -37,6 +43,21 @@ bool OMS::login(const Config& config) {
     return false;
   }
   spdlog::info("[OMS::login] Success. Login as {}", config.investor_id);
+
+  if (!ContractTable::inited()) {
+    std::vector<Contract> contracts;
+    if (!gateway_->query_contracts(&contracts)) {
+      spdlog::error("[OMS::login] Failed to initialize contract table");
+      return false;
+    }
+    ContractTable::init(std::move(contracts));
+    ContractTable::store("./contracts.csv");
+  }
+
+  if (!gateway_->subscribe(config.subscription_list)) {
+    spdlog::error("[OMS::login] Failed to subscribe market data");
+    return false;
+  }
 
   Account init_acct{};
   if (!gateway_->query_account(&init_acct)) {

@@ -23,6 +23,7 @@ class XtpGateway : public Gateway {
 
   bool login(OMSInterface* oms, const Config& config) override;
   void logout() override;
+  bool subscribe(const std::vector<std::string> &sub_list) override;
 
   bool send_order(const OrderRequest& order) override;
   bool cancel_order(uint64_t order_id) override;

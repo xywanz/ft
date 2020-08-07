@@ -34,6 +34,8 @@ inline void load_config(const std::string& file, ft::Config* config) {
       node["subscription_list"].as<std::vector<std::string>>(
           std::vector<std::string>{});
 
+  config->contracts_file = node["contracts_file"].as<std::string>("");
+
   config->cancel_outstanding_orders_on_startup =
       node["cancel_outstanding_orders_on_startup"].as<bool>(true);
 

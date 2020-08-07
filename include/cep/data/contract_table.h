@@ -93,9 +93,22 @@ inline void store_contracts(const std::string& file,
 
 class ContractTable {
  public:
-  static bool init(const std::string& file) {
-    static bool is_inited = false;
+  static bool init(std::vector<Contract>&& vec) {
+    if (!is_inited) {
+      contracts = std::move(vec);
+      for (std::size_t i = 0; i < contracts.size(); ++i) {
+        auto& contract = contracts[i];
+        contract.tid = i + 1;
+        ticker2contract.emplace(contract.ticker, &contract);
+      }
 
+      is_inited = true;
+    }
+
+    return true;
+  }
+
+  static bool init(const std::string& file) {
     if (!is_inited) {
       if (!load_contracts(file, &contracts)) return false;
 
@@ -109,6 +122,12 @@ class ContractTable {
     }
 
     return true;
+  }
+
+  static bool inited() { return is_inited; }
+
+  static void store(const std::string& file) {
+    store_contracts(file, contracts);
   }
 
   static const Contract* get_by_ticker(const std::string& ticker) {
@@ -125,6 +144,7 @@ class ContractTable {
   static std::size_t size() { return contracts.size(); }
 
  private:
+  inline static bool is_inited = false;
   inline static std::vector<Contract> contracts;
   inline static std::unordered_map<std::string, Contract*> ticker2contract;
 };

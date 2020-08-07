@@ -47,6 +47,10 @@ bool XtpGateway::cancel_order(uint64_t order_id) {
   return trade_api_->cancel_order(order_id);
 }
 
+bool XtpGateway::subscribe(const std::vector<std::string>& sub_list) {
+  return quote_api_->subscribe(sub_list);
+}
+
 bool XtpGateway::query_contracts(std::vector<Contract>* result) {
   return quote_api_->query_contracts(result);
 }

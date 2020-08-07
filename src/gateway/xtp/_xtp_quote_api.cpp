@@ -58,8 +58,18 @@ bool XtpQuoteApi::login(const Config& config) {
 
   spdlog::debug("[XtpQuoteApi::login] Success");
   is_logon_ = true;
+  return true;
+}
 
-  subscribed_list_ = config.subscription_list;
+void XtpQuoteApi::logout() {
+  if (is_logon_) {
+    quote_api_->Logout();
+    is_logon_ = false;
+  }
+}
+
+bool XtpQuoteApi::subscribe(const std::vector<std::string>& sub_list) {
+  subscribed_list_ = sub_list;
   std::vector<char*> sub_list_sh;
   std::vector<char*> sub_list_sz;
   for (auto& ticker : subscribed_list_) {
@@ -88,13 +98,6 @@ bool XtpQuoteApi::login(const Config& config) {
   }
 
   return true;
-}
-
-void XtpQuoteApi::logout() {
-  if (is_logon_) {
-    quote_api_->Logout();
-    is_logon_ = false;
-  }
 }
 
 bool XtpQuoteApi::query_contracts(std::vector<Contract>* result) {

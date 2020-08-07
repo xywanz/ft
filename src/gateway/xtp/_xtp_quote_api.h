@@ -26,6 +26,7 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
 
   bool login(const Config& config);
   void logout();
+  bool subscribe(const std::vector<std::string>& sub_list);
 
   bool query_contracts(std::vector<Contract>* result);
 

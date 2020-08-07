@@ -45,6 +45,10 @@ class Gateway {
 
   virtual bool cancel_order(uint64_t order_id) { return false; }
 
+  virtual bool subscribe(const std::vector<std::string>& sub_list) {
+    return true;
+  }
+
   virtual bool query_contract(const std::string& ticker,
                               const std::string& exchange, Contract* result) {
     return true;

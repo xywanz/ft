@@ -20,12 +20,11 @@ namespace ft {
 class CtpQuoteApi : public CThostFtdcMdSpi {
  public:
   explicit CtpQuoteApi(OMSInterface *oms);
-
   ~CtpQuoteApi();
 
   bool login(const Config &config);
-
   void logout();
+  bool subscribe(const std::vector<std::string> &sub_list);
 
   void OnFrontConnected() override;
 

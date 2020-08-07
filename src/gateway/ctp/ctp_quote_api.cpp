@@ -38,7 +38,6 @@ bool CtpQuoteApi::login(const Config &config) {
 
   for (;;) {
     if (is_error_) return false;
-
     if (is_connected_) break;
   }
 
@@ -53,24 +52,8 @@ bool CtpQuoteApi::login(const Config &config) {
 
   for (;;) {
     if (is_error_) return false;
-
     if (is_logon_) break;
   }
-
-  std::vector<char *> sub_list;
-  sub_list_ = config.subscription_list;
-
-  for (const auto &p : sub_list_)
-    sub_list.emplace_back(const_cast<char *>(p.c_str()));
-
-  if (sub_list.size() > 0) {
-    if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) !=
-        0) {
-      spdlog::error("[CtpQuoteApi::login] Failed to subscribe");
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -83,6 +66,23 @@ void CtpQuoteApi::logout() {
 
     while (is_logon_) continue;
   }
+}
+
+bool CtpQuoteApi::subscribe(const std::vector<std::string> &_sub_list) {
+  std::vector<char *> sub_list;
+  sub_list_ = _sub_list;
+
+  for (const auto &p : sub_list_)
+    sub_list.emplace_back(const_cast<char *>(p.c_str()));
+
+  if (sub_list.size() > 0) {
+    if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) !=
+        0) {
+      spdlog::error("[CtpQuoteApi::login] Failed to subscribe");
+      return false;
+    }
+  }
+  return true;
 }
 
 void CtpQuoteApi::OnFrontConnected() {

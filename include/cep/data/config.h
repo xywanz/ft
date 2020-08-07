@@ -3,6 +3,8 @@
 #ifndef FT_INCLUDE_CEP_DATA_CONFIG_H_
 #define FT_INCLUDE_CEP_DATA_CONFIG_H_
 
+#include <spdlog/spdlog.h>
+
 #include <string>
 #include <vector>
 
@@ -19,6 +21,8 @@ class Config {
   std::string auth_code{""};
   std::string app_id{""};
   std::vector<std::string> subscription_list{};
+
+  std::string contracts_file{""};
 
   bool cancel_outstanding_orders_on_startup = true;
 
@@ -40,28 +44,29 @@ class Config {
 
  public:
   void show() const {
-    printf("Config:\n");
-    printf("  trade_server_address: %s\n", trade_server_address.c_str());
-    printf("  quote_server_address: %s\n", quote_server_address.c_str());
-    printf("  broker_id: %s\n", broker_id.c_str());
-    printf("  investor_id: %s\n", investor_id.c_str());
-    printf("  password: ******\n");
-    printf("  auth_code: %s\n", auth_code.c_str());
-    printf("  app_id: %s\n", app_id.c_str());
-    printf("  subscription_list: ");
+    spdlog::info("Config:");
+    spdlog::info("  trade_server_address: {}", trade_server_address);
+    spdlog::info("  quote_server_address: {}", quote_server_address);
+    spdlog::info("  broker_id: {}", broker_id);
+    spdlog::info("  investor_id: {}", investor_id);
+    spdlog::info("  password: ******");
+    spdlog::info("  auth_code: {}", auth_code);
+    spdlog::info("  app_id: {}", app_id);
+    spdlog::info("  subscription_list: ");
     for (const auto& ticker : subscription_list) printf("%s ", ticker.c_str());
-    printf("\n");
-    printf("  cancel_outstanding_orders_on_startup: %s\n",
-           cancel_outstanding_orders_on_startup ? "true" : "false");
-    if (!arg0.empty()) printf("  arg0: %s\n", arg0.c_str());
-    if (!arg1.empty()) printf("  arg1: %s\n", arg1.c_str());
-    if (!arg2.empty()) printf("  arg2: %s\n", arg2.c_str());
-    if (!arg3.empty()) printf("  arg3: %s\n", arg3.c_str());
-    if (!arg4.empty()) printf("  arg4: %s\n", arg4.c_str());
-    if (!arg5.empty()) printf("  arg5: %s\n", arg5.c_str());
-    if (!arg6.empty()) printf("  arg6: %s\n", arg6.c_str());
-    if (!arg7.empty()) printf("  arg7: %s\n", arg7.c_str());
-    if (!arg8.empty()) printf("  arg8: %s\n", arg8.c_str());
+    spdlog::info("");
+    spdlog::info("  contracts_file: {}", contracts_file.c_str());
+    spdlog::info("  cancel_outstanding_orders_on_startup: {}",
+                 cancel_outstanding_orders_on_startup);
+    if (!arg0.empty()) spdlog::info("  arg0: {}", arg0);
+    if (!arg1.empty()) spdlog::info("  arg1: {}", arg1);
+    if (!arg2.empty()) spdlog::info("  arg2: {}", arg2);
+    if (!arg3.empty()) spdlog::info("  arg3: {}", arg3);
+    if (!arg4.empty()) spdlog::info("  arg4: {}", arg4);
+    if (!arg5.empty()) spdlog::info("  arg5: {}", arg5);
+    if (!arg6.empty()) spdlog::info("  arg6: {}", arg6);
+    if (!arg7.empty()) spdlog::info("  arg7: {}", arg7);
+    if (!arg8.empty()) spdlog::info("  arg8: {}", arg8);
   }
 };
 
