@@ -38,3 +38,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused")
 
 add_subdirectory(src/cep)
 add_subdirectory(src/ipc)
+add_subdirectory(src/gateway)
