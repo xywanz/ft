@@ -44,7 +44,7 @@ class OMS : public OMSInterface {
 
   bool send_order(const TraderCommand& cmd);
   void cancel_order(uint64_t order_id);
-  void cancel_for_ticker(uint32_t ticker_index);
+  void cancel_for_ticker(uint32_t tid);
   void cancel_all();
 
   void on_tick(TickData* tick) override;

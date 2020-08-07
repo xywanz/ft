@@ -187,7 +187,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick{};
-  tick.ticker_index = contract->index;
+  tick.tid = contract->tid;
 
   struct tm _tm;
   strptime(md->UpdateTime, "%H:%M:%S", &_tm);

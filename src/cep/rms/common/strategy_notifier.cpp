@@ -9,7 +9,7 @@ void StrategyNotifier::on_order_accepted(const Order* order) {
     OrderResponse rsp{};
     rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
-    rsp.ticker_index = order->req.contract->index;
+    rsp.tid = order->req.contract->tid;
     rsp.direction = order->req.direction;
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
@@ -23,7 +23,7 @@ void StrategyNotifier::on_order_traded(const Order* order, const Trade* trade) {
     OrderResponse rsp{};
     rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
-    rsp.ticker_index = order->req.contract->index;
+    rsp.tid = order->req.contract->tid;
     rsp.direction = order->req.direction;
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
@@ -47,7 +47,7 @@ void StrategyNotifier::on_order_rejected(const Order* order, int error_code) {
     OrderResponse rsp{};
     rsp.client_order_id = order->client_order_id;
     rsp.order_id = order->order_id;
-    rsp.ticker_index = order->req.contract->index;
+    rsp.tid = order->req.contract->tid;
     rsp.direction = order->req.direction;
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;

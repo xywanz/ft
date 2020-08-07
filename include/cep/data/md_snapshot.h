@@ -26,12 +26,10 @@ class MdSnapshot {
  public:
   MdSnapshot() { snapshot_.resize(ContractTable::size() + 1, nullptr); }
 
-  const TickDataSnapshot* get(uint32_t ticker_index) const {
-    return snapshot_[ticker_index];
-  }
+  const TickDataSnapshot* get(uint32_t tid) const { return snapshot_[tid]; }
 
   void update_snapshot(const TickData& tick) {
-    auto data = snapshot_[tick.ticker_index];
+    auto data = snapshot_[tick.tid];
     if (data) {
       data->last_price = tick.last_price;
       data->bid = tick.bid[0];
@@ -45,7 +43,7 @@ class MdSnapshot {
       data->iopv = tick.etf.iopv;
       data->upper_limit_price = tick.upper_limit_price;
       data->lower_limit_price = tick.lower_limit_price;
-      snapshot_[tick.ticker_index] = data;
+      snapshot_[tick.tid] = data;
     }
   }
 

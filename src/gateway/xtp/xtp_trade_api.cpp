@@ -206,14 +206,14 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
         trade_info->trade_type == XTP_TRDT_COMMON)
       return;
 
-    // 收到成分股回报，需要设置ticker_index, direction等信息
-    rsp.ticker_index = contract->index;
+    // 收到成分股回报，需要设置tid, direction等信息
+    rsp.tid = contract->tid;
     rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE
                                                           : Direction::REDEEM;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
   } else {
-    // 二级市场成交，这里无需设置ticker_index，因为该ticker_index和order_req中
+    // 二级市场成交，这里无需设置tid，因为该tid和order_req中
     // 的是一样的；direction和offset同理
     rsp.trade_type = TradeType::SECONDARY_MARKET;
   }
@@ -286,8 +286,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
       goto check_last;
     }
 
-    auto& pos = pos_cache_[contract->index];
-    pos.ticker_index = contract->index;
+    auto& pos = pos_cache_[contract->tid];
+    pos.tid = contract->tid;
 
     // 暂时只支持普通股票
     auto& pos_detail = pos.long_pos;
@@ -299,8 +299,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
 
 check_last:
   if (is_last) {
-    for (auto& [ticker_index, pos] : pos_cache_) {
-      UNUSED(ticker_index);
+    for (auto& [tid, pos] : pos_cache_) {
+      UNUSED(tid);
       if (position_results_) position_results_->emplace_back(pos);
     }
     pos_cache_.clear();
@@ -434,7 +434,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
     assert(contract);
 
     Trade trade{};
-    trade.ticker_index = contract->index;
+    trade.tid = contract->tid;
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;
     if (trade_info->side == XTP_SIDE_BUY) {

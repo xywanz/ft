@@ -17,7 +17,7 @@ struct DemandDetail {
 
 class Arbitrage {
  public:
-  explicit Arbitrage(uint32_t etf_ticker_index);
+  explicit Arbitrage(uint32_t etf_tid);
 
  private:
   std::unordered_map<uint32_t, DemandDetail> demands_;

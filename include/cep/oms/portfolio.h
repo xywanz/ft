@@ -21,46 +21,45 @@ class Portfolio {
 
   void set_position(const Position& pos);
 
-  void update_pending(uint32_t ticker_index, uint32_t direction,
-                      uint32_t offset, int changed);
+  void update_pending(uint32_t tid, uint32_t direction, uint32_t offset,
+                      int changed);
 
-  void update_traded(uint32_t ticker_index, uint32_t direction, uint32_t offset,
+  void update_traded(uint32_t tid, uint32_t direction, uint32_t offset,
                      int traded, double traded_price);
 
-  void update_component_stock(uint32_t ticker_index, int traded, bool acquire);
+  void update_component_stock(uint32_t tid, int traded, bool acquire);
 
-  void update_float_pnl(uint32_t ticker_index, double last_price);
+  void update_float_pnl(uint32_t tid, double last_price);
 
-  void update_on_query_trade(uint32_t ticker_index, uint32_t direction,
-                             uint32_t offset, int closed_volume);
+  void update_on_query_trade(uint32_t tid, uint32_t direction, uint32_t offset,
+                             int closed_volume);
 
-  const Position* find(uint32_t ticker_index) const {
-    return const_cast<Portfolio*>(this)->find(ticker_index);
+  const Position* find(uint32_t tid) const {
+    return const_cast<Portfolio*>(this)->find(tid);
   }
 
  private:
-  void update_buy_or_sell_pending(uint32_t ticker_index, uint32_t direction,
+  void update_buy_or_sell_pending(uint32_t tid, uint32_t direction,
                                   uint32_t offset, int changed);
 
-  void update_purchase_or_redeem_pending(uint32_t ticker_index,
-                                         uint32_t direction, int changed);
+  void update_purchase_or_redeem_pending(uint32_t tid, uint32_t direction,
+                                         int changed);
 
-  void update_buy_or_sell(uint32_t ticker_index, uint32_t direction,
-                          uint32_t offset, int traded, double traded_price);
+  void update_buy_or_sell(uint32_t tid, uint32_t direction, uint32_t offset,
+                          int traded, double traded_price);
 
-  void update_purchase_or_redeem(uint32_t ticker_index, uint32_t direction,
-                                 int traded);
+  void update_purchase_or_redeem(uint32_t tid, uint32_t direction, int traded);
 
  private:
-  Position* find(uint32_t ticker_index) {
-    auto iter = pos_map_.find(ticker_index);
+  Position* find(uint32_t tid) {
+    auto iter = pos_map_.find(tid);
     if (iter == pos_map_.end()) return nullptr;
     return &iter->second;
   }
 
-  Position& find_or_create_pos(uint32_t ticker_index) {
-    auto& pos = pos_map_[ticker_index];
-    pos.ticker_index = ticker_index;
+  Position& find_or_create_pos(uint32_t tid) {
+    auto& pos = pos_map_[tid];
+    pos.tid = tid;
     return pos;
   }
 

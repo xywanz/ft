@@ -372,7 +372,7 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     assert(contract);
     OrderAcceptance rsp = {
         oms_order_id,
-        get_order_id(contract->index, std::stoi(order->OrderSysID))};
+        get_order_id(contract->tid, std::stoi(order->OrderSysID))};
     oms_->on_order_accepted(&rsp);
   }
 }
@@ -393,7 +393,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
 
   Trade rsp{};
   rsp.oms_order_id = get_oms_order_id(std::stoi(trade->OrderRef));
-  rsp.order_id = get_order_id(contract->index, std::stoi(trade->OrderSysID));
+  rsp.order_id = get_order_id(contract->tid, std::stoi(trade->OrderSysID));
   rsp.volume = trade->Volume;
   rsp.price = trade->Price;
   rsp.trade_type = TradeType::SECONDARY_MARKET;
@@ -401,8 +401,8 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
 }
 
 bool CtpTradeApi::cancel_order(uint64_t order_id) {
-  uint32_t ticker_index = (order_id >> 32) & 0xffffffffULL;
-  auto contract = ContractTable::get_by_index(ticker_index);
+  uint32_t tid = (order_id >> 32) & 0xffffffffULL;
+  auto contract = ContractTable::get_by_index(tid);
   if (!contract) {
     spdlog::error("[CtpTradeApi::cancel_order] Contract not found. OrderID:{}",
                   order_id);
@@ -534,8 +534,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(
       goto check_last;
     }
 
-    auto &pos = pos_cache_[contract->index];
-    pos.ticker_index = contract->index;
+    auto &pos = pos_cache_[contract->tid];
+    pos.tid = contract->tid;
 
     bool is_long_pos = position->PosiDirection == THOST_FTDC_PD_Long;
     auto &pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
@@ -561,8 +561,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(
 
 check_last:
   if (is_last) {
-    for (auto &[ticker_index, pos] : pos_cache_) {
-      UNUSED(ticker_index);
+    for (auto &[tid, pos] : pos_cache_) {
+      UNUSED(tid);
       if (position_results_) position_results_->emplace_back(pos);
     }
     pos_cache_.clear();
@@ -685,7 +685,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade,
     assert(contract);
 
     Trade td{};
-    td.ticker_index = contract->index;
+    td.tid = contract->tid;
     td.volume = trade->Volume;
     td.price = trade->Price;
     td.direction = direction(trade->Direction);

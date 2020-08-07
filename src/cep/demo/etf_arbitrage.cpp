@@ -17,7 +17,7 @@ int wait_for_receipt(RedisSession* redis, int volume) {
       if (strcmp(reply->element[1]->str, strategy_id) == 0) {
         auto rsp =
             reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        auto contract = ContractTable::get_by_index(rsp->ticker_index);
+        auto contract = ContractTable::get_by_index(rsp->tid);
         spdlog::info(
             "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
             rsp->client_order_id, contract->ticker,
@@ -48,8 +48,8 @@ int main() {
   uint32_t client_order_id = 1;
   int left;
 
-  for (const auto& [ticker_index, component] : etf->components) {
-    UNUSED(ticker_index);
+  for (const auto& [tid, component] : etf->components) {
+    UNUSED(tid);
     left = component.volume;
     for (;;) {
       sender.send_order(component.contract->ticker, left, Direction::BUY,
@@ -82,8 +82,8 @@ int main() {
   }
 
   // 下面是暴力发单的方式，之前压力测试把XTP测试服务器测崩了，好像被XTP禁了
-  // for (const auto& [ticker_index, component] : etf->components) {
-  //   UNUSED(ticker_index);
+  // for (const auto& [tid, component] : etf->components) {
+  //   UNUSED(tid);
   //   sender.send_order(component.contract->ticker, component.volume,
   //                     Direction::BUY, Offset::OPEN, OrderType::MARKET, 0,
   //                     client_order_id);
@@ -98,7 +98,7 @@ int main() {
   //     if (strcmp(reply->element[1]->str, strategy_id) == 0) {
   //       auto rsp =
   //           reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-  //       auto contract = ContractTable::get_by_index(rsp->ticker_index);
+  //       auto contract = ContractTable::get_by_index(rsp->tid);
   //       spdlog::info(
   //           "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
   //           rsp->client_order_id, contract->ticker,

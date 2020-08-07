@@ -101,7 +101,7 @@ class ContractTable {
 
       for (std::size_t i = 0; i < contracts.size(); ++i) {
         auto& contract = contracts[i];
-        contract.index = i + 1;
+        contract.tid = i + 1;
         ticker2contract.emplace(contract.ticker, &contract);
       }
 
@@ -117,9 +117,9 @@ class ContractTable {
     return iter->second;
   }
 
-  static const Contract* get_by_index(uint32_t ticker_index) {
-    if (ticker_index == 0 || ticker_index > contracts.size()) return nullptr;
-    return &contracts[ticker_index - 1];
+  static const Contract* get_by_index(uint32_t tid) {
+    if (tid == 0 || tid > contracts.size()) return nullptr;
+    return &contracts[tid - 1];
   }
 
   static std::size_t size() { return contracts.size(); }

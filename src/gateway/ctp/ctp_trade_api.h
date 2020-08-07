@@ -130,9 +130,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     return order_ref - order_ref_base_;
   }
 
-  uint64_t get_order_id(uint32_t ticker_index, uint32_t order_sys_id) const {
-    return ((static_cast<uint64_t>(ticker_index) << 32) &
-            0xffffffff00000000ULL) |
+  uint64_t get_order_id(uint32_t tid, uint32_t order_sys_id) const {
+    return ((static_cast<uint64_t>(tid) << 32) & 0xffffffff00000000ULL) |
            (static_cast<uint64_t>(order_sys_id) & 0xffffffffULL);
   }
 

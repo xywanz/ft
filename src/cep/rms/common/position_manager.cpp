@@ -24,7 +24,7 @@ int PositionManager::check_order_req(const Order* order) {
   if (is_offset_close(req->offset)) {
     int available = 0;
     auto pos =
-        const_cast<const Portfolio*>(portfolio_)->find(req->contract->index);
+        const_cast<const Portfolio*>(portfolio_)->find(req->contract->tid);
 
     if (pos) {
       uint32_t d = opp_direction(req->direction);
@@ -45,35 +45,35 @@ int PositionManager::check_order_req(const Order* order) {
 }
 
 void PositionManager::on_order_sent(const Order* order) {
-  portfolio_->update_pending(order->req.contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->tid, order->req.direction,
                              order->req.offset, order->req.volume);
 }
 
 void PositionManager::on_order_traded(const Order* order, const Trade* trade) {
   if (trade->trade_type == TradeType::SECONDARY_MARKET ||
       trade->trade_type == TradeType::PRIMARY_MARKET) {
-    portfolio_->update_traded(order->req.contract->index, order->req.direction,
+    portfolio_->update_traded(order->req.contract->tid, order->req.direction,
                               order->req.offset, trade->volume, trade->price);
   } else if (trade->trade_type == TradeType::ACQUIRED_STOCK) {
-    auto contract = ContractTable::get_by_index(trade->ticker_index);
+    auto contract = ContractTable::get_by_index(trade->tid);
     assert(contract);
-    portfolio_->update_component_stock(contract->index, trade->volume, true);
+    portfolio_->update_component_stock(contract->tid, trade->volume, true);
   } else if (trade->trade_type == TradeType::RELEASED_STOCK) {
-    auto contract = ContractTable::get_by_index(trade->ticker_index);
+    auto contract = ContractTable::get_by_index(trade->tid);
     assert(contract);
-    portfolio_->update_component_stock(contract->index, trade->volume, false);
+    portfolio_->update_component_stock(contract->tid, trade->volume, false);
   }
 }
 
 void PositionManager::on_order_canceled(const Order* order, int canceled) {
-  portfolio_->update_pending(order->req.contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->tid, order->req.direction,
                              order->req.offset, 0 - canceled);
 }
 
 void PositionManager::on_order_rejected(const Order* order, int error_code) {
   if (error_code <= ERR_SEND_FAILED) return;
 
-  portfolio_->update_pending(order->req.contract->index, order->req.direction,
+  portfolio_->update_pending(order->req.contract->tid, order->req.direction,
                              order->req.offset, 0 - order->req.volume);
 }
 

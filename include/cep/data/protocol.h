@@ -28,7 +28,7 @@ enum TraderCmdType {
 
 struct TraderOrderReq {
   uint32_t client_order_id;
-  uint32_t ticker_index;
+  uint32_t tid;
   uint32_t direction;
   uint32_t offset;
   uint32_t type;
@@ -44,7 +44,7 @@ struct TraderCancelReq {
 } __attribute__((packed));
 
 struct TraderCancelTickerReq {
-  uint32_t ticker_index;
+  uint32_t tid;
 } __attribute__((packed));
 
 struct TraderCommand {
@@ -64,7 +64,7 @@ struct TraderCommand {
 struct OrderResponse {
   uint32_t client_order_id;
   uint32_t order_id;
-  uint32_t ticker_index;
+  uint32_t tid;
   uint32_t direction;
   uint32_t offset;
   int original_volume;

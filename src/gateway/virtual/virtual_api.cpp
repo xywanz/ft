@@ -35,7 +35,7 @@ bool VirtualApi::insert_order(VirtualOrderReq* req) {
     return false;
   }
 
-  auto contract = ContractTable::get_by_index(req->ticker_index);
+  auto contract = ContractTable::get_by_index(req->tid);
   if (!contract) {
     spdlog::error("[VirtualApi::insert_order] Contract not found");
     return false;
@@ -49,17 +49,17 @@ bool VirtualApi::insert_order(VirtualOrderReq* req) {
   return true;
 }
 
-void VirtualApi::update_quote(uint32_t ticker_index, double ask, double bid) {
+void VirtualApi::update_quote(uint32_t tid, double ask, double bid) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto& quote = lastest_quotes_[ticker_index];
+  auto& quote = lastest_quotes_[tid];
   quote.ask = ask;
   quote.bid = bid;
 
-  auto& order_list = limit_orders_[ticker_index];
+  auto& order_list = limit_orders_[tid];
   for (auto iter = order_list.begin(); iter != order_list.end();) {
     auto& order = *iter;
 
-    auto quote_iter = lastest_quotes_.find(ticker_index);
+    auto quote_iter = lastest_quotes_.find(tid);
     if (quote_iter == lastest_quotes_.end()) {
       ++iter;
       continue;
@@ -80,8 +80,8 @@ void VirtualApi::update_quote(uint32_t ticker_index, double ask, double bid) {
 
 bool VirtualApi::cancel_order(uint64_t oms_order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (auto& [ticker_index, order_list] : limit_orders_) {
-    UNUSED(ticker_index);
+  for (auto& [tid, order_list] : limit_orders_) {
+    UNUSED(tid);
     for (auto iter = order_list.begin(); iter != order_list.end(); ++iter) {
       auto& order = *iter;
       if (oms_order_id == order.oms_order_id) {
@@ -125,7 +125,7 @@ void VirtualApi::process_pendings() {
 
       gateway_->on_order_accepted(order.oms_order_id);
 
-      auto iter = lastest_quotes_.find(order.ticker_index);
+      auto iter = lastest_quotes_.find(order.tid);
       if (iter == lastest_quotes_.end()) {
         if (order.type == OrderType::FAK || order.type == OrderType::FOK) {
           gateway_->on_order_canceled(order.oms_order_id, order.volume);
@@ -141,7 +141,7 @@ void VirtualApi::process_pendings() {
            order.price <= quote.bid + 1e-5)) {
         gateway_->on_order_traded(order.oms_order_id, order.volume, quote.ask);
       } else if (order.type == OrderType::LIMIT) {
-        limit_orders_[order.ticker_index].emplace_back(order);
+        limit_orders_[order.tid].emplace_back(order);
       } else {
         gateway_->on_order_canceled(order.oms_order_id, order.volume);
       }
@@ -159,12 +159,12 @@ void VirtualApi::disseminate_market_data() {
 
   for (;;) {
     TickData tick{};
-    tick.ticker_index = contract->index;
+    tick.tid = contract->tid;
     tick.ask[0] = walker.next();
     tick.bid[0] = tick.ask[0] - 1;
     tick.last_price = (random() & 0xf) >= 8 ? tick.ask[0] : tick.bid[0];
 
-    update_quote(tick.ticker_index, tick.ask[0], tick.bid[0]);
+    update_quote(tick.tid, tick.ask[0], tick.bid[0]);
     gateway_->on_tick(&tick);
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
   }

@@ -28,9 +28,9 @@ class OrderSender {
                client_order_id);
   }
 
-  void buy_open(uint32_t ticker_index, int volume, double price,
+  void buy_open(uint32_t tid, int volume, double price,
                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
-    send_order(ticker_index, volume, Direction::BUY, Offset::OPEN, type, price,
+    send_order(tid, volume, Direction::BUY, Offset::OPEN, type, price,
                client_order_id);
   }
 
@@ -40,10 +40,10 @@ class OrderSender {
                client_order_id);
   }
 
-  void buy_close(uint32_t ticker_index, int volume, double price,
+  void buy_close(uint32_t tid, int volume, double price,
                  uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
-    send_order(ticker_index, volume, Direction::BUY, Offset::CLOSE_TODAY, type,
-               price, client_order_id);
+    send_order(tid, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price,
+               client_order_id);
   }
 
   void sell_open(const std::string& ticker, int volume, double price,
@@ -52,9 +52,9 @@ class OrderSender {
                client_order_id);
   }
 
-  void sell_open(uint32_t ticker_index, int volume, double price,
+  void sell_open(uint32_t tid, int volume, double price,
                  uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
-    send_order(ticker_index, volume, Direction::SELL, Offset::OPEN, type, price,
+    send_order(tid, volume, Direction::SELL, Offset::OPEN, type, price,
                client_order_id);
   }
 
@@ -65,22 +65,21 @@ class OrderSender {
                price, client_order_id);
   }
 
-  void sell_close(uint32_t ticker_index, int volume, double price,
+  void sell_close(uint32_t tid, int volume, double price,
                   uint64_t type = OrderType::FAK,
                   uint32_t client_order_id = 0) {
-    send_order(ticker_index, volume, Direction::SELL, Offset::CLOSE_TODAY, type,
-               price, client_order_id);
+    send_order(tid, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price,
+               client_order_id);
   }
 
-  void send_order(uint32_t ticker_index, int volume, uint32_t direction,
-                  uint32_t offset, uint32_t type, double price,
-                  uint32_t client_order_id) {
+  void send_order(uint32_t tid, int volume, uint32_t direction, uint32_t offset,
+                  uint32_t type, double price, uint32_t client_order_id) {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CMD_NEW_ORDER;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.client_order_id = client_order_id;
-    cmd.order_req.ticker_index = ticker_index;
+    cmd.order_req.tid = tid;
     cmd.order_req.volume = volume;
     cmd.order_req.direction = direction;
     cmd.order_req.offset = offset;
@@ -99,7 +98,7 @@ class OrderSender {
     contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
-    send_order(contract->index, volume, direction, offset, type, price,
+    send_order(contract->tid, volume, direction, offset, type, price,
                client_order_id);
   }
 
@@ -118,7 +117,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CMD_CANCEL_TICKER;
-    cmd.cancel_ticker_req.ticker_index = contract->index;
+    cmd.cancel_ticker_req.tid = contract->tid;
 
     cmd_pusher_.push(cmd);
   }

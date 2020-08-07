@@ -34,7 +34,7 @@ struct OrderCancelRejection {
 struct Trade {
   uint64_t oms_order_id;
   uint64_t order_id;
-  uint32_t ticker_index;
+  uint32_t tid;
   uint32_t direction;
   uint32_t offset;
   uint32_t trade_type;

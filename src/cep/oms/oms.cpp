@@ -169,7 +169,7 @@ void OMS::execute_cmd(const TraderCommand& cmd) {
     }
     case CMD_CANCEL_TICKER: {
       spdlog::debug("cancel all for ticker");
-      cancel_for_ticker(cmd.cancel_ticker_req.ticker_index);
+      cancel_for_ticker(cmd.cancel_ticker_req.tid);
       break;
     }
     case CMD_CANCEL_ALL: {
@@ -185,7 +185,7 @@ void OMS::execute_cmd(const TraderCommand& cmd) {
 }
 
 bool OMS::send_order(const TraderCommand& cmd) {
-  auto contract = ContractTable::get_by_index(cmd.order_req.ticker_index);
+  auto contract = ContractTable::get_by_index(cmd.order_req.tid);
   if (!contract) {
     spdlog::error("[OMS::send_order] Contract not found");
     return false;
@@ -241,12 +241,11 @@ bool OMS::send_order(const TraderCommand& cmd) {
 
 void OMS::cancel_order(uint64_t order_id) { gateway_->cancel_order(order_id); }
 
-void OMS::cancel_for_ticker(uint32_t ticker_index) {
+void OMS::cancel_for_ticker(uint32_t tid) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [oms_order_id, order] : order_map_) {
     UNUSED(oms_order_id);
-    if (ticker_index == order.req.contract->index)
-      gateway_->cancel_order(order.order_id);
+    if (tid == order.req.contract->tid) gateway_->cancel_order(order.order_id);
   }
 }
 
@@ -271,7 +270,7 @@ void OMS::handle_account(Account* account) {
 
 void OMS::handle_positions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
-    auto contract = ContractTable::get_by_index(position.ticker_index);
+    auto contract = ContractTable::get_by_index(position.tid);
     assert(contract);
 
     auto& lp = position.long_pos;
@@ -295,7 +294,7 @@ void OMS::handle_positions(std::vector<Position>* positions) {
 void OMS::on_tick(TickData* tick) {
   if (!is_logon_) return;
 
-  auto contract = ContractTable::get_by_index(tick->ticker_index);
+  auto contract = ContractTable::get_by_index(tick->tid);
   assert(contract);
   md_pusher_.push(contract->ticker, *tick);
 
@@ -306,8 +305,8 @@ void OMS::on_tick(TickData* tick) {
 
 void OMS::handle_trades(std::vector<Trade>* trades) {
   for (auto& trade : *trades) {
-    portfolio_.update_on_query_trade(trade.ticker_index, trade.direction,
-                                     trade.offset, trade.volume);
+    portfolio_.update_on_query_trade(trade.tid, trade.direction, trade.offset,
+                                     trade.volume);
   }
 }
 
