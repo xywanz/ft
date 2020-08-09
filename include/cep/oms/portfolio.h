@@ -5,7 +5,7 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <vector>
 
 #include "cep/data/position.h"
 #include "cep/data/protocol.h"
@@ -15,7 +15,9 @@ namespace ft {
 
 class Portfolio {
  public:
-  explicit Portfolio(bool sync_to_redis = false);
+  Portfolio();
+
+  void init(uint32_t max_tid, bool sync_to_redis = false, uint64_t account = 0);
 
   void set_account(uint64_t account);
 
@@ -34,8 +36,9 @@ class Portfolio {
   void update_on_query_trade(uint32_t tid, uint32_t direction, uint32_t offset,
                              int closed_volume);
 
-  const Position* find(uint32_t tid) const {
-    return const_cast<Portfolio*>(this)->find(tid);
+  const Position* get_position(uint32_t tid) const {
+    if (tid == 0 || tid >= positions_.size()) return nullptr;
+    return &positions_[tid];
   }
 
  private:
@@ -51,20 +54,7 @@ class Portfolio {
   void update_purchase_or_redeem(uint32_t tid, uint32_t direction, int traded);
 
  private:
-  Position* find(uint32_t tid) {
-    auto iter = pos_map_.find(tid);
-    if (iter == pos_map_.end()) return nullptr;
-    return &iter->second;
-  }
-
-  Position& find_or_create_pos(uint32_t tid) {
-    auto& pos = pos_map_[tid];
-    pos.tid = tid;
-    return pos;
-  }
-
- private:
-  std::unordered_map<uint32_t, Position> pos_map_;
+  std::vector<Position> positions_;
   std::unique_ptr<RedisPositionSetter> redis_;
 };
 

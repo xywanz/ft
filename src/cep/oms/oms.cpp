@@ -13,7 +13,7 @@
 
 namespace ft {
 
-OMS::OMS() { risk_mgr_ = std::make_unique<RMS>(); }
+OMS::OMS() { rms_ = std::make_unique<RMS>(); }
 
 OMS::~OMS() { close(); }
 
@@ -69,7 +69,7 @@ bool OMS::login(const Config& config) {
 
   // query all positions
   std::vector<Position> init_positions;
-  portfolio_.set_account(account_.account_id);
+  portfolio_.init(ContractTable::size());
   if (!gateway_->query_positions(&init_positions)) {
     spdlog::error("[OMS::login] Failed to query positions");
     return false;
@@ -85,8 +85,7 @@ bool OMS::login(const Config& config) {
   handle_trades(&init_trades);
 
   // init risk manager
-  if (!risk_mgr_->init(config, &account_, &portfolio_, &order_map_,
-                       &md_snapshot_)) {
+  if (!rms_->init(config, &account_, &portfolio_, &order_map_, &md_snapshot_)) {
     spdlog::error("[OMS::login] 风险管理对象初始化失败");
     return false;
   }
@@ -230,11 +229,11 @@ bool OMS::send_order(const TraderCommand& cmd) {
   std::unique_lock<std::mutex> lock(mutex_);
   // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
   if (!cmd.order_req.without_check) {
-    int error_code = risk_mgr_->check_order_req(&order);
+    int error_code = rms_->check_order_req(&order);
     if (error_code != NO_ERROR) {
       spdlog::error("[OMS::send_order] 风控未通过: {}",
                     error_code_str(error_code));
-      risk_mgr_->on_order_rejected(&order, error_code);
+      rms_->on_order_rejected(&order, error_code);
       return false;
     }
   }
@@ -246,12 +245,12 @@ bool OMS::send_order(const TraderCommand& cmd) {
         contract->ticker, direction_str(req.direction), offset_str(req.offset),
         ordertype_str(req.type), req.volume, req.price);
 
-    risk_mgr_->on_order_rejected(&order, ERR_SEND_FAILED);
+    rms_->on_order_rejected(&order, ERR_SEND_FAILED);
     return false;
   }
 
   order_map_.emplace((uint64_t)req.oms_order_id, order);
-  risk_mgr_->on_order_sent(&order);
+  rms_->on_order_sent(&order);
 
   spdlog::debug(
       "[StrategyEngine::send_order] Success. {}, {}{}, {}, EngineOrderID:{}, "
@@ -350,7 +349,7 @@ void OMS::on_order_accepted(OrderAcceptance* rsp) {
 
   order.order_id = rsp->order_id;
   order.accepted = true;
-  risk_mgr_->on_order_accepted(&order);
+  rms_->on_order_accepted(&order);
 
   spdlog::info(
       "[OMS::on_order_accepted] 报单委托成功. {}, {}{}, Volume:{}, "
@@ -370,7 +369,7 @@ void OMS::on_order_rejected(OrderRejection* rsp) {
   }
 
   auto& order = iter->second;
-  risk_mgr_->on_order_rejected(&order, ERR_REJECTED);
+  rms_->on_order_rejected(&order, ERR_REJECTED);
 
   spdlog::error(
       "[OMS::on_order_rejected] 报单被拒：{}. {}, {}{}, Volume:{}, "
@@ -403,7 +402,7 @@ void OMS::on_primary_market_traded(Trade* rsp) {
   auto& order = iter->second;
   if (!order.accepted) {
     order.accepted = true;
-    risk_mgr_->on_order_accepted(&order);
+    rms_->on_order_accepted(&order);
 
     spdlog::info(
         "[OMS::on_order_accepted] 报单委托成功. {}, {}, "
@@ -414,14 +413,14 @@ void OMS::on_primary_market_traded(Trade* rsp) {
 
   order.order_id = rsp->order_id;
   if (rsp->trade_type == TradeType::ACQUIRED_STOCK) {
-    risk_mgr_->on_order_traded(&order, rsp);
+    rms_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::RELEASED_STOCK) {
-    risk_mgr_->on_order_traded(&order, rsp);
+    rms_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::CASH_SUBSTITUTION) {
-    risk_mgr_->on_order_traded(&order, rsp);
+    rms_->on_order_traded(&order, rsp);
   } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
     order.traded_volume = rsp->volume;
-    risk_mgr_->on_order_traded(&order, rsp);
+    rms_->on_order_traded(&order, rsp);
     // risk_mgr_->on_order_completed(&order);
     spdlog::info("[OMS::on_primary_market_traded] done. {}, {}, Volume:{}",
                  order.req.contract->ticker, direction_str(order.req.direction),
@@ -444,7 +443,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
   auto& order = iter->second;
   if (!order.accepted) {
     order.accepted = true;
-    risk_mgr_->on_order_accepted(&order);
+    rms_->on_order_accepted(&order);
 
     spdlog::info(
         "[OMS::on_order_accepted] 报单委托成功. {}, {}{}, Volume:{}, "
@@ -464,7 +463,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
       offset_str(order.req.offset), rsp->volume, rsp->price,
       order.traded_volume, order.req.volume);
 
-  risk_mgr_->on_order_traded(&order, rsp);
+  rms_->on_order_traded(&order, rsp);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
@@ -475,7 +474,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
         order.req.volume);
 
     // 订单结束，通知风控模块
-    risk_mgr_->on_order_completed(&order);
+    rms_->on_order_completed(&order);
     order_map_.erase(iter);
   }
 }
@@ -498,7 +497,7 @@ void OMS::on_order_canceled(OrderCancellation* rsp) {
       order.req.contract->ticker, direction_str(order.req.direction),
       offset_str(order.req.offset), order.order_id, rsp->canceled_volume);
 
-  risk_mgr_->on_order_canceled(&order, rsp->canceled_volume);
+  rms_->on_order_canceled(&order, rsp->canceled_volume);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
@@ -508,7 +507,7 @@ void OMS::on_order_canceled(OrderCancellation* rsp) {
         offset_str(order.req.offset), order.order_id, order.traded_volume,
         order.req.volume);
 
-    risk_mgr_->on_order_completed(&order);
+    rms_->on_order_completed(&order);
     order_map_.erase(iter);
   }
 }

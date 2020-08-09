@@ -74,7 +74,7 @@ class OMS : public OMSInterface {
   Account account_;
   Portfolio portfolio_;
   OrderMap order_map_;
-  std::unique_ptr<RMS> risk_mgr_{nullptr};
+  std::unique_ptr<RMS> rms_{nullptr};
   RedisMdPusher md_pusher_;
   MdSnapshot md_snapshot_;
   std::mutex mutex_;

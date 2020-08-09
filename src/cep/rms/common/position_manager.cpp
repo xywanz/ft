@@ -23,8 +23,8 @@ int PositionManager::check_order_req(const Order* order) {
   auto* req = &order->req;
   if (is_offset_close(req->offset)) {
     int available = 0;
-    auto pos =
-        const_cast<const Portfolio*>(portfolio_)->find(req->contract->tid);
+    auto pos = const_cast<const Portfolio*>(portfolio_)
+                   ->get_position(req->contract->tid);
 
     if (pos) {
       uint32_t d = opp_direction(req->direction);
