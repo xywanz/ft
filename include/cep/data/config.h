@@ -24,6 +24,7 @@ class Config {
 
   std::string contracts_file{""};
 
+  bool no_receipt_mode = false;
   bool cancel_outstanding_orders_on_startup = true;
 
   uint64_t throttle_rate_limit_period_ms = 0;

@@ -7,6 +7,12 @@
 #include "cep/data/contract_table.h"
 #include "cep/data/error_code.h"
 #include "cep/data/protocol.h"
+#include "cep/rms/common/fund_manager.h"
+#include "cep/rms/common/no_self_trade.h"
+#include "cep/rms/common/position_manager.h"
+#include "cep/rms/common/strategy_notifier.h"
+#include "cep/rms/common/throttle_rate_limit.h"
+#include "cep/rms/etf/arbitrage_manager.h"
 #include "ipc/lockfree-queue/queue.h"
 #include "ipc/redis_trader_cmd_helper.h"
 #include "utils/misc.h"
@@ -85,6 +91,13 @@ bool OMS::login(const Config& config) {
   handle_trades(&init_trades);
 
   // init risk manager
+  rms_->add_rule(std::make_shared<FundManager>());
+  rms_->add_rule(std::make_shared<PositionManager>());
+  rms_->add_rule(std::make_shared<NoSelfTradeRule>());
+  rms_->add_rule(std::make_shared<ThrottleRateLimit>());
+  if (config.api == "xtp") rms_->add_rule(std::make_shared<ArbitrageManager>());
+  if (!config.no_receipt_mode)
+    rms_->add_rule(std::make_shared<StrategyNotifier>());
   if (!rms_->init(config, &account_, &portfolio_, &order_map_, &md_snapshot_)) {
     spdlog::error("[OMS::login] 风险管理对象初始化失败");
     return false;
@@ -172,6 +185,10 @@ void OMS::close() {
 }
 
 void OMS::execute_cmd(const TraderCommand& cmd) {
+#ifdef FT_TIME_PERF
+  auto start_time = std::chrono::steady_clock::now();
+#endif
+
   if (cmd.magic != TRADER_CMD_MAGIC) {
     spdlog::error("[OMS::run] Recv unknown cmd: error magic num");
     return;
@@ -203,6 +220,12 @@ void OMS::execute_cmd(const TraderCommand& cmd) {
       break;
     }
   }
+
+#ifdef FT_TIME_PERF
+  auto end_time = std::chrono::steady_clock::now();
+  spdlog::info("[OMS::execute_cmd] cmd type: {}   time elapsed: {} ns",
+               cmd.type, (end_time - start_time).count());
+#endif
 }
 
 bool OMS::send_order(const TraderCommand& cmd) {

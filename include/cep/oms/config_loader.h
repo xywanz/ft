@@ -36,6 +36,7 @@ inline void load_config(const std::string& file, ft::Config* config) {
 
   config->contracts_file = node["contracts_file"].as<std::string>("");
 
+  config->no_receipt_mode = node["no_receipt_mode"].as<bool>(false);
   config->cancel_outstanding_orders_on_startup =
       node["cancel_outstanding_orders_on_startup"].as<bool>(true);
 

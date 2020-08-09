@@ -2,26 +2,12 @@
 
 #include "cep/rms/rms.h"
 
-#include "cep/rms/common/fund_manager.h"
-#include "cep/rms/common/no_self_trade.h"
-#include "cep/rms/common/position_manager.h"
-#include "cep/rms/common/strategy_notifier.h"
-#include "cep/rms/common/throttle_rate_limit.h"
-#include "cep/rms/etf/arbitrage_manager.h"
-
 namespace ft {
 
 RMS::RMS() {}
 
 bool RMS::init(const Config& config, Account* account, Portfolio* portfolio,
                OrderMap* order_map, const MdSnapshot* md_snapshot) {
-  add_rule(std::make_shared<FundManager>());
-  add_rule(std::make_shared<PositionManager>());
-  add_rule(std::make_shared<NoSelfTradeRule>());
-  add_rule(std::make_shared<ThrottleRateLimit>());
-  add_rule(std::make_shared<StrategyNotifier>());
-  if (config.api == "xtp") add_rule(std::make_shared<ArbitrageManager>());
-
   for (auto& rule : rules_) {
     if (!rule->init(config, account, portfolio, order_map, md_snapshot))
       return false;
