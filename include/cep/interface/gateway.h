@@ -20,26 +20,50 @@
 namespace ft {
 
 /*
- * Gateway的开发需要遵循以下规则：
+ * Gateway是所有交易网关的基类，目前行情、查询、交易类的接口都
+ * 集成在了Gateway中，后续会把行情及交易无关的查询剥离到其他接
+ * 口中。Gateway会被OMS创建并使用，OMS会在登录、登出、查询时保
+ * 证Gateway线程安全，对于这几个函数，Gateway无需另外实现一套线
+ * 程安全的机制，而对于发单及撤单函数，OMS并没有保证线程安全，同
+ * 一时刻可能存在着多个调用，所以Gateway实现时要注意发单及撤单
+ * 函数的线程安全性
  *
- * 构造函数接受TradingEngineInterface的指针，当特定行为触发时，回调engine中的函数
- * 具体规则参考TradingEngineInterface.h中的说明
+ * Gateway应该实现成一个简单的订单路由类，任务是把订单转发到相应
+ * 的broker或交易所，并把订单回报以相应的规则传回给OMS，内部应该
+ * 尽可能地做到无锁实现。
  *
- * 实现Gateway基类中的虚函数，可全部实现可部分实现，根据需求而定
+ * 接口说明
+ * 1. 查询接口都应该实现成同步的接口
+ * 2. 交易及行情都应该实现成异步的接口
+ * 3. 收到回报时应该回调相应的OMS函数，以告知OMS
  *
- * 在Gateway.cpp中注册你的Gateway
+ * 在gateway.cpp中注册你的Gateway
  */
 class Gateway {
  public:
   virtual ~Gateway() {}
 
+  /*
+   * 登录函数。在登录函数中，gateway应当保存oms指针，以供后续回调
+   * 使用。同时，login函数成功执行后，gateway即进入到了可交易的状
+   * 态（如果配置了交易服务器的话），或是进入到了可订阅行情数据的
+   * 状态（如果配置了行情服务器的话）
+   *
+   * login最好实现成可被多次调用，即和logout配合使用，可反复地主动
+   * 登录登出
+   */
   virtual bool login(OMSInterface* oms, const Config& config) { return false; }
 
+  /*
+   * 登出函数。从服务器登出，以达到禁止交易或中断行情的目的。外部
+   * 可通过logout来暂停交易。
+   */
   virtual void logout() {}
 
   /*
-   * privdata是gateway内部的私有数据，交由外部保存
-   * 撤单时会外部需要将privdata传回给gateway
+   * 发送订单，privdata_ptr是外部传入的指针，gateway可以把该订单
+   * 相关的私有数据，交由外部保存，撤单时外部会将privdata传回给
+   * gateway
    */
   virtual bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) {
     return false;
