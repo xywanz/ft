@@ -8,6 +8,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "cep/data/account.h"
@@ -59,6 +60,7 @@ class OMS : public OMSInterface {
   void handle_account(Account* account);
   void handle_positions(std::vector<Position>* positions);
   void handle_trades(std::vector<Trade>* trades);
+  void handle_timer();
 
   void on_primary_market_traded(Trade* rsp);    // ETF申赎
   void on_secondary_market_traded(Trade* rsp);  // 二级市场买卖
@@ -78,6 +80,7 @@ class OMS : public OMSInterface {
   RedisMdPusher md_pusher_;
   MdSnapshot md_snapshot_;
   std::mutex mutex_;
+  std::unique_ptr<std::thread> timer_thread_;
 
   int cmd_queue_key_ = 0;
 };

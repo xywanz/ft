@@ -104,14 +104,8 @@ bool OMS::login(const Config& config) {
   }
 
   // 启动个线程去定时查询资金账户信息
-  if (config.api != "virtual") {
-    std::thread([this]() {
-      for (;;) {
-        std::this_thread::sleep_for(std::chrono::seconds(15));
-        gateway_->query_account(&account_);
-      }
-    }).detach();
-  }
+  timer_thread_ =
+      std::make_unique<std::thread>(std::mem_fn(&OMS::handle_timer), this);
 
   spdlog::info("[OMS::login] Init done");
 
@@ -351,6 +345,15 @@ void OMS::handle_trades(std::vector<Trade>* trades) {
   for (auto& trade : *trades) {
     portfolio_.update_on_query_trade(trade.tid, trade.direction, trade.offset,
                                      trade.volume);
+  }
+}
+
+void OMS::handle_timer() {
+  Account tmp{};
+  for (;;) {
+    std::this_thread::sleep_for(std::chrono::seconds(15));
+    gateway_->query_account(&tmp);
+    handle_account(&tmp);
   }
 }
 
