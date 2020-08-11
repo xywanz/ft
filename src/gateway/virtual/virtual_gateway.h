@@ -29,8 +29,8 @@ class VirtualGateway : public Gateway {
   bool login(OMSInterface* oms, const Config& config) override;
   void logout() override;
 
-  bool send_order(const OrderRequest& order) override;
-  bool cancel_order(uint64_t oms_order_id) override;
+  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) override;
+  bool cancel_order(uint64_t oms_order_id, uint64_t privdata) override;
   bool query_contracts(std::vector<Contract>* result) override;
 
   bool query_positions(std::vector<Position>* result) override;

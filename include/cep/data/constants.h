@@ -121,7 +121,7 @@ inline const uint32_t CLOSE_YESTERDAY = 8;
 namespace OrderFlag {
 // 套保标志
 inline const uint32_t HEDGE = 0x1;
-}
+}  // namespace OrderFlag
 
 namespace TradeType {
 
@@ -141,6 +141,9 @@ inline const uint32_t ACQUIRED_STOCK = 3;
 inline const uint32_t RELEASED_STOCK = 4;
 
 }  // namespace TradeType
+
+inline const uint32_t kMarketSourceCtp = 100;
+inline const uint32_t kMarketSourceXtp = 101;
 
 /*
  * 对手方，只针买卖方向有效

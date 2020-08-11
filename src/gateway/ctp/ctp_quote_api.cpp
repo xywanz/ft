@@ -187,6 +187,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick{};
+  tick.source = kMarketSourceCtp;
   tick.tid = contract->tid;
 
   struct tm _tm;

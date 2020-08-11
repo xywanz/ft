@@ -31,8 +31,8 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   bool login(const Config& config);
   void logout();
 
-  bool send_order(const OrderRequest& order);
-  bool cancel_order(uint64_t order_id);
+  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr);
+  bool cancel_order(uint64_t xtp_order_id);
 
   bool query_positions(std::vector<Position>* result);
   bool query_account(Account* result);

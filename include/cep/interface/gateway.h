@@ -38,12 +38,16 @@ class Gateway {
   virtual void logout() {}
 
   /*
-   * 发单成功返回大于0的订单号，这个订单号可传回给gateway用于撤单
-   * 发单失败则返回0
+   * privdata是gateway内部的私有数据，交由外部保存
+   * 撤单时会外部需要将privdata传回给gateway
    */
-  virtual bool send_order(const OrderRequest& order) { return false; }
+  virtual bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) {
+    return false;
+  }
 
-  virtual bool cancel_order(uint64_t order_id) { return false; }
+  virtual bool cancel_order(uint64_t order_id, uint64_t privdata) {
+    return false;
+  }
 
   virtual bool subscribe(const std::vector<std::string>& sub_list) {
     return true;

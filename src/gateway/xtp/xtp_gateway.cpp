@@ -39,12 +39,13 @@ void XtpGateway::logout() {
   quote_api_->logout();
 }
 
-bool XtpGateway::send_order(const OrderRequest& order) {
-  return trade_api_->send_order(order);
+bool XtpGateway::send_order(const OrderRequest& order, uint64_t* privdata_ptr) {
+  return trade_api_->send_order(order, privdata_ptr);
 }
 
-bool XtpGateway::cancel_order(uint64_t order_id) {
-  return trade_api_->cancel_order(order_id);
+bool XtpGateway::cancel_order(uint64_t order_id, uint64_t privdata) {
+  (void)order_id;
+  return trade_api_->cancel_order(privdata);
 }
 
 bool XtpGateway::subscribe(const std::vector<std::string>& sub_list) {

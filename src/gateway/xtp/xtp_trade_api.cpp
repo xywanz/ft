@@ -82,7 +82,8 @@ void XtpTradeApi::logout() {
   }
 }
 
-bool XtpTradeApi::send_order(const OrderRequest& order) {
+bool XtpTradeApi::send_order(const OrderRequest& order,
+                             uint64_t* privdata_ptr) {
   if ((order.direction == Direction::BUY && is_offset_close(order.offset)) ||
       (order.direction == Direction::SELL && is_offset_open(order.offset))) {
     spdlog::info("[XtpTradeApi::send_order] 不支持BuyClose或是SellOpen");
@@ -117,7 +118,7 @@ bool XtpTradeApi::send_order(const OrderRequest& order) {
     return false;
   }
 
-  req.order_client_id = order.oms_order_id;
+  req.order_client_id = order.order_id;
   strncpy(req.ticker, contract->ticker.c_str(), sizeof(req.ticker));
   req.quantity = order.volume;
 
@@ -130,6 +131,7 @@ bool XtpTradeApi::send_order(const OrderRequest& order) {
 
   spdlog::debug("[XtpTradeApi::send_order] 订单插入成功. XtpOrderID: {}",
                 xtp_order_id);
+  *privdata_ptr = xtp_order_id;
   return true;
 }
 
@@ -157,8 +159,7 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
   if (order_info->order_status == XTP_ORDER_STATUS_UNKNOWN) return;
 
   if (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING) {
-    OrderAcceptance rsp = {order_info->order_client_id,
-                           order_info->order_xtp_id};
+    OrderAcceptance rsp = {order_info->order_client_id};
     oms_->on_order_accepted(&rsp);
     return;
   }
@@ -218,15 +219,14 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     rsp.trade_type = TradeType::SECONDARY_MARKET;
   }
 
-  rsp.oms_order_id = trade_info->order_client_id;
-  rsp.order_id = trade_info->order_xtp_id;
+  rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;
   oms_->on_order_traded(&rsp);
 }
 
-bool XtpTradeApi::cancel_order(uint64_t order_id) {
-  if (trade_api_->CancelOrder(order_id, session_id_) == 0) {
+bool XtpTradeApi::cancel_order(uint64_t xtp_order_id) {
+  if (trade_api_->CancelOrder(xtp_order_id, session_id_) == 0) {
     spdlog::error("[XtpTradeApi::cancel_order] Failed to call CancelOrder");
     return false;
   }

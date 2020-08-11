@@ -40,7 +40,7 @@ int ThrottleRateLimit::check_order_req(const Order* order) {
     }
 
     order_tm_record_.emplace_back(
-        std::make_tuple(current_ms, order->req.oms_order_id));
+        std::make_tuple(current_ms, order->req.order_id));
   }
 
   if (volume_limit_ > 0) {
@@ -61,7 +61,7 @@ int ThrottleRateLimit::check_order_req(const Order* order) {
 
     volume_count_ += req->volume;
     volume_tm_record_.emplace_back(
-        std::make_tuple(current_ms, req->volume, order->req.oms_order_id));
+        std::make_tuple(current_ms, req->volume, order->req.order_id));
   }
 
   return NO_ERROR;
@@ -70,13 +70,13 @@ int ThrottleRateLimit::check_order_req(const Order* order) {
 void ThrottleRateLimit::on_order_rejected(const Order* order, int error_code) {
   if (error_code <= ERR_SEND_FAILED) {
     if (!volume_tm_record_.empty() &&
-        std::get<2>(volume_tm_record_.back()) == order->req.oms_order_id) {
+        std::get<2>(volume_tm_record_.back()) == order->req.order_id) {
       volume_count_ -= std::get<1>(volume_tm_record_.back());
       volume_tm_record_.pop_back();
     }
 
     if (!order_tm_record_.empty() &&
-        std::get<1>(order_tm_record_.back()) == order->req.oms_order_id) {
+        std::get<1>(order_tm_record_.back()) == order->req.order_id) {
       order_tm_record_.pop_back();
     }
   }

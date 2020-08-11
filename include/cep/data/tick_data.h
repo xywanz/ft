@@ -4,12 +4,15 @@
 #define FT_INCLUDE_CORE_TICK_DATA_H_
 
 #include <cstdint>
+#include <string>
 
 namespace ft {
 
-static const std::size_t kMarketLevel = 10;
+inline const std::size_t kMaxMarketLevel = 10;
+inline const std::size_t kDateLen = 9;
 
 struct TickData {
+  uint32_t source;
   uint32_t tid;
   uint64_t date;
   uint64_t time_sec;
@@ -27,10 +30,10 @@ struct TickData {
   uint64_t open_interest = 0;
 
   int level = 0;
-  double ask[kMarketLevel]{0};
-  double bid[kMarketLevel]{0};
-  int ask_volume[kMarketLevel]{0};
-  int bid_volume[kMarketLevel]{0};
+  double ask[kMaxMarketLevel]{0};
+  double bid[kMaxMarketLevel]{0};
+  int ask_volume[kMaxMarketLevel]{0};
+  int bid_volume[kMaxMarketLevel]{0};
 
   struct {
     double iopv;

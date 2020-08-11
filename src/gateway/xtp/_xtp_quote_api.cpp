@@ -177,6 +177,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   }
 
   TickData tick{};
+  tick.source = kMarketSourceXtp;
   tick.tid = contract->tid;
 
   uint64_t sec = (market_data->data_time / 1000) % 100;

@@ -12,27 +12,25 @@
 namespace ft {
 
 struct OrderAcceptance {
-  uint64_t oms_order_id;
   uint64_t order_id;
 };
 
 struct OrderRejection {
-  uint64_t oms_order_id;
+  uint64_t order_id;
   std::string reason;
 };
 
 struct OrderCancellation {
-  uint64_t oms_order_id;
+  uint64_t order_id;
   int canceled_volume;
 };
 
 struct OrderCancelRejection {
-  uint64_t oms_order_id;
+  uint64_t order_id;
   std::string reason;
 };
 
 struct Trade {
-  uint64_t oms_order_id;
   uint64_t order_id;
   uint32_t tid;
   uint32_t direction;

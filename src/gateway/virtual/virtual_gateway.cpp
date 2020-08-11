@@ -20,9 +20,12 @@ bool VirtualGateway::login(OMSInterface* oms, const Config& config) {
 
 void VirtualGateway::logout() {}
 
-bool VirtualGateway::send_order(const OrderRequest& order) {
+bool VirtualGateway::send_order(const OrderRequest& order,
+                                uint64_t* privdata_ptr) {
+  (void)privdata_ptr;
+
   VirtualOrderReq req{};
-  req.oms_order_id = order.oms_order_id;
+  req.oms_order_id = order.order_id;
   req.tid = order.contract->tid;
   req.direction = order.direction;
   req.offset = order.offset;
@@ -33,7 +36,8 @@ bool VirtualGateway::send_order(const OrderRequest& order) {
   return virtual_api_.insert_order(&req);
 }
 
-bool VirtualGateway::cancel_order(uint64_t oms_order_id) {
+bool VirtualGateway::cancel_order(uint64_t oms_order_id, uint64_t privdata) {
+  (void)privdata;
   return virtual_api_.cancel_order(oms_order_id);
 }
 
@@ -62,14 +66,14 @@ bool VirtualGateway::query_commision_rate(const std::string& ticker) {
 }
 
 void VirtualGateway::on_order_accepted(uint64_t oms_order_id) {
-  OrderAcceptance rsp = {oms_order_id, oms_order_id};
+  OrderAcceptance rsp = {oms_order_id};
   oms_->on_order_accepted(&rsp);
 }
 
 void VirtualGateway::on_order_traded(uint64_t oms_order_id, int traded,
                                      double price) {
   Trade rsp{};
-  rsp.oms_order_id = oms_order_id;
+  rsp.order_id = oms_order_id;
   rsp.order_id = oms_order_id;
   rsp.volume = traded;
   rsp.price = price;

@@ -25,8 +25,8 @@ class CtpGateway : public Gateway {
   bool login(OMSInterface *oms, const Config &config) override;
   void logout() override;
 
-  bool send_order(const OrderRequest &order) override;
-  bool cancel_order(uint64_t order_id) override;
+  bool send_order(const OrderRequest &order, uint64_t *privdata_ptr) override;
+  bool cancel_order(uint64_t order_id, uint64_t privdata) override;
 
   bool subscribe(const std::vector<std::string> &sub_list) override;
 

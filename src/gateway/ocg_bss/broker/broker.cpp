@@ -147,7 +147,9 @@ bool BssBroker::query_account(Account *result) {
   return true;
 }
 
-bool BssBroker::send_order(const OrderRequest &order) {
+bool BssBroker::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
+  (void)privdata_ptr;
+
   if (!is_logon_) {
     spdlog::error("[BssBroker::send_order]: not logon");
     return false;
@@ -157,7 +159,7 @@ bool BssBroker::send_order(const OrderRequest &order) {
 
   bss::NewOrderRequest req{};
   snprintf(req.client_order_id, sizeof(req.client_order_id), "%u",
-           static_cast<uint32_t>(order.oms_order_id));
+           static_cast<uint32_t>(order.order_id));
   strncpy(req.submitting_broker_id, broker_id_,
           sizeof(req.submitting_broker_id));
   strncpy(req.security_id, contract->ticker.c_str(), sizeof(req.security_id));
@@ -211,7 +213,9 @@ bool BssBroker::send_order(const OrderRequest &order) {
   return true;
 }
 
-bool BssBroker::cancel_order(uint64_t order_id) { return true; }
+bool BssBroker::cancel_order(uint64_t order_id, uint64_t privdata) {
+  return true;
+}
 
 bool BssBroker::amend_order(uint64_t order_id, const OrderRequest &order) {
   return true;
@@ -319,8 +323,8 @@ void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
       static_cast<double>(msg.price) / 1e8);
 
   OrderAcceptance rsp{};
-  rsp.oms_order_id = std::stoul(msg.client_order_id);
-  rsp.order_id = std::stoul(msg.order_id);
+  rsp.order_id = std::stoul(msg.client_order_id);
+  // rsp.order_id = std::stoul(msg.order_id);
   oms_->on_order_accepted(&rsp);
 }
 
@@ -329,7 +333,7 @@ void BssBroker::on_order_rejected(const bss::ExecutionReport &msg) {
                 msg.order_reject_code, msg.reason.data);
 
   OrderRejection rsp{};
-  rsp.oms_order_id = std::stoul(msg.client_order_id);
+  rsp.order_id = std::stoul(msg.client_order_id);
   oms_->on_order_rejected(&rsp);
 }
 
@@ -342,8 +346,8 @@ void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
       msg.order_id, msg.client_order_id, qty, price);
 
   Trade rsp{};
-  rsp.oms_order_id = std::stoul(msg.client_order_id);
-  rsp.order_id = std::stoul(msg.order_id);
+  rsp.order_id = std::stoul(msg.client_order_id);
+  // rsp.order_id = std::stoul(msg.order_id);
   rsp.volume = qty;
   rsp.price = price;
   rsp.trade_type = TradeType::SECONDARY_MARKET;
@@ -356,7 +360,7 @@ void BssBroker::on_order_cancelled(const bss::ExecutionReport &msg) {
   int traded = msg.cumulative_quantity / 100000000;
 
   OrderCancellation rsp{};
-  rsp.oms_order_id = std::stoul(msg.client_order_id);
+  rsp.order_id = std::stoul(msg.client_order_id);
   rsp.canceled_volume = total - traded;
   oms_->on_order_canceled(&rsp);
 }
@@ -365,7 +369,7 @@ void BssBroker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
   spdlog::error("[BssBroker::on_order_cancel_rejected] RejectCode:{} Reason:{}",
                 msg.cancel_reject_code, msg.reason.data);
   OrderCancelRejection rsp{};
-  rsp.oms_order_id = std::stoul(msg.original_client_order_id);
+  rsp.order_id = std::stoul(msg.original_client_order_id);
   oms_->on_order_cancel_rejected(&rsp);
 }
 
@@ -393,7 +397,7 @@ void BssBroker::on_order_expired(const bss::ExecutionReport &msg) {
                 msg.order_reject_code, msg.reason.data);
 
   OrderRejection rsp{};
-  rsp.oms_order_id = std::stoul(msg.client_order_id);
+  rsp.order_id = std::stoul(msg.client_order_id);
   oms_->on_order_rejected(&rsp);
 }
 

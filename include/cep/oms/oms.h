@@ -65,7 +65,7 @@ class OMS : public OMSInterface {
   void on_primary_market_traded(Trade* rsp);    // ETF申赎
   void on_secondary_market_traded(Trade* rsp);  // 二级市场买卖
 
-  uint64_t next_oms_order_id() { return next_oms_order_id_++; }
+  uint64_t next_order_id() { return next_oms_order_id_++; }
 
  private:
   std::unique_ptr<Gateway> gateway_{nullptr};

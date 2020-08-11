@@ -58,12 +58,12 @@ void CtpGateway::logout() {
   quote_api_->logout();
 }
 
-bool CtpGateway::send_order(const OrderRequest &order) {
-  return trade_api_->send_order(order);
+bool CtpGateway::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
+  return trade_api_->send_order(order, privdata_ptr);
 }
 
-bool CtpGateway::cancel_order(uint64_t order_id) {
-  return trade_api_->cancel_order(order_id);
+bool CtpGateway::cancel_order(uint64_t order_id, uint64_t privdata) {
+  return trade_api_->cancel_order(order_id, privdata);
 }
 
 bool CtpGateway::subscribe(const std::vector<std::string> &sub_list) {

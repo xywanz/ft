@@ -25,25 +25,18 @@ class CtpGateway;
 class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
   explicit CtpTradeApi(OMSInterface *oms);
-
   ~CtpTradeApi();
 
   bool login(const Config &config);
-
   void logout();
 
-  bool send_order(const OrderRequest &order);
-
-  bool cancel_order(uint64_t order_id);
+  bool send_order(const OrderRequest &order, uint64_t *privdata_ptr);
+  bool cancel_order(uint64_t order_id, uint64_t tid);
 
   bool query_contracts(std::vector<Contract> *result);
-
   bool query_positions(std::vector<Position> *result);
-
   bool query_account(Account *result);
-
   bool query_trades(std::vector<Trade> *result);
-
   bool query_margin_rate(const std::string &ticker);
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
@@ -125,26 +118,22 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
  private:
   int next_req_id() { return next_req_id_++; }
-
-  uint64_t get_oms_order_id(int order_ref) const {
-    return order_ref - order_ref_base_;
-  }
-
-  uint64_t get_order_id(uint32_t tid, uint32_t order_sys_id) const {
-    return ((static_cast<uint64_t>(tid) << 32) & 0xffffffff00000000ULL) |
-           (static_cast<uint64_t>(order_sys_id) & 0xffffffffULL);
-  }
-
   void done() { is_done_ = true; }
-
   void error() { is_error_ = true; }
-
   bool wait_sync() {
     while (!is_done_)
       if (is_error_) return false;
 
     is_done_ = false;
     return true;
+  }
+
+  uint64_t get_order_id(uint64_t order_ref) const {
+    return order_ref - order_ref_base_;
+  }
+
+  uint64_t get_order_ref(uint64_t order_id) const {
+    return order_id + order_ref_base_;
   }
 
  private:
@@ -156,7 +145,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   std::string investor_id_;
   int front_id_;
   int session_id_;
-  int order_ref_base_;
+  uint64_t order_ref_base_;
 
   std::atomic<int> next_req_id_ = 0;
 

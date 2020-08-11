@@ -33,8 +33,8 @@ class BssBroker : public Gateway {
 
   bool query_account(Account* result) override;
 
-  bool send_order(const OrderRequest& order) override;
-  bool cancel_order(uint64_t order_id) override;
+  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) override;
+  bool cancel_order(uint64_t order_id, uint64_t privdata) override;
   bool amend_order(uint64_t order_id, const OrderRequest& order);
   bool mass_cancel();
 
