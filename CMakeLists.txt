@@ -38,3 +38,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused")
 
 add_subdirectory(src)
 add_subdirectory(demo)
+add_subdirectory(test)

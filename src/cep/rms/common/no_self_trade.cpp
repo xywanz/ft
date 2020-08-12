@@ -30,7 +30,8 @@ int NoSelfTradeRule::check_order_req(const Order* order) {
     if (pending_order->direction != opp_d) continue;
 
     // 存在市价单直接拒绝
-    if (pending_order->type == OrderType::MARKET ||
+    if (pending_order->price < 1e-5 ||
+        pending_order->type == OrderType::MARKET ||
         (req->direction == Direction::BUY &&
          req->price > pending_order->price - 1e-5) ||
         (req->direction == Direction::SELL &&
