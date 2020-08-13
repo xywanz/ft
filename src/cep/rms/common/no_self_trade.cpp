@@ -7,10 +7,8 @@
 
 namespace ft {
 
-bool NoSelfTradeRule::init(const Config& config, Account* account,
-                           Portfolio* portfolio, OrderMap* order_map,
-                           const MdSnapshot* md_snapshot) {
-  order_map_ = order_map;
+bool NoSelfTradeRule::init(RiskRuleParams* params) {
+  order_map_ = params->order_map;
   return true;
 }
 

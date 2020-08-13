@@ -17,15 +17,19 @@
 
 namespace ft {
 
+struct RiskRuleParams {
+  const Config* config;
+  const MdSnapshot* md_snapshot;
+  Account* account;
+  Portfolio* portfolio;
+  OrderMap* order_map;
+};
+
 class RiskRule {
  public:
   virtual ~RiskRule() {}
 
-  virtual bool init(const Config& config, Account* account,
-                    Portfolio* portfolio, OrderMap* order_map,
-                    const MdSnapshot* md_snapshot) {
-    return true;
-  }
+  virtual bool init(RiskRuleParams* params) { return true; }
 
   virtual int check_order_req(const Order* order) { return NO_ERROR; }
 

@@ -12,8 +12,7 @@ namespace ft {
 
 class PositionManager : public RiskRule {
  public:
-  bool init(const Config& config, Account* account, Portfolio* portfolio,
-            OrderMap* order_map, const MdSnapshot* md_snapshot) override;
+  bool init(RiskRuleParams* params) override;
 
   int check_order_req(const Order* order) override;
 

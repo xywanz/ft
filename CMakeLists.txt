@@ -38,4 +38,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused")
 
 add_subdirectory(src)
 add_subdirectory(demo)
+
+# 如果不需要编译单元测试，注释下面一行
 add_subdirectory(test)

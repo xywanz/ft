@@ -8,10 +8,8 @@
 
 namespace ft {
 
-bool PositionManager::init(const Config& config, Account* account,
-                           Portfolio* portfolio, OrderMap* order_map,
-                           const MdSnapshot* md_snapshot) {
-  portfolio_ = portfolio;
+bool PositionManager::init(RiskRuleParams* params) {
+  portfolio_ = params->portfolio;
   return true;
 }
 

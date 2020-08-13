@@ -24,17 +24,18 @@ void GenMO(ft::Order* order, uint32_t direction, uint32_t offset) {
 }
 
 TEST(RMS, NoSelfTrade) {
-  ft::Config conf;
+  ft::RiskRuleParams params{};
   ft::OrderMap order_map;
   ft::Contract contract{};
   ft::Order order{};
 
+  params.order_map = &order_map;
   contract.ticker = "ticker001";
   order.req.contract = &contract;
   order.req.volume = 1;
 
   ft::NoSelfTradeRule rule;
-  rule.init(conf, nullptr, nullptr, &order_map, nullptr);
+  rule.init(&params);
 
   GenLO(&order, ft::Direction::BUY, ft::Offset::OPEN, 100.1);
   order_map.emplace(static_cast<uint64_t>(order.req.order_id), order);

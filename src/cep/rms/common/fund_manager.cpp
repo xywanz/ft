@@ -8,10 +8,8 @@
 
 namespace ft {
 
-bool FundManager::init(const Config& config, Account* account,
-                       Portfolio* portfolio, OrderMap* order_map,
-                       const MdSnapshot* md_snapshot) {
-  account_ = account;
+bool FundManager::init(RiskRuleParams* params) {
+  account_ = params->account;
   return true;
 }
 

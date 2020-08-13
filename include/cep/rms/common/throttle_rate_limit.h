@@ -23,8 +23,7 @@ inline uint64_t get_current_ms() {
 
 class ThrottleRateLimit : public RiskRule {
  public:
-  bool init(const Config& config, Account* account, Portfolio* portfolio,
-            OrderMap* order_map, const MdSnapshot* md_snapshot) override;
+  bool init(RiskRuleParams* params) override;
 
   int check_order_req(const Order* order) override;
 

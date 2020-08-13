@@ -6,12 +6,10 @@
 
 namespace ft {
 
-bool ThrottleRateLimit::init(const Config& config, Account* account,
-                             Portfolio* portfolio, OrderMap* order_map,
-                             const MdSnapshot* md_snapshot) {
-  period_ms_ = config.throttle_rate_limit_period_ms;
-  order_limit_ = config.throttle_rate_order_limit;
-  volume_limit_ = config.throttle_rate_volume_limit;
+bool ThrottleRateLimit::init(RiskRuleParams* params) {
+  period_ms_ = params->config->throttle_rate_limit_period_ms;
+  order_limit_ = params->config->throttle_rate_order_limit;
+  volume_limit_ = params->config->throttle_rate_volume_limit;
 
   return true;
 }

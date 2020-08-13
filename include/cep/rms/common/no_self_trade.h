@@ -17,8 +17,7 @@ namespace ft {
 // 2. 非市价单的其他订单，且价格可以成功撮合的
 class NoSelfTradeRule : public RiskRule {
  public:
-  bool init(const Config& config, Account* account, Portfolio* portfolio,
-            OrderMap* order_map, const MdSnapshot* md_snapshotp) override;
+  bool init(RiskRuleParams* params) override;
 
   int check_order_req(const Order* req) override;
 

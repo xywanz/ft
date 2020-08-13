@@ -6,11 +6,9 @@ namespace ft {
 
 RMS::RMS() {}
 
-bool RMS::init(const Config& config, Account* account, Portfolio* portfolio,
-               OrderMap* order_map, const MdSnapshot* md_snapshot) {
+bool RMS::init(RiskRuleParams* params) {
   for (auto& rule : rules_) {
-    if (!rule->init(config, account, portfolio, order_map, md_snapshot))
-      return false;
+    if (!rule->init(params)) return false;
   }
 
   return true;

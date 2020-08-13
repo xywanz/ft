@@ -91,6 +91,12 @@ bool OMS::login(const Config& config) {
   handle_trades(&init_trades);
 
   // init risk manager
+  RiskRuleParams risk_params{};
+  risk_params.config = &config;
+  risk_params.account = &account_;
+  risk_params.portfolio = &portfolio_;
+  risk_params.order_map = &order_map_;
+  risk_params.md_snapshot = &md_snapshot_;
   rms_->add_rule(std::make_shared<FundManager>());
   rms_->add_rule(std::make_shared<PositionManager>());
   rms_->add_rule(std::make_shared<NoSelfTradeRule>());
@@ -98,7 +104,7 @@ bool OMS::login(const Config& config) {
   if (config.api == "xtp") rms_->add_rule(std::make_shared<ArbitrageManager>());
   if (!config.no_receipt_mode)
     rms_->add_rule(std::make_shared<StrategyNotifier>());
-  if (!rms_->init(config, &account_, &portfolio_, &order_map_, &md_snapshot_)) {
+  if (!rms_->init(&risk_params)) {
     spdlog::error("[OMS::login] 风险管理对象初始化失败");
     return false;
   }

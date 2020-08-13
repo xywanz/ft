@@ -23,8 +23,7 @@ class RMS {
  public:
   RMS();
 
-  bool init(const Config& config, Account* account, Portfolio* portfolio,
-            OrderMap* order_map, const MdSnapshot* md_snapshot);
+  bool init(RiskRuleParams* params);
 
   void add_rule(std::shared_ptr<RiskRule> rule);
 
