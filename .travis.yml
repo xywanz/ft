@@ -20,6 +20,11 @@ script:
   - cd ../..
   - cp -rf yaml-cpp/include dependencies/yaml-cpp/
   - cp -rf yaml-cpp/build/libyaml-cpp.a dependencies/yaml-cpp/lib/
+  - git clone https://github.com/google/googletest.git --depth=1
+  - mkdir -p googletest/build && cd googletest/build && cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. && make -j8
+  - cd ../..
+  - cp -rf googletest/include dependencies/googletest/
+  - cp -rf googletest/build/lib/* dependencies/googletest/lib/
   - export CC=gcc-7
   - export CXX=g++-7
   - gcc -v && g++ -v && cmake --version
