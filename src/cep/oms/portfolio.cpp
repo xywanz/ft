@@ -71,9 +71,11 @@ void Portfolio::update_buy_or_sell_pending(uint32_t tid, uint32_t direction,
     // close_pending");
   }
 
-  // const auto* contract = ContractTable::get_by_index(pos.tid);
-  // assert(contract);
-  // redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
+  if (redis_) {
+    const auto* contract = ContractTable::get_by_index(pos.tid);
+    assert(contract);
+    redis_->set(contract->ticker, pos);
+  }
 }
 
 void Portfolio::update_purchase_or_redeem_pending(uint32_t tid,
@@ -100,9 +102,11 @@ void Portfolio::update_purchase_or_redeem_pending(uint32_t tid,
     // close_pending");
   }
 
-  // const auto* contract = ContractTable::get_by_index(pos.tid);
-  // assert(contract);
-  // redis_.set(proto_.pos_key(contract->ticker), &pos, sizeof(pos));
+  if (redis_) {
+    const auto* contract = ContractTable::get_by_index(pos.tid);
+    assert(contract);
+    redis_->set(contract->ticker, pos);
+  }
 }
 
 void Portfolio::update_traded(uint32_t tid, uint32_t direction, uint32_t offset,

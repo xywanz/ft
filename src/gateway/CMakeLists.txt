@@ -12,7 +12,7 @@ target_link_libraries(xtp-gateway ${COMMON_LIB} ${GATEWAY_LIB})
 
 aux_source_directory(virtual VIRTUAL_SRC)
 add_library(virtual-gateway STATIC ${VIRTUAL_SRC})
-target_link_libraries(virtual-gateway ${COMMON_LIB})
+target_link_libraries(virtual-gateway ${COMMON_LIB} oms)
 
 include_directories(ocg_bss)
 add_subdirectory(ocg_bss)

@@ -313,10 +313,7 @@ void OMS::handle_account(Account* account) {
   account_ = *account;
   lock.unlock();
 
-  spdlog::info(
-      "[OMS::on_query_account] total_asset:{:.3f}, frozen:{:.3f}, "
-      "margin:{:.3f}",
-      account->total_asset, account->frozen, account->margin);
+  spdlog::info("[OMS::on_query_account] {}", dump_account(*account));
 }
 
 void OMS::handle_positions(std::vector<Position>* positions) {

@@ -24,7 +24,7 @@ bool VirtualGateway::send_order(const OrderRequest& order,
                                 uint64_t* privdata_ptr) {
   (void)privdata_ptr;
 
-  VirtualOrderReq req{};
+  VirtualOrderRequest req{};
   req.oms_order_id = order.order_id;
   req.tid = order.contract->tid;
   req.direction = order.direction;
@@ -50,9 +50,7 @@ bool VirtualGateway::query_positions(std::vector<Position>* result) {
 }
 
 bool VirtualGateway::query_account(Account* result) {
-  result->account_id = 1234;
-  result->total_asset = 100000000;
-  return true;
+  return virtual_api_.query_account(result);
 }
 
 bool VirtualGateway::query_trades(std::vector<Trade>* result) { return true; }
@@ -74,9 +72,9 @@ void VirtualGateway::on_order_traded(uint64_t oms_order_id, int traded,
                                      double price) {
   Trade rsp{};
   rsp.order_id = oms_order_id;
-  rsp.order_id = oms_order_id;
   rsp.volume = traded;
   rsp.price = price;
+  rsp.trade_type = TradeType::SECONDARY_MARKET;
   oms_->on_order_traded(&rsp);
 }
 

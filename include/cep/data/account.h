@@ -3,7 +3,10 @@
 #ifndef FT_INCLUDE_CEP_DATA_ACCOUNT_H_
 #define FT_INCLUDE_CEP_DATA_ACCOUNT_H_
 
+#include <fmt/format.h>
+
 #include <cstdint>
+#include <string>
 
 namespace ft {
 
@@ -38,6 +41,13 @@ class FundAccount {
   double float_pnl_;     // 当前浮动盈亏
   double realized_pnl_;  // 当日已实现盈亏
 };
+
+inline std::string dump_account(const Account& account) {
+  return fmt::format(
+      "<Account account_id:{} total_asset:{} cash:{} margin:{} frozen:{}>",
+      account.account_id, account.total_asset, account.cash, account.margin,
+      account.frozen);
+}
 
 }  // namespace ft
 
