@@ -2,6 +2,7 @@
 
 add_subdirectory(oms)
 add_subdirectory(rms)
+add_subdirectory(order_book)
 
 add_executable(ft-cep main.cpp)
 target_link_libraries(ft-cep

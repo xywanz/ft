@@ -11,4 +11,4 @@ link_directories(
 aux_source_directory(. TEST_SRC)
 
 add_executable(run_unit_tests ${TEST_SRC})
-target_link_libraries(run_unit_tests rms gtest gtest_main pthread)
+target_link_libraries(run_unit_tests order_book rms gtest gtest_main pthread)
