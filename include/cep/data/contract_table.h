@@ -94,59 +94,68 @@ inline void store_contracts(const std::string& file,
 class ContractTable {
  public:
   static bool init(std::vector<Contract>&& vec) {
-    if (!is_inited) {
+    if (!get()->is_inited_) {
+      auto& contracts = get()->contracts_;
+      auto& ticker2contract = get()->ticker2contract_;
       contracts = std::move(vec);
       for (std::size_t i = 0; i < contracts.size(); ++i) {
         auto& contract = contracts[i];
         contract.tid = i + 1;
         ticker2contract.emplace(contract.ticker, &contract);
       }
-
-      is_inited = true;
+      get()->is_inited_ = true;
     }
 
     return true;
   }
 
   static bool init(const std::string& file) {
-    if (!is_inited) {
+    if (!get()->is_inited_) {
+      auto& contracts = get()->contracts_;
+      auto& ticker2contract = get()->ticker2contract_;
       if (!load_contracts(file, &contracts)) return false;
-
       for (std::size_t i = 0; i < contracts.size(); ++i) {
         auto& contract = contracts[i];
         contract.tid = i + 1;
         ticker2contract.emplace(contract.ticker, &contract);
       }
-
-      is_inited = true;
+      get()->is_inited_ = true;
     }
 
     return true;
   }
 
-  static bool inited() { return is_inited; }
+  static bool inited() { return get()->is_inited_; }
 
   static void store(const std::string& file) {
-    store_contracts(file, contracts);
+    store_contracts(file, get()->contracts_);
   }
 
   static const Contract* get_by_ticker(const std::string& ticker) {
+    auto& ticker2contract = get()->ticker2contract_;
     auto iter = ticker2contract.find(ticker);
     if (iter == ticker2contract.end()) return nullptr;
     return iter->second;
   }
 
   static const Contract* get_by_index(uint32_t tid) {
+    auto& contracts = get()->contracts_;
     if (tid == 0 || tid > contracts.size()) return nullptr;
     return &contracts[tid - 1];
   }
 
-  static std::size_t size() { return contracts.size(); }
+  static std::size_t size() { return get()->contracts_.size(); }
 
  private:
-  inline static bool is_inited = false;
-  inline static std::vector<Contract> contracts;
-  inline static std::unordered_map<std::string, Contract*> ticker2contract;
+  static ContractTable* get() {
+    static ContractTable ct;
+    return &ct;
+  }
+
+ private:
+  bool is_inited_ = false;
+  std::vector<Contract> contracts_;
+  std::unordered_map<std::string, Contract*> ticker2contract_;
 };
 
 }  // namespace ft
