@@ -25,8 +25,8 @@ OMS::~OMS() { close(); }
 
 bool OMS::login(const Config& config) {
   spdlog::info("***************OMS****************");
-  spdlog::info("* version: %lu", version());
-  spdlog::info("* compiling time: %s %s\n", __TIME__, __DATE__);
+  spdlog::info("* version: {}", version());
+  spdlog::info("* compiling time: {} {}", __TIME__, __DATE__);
   spdlog::info("********************************************");
   config.show();
 

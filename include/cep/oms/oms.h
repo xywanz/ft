@@ -36,7 +36,7 @@ class OMS : public OMSInterface {
 
   void close();
 
-  static uint64_t version() { return 202006222311; }
+  static uint64_t version() { return 202008172355; }
 
  private:
   void process_cmd_from_redis();
