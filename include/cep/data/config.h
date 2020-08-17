@@ -55,7 +55,7 @@ class Config {
     spdlog::info("  app_id: {}", app_id);
     spdlog::info("  subscription_list: ");
     for (const auto& ticker : subscription_list) printf("%s ", ticker.c_str());
-    spdlog::info("");
+    printf("\n");
     spdlog::info("  contracts_file: {}", contracts_file.c_str());
     spdlog::info("  cancel_outstanding_orders_on_startup: {}",
                  cancel_outstanding_orders_on_startup);
