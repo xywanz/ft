@@ -139,7 +139,7 @@ void VirtualApi::process_pendings() {
 }
 
 void VirtualApi::disseminate_market_data() {
-  auto contract = ContractTable::get_by_ticker("rb2009");
+  auto contract = ContractTable::get_by_ticker("rb2011");
   assert(contract);
 
   RandomWalk walker(10000, 1);

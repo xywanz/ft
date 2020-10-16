@@ -75,7 +75,7 @@ bool OMS::login(const Config& config) {
 
   // query all positions
   std::vector<Position> init_positions;
-  portfolio_.init(ContractTable::size());
+  portfolio_.init(ContractTable::size(), true, account_.account_id);
   if (!gateway_->query_positions(&init_positions)) {
     spdlog::error("[OMS::login] Failed to query positions");
     return false;
