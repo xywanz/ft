@@ -28,10 +28,23 @@ class ContractCollector : public ft::OMSInterface {
   std::vector<ft::Contract> contracts_;
 };
 
+static void usage() {
+  printf("usage:\n");
+  printf("    --config            登录的配置文件\n");
+  printf("    -h, -?, --help      帮助\n");
+  printf("    --output            生成的合约路径及文件名，如./contracts.csv\n");
+}
+
 int main() {
-  std::string login_yml = getarg("../config/login.yml", "--config");
+  std::string login_yml = getarg("../config/config.yml", "--config");
   std::string output = getarg("./contracts.csv", "--output");
   std::string loglevel = getarg("info", "--loglevel");
+  bool help = getarg(false, "-h", "--help", "-?");
+
+  if (help) {
+    usage();
+    exit(0);
+  }
 
   spdlog::set_level(spdlog::level::from_str(loglevel));
 

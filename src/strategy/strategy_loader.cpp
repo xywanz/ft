@@ -10,16 +10,16 @@
 #include "strategy/strategy.h"
 
 static void usage() {
-  printf("usage: ./strategy-loader [--account=<account>] [--config=<file>]\n");
-  printf("                         [--contracts=<file>] [-h -? --help]\n");
+  printf("usage: ./strategy-loader [--account=<account>]\n");
+  printf("                         [--contracts-file=<file>] [-h -? --help]\n");
   printf("                         [--id=<id>] [--loglevel=level]\n");
   printf("                         [--strategy=<so>]\n");
   printf("\n");
   printf("    --account           账户\n");
-  printf("    --contracts         合约列表文件\n");
+  printf("    --contracts-file    合约列表文件\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --id                策略的唯一标识，用于接收订单回报\n");
-  printf("    --loglevel          日志等级(info, warn, error, debug, trace)\n");
+  printf("    --loglevel          日志等级(trace, debug, info, warn, error)\n");
   printf("    --strategy          要加载的策略的动态库\n");
 }
 
@@ -28,7 +28,7 @@ int main() {
       getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
-  std::string strategy_id = getarg("Strategy", "id");
+  std::string strategy_id = getarg("Strategy", "--id");
   uint64_t account_id = getarg(0ULL, "--account");
   bool help = getarg(false, "-h", "--help", "-?");
 

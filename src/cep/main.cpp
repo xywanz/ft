@@ -10,24 +10,21 @@
 
 ft::OMS* oms = nullptr;
 
-static void usage() {
-  printf("usage: ./trading-engine [--config=<file>] [--contracts=<file>]\n");
-  printf("                        [-h -? --help] [--loglevel=level]\n");
-  printf("\n");
+static void usage(const char* pname) {
+  printf("usage: %s [--config=<file>] [-h -? --help] [--loglevel=level]\n",
+         pname);
   printf("    --config            登录的配置文件\n");
-  printf("    --contracts         合约列表文件\n");
   printf("    -h, -?, --help      帮助\n");
-  printf("    --loglevel          日志等级(info, warn, error, debug, trace)\n");
+  printf("    --loglevel          日志等级(trace, debug, info, warn, error)\n");
 }
 
-int main() {
-  std::string login_config_file =
-      getarg("../config/ctp_config.yml", "--config");
+int main(int argc, char** argv) {
+  std::string login_config_file = getarg("../config/config.yml", "--config");
   std::string log_level = getarg("info", "--loglevel");
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    usage(argv[0]);
     exit(0);
   }
 

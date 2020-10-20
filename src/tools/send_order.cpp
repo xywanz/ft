@@ -4,6 +4,20 @@
 
 #include "strategy/order_sender.h"
 
+static void usage() {
+  printf("usage:\n");
+  printf("    --account           账户\n");
+  printf("    --contracts-file    合约列表文件\n");
+  printf("    --direction         buy, sell, purchase or redeem\n");
+  printf(
+      "    --offset            open, close, close_today or close_yesterday\n");
+  printf("    --order_type        limit, market, fak or fok\n");
+  printf("    -h, -?, --help      帮助\n");
+  printf("    --price             价格\n");
+  printf("    --ticker            ticker\n");
+  printf("    --volume            数量\n");
+}
+
 int main() {
   std::string contracts_file =
       getarg("../config/contracts.csv", "--contracts-file");
@@ -14,6 +28,12 @@ int main() {
   uint64_t account = getarg(0ULL, "--account");
   int volume = getarg(0, "--volume");
   double price = getarg(0.0, "--price");
+  bool help = getarg(false, "-h", "--help", "-?");
+
+  if (help) {
+    usage();
+    exit(0);
+  }
 
   if (account == 0) {
     printf("Invalid account\n");
