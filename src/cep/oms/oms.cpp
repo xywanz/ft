@@ -266,7 +266,7 @@ bool OMS::send_order(const TraderCommand& cmd) {
         "[OMS::send_order] Failed to send_order. {}, {}{}, {}, "
         "Volume:{}, Price:{:.3f}",
         contract->ticker, direction_str(req.direction), offset_str(req.offset),
-        ordertype_str(req.type), req.volume, req.price);
+        ordertype_str(req.type), (int)req.volume, (int)req.price);
 
     rms_->on_order_rejected(&order, ERR_SEND_FAILED);
     return false;
@@ -279,7 +279,7 @@ bool OMS::send_order(const TraderCommand& cmd) {
       "[OMS::send_order] Success. {}, {}{}, {}, OrderID:{}, "
       "Volume:{}, Price: {:.3f}",
       contract->ticker, direction_str(req.direction), offset_str(req.offset),
-      ordertype_str(req.type), req.order_id, req.volume, req.price);
+      ordertype_str(req.type), (int)req.order_id, (int)req.volume, (int)req.price);
   return true;
 }
 
@@ -391,7 +391,7 @@ void OMS::on_order_accepted(OrderAcceptance* rsp) {
       "Volume:{}, Price:{:.2f}, OrderType:{}",
       rsp->order_id, order.req.contract->ticker,
       direction_str(order.req.direction), offset_str(order.req.offset),
-      order.req.volume, order.req.price, ordertype_str(order.req.type));
+      (int)order.req.volume, (int)order.req.price, ordertype_str(order.req.type));
 }
 
 void OMS::on_order_rejected(OrderRejection* rsp) {
@@ -411,7 +411,7 @@ void OMS::on_order_rejected(OrderRejection* rsp) {
       "Price:{:.3f}",
       rsp->reason, order.req.contract->ticker,
       direction_str(order.req.direction), offset_str(order.req.offset),
-      order.req.volume, order.req.price);
+      (int)order.req.volume, (int)order.req.price);
 
   order_map_.erase(iter);
 }
@@ -443,7 +443,7 @@ void OMS::on_primary_market_traded(Trade* rsp) {
         "[OMS::on_order_accepted] 报单委托成功. {}, {}, "
         "OrderID:{}, Volume:{}",
         order.req.contract->ticker, direction_str(order.req.direction),
-        rsp->order_id, order.req.volume);
+        (int)rsp->order_id, (int)order.req.volume);
   }
 
   if (rsp->trade_type == TradeType::ACQUIRED_STOCK) {
@@ -458,7 +458,7 @@ void OMS::on_primary_market_traded(Trade* rsp) {
     // risk_mgr_->on_order_completed(&order);
     spdlog::info("[OMS::on_primary_market_traded] done. {}, {}, Volume:{}",
                  order.req.contract->ticker, direction_str(order.req.direction),
-                 order.req.volume);
+                 (int)order.req.volume);
     order_map_.erase(iter);
   }
 }
@@ -484,7 +484,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
         "Volume:{}, Price:{:.2f}, OrderType:{}",
         rsp->order_id, order.req.contract->ticker,
         direction_str(order.req.direction), offset_str(order.req.offset),
-        order.req.volume, order.req.price, ordertype_str(order.req.type));
+        (int)order.req.volume, (int)order.req.price, ordertype_str(order.req.type));
   }
 
   order.traded_volume += rsp->volume;
@@ -494,7 +494,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
       "Price:{:.3f}, TotalTraded/Original:{}/{}",
       rsp->order_id, order.req.contract->ticker,
       direction_str(order.req.direction), offset_str(order.req.offset),
-      rsp->volume, rsp->price, order.traded_volume, order.req.volume);
+      (int)rsp->volume, (int)rsp->price, (int)order.traded_volume, (int)order.req.volume);
 
   rms_->on_order_traded(&order, rsp);
 
@@ -504,7 +504,7 @@ void OMS::on_secondary_market_traded(Trade* rsp) {
         "Traded/Original: {}/{}",
         rsp->order_id, order.req.contract->ticker,
         direction_str(order.req.direction), offset_str(order.req.offset),
-        order.traded_volume, order.req.volume);
+        (int)order.traded_volume, (int)order.req.volume);
 
     // 订单结束，通知风控模块
     rms_->on_order_completed(&order);
@@ -538,7 +538,7 @@ void OMS::on_order_canceled(OrderCancellation* rsp) {
         "Traded/Original:{}/{}",
         order.req.contract->ticker, direction_str(order.req.direction),
         offset_str(order.req.offset), rsp->order_id, order.traded_volume,
-        order.req.volume);
+        (int)order.req.volume);
 
     rms_->on_order_completed(&order);
     order_map_.erase(iter);
