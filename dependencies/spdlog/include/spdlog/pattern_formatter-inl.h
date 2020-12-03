@@ -45,18 +45,24 @@ public:
             return;
         }
 
-        if (padinfo_.side_ == padding_info::left)
+        if (padinfo_.side_ == padding_info::pad_side::left)
         {
             pad_it(remaining_pad_);
             remaining_pad_ = 0;
         }
-        else if (padinfo_.side_ == padding_info::center)
+        else if (padinfo_.side_ == padding_info::pad_side::center)
         {
             auto half_pad = remaining_pad_ / 2;
             auto reminder = remaining_pad_ & 1;
             pad_it(half_pad);
             remaining_pad_ = half_pad + reminder; // for the right side
         }
+    }
+
+    template<typename T>
+    static unsigned int count_digits(T n)
+    {
+        return fmt_helper::count_digits(n);
     }
 
     ~scoped_padder()
@@ -87,6 +93,12 @@ private:
 struct null_scoped_padder
 {
     null_scoped_padder(size_t /*wrapped_size*/, const padding_info & /*padinfo*/, memory_buf_t & /*dest*/) {}
+
+    template<typename T>
+    static unsigned int count_digits(T /* number */)
+    {
+        return 0;
+    }
 };
 
 template<typename ScopedPadder>
@@ -638,7 +650,7 @@ public:
 
     void format(const details::log_msg &msg, const std::tm &, memory_buf_t &dest) override
     {
-        const auto field_size = fmt_helper::count_digits(msg.thread_id);
+        const auto field_size = ScopedPadder::count_digits(msg.thread_id);
         ScopedPadder p(field_size, padinfo_, dest);
         fmt_helper::append_int(msg.thread_id, dest);
     }
@@ -656,7 +668,7 @@ public:
     void format(const details::log_msg &, const std::tm &, memory_buf_t &dest) override
     {
         const auto pid = static_cast<uint32_t>(details::os::pid());
-        auto field_size = fmt_helper::count_digits(pid);
+        auto field_size = ScopedPadder::count_digits(pid);
         ScopedPadder p(field_size, padinfo_, dest);
         fmt_helper::append_int(pid, dest);
     }
@@ -755,8 +767,16 @@ public:
             return;
         }
 
-        size_t text_size =
-            padinfo_.enabled() ? std::char_traits<char>::length(msg.source.filename) + fmt_helper::count_digits(msg.source.line) + 1 : 0;
+        size_t text_size;
+        if (padinfo_.enabled())
+        {
+            // calc text size for padding based on "filename:line"
+            text_size = std::char_traits<char>::length(msg.source.filename) + ScopedPadder::count_digits(msg.source.line) + 1;
+        }
+        else
+        {
+            text_size = 0;
+        }
 
         ScopedPadder p(text_size, padinfo_, dest);
         fmt_helper::append_string_view(msg.source.filename, dest);
@@ -828,7 +848,7 @@ public:
             return;
         }
 
-        auto field_size = fmt_helper::count_digits(msg.source.line);
+        auto field_size = ScopedPadder::count_digits(msg.source.line);
         ScopedPadder p(field_size, padinfo_, dest);
         fmt_helper::append_int(msg.source.line, dest);
     }
@@ -857,7 +877,6 @@ public:
 
 // print elapsed time since last message
 template<typename ScopedPadder, typename Units>
-
 class elapsed_formatter final : public flag_formatter
 {
 public:
@@ -874,7 +893,7 @@ public:
         auto delta_units = std::chrono::duration_cast<DurationUnits>(delta);
         last_message_time_ = msg.time;
         auto delta_count = static_cast<size_t>(delta_units.count());
-        auto n_digits = static_cast<size_t>(fmt_helper::count_digits(delta_count));
+        auto n_digits = static_cast<size_t>(ScopedPadder::count_digits(delta_count));
         ScopedPadder p(n_digits, padinfo_, dest);
         fmt_helper::append_int(delta_count, dest);
     }
@@ -1227,9 +1246,24 @@ SPDLOG_INLINE void pattern_formatter::handle_flag_(char flag, details::padding_i
 
     default: // Unknown flag appears as is
         auto unknown_flag = details::make_unique<details::aggregate_formatter>();
-        unknown_flag->add_ch('%');
-        unknown_flag->add_ch(flag);
-        formatters_.push_back((std::move(unknown_flag)));
+
+        if (!padding.truncate_)
+        {
+            unknown_flag->add_ch('%');
+            unknown_flag->add_ch(flag);
+            formatters_.push_back((std::move(unknown_flag)));
+        }
+        // fix issue #1617 (prev char was '!' and should have been treated as funcname flag instead of truncating flag)
+        // spdlog::set_pattern("[%10!] %v") => "[      main] some message"
+        // spdlog::set_pattern("[%3!!] %v") => "[mai] some message"
+        else
+        {
+            padding.truncate_ = false;
+            formatters_.push_back(details::make_unique<details::source_funcname_formatter<Padder>>(padding));
+            unknown_flag->add_ch(flag);
+            formatters_.push_back((std::move(unknown_flag)));
+        }
+
         break;
     }
 }
@@ -1251,15 +1285,15 @@ SPDLOG_INLINE details::padding_info pattern_formatter::handle_padspec_(std::stri
     switch (*it)
     {
     case '-':
-        side = padding_info::right;
+        side = padding_info::pad_side::right;
         ++it;
         break;
     case '=':
-        side = padding_info::center;
+        side = padding_info::pad_side::center;
         ++it;
         break;
     default:
-        side = details::padding_info::left;
+        side = details::padding_info::pad_side::left;
         break;
     }
 
