@@ -73,7 +73,7 @@ int main() {
   if (d == ft::Direction::BUY || d == ft::Direction::SELL) {
     if (offset == "open") {
       o = ft::Offset::OPEN;
-    } else if (offset == "Close") {
+    } else if (offset == "close") {
       o = ft::Offset::CLOSE;
     } else if (offset == "close_today") {
       o = ft::Offset::CLOSE_TODAY;
