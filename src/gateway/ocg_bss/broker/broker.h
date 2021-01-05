@@ -7,9 +7,9 @@
 #include <string>
 
 #include "broker/session_config.h"
-#include "cep/data/account.h"
-#include "cep/interface/gateway.h"
+#include "gateway/gateway.h"
 #include "protocol/protocol.h"
+#include "trading_server/datastruct/account.h"
 
 namespace ft {
 
@@ -26,15 +26,15 @@ class BssBroker : public Gateway {
  public:
   BssBroker();
 
-  bool login(OMSInterface* oms, const Config& config);
+  bool Login(BaseOrderManagementSystem* oms, const Config& config);
 
   void logon(const std::string& passwd, const std::string& new_passwd = "");
-  void logout();
+  void Logout();
 
-  bool query_account(Account* result) override;
+  bool QueryAccount(Account* result) override;
 
-  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) override;
-  bool cancel_order(uint64_t order_id, uint64_t privdata) override;
+  bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
+  bool CancelOrder(uint64_t order_id, uint64_t privdata) override;
   bool amend_order(uint64_t order_id, const OrderRequest& order);
   bool mass_cancel();
 
@@ -55,23 +55,23 @@ class BssBroker : public Gateway {
     int hour = static_cast<int>((ts.tv_sec % 86400 / 3600));
     int min = static_cast<int>((ts.tv_sec / 60) % 60);
     int sec = static_cast<int>(ts.tv_sec % 60);
-    snprintf(trans_time, sizeof(bss::TransactionTime), "%s-%02d:%02d:%02d.%03d",
-             date_, hour, min, sec, static_cast<int>(ts.tv_nsec / 1000000));
+    snprintf(trans_time, sizeof(bss::TransactionTime), "%s-%02d:%02d:%02d.%03d", date_, hour, min,
+             sec, static_cast<int>(ts.tv_nsec / 1000000));
   }
 
   bool check_config() const;
 
-  void on_order_accepted(const bss::ExecutionReport& msg);
-  void on_order_rejected(const bss::ExecutionReport& msg);
+  void OnOrderAccepted(const bss::ExecutionReport& msg);
+  void OnOrderRejected(const bss::ExecutionReport& msg);
   void on_order_executed(const bss::ExecutionReport& msg);
   void on_order_cancelled(const bss::ExecutionReport& msg);
-  void on_order_cancel_rejected(const bss::ExecutionReport& msg);
+  void OnOrderCancelRejected(const bss::ExecutionReport& msg);
   void on_order_amended(const bss::ExecutionReport& msg);
   void on_order_amend_rejected(const bss::ExecutionReport& msg);
   void on_order_expired(const bss::ExecutionReport& msg);
 
  private:
-  OMSInterface* oms_;
+  BaseOrderManagementSystem* oms_;
   bss::SessionConfig sess_conf_;
   bool is_logon_{false};
   std::unique_ptr<bss::Session> session_;

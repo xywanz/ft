@@ -4,8 +4,8 @@
 
 #include "ipc/redis_position_helper.h"
 
-static void usage() {
-  printf("usage:\n");
+static void Usage() {
+  printf("Usage:\n");
   printf("    --account           账户\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --ticker            ticker\n");
@@ -17,7 +17,7 @@ int main() {
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    Usage();
     exit(0);
   }
 
@@ -31,5 +31,5 @@ int main() {
 
   ft::Position pos{};
   pos_helper.get(ticker, &pos);
-  fmt::print("{}\n", dump_position(pos));
+  fmt::print("{}\n", DumpPosition(pos));
 }

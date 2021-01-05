@@ -53,9 +53,7 @@ restart:
   return sockfd;
 }
 
-CmdProcessor::CmdProcessor(::ft::BssBroker* broker) : broker_(broker) {
-  assert(broker);
-}
+CmdProcessor::CmdProcessor(::ft::BssBroker* broker) : broker_(broker) { assert(broker); }
 
 void CmdProcessor::start(int port) {
   const int bufsz = 4096 * 8;
@@ -75,12 +73,10 @@ void CmdProcessor::start(int port) {
         continue;
       }
       sz += n;
-      if (sz < sizeof(CmdHeader) ||
-          sz < reinterpret_cast<CmdHeader*>(buf)->length)
-        continue;
+      if (sz < sizeof(CmdHeader) || sz < reinterpret_cast<CmdHeader*>(buf)->length) continue;
 
       auto hdr = reinterpret_cast<CmdHeader*>(buf);
-      if (!process_cmd(*hdr, reinterpret_cast<const char*>(hdr + 1))) break;
+      if (!ProcessCmd(*hdr, reinterpret_cast<const char*>(hdr + 1))) break;
 
       sz -= hdr->length;
       memmove(buf, buf + hdr->length, sz);
@@ -90,9 +86,8 @@ void CmdProcessor::start(int port) {
   }
 }
 
-bool CmdProcessor::process_cmd(const CmdHeader& hdr, const char* body) {
-  printf("cmd: <magic:0x%x, type:%u, length:%u>\n", hdr.magic, hdr.type,
-         hdr.length);
+bool CmdProcessor::ProcessCmd(const CmdHeader& hdr, const char* body) {
+  printf("cmd: <magic:0x%x, type:%u, length:%u>\n", hdr.magic, hdr.type, hdr.length);
   if (hdr.magic != kCommandMagic) return false;
 
   switch (hdr.type) {
@@ -132,7 +127,7 @@ void CmdProcessor::process_logon(const LogonCmd& cmd) {
   broker_->logon(cmd.password, cmd.new_password);
 }
 
-void CmdProcessor::process_logout() { broker_->logout(); }
+void CmdProcessor::process_logout() { broker_->Logout(); }
 
 void CmdProcessor::process_new_order(const NewOrderCmd& cmd) {}
 

@@ -30,8 +30,8 @@ static void set_block(int fd) {
   fcntl(fd, F_SETFL, flags);
 }
 
-OcgConnection::OcgConnection(ConnectionManager* conn_mgr, Session* session,
-                             const std::string& ip, uint16_t port)
+OcgConnection::OcgConnection(ConnectionManager* conn_mgr, Session* session, const std::string& ip,
+                             uint16_t port)
     : conn_mgr_(conn_mgr), session_(session), ip_(ip), port_(port) {
   decoder_.set_handler(session_);
 }
@@ -99,8 +99,8 @@ bool OcgConnection::connect() {
   }
 
   set_block(sockfd_);
-  recv_thread_ = std::make_unique<std::thread>(
-      std::mem_fn(&OcgConnection::recv_and_parse_data), this);
+  recv_thread_ =
+      std::make_unique<std::thread>(std::mem_fn(&OcgConnection::recv_and_parse_data), this);
   return true;
 }
 
@@ -174,8 +174,7 @@ void OcgConnection::recv_and_parse_data() {
     }
 
     if (pfd[0].revents != 0) {
-      auto res =
-          recv(sockfd_, decoder_.writable_start(), decoder_.writable_size(), 0);
+      auto res = recv(sockfd_, decoder_.writable_start(), decoder_.writable_size(), 0);
       if (res == 0) {
         session_->disconnect(DisconnectReason::SOCKET_ERROR, false);
         return;

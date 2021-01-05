@@ -12,53 +12,51 @@
 #include <string>
 #include <vector>
 
-#include "cep/data/account.h"
-#include "cep/data/config.h"
-#include "cep/data/order.h"
-#include "cep/data/position.h"
-#include "cep/data/protocol.h"
-#include "cep/data/response.h"
-#include "cep/interface/oms_interface.h"
-#include "xtp_common.h"
+#include "gateway/xtp/xtp_common.h"
+#include "trading_server/datastruct/account.h"
+#include "trading_server/datastruct/config.h"
+#include "trading_server/datastruct/order.h"
+#include "trading_server/datastruct/position.h"
+#include "trading_server/datastruct/protocol.h"
+#include "trading_server/datastruct/response.h"
+#include "trading_server/order_management/base_oms.h"
 
 namespace ft {
 
 class XtpTradeApi : public XTP::API::TraderSpi {
  public:
-  explicit XtpTradeApi(OMSInterface* oms);
+  explicit XtpTradeApi(BaseOrderManagementSystem* oms);
   ~XtpTradeApi();
 
-  bool login(const Config& config);
-  void logout();
+  bool Login(const Config& config);
+  void Logout();
 
-  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr);
-  bool cancel_order(uint64_t xtp_order_id);
+  bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr);
+  bool CancelOrder(uint64_t xtp_order_id);
 
-  bool query_positions(std::vector<Position>* result);
-  bool query_account(Account* result);
-  bool query_trades(std::vector<Trade>* result);
-  bool query_orders();
+  bool QueryPositionList(std::vector<Position>* result);
+  bool QueryAccount(Account* result);
+  bool QueryTradeList(std::vector<Trade>* result);
+  bool QueryOrderList();
 
-  void OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
-                    uint64_t session_id) override;
+  void OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint64_t session_id) override;
 
   void OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) override;
 
   void OnCancelOrderError(XTPOrderCancelInfo* cancel_info, XTPRI* error_info,
                           uint64_t session_id) override;
 
-  void OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error_info,
-                       int request_id, bool is_last,
-                       uint64_t session_id) override;
+  void OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error_info, int request_id,
+                       bool is_last, uint64_t session_id) override;
 
-  void OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id,
-                    bool is_last, uint64_t session_id) override;
+  void OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id, bool is_last,
+                    uint64_t session_id) override;
 
-  void OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
-                    int request_id, bool is_last, uint64_t session_id) override;
+  void OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, int request_id, bool is_last,
+                    uint64_t session_id) override;
 
-  void OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
-                    int request_id, bool is_last, uint64_t session_id) override;
+  void OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, int request_id, bool is_last,
+                    uint64_t session_id) override;
 
  private:
   int next_req_id() { return next_req_id_++; }
@@ -75,7 +73,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   }
 
  private:
-  OMSInterface* oms_;
+  BaseOrderManagementSystem* oms_;
   XtpUniquePtr<XTP::API::TraderApi> trade_api_;
 
   std::string investor_id_;

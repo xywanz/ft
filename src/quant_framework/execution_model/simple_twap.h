@@ -15,7 +15,7 @@ class SimpleTwap : public ExecutionModel {
 
   int timer_period() override;
   bool execute() override;
-  void on_order_rsp(const OrderResponse& rsp) override;
+  void OnOrderResponse(const OrderResponse& rsp) override;
   void terminate() override;
 
  private:

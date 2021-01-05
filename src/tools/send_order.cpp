@@ -4,13 +4,12 @@
 
 #include "strategy/order_sender.h"
 
-static void usage() {
-  printf("usage:\n");
+static void Usage() {
+  printf("Usage:\n");
   printf("    --account           账户\n");
   printf("    --contracts-file    合约列表文件\n");
   printf("    --direction         buy, sell, purchase or redeem\n");
-  printf(
-      "    --offset            open, close, close_today or close_yesterday\n");
+  printf("    --offset            open, Close, close_today or close_yesterday\n");
   printf("    --order_type        limit, market, fak or fok\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --price             价格\n");
@@ -19,8 +18,7 @@ static void usage() {
 }
 
 int main() {
-  std::string contracts_file =
-      getarg("../config/contracts.csv", "--contracts-file");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
   std::string ticker = getarg("", "--ticker");
   std::string direction = getarg("", "--direction");
   std::string offset = getarg("open", "--offset");
@@ -31,7 +29,7 @@ int main() {
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    Usage();
     exit(0);
   }
 
@@ -40,8 +38,8 @@ int main() {
     exit(-1);
   }
 
-  if (!ft::ContractTable::init(contracts_file)) {
-    printf("ContractTable init failed\n");
+  if (!ft::ContractTable::Init(contracts_file)) {
+    printf("ContractTable Init failed\n");
     exit(-1);
   }
 
@@ -75,7 +73,7 @@ int main() {
   if (d == ft::Direction::BUY || d == ft::Direction::SELL) {
     if (offset == "open") {
       o = ft::Offset::OPEN;
-    } else if (offset == "close") {
+    } else if (offset == "Close") {
       o = ft::Offset::CLOSE;
     } else if (offset == "close_today") {
       o = ft::Offset::CLOSE_TODAY;
@@ -102,5 +100,5 @@ int main() {
 
   ft::OrderSender sender;
   sender.set_account(account);
-  sender.send_order(ticker, volume, d, o, k, price, 0);
+  sender.SendOrder(ticker, volume, d, o, k, price, 0);
 }

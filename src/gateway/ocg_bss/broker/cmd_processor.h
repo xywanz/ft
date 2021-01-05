@@ -18,7 +18,7 @@ class CmdProcessor {
   void start(int port);
 
  private:
-  bool process_cmd(const CmdHeader& hdr, const char* body);
+  bool ProcessCmd(const CmdHeader& hdr, const char* body);
   void process_logon(const LogonCmd& cmd);
   void process_logout();
   void process_new_order(const NewOrderCmd& cmd);

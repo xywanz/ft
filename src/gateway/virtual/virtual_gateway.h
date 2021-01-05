@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "cep/data/account.h"
-#include "cep/data/constants.h"
-#include "cep/data/contract.h"
-#include "cep/data/contract_table.h"
-#include "cep/data/position.h"
-#include "cep/interface/gateway.h"
-#include "virtual_api.h"
+#include "gateway/gateway.h"
+#include "gateway/virtual/virtual_api.h"
+#include "trading_server/datastruct/account.h"
+#include "trading_server/datastruct/constants.h"
+#include "trading_server/datastruct/contract.h"
+#include "trading_server/datastruct/contract_table.h"
+#include "trading_server/datastruct/position.h"
 
 namespace ft {
 
@@ -26,27 +26,27 @@ class VirtualGateway : public Gateway {
  public:
   VirtualGateway();
 
-  bool login(OMSInterface* oms, const Config& config) override;
-  void logout() override;
+  bool Login(BaseOrderManagementSystem* oms, const Config& config) override;
+  void Logout() override;
 
-  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) override;
-  bool cancel_order(uint64_t oms_order_id, uint64_t privdata) override;
-  bool query_contracts(std::vector<Contract>* result) override;
+  bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
+  bool CancelOrder(uint64_t oms_order_id, uint64_t privdata) override;
+  bool QueryContractList(std::vector<Contract>* result) override;
 
-  bool query_positions(std::vector<Position>* result) override;
-  bool query_account(Account* result) override;
-  bool query_trades(std::vector<Trade>* result) override;
-  bool query_margin_rate(const std::string& ticker) override;
-  bool query_commision_rate(const std::string& ticker) override;
+  bool QueryPositionList(std::vector<Position>* result) override;
+  bool QueryAccount(Account* result) override;
+  bool QueryTradeList(std::vector<Trade>* result) override;
+  bool QueryMarginRate(const std::string& ticker) override;
+  bool QueryCommisionRate(const std::string& ticker) override;
 
-  void on_order_accepted(uint64_t oms_order_id);
-  void on_order_traded(uint64_t oms_order_id, int traded, double price);
-  void on_order_canceled(uint64_t oms_order_id, int canceled);
+  void OnOrderAccepted(uint64_t oms_order_id);
+  void OnOrderTraded(uint64_t oms_order_id, int traded, double price);
+  void OnOrderCanceled(uint64_t oms_order_id, int canceled);
 
-  void on_tick(TickData* tick);
+  void OnTick(TickData* tick);
 
  private:
-  OMSInterface* oms_;
+  BaseOrderManagementSystem* oms_;
   VirtualApi virtual_api_;
 };
 

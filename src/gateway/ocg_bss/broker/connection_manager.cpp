@@ -104,8 +104,7 @@ void ConnectionManager::request_ocg_address() {
   }
 }
 
-int ConnectionManager::connect_to_lookup_server(const std::string& ip,
-                                                uint16_t port) {
+int ConnectionManager::connect_to_lookup_server(const std::string& ip, uint16_t port) {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
     printf("request_ocg_address. failed to creat socket\n");
@@ -166,16 +165,14 @@ bool ConnectionManager::recv_lookup_response(int sockfd, LookupResponse* rsp) {
            total_recv < reinterpret_cast<MessageHeader*>(buf)->length);
 
   auto header = reinterpret_cast<MessageHeader*>(buf);
-  if (header->comp_id != session_->comp_id() ||
-      header->message_type != LOOKUP_RESPONSE) {
+  if (header->comp_id != session_->comp_id() || header->message_type != LOOKUP_RESPONSE) {
     printf("invalid lookup response\n");
     return false;
   }
 
   parse_lookup_response(*header, reinterpret_cast<char*>(header + 1), rsp);
   if (rsp->status != LOOKUP_SERVICE_ACCEPTED) {
-    printf("request_ocg_address. rejected: reason:%u\n",
-           rsp->lookup_reject_code);
+    printf("request_ocg_address. rejected: reason:%u\n", rsp->lookup_reject_code);
     close(sockfd);
     sleep(LOOKUP_SERVICE_RETRY_INTERVAL_SEC);
     return false;
@@ -190,12 +187,10 @@ bool ConnectionManager::do_connect_to_ocg(bool use_primary) {
 
   should_disconnect_ = false;
   if (use_primary) {
-    ocg_conn_ = std::make_unique<OcgConnection>(this, session_,
-                                                primary_ocg_address_.first,
+    ocg_conn_ = std::make_unique<OcgConnection>(this, session_, primary_ocg_address_.first,
                                                 primary_ocg_address_.second);
   } else {
-    ocg_conn_ = std::make_unique<OcgConnection>(this, session_,
-                                                secondary_ocg_address_.first,
+    ocg_conn_ = std::make_unique<OcgConnection>(this, session_, secondary_ocg_address_.first,
                                                 secondary_ocg_address_.second);
   }
 

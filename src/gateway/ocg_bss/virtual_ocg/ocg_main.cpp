@@ -10,7 +10,7 @@ using namespace ft::bss;
 
 int main(int argc, char** argv) {
   VirtualOcg ocg;
-  ocg.init();
+  ocg.Init();
   ocg.listen(18765, 18766);
 
   std::thread lookup_thread([] {

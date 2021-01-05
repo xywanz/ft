@@ -11,12 +11,12 @@
 #include <string>
 #include <vector>
 
-#include "cep/data/config.h"
-#include "cep/data/constants.h"
-#include "cep/data/order.h"
-#include "cep/interface/gateway.h"
-#include "cep/interface/oms_interface.h"
-#include "ctp_common.h"
+#include "gateway/ctp/ctp_common.h"
+#include "gateway/gateway.h"
+#include "trading_server/datastruct/config.h"
+#include "trading_server/datastruct/constants.h"
+#include "trading_server/datastruct/order.h"
+#include "trading_server/order_management/base_oms.h"
 
 namespace ft {
 
@@ -24,20 +24,20 @@ class CtpGateway;
 
 class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  explicit CtpTradeApi(OMSInterface *oms);
+  explicit CtpTradeApi(BaseOrderManagementSystem *oms);
   ~CtpTradeApi();
 
-  bool login(const Config &config);
-  void logout();
+  bool Login(const Config &config);
+  void Logout();
 
-  bool send_order(const OrderRequest &order, uint64_t *privdata_ptr);
-  bool cancel_order(uint64_t order_id, uint64_t tid);
+  bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr);
+  bool CancelOrder(uint64_t order_id, uint64_t tid);
 
-  bool query_contracts(std::vector<Contract> *result);
-  bool query_positions(std::vector<Position> *result);
-  bool query_account(Account *result);
-  bool query_trades(std::vector<Trade> *result);
-  bool query_margin_rate(const std::string &ticker);
+  bool QueryContractList(std::vector<Contract> *result);
+  bool QueryPositionList(std::vector<Position> *result);
+  bool QueryAccount(Account *result);
+  bool QueryTradeList(std::vector<Trade> *result);
+  bool QueryMarginRate(const std::string &ticker);
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -57,64 +57,54 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   void OnHeartBeatWarning(int time_lapse) override;
 
   // 客户端认证响应
-  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth,
-                         CThostFtdcRspInfoField *rsp_info, int req_id,
-                         bool is_last) override;
+  void OnRspAuthenticate(CThostFtdcRspAuthenticateField *auth, CThostFtdcRspInfoField *rsp_info,
+                         int req_id, bool is_last) override;
 
   // 登录请求响应
-  void OnRspUserLogin(CThostFtdcRspUserLoginField *logon,
-                      CThostFtdcRspInfoField *rsp_info, int req_id,
-                      bool is_last) override;
+  void OnRspUserLogin(CThostFtdcRspUserLoginField *logon, CThostFtdcRspInfoField *rsp_info,
+                      int req_id, bool is_last) override;
 
   void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement,
-                              CThostFtdcRspInfoField *rsp_info, int req_id,
-                              bool is_last) override;
+                              CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *confirm,
                                   CThostFtdcRspInfoField *rsp_info, int req_id,
                                   bool is_last) override;
 
-  void OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
-                       CThostFtdcRspInfoField *rsp_info, int req_id,
-                       bool is_last) override;
+  void OnRspUserLogout(CThostFtdcUserLogoutField *user_logout, CThostFtdcRspInfoField *rsp_info,
+                       int req_id, bool is_last) override;
 
   // 拒绝报单
-  void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order,
-                        CThostFtdcRspInfoField *rsp_info, int req_id,
-                        bool is_last) override;
+  void OnRspOrderInsert(CThostFtdcInputOrderField *ctp_order, CThostFtdcRspInfoField *rsp_info,
+                        int req_id, bool is_last) override;
 
-  void OnRspOrderAction(CThostFtdcInputOrderActionField *action,
-                        CThostFtdcRspInfoField *rsp_info, int req_id,
-                        bool is_last) override;
+  void OnRspOrderAction(CThostFtdcInputOrderActionField *action, CThostFtdcRspInfoField *rsp_info,
+                        int req_id, bool is_last) override;
 
   void OnRtnOrder(CThostFtdcOrderField *ctp_order) override;
 
   // 成交通知
   void OnRtnTrade(CThostFtdcTradeField *trade) override;
 
-  void OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
-                          CThostFtdcRspInfoField *rsp_info, int req_id,
-                          bool is_last) override;
+  void OnRspQryInstrument(CThostFtdcInstrumentField *instrument, CThostFtdcRspInfoField *rsp_info,
+                          int req_id, bool is_last) override;
 
   void OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *position,
                                 CThostFtdcRspInfoField *rsp_info, int req_id,
                                 bool is_last) override;
 
   void OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_account,
-                              CThostFtdcRspInfoField *rsp_info, int req_id,
-                              bool is_last) override;
+                              CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
-  void OnRspQryOrder(CThostFtdcOrderField *order,
-                     CThostFtdcRspInfoField *rsp_info, int req_id,
+  void OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoField *rsp_info, int req_id,
                      bool is_last) override;
 
-  void OnRspQryTrade(CThostFtdcTradeField *trade,
-                     CThostFtdcRspInfoField *rsp_info, int req_id,
+  void OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoField *rsp_info, int req_id,
                      bool is_last) override;
 
-  void OnRspQryInstrumentMarginRate(
-      CThostFtdcInstrumentMarginRateField *margin_rate,
-      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
+  void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField *margin_rate,
+                                    CThostFtdcRspInfoField *rsp_info, int req_id,
+                                    bool is_last) override;
 
  private:
   int next_req_id() { return next_req_id_++; }
@@ -128,16 +118,12 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
     return true;
   }
 
-  uint64_t get_order_id(uint64_t order_ref) const {
-    return order_ref - order_ref_base_;
-  }
+  uint64_t get_order_id(uint64_t order_ref) const { return order_ref - order_ref_base_; }
 
-  uint64_t get_order_ref(uint64_t order_id) const {
-    return order_id + order_ref_base_;
-  }
+  uint64_t get_order_ref(uint64_t order_id) const { return order_id + order_ref_base_; }
 
  private:
-  OMSInterface *oms_;
+  BaseOrderManagementSystem *oms_;
   CtpUniquePtr<CThostFtdcTraderApi> trade_api_;
 
   std::string front_addr_;

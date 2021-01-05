@@ -10,21 +10,21 @@
 #include <string>
 #include <vector>
 
-#include "cep/data/config.h"
-#include "cep/data/tick_data.h"
-#include "cep/interface/oms_interface.h"
-#include "ctp_common.h"
+#include "gateway/ctp/ctp_common.h"
+#include "trading_server/datastruct/config.h"
+#include "trading_server/datastruct/tick_data.h"
+#include "trading_server/order_management/base_oms.h"
 
 namespace ft {
 
 class CtpQuoteApi : public CThostFtdcMdSpi {
  public:
-  explicit CtpQuoteApi(OMSInterface *oms);
+  explicit CtpQuoteApi(BaseOrderManagementSystem *oms);
   ~CtpQuoteApi();
 
-  bool login(const Config &config);
-  void logout();
-  bool subscribe(const std::vector<std::string> &sub_list);
+  bool Login(const Config &config);
+  void Logout();
+  bool Subscribe(const std::vector<std::string> &sub_list);
 
   void OnFrontConnected() override;
 
@@ -32,32 +32,25 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
 
   void OnHeartBeatWarning(int time_lapse) override;
 
-  void OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
-                      CThostFtdcRspInfoField *rsp_info, int req_id,
-                      bool is_last) override;
+  void OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp, CThostFtdcRspInfoField *rsp_info,
+                      int req_id, bool is_last) override;
 
-  void OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
-                       CThostFtdcRspInfoField *rsp_info, int req_id,
-                       bool is_last) override;
+  void OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp, CThostFtdcRspInfoField *rsp_info,
+                       int req_id, bool is_last) override;
 
-  void OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id,
-                  bool is_last) override;
+  void OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
-                          CThostFtdcRspInfoField *rsp_info, int req_id,
-                          bool is_last) override;
+                          CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
-                            CThostFtdcRspInfoField *rsp_info, int req_id,
-                            bool is_last) override;
+                            CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
-                           CThostFtdcRspInfoField *rsp_info, int req_id,
-                           bool is_last) override;
+                           CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
-                             CThostFtdcRspInfoField *rsp_info, int req_id,
-                             bool is_last) override;
+                             CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) override;
 
   void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) override;
 
@@ -67,7 +60,7 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   int next_req_id() { return next_req_id_++; }
 
  private:
-  OMSInterface *oms_;
+  BaseOrderManagementSystem *oms_;
   CtpUniquePtr<CThostFtdcMdApi> quote_api_;
 
   std::string server_addr_;

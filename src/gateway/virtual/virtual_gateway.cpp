@@ -1,27 +1,26 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "virtual_gateway.h"
+#include "gateway/virtual/virtual_gateway.h"
 
 #include <spdlog/spdlog.h>
 
-#include "cep/data/contract_table.h"
+#include "trading_server/datastruct/contract_table.h"
 
 namespace ft {
 
 VirtualGateway::VirtualGateway() { virtual_api_.set_spi(this); }
 
-bool VirtualGateway::login(OMSInterface* oms, const Config& config) {
+bool VirtualGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
   oms_ = oms;
-  virtual_api_.start_quote_server();
-  virtual_api_.start_trade_server();
-  spdlog::info("[VirtualGateway::login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
+  virtual_api_.StartQuoteServer();
+  virtual_api_.StartTradeServer();
+  spdlog::info("[VirtualGateway::Login] Virtual API v" VIRTUAL_GATEWAY_VERSION);
   return true;
 }
 
-void VirtualGateway::logout() {}
+void VirtualGateway::Logout() {}
 
-bool VirtualGateway::send_order(const OrderRequest& order,
-                                uint64_t* privdata_ptr) {
+bool VirtualGateway::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) {
   (void)privdata_ptr;
 
   VirtualOrderRequest req{};
@@ -33,56 +32,45 @@ bool VirtualGateway::send_order(const OrderRequest& order,
   req.volume = order.volume;
   req.price = order.price;
 
-  return virtual_api_.insert_order(&req);
+  return virtual_api_.InsertOrder(&req);
 }
 
-bool VirtualGateway::cancel_order(uint64_t oms_order_id, uint64_t privdata) {
+bool VirtualGateway::CancelOrder(uint64_t oms_order_id, uint64_t privdata) {
   (void)privdata;
-  return virtual_api_.cancel_order(oms_order_id);
+  return virtual_api_.CancelOrder(oms_order_id);
 }
 
-bool VirtualGateway::query_contracts(std::vector<Contract>* result) {
-  return true;
-}
+bool VirtualGateway::QueryContractList(std::vector<Contract>* result) { return true; }
 
-bool VirtualGateway::query_positions(std::vector<Position>* result) {
-  return true;
-}
+bool VirtualGateway::QueryPositionList(std::vector<Position>* result) { return true; }
 
-bool VirtualGateway::query_account(Account* result) {
-  return virtual_api_.query_account(result);
-}
+bool VirtualGateway::QueryAccount(Account* result) { return virtual_api_.QueryAccount(result); }
 
-bool VirtualGateway::query_trades(std::vector<Trade>* result) { return true; }
+bool VirtualGateway::QueryTradeList(std::vector<Trade>* result) { return true; }
 
-bool VirtualGateway::query_margin_rate(const std::string& ticker) {
-  return true;
-}
+bool VirtualGateway::QueryMarginRate(const std::string& ticker) { return true; }
 
-bool VirtualGateway::query_commision_rate(const std::string& ticker) {
-  return true;
-}
+bool VirtualGateway::QueryCommisionRate(const std::string& ticker) { return true; }
 
-void VirtualGateway::on_order_accepted(uint64_t oms_order_id) {
+void VirtualGateway::OnOrderAccepted(uint64_t oms_order_id) {
   OrderAcceptance rsp = {oms_order_id};
-  oms_->on_order_accepted(&rsp);
+  oms_->OnOrderAccepted(&rsp);
 }
 
-void VirtualGateway::on_order_traded(uint64_t oms_order_id, int traded,
-                                     double price) {
+void VirtualGateway::OnOrderTraded(uint64_t oms_order_id, int traded, double price) {
   Trade rsp{};
   rsp.order_id = oms_order_id;
   rsp.volume = traded;
   rsp.price = price;
   rsp.trade_type = TradeType::SECONDARY_MARKET;
-  oms_->on_order_traded(&rsp);
+  oms_->OnOrderTraded(&rsp);
 }
 
-void VirtualGateway::on_order_canceled(uint64_t order_id, int canceled) {
+void VirtualGateway::OnOrderCanceled(uint64_t order_id, int canceled) {
   OrderCancellation rsp = {order_id, canceled};
-  oms_->on_order_canceled(&rsp);
+  oms_->OnOrderCanceled(&rsp);
 }
 
-void VirtualGateway::on_tick(TickData* tick) { oms_->on_tick(tick); }
+void VirtualGateway::OnTick(TickData* tick) { oms_->OnTick(tick); }
 
 }  // namespace ft

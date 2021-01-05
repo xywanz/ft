@@ -10,10 +10,10 @@
 #include <string>
 #include <vector>
 
-#include "_xtp_quote_api.h"
-#include "cep/interface/gateway.h"
-#include "xtp_common.h"
-#include "xtp_trade_api.h"
+#include "gateway/gateway.h"
+#include "gateway/xtp/_xtp_quote_api.h"
+#include "gateway/xtp/xtp_common.h"
+#include "gateway/xtp/xtp_trade_api.h"
 
 namespace ft {
 
@@ -21,18 +21,18 @@ class XtpGateway : public Gateway {
  public:
   XtpGateway();
 
-  bool login(OMSInterface* oms, const Config& config) override;
-  void logout() override;
-  bool subscribe(const std::vector<std::string>& sub_list) override;
+  bool Login(BaseOrderManagementSystem* oms, const Config& config) override;
+  void Logout() override;
+  bool Subscribe(const std::vector<std::string>& sub_list) override;
 
-  bool send_order(const OrderRequest& order, uint64_t* privdata_ptr) override;
-  bool cancel_order(uint64_t order_id, uint64_t privdata) override;
+  bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
+  bool CancelOrder(uint64_t order_id, uint64_t privdata) override;
 
-  bool query_contracts(std::vector<Contract>* result) override;
-  bool query_account(Account* result) override;
-  bool query_positions(std::vector<Position>* result) override;
-  bool query_trades(std::vector<Trade>* result) override;
-  bool query_orders();
+  bool QueryContractList(std::vector<Contract>* result) override;
+  bool QueryAccount(Account* result) override;
+  bool QueryPositionList(std::vector<Position>* result) override;
+  bool QueryTradeList(std::vector<Trade>* result) override;
+  bool QueryOrderList();
 
  private:
   std::unique_ptr<XtpTradeApi> trade_api_;

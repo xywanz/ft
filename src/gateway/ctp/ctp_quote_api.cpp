@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ctp_quote_api.h"
+#include "gateway/ctp/ctp_quote_api.h"
 
 #include <spdlog/spdlog.h>
 
@@ -8,22 +8,22 @@
 
 namespace ft {
 
-CtpQuoteApi::CtpQuoteApi(OMSInterface *oms) : oms_(oms) {}
+CtpQuoteApi::CtpQuoteApi(BaseOrderManagementSystem *oms) : oms_(oms) {}
 
 CtpQuoteApi::~CtpQuoteApi() {
   is_error_ = true;
-  logout();
+  Logout();
 }
 
-bool CtpQuoteApi::login(const Config &config) {
+bool CtpQuoteApi::Login(const Config &config) {
   if (is_logon_) {
-    spdlog::error("[CtpQuoteApi::login] Don't login twice");
+    spdlog::error("[CtpQuoteApi::Login] Don't Login twice");
     return true;
   }
 
   quote_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!quote_api_) {
-    spdlog::error("[CtpQuoteApi::login] Failed to create CTP MD API");
+    spdlog::error("[CtpQuoteApi::Login] Failed to create CTP MD API");
     return false;
   }
 
@@ -46,7 +46,7 @@ bool CtpQuoteApi::login(const Config &config) {
   strncpy(login_req.UserID, investor_id_.c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, passwd_.c_str(), sizeof(login_req.Password));
   if (quote_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CtpQuoteApi::login] Invalid user-login field");
+    spdlog::error("[CtpQuoteApi::Login] Invalid user-Login field");
     return false;
   }
 
@@ -57,7 +57,7 @@ bool CtpQuoteApi::login(const Config &config) {
   return true;
 }
 
-void CtpQuoteApi::logout() {
+void CtpQuoteApi::Logout() {
   if (is_logon_) {
     CThostFtdcUserLogoutField req{};
     strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -68,17 +68,15 @@ void CtpQuoteApi::logout() {
   }
 }
 
-bool CtpQuoteApi::subscribe(const std::vector<std::string> &_sub_list) {
+bool CtpQuoteApi::Subscribe(const std::vector<std::string> &_sub_list) {
   std::vector<char *> sub_list;
   sub_list_ = _sub_list;
 
-  for (const auto &p : sub_list_)
-    sub_list.emplace_back(const_cast<char *>(p.c_str()));
+  for (const auto &p : sub_list_) sub_list.emplace_back(const_cast<char *>(p.c_str()));
 
   if (sub_list.size() > 0) {
-    if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) !=
-        0) {
-      spdlog::error("[CtpQuoteApi::subscribe] Failed to subscribe");
+    if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
+      spdlog::error("[CtpQuoteApi::Subscribe] Failed to Subscribe");
       return false;
     }
   }
@@ -103,8 +101,7 @@ void CtpQuoteApi::OnHeartBeatWarning(int time_lapse) {
 }
 
 void CtpQuoteApi::OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
-                                 CThostFtdcRspInfoField *rsp_info, int req_id,
-                                 bool is_last) {
+                                 CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   if (!is_last) return;
 
   if (is_error_rsp(rsp_info)) {
@@ -114,30 +111,24 @@ void CtpQuoteApi::OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
     return;
   }
 
-  spdlog::debug("[CtpQuoteApi::OnRspUserLogin] Success. Login as {}",
-                investor_id_);
+  spdlog::debug("[CtpQuoteApi::OnRspUserLogin] Success. Login as {}", investor_id_);
   is_logon_ = true;
 }
 
 void CtpQuoteApi::OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
-                                  CThostFtdcRspInfoField *rsp_info, int req_id,
-                                  bool is_last) {
-  spdlog::debug(
-      "[CtpQuoteApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
-      logout_rsp->BrokerID, logout_rsp->UserID);
+                                  CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
+  spdlog::debug("[CtpQuoteApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
+                logout_rsp->BrokerID, logout_rsp->UserID);
   is_logon_ = false;
 }
 
-void CtpQuoteApi::OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id,
-                             bool is_last) {
-  spdlog::debug("[CtpQuoteApi::OnRspError] ErrorMsg: {}",
-                gb2312_to_utf8(rsp_info->ErrorMsg));
+void CtpQuoteApi::OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
+  spdlog::debug("[CtpQuoteApi::OnRspError] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
   is_logon_ = false;
 }
 
-void CtpQuoteApi::OnRspSubMarketData(
-    CThostFtdcSpecificInstrumentField *instrument,
-    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
+void CtpQuoteApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
+                                     CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   if (is_error_rsp(rsp_info) || !instrument) {
     spdlog::error("[CtpQuoteApi::OnRspSubMarketData] Failed. Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
@@ -154,21 +145,19 @@ void CtpQuoteApi::OnRspSubMarketData(
     return;
   }
 
-  spdlog::debug("[CtpQuoteApi::OnRspSubMarketData] Success. Ticker: {}",
-                contract->ticker);
+  spdlog::debug("[CtpQuoteApi::OnRspSubMarketData] Success. Ticker: {}", contract->ticker);
 }
 
-void CtpQuoteApi::OnRspUnSubMarketData(
-    CThostFtdcSpecificInstrumentField *instrument,
-    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {}
+void CtpQuoteApi::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
+                                       CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
+}
 
-void CtpQuoteApi::OnRspSubForQuoteRsp(
-    CThostFtdcSpecificInstrumentField *instrument,
-    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {}
+void CtpQuoteApi::OnRspSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
+                                      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {}
 
-void CtpQuoteApi::OnRspUnSubForQuoteRsp(
-    CThostFtdcSpecificInstrumentField *instrument,
-    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {}
+void CtpQuoteApi::OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instrument,
+                                        CThostFtdcRspInfoField *rsp_info, int req_id,
+                                        bool is_last) {}
 
 void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   if (!md) {
@@ -232,10 +221,10 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   spdlog::trace(
       "[CtpQuoteApi::OnRtnDepthMarketData] {}, Date:{}, TimeMs:{}, "
       "LastPrice:{:.2f}, Volume:{}, Turnover:{}, OpenInterest:{}",
-      contract->ticker, md->ActionDay, tick.time_ms, tick.last_price,
-      tick.volume, tick.turnover, tick.open_interest);
+      contract->ticker, md->ActionDay, tick.time_ms, tick.last_price, tick.volume, tick.turnover,
+      tick.open_interest);
 
-  oms_->on_tick(&tick);
+  oms_->OnTick(&tick);
 }
 
 void CtpQuoteApi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) {}

@@ -39,7 +39,7 @@ class Session : public MessageHandler {
  public:
   explicit Session(BssBroker* broker);
 
-  bool init(const SessionConfig& conf);
+  bool Init(const SessionConfig& conf);
 
   void set_password(const std::string& passwd, const std::string& new_passwd);
 
@@ -80,28 +80,21 @@ class Session : public MessageHandler {
 
   void on_resend_request(MessageHeader* header, ResendRequest* req) override;
 
-  void on_sequence_reset_msg(MessageHeader* header,
-                             SequenceResetMessage* msg) override;
+  void on_sequence_reset_msg(MessageHeader* header, SequenceResetMessage* msg) override;
 
   void on_reject_msg(MessageHeader* header, RejectMessage* msg) override;
 
-  void on_business_reject_msg(MessageHeader* header,
-                              BusinessRejectMessage* msg) override;
+  void on_business_reject_msg(MessageHeader* header, BusinessRejectMessage* msg) override;
 
-  void on_execution_report(MessageHeader* header,
-                           ExecutionReport* msg) override;
+  void on_execution_report(MessageHeader* header, ExecutionReport* msg) override;
 
-  void on_mass_cancel_report(MessageHeader* header,
-                             OrderMassCancelReport* msg) override;
+  void on_mass_cancel_report(MessageHeader* header, OrderMassCancelReport* msg) override;
 
-  void on_quote_status_report(MessageHeader* header,
-                              QuoteStatusReport* msg) override;
+  void on_quote_status_report(MessageHeader* header, QuoteStatusReport* msg) override;
 
-  void on_trade_capture_report(MessageHeader* header,
-                               TradeCaptureReport* msg) override;
+  void on_trade_capture_report(MessageHeader* header, TradeCaptureReport* msg) override;
 
-  void on_trade_capture_report_ack(MessageHeader* header,
-                                   TradeCaptureReportAck* msg) override;
+  void on_trade_capture_report_ack(MessageHeader* header, TradeCaptureReportAck* msg) override;
 
   void disconnect(DisconnectReason reason, bool called_by_sender);
 
@@ -143,9 +136,7 @@ class Session : public MessageHandler {
                        const std::string& text = "");
 
   // 内部使用的断线函数
-  void internal_disconnect(DisconnectReason reason) {
-    disconnect(reason, false);
-  }
+  void internal_disconnect(DisconnectReason reason) { disconnect(reason, false); }
 
   // process函数处理完后不会去处理queue中缓存的数据
   void process_msg(MessageHeader* header, HeartbeatMessage* msg) {
@@ -189,16 +180,15 @@ class Session : public MessageHandler {
   }
 
   template <class Message>
-  bool verify_msg(const MessageHeader& header, const Message& msg,
-                  bool check_too_high = true, bool check_too_low = true);
+  bool verify_msg(const MessageHeader& header, const Message& msg, bool check_too_high = true,
+                  bool check_too_low = true);
 
   /*
    * 检测消息是否在合适状态下的到来
    */
   bool validate_logon_state(const MessageHeader& header) const {
     return (header.message_type != LOGON && state_.received_logon) ||
-           (header.message_type == LOGON && state_.sent_logon &&
-            !state_.received_logon) ||
+           (header.message_type == LOGON && state_.sent_logon && !state_.received_logon) ||
            header.message_type == LOGOUT;
   }
 
@@ -216,9 +206,7 @@ class Session : public MessageHandler {
     }
   }
 
-  bool is_correct_comp_id(const CompId& comp_id) const {
-    return comp_id_ == comp_id;
-  }
+  bool is_correct_comp_id(const CompId& comp_id) const { return comp_id_ == comp_id; }
 
   void resend(uint32_t start_seq_num, uint32_t end_seq_num);
 
@@ -227,9 +215,7 @@ class Session : public MessageHandler {
   // 判断消息缓存（用于存放提前到达的消息）里是否有数据
   bool is_msg_queue_empty() const { return state_.is_msg_queue_empty(); }
 
-  bool is_send_vol_exceed_threshold() const {
-    return current_sec_send_ >= msg_limit_per_sec_;
-  }
+  bool is_send_vol_exceed_threshold() const { return current_sec_send_ >= msg_limit_per_sec_; }
 
   // 不加锁的发送，resend场景下需要在外部加一个大锁，发送函数内部不能有锁
   template <class Message>
@@ -266,14 +252,12 @@ class Session : public MessageHandler {
     printf("send_resend_request: [%u, %u]\n", start_seq, end_seq);
   }
 
-  void send_reject_msg(const MessageHeader& err_msg_header,
-                       RejectCode reject_code,
+  void send_reject_msg(const MessageHeader& err_msg_header, RejectCode reject_code,
                        const std::string& err_field_name = "") {
     RejectMessage reject_msg{};
     reject_msg.message_reject_code = reject_code;
     reject_msg.reference_sequence_number = err_msg_header.message_type;
-    strncpy(reject_msg.reference_field_name, err_field_name.c_str(),
-            sizeof(ReferenceFieldName));
+    strncpy(reject_msg.reference_field_name, err_field_name.c_str(), sizeof(ReferenceFieldName));
 
     send_raw_msg(reject_msg);
   }
@@ -291,7 +275,7 @@ class Session : public MessageHandler {
 
  private:
   struct ResendVisitor {
-    void init(Session* self) { self_ = self; }
+    void Init(Session* self) { self_ = self; }
 
     template <class Message>
     void operator()(const Message& msg) {
@@ -303,7 +287,7 @@ class Session : public MessageHandler {
   };
 
   struct ConsumerVisitor {
-    void init(Session* self) { self_ = self; }
+    void Init(Session* self) { self_ = self; }
     void set_header(MessageHeader* header) { header_ = header; }
 
     void operator()(LogonMessage& msg) { BUG_ON(); }
@@ -345,11 +329,10 @@ class Session : public MessageHandler {
  * 收到从OCG发来的序列号大于预期的消息
  */
 template <class Message>
-bool Session::handle_msg_seq_too_high(const MessageHeader& header,
-                                      const Message& msg) {
+bool Session::handle_msg_seq_too_high(const MessageHeader& header, const Message& msg) {
   // todo: To be or not to be, that is the question
-  printf("handle_msg_seq_too_high: seq:%u type:%u expected:%u\n",
-         header.sequence_number, header.message_type, state_.next_recv_msg_seq);
+  printf("handle_msg_seq_too_high: seq:%u type:%u expected:%u\n", header.sequence_number,
+         header.message_type, state_.next_recv_msg_seq);
 
   // 提前到的消息先缓存下来
   state_.cache_early_arriving_msg(header.sequence_number, header, msg);
@@ -376,8 +359,8 @@ bool Session::handle_msg_seq_too_high(const MessageHeader& header,
  * 这里可以选择性是否判断过高或过低，因为登录的时候就无需判断是否过高
  */
 template <class Message>
-bool Session::verify_msg(const MessageHeader& header, const Message& msg,
-                         bool check_too_high, bool check_too_low) {
+bool Session::verify_msg(const MessageHeader& header, const Message& msg, bool check_too_high,
+                         bool check_too_low) {
   if (!validate_logon_state(header)) {
     printf("failed. validate_logon_state\n");
     goto error;
@@ -413,11 +396,10 @@ bool Session::verify_msg(const MessageHeader& header, const Message& msg,
   }
 
   // 如果BSS之前发出了重传请求，则此处判断重传状态是否结束
-  if (state_.is_recovering() &&
-      header.sequence_number >= state_.resend_range.second) {
+  if (state_.is_recovering() && header.sequence_number >= state_.resend_range.second) {
     // ResendRequest has been satisfied
-    printf("ResendRequest[%u, %u] has been satisfied\n",
-           state_.resend_range.first, state_.resend_range.second);
+    printf("ResendRequest[%u, %u] has been satisfied\n", state_.resend_range.first,
+           state_.resend_range.second);
     state_.set_resend_range(0, 0);
   }
 
@@ -450,8 +432,7 @@ bool Session::send_raw_msg_without_lock(const Message& msg) {
     cached_snd_queue_.emplace(msg_buffer);
   } else {
     // 这里需要判断指针是否为空，因为在进入send_raw_msg之前可能已经触发了断线
-    if (socket_sender_)
-      res = socket_sender_->send(msg_buffer.data, msg_buffer.size);
+    if (socket_sender_) res = socket_sender_->send(msg_buffer.data, msg_buffer.size);
   }
 
   // 每条发出去的消息都保存下来，以处理在登录时OCG请求重传的情况

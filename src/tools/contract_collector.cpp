@@ -4,22 +4,22 @@
 
 #include <getopt.hpp>
 
-#include "cep/data/contract_table.h"
-#include "cep/interface/gateway.h"
-#include "cep/oms/config_loader.h"
+#include "gateway/gateway.h"
+#include "trading_server/datastruct/contract_table.h"
+#include "trading_server/order_management/config_loader.h"
 
-class ContractCollector : public ft::OMSInterface {
+class ContractCollector : public ft::BaseOrderManagementSystem {
  public:
-  bool login(const ft::Config& config) {
-    gateway_.reset(ft::create_gateway(config.api));
+  bool Login(const ft::Config& config) {
+    gateway_.reset(ft::CreateGateway(config.api));
     if (!gateway_) return false;
 
-    return gateway_->login(this, config);
+    return gateway_->Login(this, config);
   }
 
-  bool dump(const std::string& file = "./contracts.csv") {
-    if (!gateway_->query_contracts(&contracts_)) return false;
-    ft::store_contracts(file, contracts_);
+  bool Dump(const std::string& file = "./contracts.csv") {
+    if (!gateway_->QueryContractList(&contracts_)) return false;
+    ft::StoreContractList(file, contracts_);
     return true;
   }
 
@@ -28,8 +28,8 @@ class ContractCollector : public ft::OMSInterface {
   std::vector<ft::Contract> contracts_;
 };
 
-static void usage() {
-  printf("usage:\n");
+static void Usage() {
+  printf("Usage:\n");
   printf("    --config            登录的配置文件\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --output            生成的合约路径及文件名，如./contracts.csv\n");
@@ -42,7 +42,7 @@ int main() {
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    Usage();
     exit(0);
   }
 
@@ -51,12 +51,12 @@ int main() {
   ContractCollector collector;
   ft::Config config;
   ft::load_config(login_yml, &config);
-  if (!collector.login(config)) {
-    printf("failed to login\n");
+  if (!collector.Login(config)) {
+    printf("failed to Login\n");
     exit(-1);
   }
 
-  if (!collector.dump(output)) {
+  if (!collector.Dump(output)) {
     printf("failed to dump\n");
   }
 

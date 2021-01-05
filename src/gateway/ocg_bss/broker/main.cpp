@@ -24,7 +24,7 @@
 //     sess_conf.msg_limit_per_sec = 8;
 //   }
 
-//   session.init(sess_conf);
+//   session.Init(sess_conf);
 //   session.enable();
 
 //   std::thread([&broker] {

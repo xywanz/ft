@@ -80,13 +80,12 @@ ft的目标是打造一个从交易平台到成熟的策略开发、以及提供
 | XTP | buy_open, sell_close, purchase, redeem                                                                                   |
 
 ### 1.3. 编码规范
-* 遵循Google C++编码规范，每行上限为80个字符
-* 因个人阅读喜好问题，函数全部用小写加下划线的方式
+* 遵循Google C++编码规范，每行上限为100个字符，参照.clang-format
 
 ## 2. 运行示例
 下面是一个简单的演示图：
 ![image](img/demo.jpg)
-<center>图2.1 trading-engine和strategy运行示例</center>
+<center>图2.1 trading_server和strategy运行示例</center>
 <br>
 
 * 左边终端运行了一个trading engine (交易引擎)。交易引擎的作用是对策略的订单转发到相应的交易接口，以及处理订后续的单回报。这期间需要经过风险管理、订单管理、仓位管理、资金管理等模块。交易引擎所管理的内容大部分都会同步到redis，策略可通过redis获取相关的信息。同时，策略也会对行情进行一个转发，通过redis发布给策略，以此驱动策略运行。左图中可以看到交易引擎刚刚启动并进行了相应的初始化，然后收到了策略发来的订单，之后收到了CTP发来的成交回报。
@@ -366,7 +365,7 @@ mkdir build && cd build
 cmake .. && make -j8
 ```
 编译完成后会有如下几个可执行文件或动态库：
-* trading-engine：交易引擎可执行文件
+* trading_server：交易引擎可执行文件
 * strategy-loader：策略加载器可执行文件，可通过该加载器动态加载策略程序
 * contract-collector：合约文件收集器可执行文件，从柜台拉取所有合约信息到本地供其他可执行文件使用
 * <text>libgrid-strategy.so</text>：示例策略的动态库，可以使用strategy-loader进行加载
@@ -396,9 +395,8 @@ redis-server  # 启动redis，必须在启动策略引擎前启动redis
 ```
 ```bash
 # 在terminal 1 启动交易引擎
-./trading-engine --loglevel=debug \
-  --config=../config/ctp_config.yml \
-  --contracts=../config/contracts.csv
+./trading_server --loglevel=debug \
+  --config=../config/ctp_config.yml
 ```
 ```bash
 # 在terminal 2 启动策略

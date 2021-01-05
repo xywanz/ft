@@ -1,26 +1,26 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "_xtp_quote_api.h"
+#include "gateway/xtp/_xtp_quote_api.h"
 
 #include <spdlog/spdlog.h>
 
 #include <vector>
 
-#include "cep/data/contract_table.h"
+#include "trading_server/datastruct/contract_table.h"
 #include "utils/misc.h"
 
 namespace ft {
 
-XtpQuoteApi::XtpQuoteApi(OMSInterface* oms) : oms_(oms) {}
+XtpQuoteApi::XtpQuoteApi(BaseOrderManagementSystem* oms) : oms_(oms) {}
 
 XtpQuoteApi::~XtpQuoteApi() {
   error();
-  logout();
+  Logout();
 }
 
-bool XtpQuoteApi::login(const Config& config) {
+bool XtpQuoteApi::Login(const Config& config) {
   if (is_logon_) {
-    spdlog::error("[XtpQuoteApi::login] Don't login twice");
+    spdlog::error("[XtpQuoteApi::Login] Don't Login twice");
     return false;
   }
 
@@ -28,7 +28,7 @@ bool XtpQuoteApi::login(const Config& config) {
   uint8_t client_id = rand_r(&seed) & 0xff;
   quote_api_.reset(XTP::API::QuoteApi::CreateQuoteApi(client_id, "."));
   if (!quote_api_) {
-    spdlog::error("[XtpQuoteApi::login] Failed to CreateQuoteApi");
+    spdlog::error("[XtpQuoteApi::Login] Failed to CreateQuoteApi");
     return false;
   }
 
@@ -37,8 +37,7 @@ bool XtpQuoteApi::login(const Config& config) {
   int port = 0;
 
   try {
-    int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d",
-                     protocol, ip, &port);
+    int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d", protocol, ip, &port);
     UNUSED(ret);
     assert(ret == 3);
   } catch (...) {
@@ -49,26 +48,26 @@ bool XtpQuoteApi::login(const Config& config) {
   if (strcmp(protocol, "udp") == 0) sock_type = XTP_PROTOCOL_UDP;
 
   quote_api_->RegisterSpi(this);
-  if (quote_api_->Login(ip, port, config.investor_id.c_str(),
-                        config.password.c_str(), sock_type) != 0) {
-    spdlog::error("[XtpQuoteApi::login] Failed to login: {}",
+  if (quote_api_->Login(ip, port, config.investor_id.c_str(), config.password.c_str(), sock_type) !=
+      0) {
+    spdlog::error("[XtpQuoteApi::Login] Failed to Login: {}",
                   quote_api_->GetApiLastError()->error_msg);
     return false;
   }
 
-  spdlog::debug("[XtpQuoteApi::login] Success");
+  spdlog::debug("[XtpQuoteApi::Login] Success");
   is_logon_ = true;
   return true;
 }
 
-void XtpQuoteApi::logout() {
+void XtpQuoteApi::Logout() {
   if (is_logon_) {
     quote_api_->Logout();
     is_logon_ = false;
   }
 }
 
-bool XtpQuoteApi::subscribe(const std::vector<std::string>& sub_list) {
+bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   subscribed_list_ = sub_list;
   std::vector<char*> sub_list_sh;
   std::vector<char*> sub_list_sz;
@@ -82,17 +81,17 @@ bool XtpQuoteApi::subscribe(const std::vector<std::string>& sub_list) {
   }
 
   if (sub_list_sh.size() > 0) {
-    if (quote_api_->SubscribeMarketData(sub_list_sh.data(), sub_list_sh.size(),
-                                        XTP_EXCHANGE_SH) != 0) {
-      spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
+    if (quote_api_->SubscribeMarketData(sub_list_sh.data(), sub_list_sh.size(), XTP_EXCHANGE_SH) !=
+        0) {
+      spdlog::error("[XtpQuoteApi::Login] 无法订阅行情");
       return false;
     }
   }
 
   if (sub_list_sz.size() > 0) {
-    if (quote_api_->SubscribeMarketData(sub_list_sz.data(), sub_list_sz.size(),
-                                        XTP_EXCHANGE_SZ) != 0) {
-      spdlog::error("[XtpQuoteApi::login] 无法订阅行情");
+    if (quote_api_->SubscribeMarketData(sub_list_sz.data(), sub_list_sz.size(), XTP_EXCHANGE_SZ) !=
+        0) {
+      spdlog::error("[XtpQuoteApi::Login] 无法订阅行情");
       return false;
     }
   }
@@ -100,36 +99,35 @@ bool XtpQuoteApi::subscribe(const std::vector<std::string>& sub_list) {
   return true;
 }
 
-bool XtpQuoteApi::query_contracts(std::vector<Contract>* result) {
+bool XtpQuoteApi::QueryContractList(std::vector<Contract>* result) {
   if (!is_logon_) {
-    spdlog::error("[XtpQuoteApi::query_contracts] 未登录到quote服务器");
+    spdlog::error("[XtpQuoteApi::QueryContractList] 未登录到quote服务器");
     return false;
   }
 
   contract_results_ = result;
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SH) != 0) {
-    spdlog::error("[XtpQuoteApi::query_contract] Failed to query SH stocks");
+    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
     return false;
   }
   if (!wait_sync()) {
-    spdlog::error("[XtpQuoteApi::query_contract] Failed to query SH stocks");
+    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
     return false;
   }
 
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SZ) != 0) {
-    spdlog::error("[XtpQuoteApi::query_contract] Failed to query SZ stocks");
+    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
     return false;
   }
   if (!wait_sync()) {
-    spdlog::error("[XtpQuoteApi::query_contract] Failed to query SZ stocks");
+    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
     return false;
   }
 
   return true;
 }
 
-void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
-                                    bool is_last) {
+void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) {
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpQuoteApi::OnQueryAllTickers] {}", error_info->error_msg);
     error();
@@ -138,8 +136,8 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
 
   if (ticker_info && (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK ||
                       ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)) {
-    spdlog::debug("[XtpQuoteApi::OnQueryAllTickers] {}, {}",
-                  ticker_info->ticker, ticker_info->ticker_name);
+    spdlog::debug("[XtpQuoteApi::OnQueryAllTickers] {}, {}", ticker_info->ticker,
+                  ticker_info->ticker_name);
     Contract contract{};
     contract.ticker = ticker_info->ticker;
     contract.exchange = ft_exchange_type(ticker_info->exchange_id);
@@ -159,9 +157,8 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
   if (is_last) done();
 }
 
-void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
-                                    int32_t bid1_count, int32_t max_bid1_count,
-                                    int64_t ask1_qty[], int32_t ask1_count,
+void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int32_t bid1_count,
+                                    int32_t max_bid1_count, int64_t ask1_qty[], int32_t ask1_count,
                                     int32_t max_ask1_count) {
   if (!market_data) {
     spdlog::warn("[XtpQuoteApi::OnDepthMarketData] nullptr");
@@ -170,9 +167,8 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
 
   auto contract = ContractTable::get_by_ticker(market_data->ticker);
   if (!contract) {
-    spdlog::trace(
-        "[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
-        market_data->ticker);
+    spdlog::trace("[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
+                  market_data->ticker);
     return;
   }
 
@@ -243,10 +239,10 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
   spdlog::trace(
       "[XtpQuoteApi::OnRtnDepthMarketData] {}, TimeMs: {}, LastPrice:{:.2f}, "
       "Volume:{}, Turnover:{}, Open Interest:{}",
-      market_data->ticker, tick.time_ms, tick.last_price, tick.volume,
-      tick.turnover, tick.open_interest);
+      market_data->ticker, tick.time_ms, tick.last_price, tick.volume, tick.turnover,
+      tick.open_interest);
 
-  oms_->on_tick(&tick);
+  oms_->OnTick(&tick);
 }
 
 }  // namespace ft

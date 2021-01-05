@@ -4,7 +4,7 @@
 
 namespace ft {
 
-void OrderManager::update_order_status(const OrderResponse& rsp) {
+void OrderManager::UpdateOrderStatus(const OrderResponse& rsp) {
   if (rsp.completed) {
     order_map_.erase(rsp.order_id);
     return;

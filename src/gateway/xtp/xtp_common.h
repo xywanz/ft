@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "cep/data/constants.h"
+#include "trading_server/datastruct/constants.h"
 
 namespace ft {
 
@@ -25,9 +25,7 @@ struct XtpApiDeleter {
 template <class T>
 using XtpUniquePtr = std::unique_ptr<T, XtpApiDeleter>;
 
-inline bool is_error_rsp(XTPRI* error_info) {
-  return error_info && error_info->error_id != 0;
-}
+inline bool is_error_rsp(XTPRI* error_info) { return error_info && error_info->error_id != 0; }
 
 inline std::string ft_exchange_type(XTP_EXCHANGE_TYPE exchange) {
   if (exchange == XTP_EXCHANGE_SH)

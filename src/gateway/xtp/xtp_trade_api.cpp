@@ -1,18 +1,18 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "xtp_trade_api.h"
+#include "gateway/xtp/xtp_trade_api.h"
 
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cstdlib>
 
-#include "cep/data/contract_table.h"
+#include "trading_server/datastruct/contract_table.h"
 #include "utils/misc.h"
 
 namespace ft {
 
-XtpTradeApi::XtpTradeApi(OMSInterface* oms) : oms_(oms) {
+XtpTradeApi::XtpTradeApi(BaseOrderManagementSystem* oms) : oms_(oms) {
   uint32_t seed = time(nullptr);
   uint8_t client_id = rand_r(&seed) & 0xff;
   trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
@@ -24,10 +24,10 @@ XtpTradeApi::XtpTradeApi(OMSInterface* oms) : oms_(oms) {
 
 XtpTradeApi::~XtpTradeApi() {
   error();
-  logout();
+  Logout();
 }
 
-bool XtpTradeApi::login(const Config& config) {
+bool XtpTradeApi::Login(const Config& config) {
   investor_id_ = config.investor_id;
 
   char protocol[32]{};
@@ -35,16 +35,13 @@ bool XtpTradeApi::login(const Config& config) {
   int port = 0;
 
   try {
-    int ret = sscanf(config.trade_server_address.c_str(), "%[^:]://%[^:]:%d",
-                     protocol, ip, &port);
+    int ret = sscanf(config.trade_server_address.c_str(), "%[^:]://%[^:]:%d", protocol, ip, &port);
     if (ret != 3) {
-      spdlog::error("[XtpTradeApi::login] Invalid trade server: {}",
-                    config.trade_server_address);
+      spdlog::error("[XtpTradeApi::Login] Invalid trade server: {}", config.trade_server_address);
       return false;
     }
   } catch (...) {
-    spdlog::error("[XtpTradeApi::login] Invalid trade server: {}",
-                  config.trade_server_address);
+    spdlog::error("[XtpTradeApi::Login] Invalid trade server: {}", config.trade_server_address);
     return false;
   }
 
@@ -54,19 +51,19 @@ bool XtpTradeApi::login(const Config& config) {
   trade_api_->SubscribePublicTopic(XTP_TERT_QUICK);
   trade_api_->RegisterSpi(this);
   trade_api_->SetSoftwareKey(config.auth_code.c_str());
-  session_id_ = trade_api_->Login(ip, port, config.investor_id.c_str(),
-                                  config.password.c_str(), sock_type);
+  session_id_ =
+      trade_api_->Login(ip, port, config.investor_id.c_str(), config.password.c_str(), sock_type);
   if (session_id_ == 0) {
-    spdlog::error("[XtpTradeApi::login] Failed to Call API login: {}",
+    spdlog::error("[XtpTradeApi::Login] Failed to Call API Login: {}",
                   trade_api_->GetApiLastError()->error_msg);
     return false;
   }
 
   if (config.cancel_outstanding_orders_on_startup) {
-    spdlog::debug("[XtpTradeApi::login] Cancel outstanding orders on startup");
-    if (!query_orders()) {
+    spdlog::debug("[XtpTradeApi::Login] Cancel outstanding orders on startup");
+    if (!QueryOrderList()) {
       spdlog::error(
-          "[XtpTradeApi::login] Failed to query orders and cancel outstanding "
+          "[XtpTradeApi::Login] Failed to query orders and cancel outstanding "
           "orders");
       return false;
     }
@@ -75,18 +72,17 @@ bool XtpTradeApi::login(const Config& config) {
   return true;
 }
 
-void XtpTradeApi::logout() {
+void XtpTradeApi::Logout() {
   if (session_id_ != 0) {
     trade_api_->Logout(session_id_);
     session_id_ = 0;
   }
 }
 
-bool XtpTradeApi::send_order(const OrderRequest& order,
-                             uint64_t* privdata_ptr) {
-  if ((order.direction == Direction::BUY && is_offset_close(order.offset)) ||
-      (order.direction == Direction::SELL && is_offset_open(order.offset))) {
-    spdlog::info("[XtpTradeApi::send_order] 不支持BuyClose或是SellOpen");
+bool XtpTradeApi::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) {
+  if ((order.direction == Direction::BUY && IsOffsetClose(order.offset)) ||
+      (order.direction == Direction::SELL && IsOffsetOpen(order.offset))) {
+    spdlog::info("[XtpTradeApi::SendOrder] 不支持BuyClose或是SellOpen");
     return false;
   }
 
@@ -95,14 +91,14 @@ bool XtpTradeApi::send_order(const OrderRequest& order,
   XTPOrderInsertInfo req{};
   req.side = xtp_side(order.direction);
   if (req.side == XTP_SIDE_UNKNOWN) {
-    spdlog::error("[XtpTradeApi::send_order] 不支持的交易类型");
+    spdlog::error("[XtpTradeApi::SendOrder] 不支持的交易类型");
     return false;
   }
 
   if (order.direction == Direction::BUY || order.direction == Direction::SELL) {
     req.price_type = xtp_price_type(order.type);
     if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
-      spdlog::error("[XtpTradeApi::send_order] 不支持的订单价格类型");
+      spdlog::error("[XtpTradeApi::SendOrder] 不支持的订单价格类型");
       return false;
     }
     req.business_type = XTP_BUSINESS_TYPE_CASH;
@@ -114,7 +110,7 @@ bool XtpTradeApi::send_order(const OrderRequest& order,
 
   req.market = xtp_market_type(contract->exchange);
   if (req.market == XTP_MKT_UNKNOWN) {
-    spdlog::error("[XtpTradeApi::send_order] Unknown exchange");
+    spdlog::error("[XtpTradeApi::SendOrder] Unknown exchange");
     return false;
   }
 
@@ -124,19 +120,17 @@ bool XtpTradeApi::send_order(const OrderRequest& order,
 
   uint64_t xtp_order_id = trade_api_->InsertOrder(&req, session_id_);
   if (xtp_order_id == 0) {
-    spdlog::error("[XtpTradeApi::send_order] 订单插入失败: {}",
+    spdlog::error("[XtpTradeApi::SendOrder] 订单插入失败: {}",
                   trade_api_->GetApiLastError()->error_msg);
     return false;
   }
 
-  spdlog::debug("[XtpTradeApi::send_order] 订单插入成功. XtpOrderID: {}",
-                xtp_order_id);
+  spdlog::debug("[XtpTradeApi::SendOrder] 订单插入成功. XtpOrderID: {}", xtp_order_id);
   *privdata_ptr = xtp_order_id;
   return true;
 }
 
-void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
-                               uint64_t session_id) {
+void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint64_t session_id) {
   if (session_id != session_id_) return;
 
   if (!order_info) {
@@ -146,13 +140,13 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
 
   if (is_error_rsp(error_info)) {
     OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
-    oms_->on_order_rejected(&rsp);
+    oms_->OnOrderRejected(&rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
     OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
-    oms_->on_order_rejected(&rsp);
+    oms_->OnOrderRejected(&rsp);
     return;
   }
 
@@ -160,20 +154,18 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info,
 
   if (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING) {
     OrderAcceptance rsp = {order_info->order_client_id};
-    oms_->on_order_accepted(&rsp);
+    oms_->OnOrderAccepted(&rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_CANCELED ||
       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
-    OrderCancellation rsp = {order_info->order_client_id,
-                             static_cast<int>(order_info->qty_left)};
-    oms_->on_order_canceled(&rsp);
+    OrderCancellation rsp = {order_info->order_client_id, static_cast<int>(order_info->qty_left)};
+    oms_->OnOrderCanceled(&rsp);
   }
 }
 
-void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
-                               uint64_t session_id) {
+void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) {
   if (session_id_ != session_id) return;
 
   if (!trade_info) {
@@ -182,9 +174,8 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
   }
 
   spdlog::trace("ETF purchase/redeem: {},{},{},{},{},{},{}", trade_info->ticker,
-                trade_info->business_type, trade_info->trade_type,
-                trade_info->side, trade_info->quantity, trade_info->price,
-                trade_info->trade_amount);
+                trade_info->business_type, trade_info->trade_type, trade_info->side,
+                trade_info->quantity, trade_info->price, trade_info->trade_amount);
 
   Trade rsp{};
   if (trade_info->business_type == XTP_BUSINESS_TYPE_ETF) {
@@ -193,8 +184,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
       trade_info->ticker[5] = '0';
       contract = ContractTable::get_by_ticker(trade_info->ticker);
       if (!contract) {
-        spdlog::warn("[XtpTradeApi::OnTradeEvent] Contract not found: {}",
-                     trade_info->ticker);
+        spdlog::warn("[XtpTradeApi::OnTradeEvent] Contract not found: {}", trade_info->ticker);
         return;
       }
     }
@@ -203,14 +193,12 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
     // 即ETF的普通成交类型
     // 这个信息对我们来说没有用处，反而会扰乱仓位的计算
     // 所以在此处过滤掉该回报
-    if (contract->product_type == ProductType::FUND &&
-        trade_info->trade_type == XTP_TRDT_COMMON)
+    if (contract->product_type == ProductType::FUND && trade_info->trade_type == XTP_TRDT_COMMON)
       return;
 
     // 收到成分股回报，需要设置tid, direction等信息
     rsp.tid = contract->tid;
-    rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE
-                                                          : Direction::REDEEM;
+    rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE : Direction::REDEEM;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
   } else {
@@ -222,20 +210,20 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info,
   rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;
-  oms_->on_order_traded(&rsp);
+  oms_->OnOrderTraded(&rsp);
 }
 
-bool XtpTradeApi::cancel_order(uint64_t xtp_order_id) {
+bool XtpTradeApi::CancelOrder(uint64_t xtp_order_id) {
   if (trade_api_->CancelOrder(xtp_order_id, session_id_) == 0) {
-    spdlog::error("[XtpTradeApi::cancel_order] Failed to call CancelOrder");
+    spdlog::error("[XtpTradeApi::CancelOrder] Failed to call CancelOrder");
     return false;
   }
 
   return true;
 }
 
-void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
-                                     XTPRI* error_info, uint64_t session_id) {
+void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info, XTPRI* error_info,
+                                     uint64_t session_id) {
   if (session_id_ != session_id) return;
 
   if (!is_error_rsp(error_info)) return;
@@ -249,23 +237,21 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info,
                 error_info->error_msg);
 }
 
-bool XtpTradeApi::query_positions(std::vector<Position>* result) {
+bool XtpTradeApi::QueryPositionList(std::vector<Position>* result) {
   position_results_ = result;
   int res = trade_api_->QueryPosition("", session_id_, next_req_id());
   if (res != 0) {
-    spdlog::error("[XtpTradeApi::query_position] Failed to call QueryPosition");
+    spdlog::error("[XtpTradeApi::QueryPosition] Failed to call QueryPosition");
     return false;
   }
   return wait_sync();
 }
 
-void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
-                                  XTPRI* error_info, int request_id,
-                                  bool is_last, uint64_t session_id) {
+void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error_info,
+                                  int request_id, bool is_last, uint64_t session_id) {
   if (is_error_rsp(error_info)) {
-    spdlog::error(
-        "[CtpTradeApi::OnRspQryInvestorPosition] Failed. Error Msg: {}",
-        error_info->error_msg);
+    spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Failed. Error Msg: {}",
+                  error_info->error_msg);
     pos_cache_.clear();
     error();
     return;
@@ -275,14 +261,13 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position,
     spdlog::debug(
         "[XtpTradeApi::OnQueryPosition] Ticker: {}, TickerName: {}, YDPos: {}, "
         "Pos: {}, AvgPrice: {:.3f}, FloatPNL:{:.3f}",
-        position->ticker, position->ticker_name, position->yesterday_position,
-        position->total_qty, position->avg_price, position->unrealized_pnl);
+        position->ticker, position->ticker_name, position->yesterday_position, position->total_qty,
+        position->avg_price, position->unrealized_pnl);
 
     auto contract = ContractTable::get_by_ticker(position->ticker);
     if (!contract) {
-      spdlog::error(
-          "[CtpTradeApi::OnRspQryInvestorPosition] Contract not found. {}, {}",
-          position->ticker, position->ticker_name);
+      spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Contract not found. {}, {}",
+                    position->ticker, position->ticker_name);
       goto check_last;
     }
 
@@ -308,20 +293,18 @@ check_last:
   }
 }
 
-bool XtpTradeApi::query_account(Account* result) {
+bool XtpTradeApi::QueryAccount(Account* result) {
   account_result_ = result;
   if (trade_api_->QueryAsset(session_id_, next_req_id()) != 0) {
-    spdlog::error("[XtpTradeApi::query_account] {}",
-                  trade_api_->GetApiLastError()->error_msg);
+    spdlog::error("[XtpTradeApi::QueryAccount] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
 
   return wait_sync();
 }
 
-void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
-                               int request_id, bool is_last,
-                               uint64_t session_id) {
+void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id,
+                               bool is_last, uint64_t session_id) {
   UNUSED(request_id);
 
   if (session_id_ != session_id) return;
@@ -347,14 +330,12 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
       "banlance:{}, deposit_withdraw:{}, trade_netting:{}, captial_asset:{}, "
       "force_freeze_amount:{}, preferred_amount:{}, "
       "repay_stock_aval_banlance:{}",
-      asset->total_asset, asset->buying_power, asset->security_asset,
-      asset->fund_buy_amount, asset->fund_buy_fee, asset->fund_sell_amount,
-      asset->fund_sell_fee, asset->withholding_amount, asset->account_type,
-      asset->frozen_margin, asset->frozen_exec_cash, asset->frozen_exec_fee,
-      asset->pay_later, asset->preadva_pay, asset->orig_banlance,
-      asset->banlance, asset->deposit_withdraw, asset->trade_netting,
-      asset->captial_asset, asset->force_freeze_amount, asset->preferred_amount,
-      asset->repay_stock_aval_banlance);
+      asset->total_asset, asset->buying_power, asset->security_asset, asset->fund_buy_amount,
+      asset->fund_buy_fee, asset->fund_sell_amount, asset->fund_sell_fee, asset->withholding_amount,
+      asset->account_type, asset->frozen_margin, asset->frozen_exec_cash, asset->frozen_exec_fee,
+      asset->pay_later, asset->preadva_pay, asset->orig_banlance, asset->banlance,
+      asset->deposit_withdraw, asset->trade_netting, asset->captial_asset,
+      asset->force_freeze_amount, asset->preferred_amount, asset->repay_stock_aval_banlance);
   Account account{};
   account.account_id = std::stoull(investor_id_);
   account.total_asset = asset->total_asset;
@@ -366,21 +347,19 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info,
   if (is_last) done();
 }
 
-bool XtpTradeApi::query_orders() {
+bool XtpTradeApi::QueryOrderList() {
   XTPQueryOrderReq req{};
 
   if (trade_api_->QueryOrders(&req, session_id_, next_req_id()) != 0) {
-    spdlog::error("[XtpTradeApi::query_orders] {}",
-                  trade_api_->GetApiLastError()->error_msg);
+    spdlog::error("[XtpTradeApi::QueryOrderList] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
 
   return wait_sync();
 }
 
-void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
-                               int request_id, bool is_last,
-                               uint64_t session_id) {
+void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, int request_id,
+                               bool is_last, uint64_t session_id) {
   UNUSED(request_id);
 
   if (session_id_ != session_id) return;
@@ -391,9 +370,8 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
     return;
   }
 
-  if (order_info &&
-      (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING ||
-       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDQUEUEING)) {
+  if (order_info && (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING ||
+                     order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDQUEUEING)) {
     if (trade_api_->CancelOrder(order_info->order_xtp_id, session_id_) == 0)
       spdlog::error("[XtpTradeApi::OnQueryOrder] 订单撤回失败: {}",
                     trade_api_->GetApiLastError()->error_msg);
@@ -402,22 +380,20 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info,
   if (is_last) done();
 }
 
-bool XtpTradeApi::query_trades(std::vector<Trade>* result) {
+bool XtpTradeApi::QueryTradeList(std::vector<Trade>* result) {
   trade_results_ = result;
 
   XTPQueryTraderReq req{};
   if (trade_api_->QueryTrades(&req, session_id_, next_req_id()) != 0) {
-    spdlog::error("[XtpTradeApi::query_trades] {}",
-                  trade_api_->GetApiLastError()->error_msg);
+    spdlog::error("[XtpTradeApi::QueryTradeList] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
 
   return wait_sync();
 }
 
-void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
-                               int request_id, bool is_last,
-                               uint64_t session_id) {
+void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, int request_id,
+                               bool is_last, uint64_t session_id) {
   UNUSED(request_id);
 
   if (session_id_ != session_id) return;
@@ -428,8 +404,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info,
     return;
   }
 
-  if (trade_info &&
-      (trade_info->side == XTP_SIDE_BUY || trade_info->side == XTP_SIDE_SELL)) {
+  if (trade_info && (trade_info->side == XTP_SIDE_BUY || trade_info->side == XTP_SIDE_SELL)) {
     auto contract = ContractTable::get_by_ticker(trade_info->ticker);
     assert(contract);
 

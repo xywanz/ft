@@ -19,7 +19,7 @@ using namespace ft::bss;
 
 class VirtualOcg : public OcgHandler {
  public:
-  void init();
+  void Init();
 
   void listen(int primary_port, int secondary_port);
 
@@ -39,35 +39,27 @@ class VirtualOcg : public OcgHandler {
 
   void on_reject_msg(MessageHeader* header, RejectMessage* msg) override;
 
-  void on_sequence_reset_msg(MessageHeader* header,
-                             SequenceResetMessage* msg) override;
+  void on_sequence_reset_msg(MessageHeader* header, SequenceResetMessage* msg) override;
 
-  void on_new_order_request(MessageHeader* header,
-                            NewOrderRequest* msg) override;
+  void on_new_order_request(MessageHeader* header, NewOrderRequest* msg) override;
 
   void on_amend_request(MessageHeader* header, AmendRequest* msg) override;
 
   void on_cancel_request(MessageHeader* header, CancelRequest* msg) override;
 
-  void on_mass_cancel_request(MessageHeader* header,
-                              MassCancelRequest* msg) override;
+  void on_mass_cancel_request(MessageHeader* header, MassCancelRequest* msg) override;
 
-  void on_obo_cancel_request(MessageHeader* header,
-                             OboCancelRequest* msg) override;
+  void on_obo_cancel_request(MessageHeader* header, OboCancelRequest* msg) override;
 
-  void on_obo_mass_cancel_request(MessageHeader* header,
-                                  OboMassCancelRequest* msg) override;
+  void on_obo_mass_cancel_request(MessageHeader* header, OboMassCancelRequest* msg) override;
 
   void on_quote_request(MessageHeader* header, QuoteRequest* msg) override;
 
-  void on_quote_cancel_request(MessageHeader* header,
-                               QuoteCancelRequest* msg) override;
+  void on_quote_cancel_request(MessageHeader* header, QuoteCancelRequest* msg) override;
 
-  void on_quote_cancel_request(MessageHeader* header,
-                               TradeCaptureReport* msg) override;
+  void on_quote_cancel_request(MessageHeader* header, TradeCaptureReport* msg) override;
 
-  void on_party_entitlement_request(MessageHeader* header,
-                                    PartyEntitlementRequest* msg) override;
+  void on_party_entitlement_request(MessageHeader* header, PartyEntitlementRequest* msg) override;
 
   void on_invalid_msg() override;
 
@@ -147,22 +139,19 @@ class VirtualOcg : public OcgHandler {
   }
 
   void send_gap_fill(uint32_t new_seq_num) {
-    printf("send_gap_fill: seq:%u new_seq:%u\n", state_.next_send_msg_seq,
-           new_seq_num);
+    printf("send_gap_fill: seq:%u new_seq:%u\n", state_.next_send_msg_seq, new_seq_num);
 
     SequenceResetMessage seq_reset_msg{'Y', new_seq_num};
     send_raw_msg(seq_reset_msg);
     state_.next_send_msg_seq = new_seq_num;
   }
 
-  void send_reject_msg(const MessageHeader& err_msg_header,
-                       RejectCode reject_code,
+  void send_reject_msg(const MessageHeader& err_msg_header, RejectCode reject_code,
                        const std::string& err_field_name = "") {
     RejectMessage reject_msg{};
     reject_msg.message_reject_code = reject_code;
     reject_msg.reference_sequence_number = err_msg_header.message_type;
-    strncpy(reject_msg.reference_field_name, err_field_name.c_str(),
-            sizeof(ReferenceFieldName));
+    strncpy(reject_msg.reference_field_name, err_field_name.c_str(), sizeof(ReferenceFieldName));
 
     send_raw_msg(reject_msg);
   }
@@ -178,19 +167,17 @@ class VirtualOcg : public OcgHandler {
   void resend(uint32_t start_seq_num, uint32_t end_seq_num);
 
   template <class Message>
-  bool verify_msg(const MessageHeader& header, const Message& msg,
-                  bool check_too_high = true, bool check_too_low = true);
+  bool verify_msg(const MessageHeader& header, const Message& msg, bool check_too_high = true,
+                  bool check_too_low = true);
 
   bool validate_logon_state(const MessageHeader& header) const {
-    return (header.message_type == LOGON && !state_.enabled &&
-            !state_.received_logon && !state_.sent_logon) ||
-           (header.message_type != LOGON && state_.enabled &&
-            state_.received_logon && state_.sent_logon);
+    return (header.message_type == LOGON && !state_.enabled && !state_.received_logon &&
+            !state_.sent_logon) ||
+           (header.message_type != LOGON && state_.enabled && state_.received_logon &&
+            state_.sent_logon);
   }
 
-  bool is_correct_comp_id(const CompId& comp_id) const {
-    return comp_id_ == comp_id;
-  }
+  bool is_correct_comp_id(const CompId& comp_id) const { return comp_id_ == comp_id; }
 
   template <class Message>
   bool handle_msg_seq_too_high(const MessageHeader& header, const Message& msg);
@@ -198,8 +185,8 @@ class VirtualOcg : public OcgHandler {
   bool handle_msg_seq_too_low(const MessageHeader& header) {
     // 收到MsgSeqNum比ExpectedSeqNum小的登录回应应该告知对方应收的SeqNum并断开连接
     if (header.message_type == LOGON || header.poss_dup_flag == 0) {
-      printf("failed. seq num is too low, received:%u expected:%u\n",
-             header.sequence_number, state_.next_recv_msg_seq);
+      printf("failed. seq num is too low, received:%u expected:%u\n", header.sequence_number,
+             state_.next_recv_msg_seq);
       std::string logout_reason = kReasonLocalSndSeqLessThanOcgExpected;
       logout_reason += std::to_string(state_.next_recv_msg_seq);
       send_logout_msg(SESSION_STATUS_OTHER, logout_reason);
@@ -232,13 +219,13 @@ class VirtualOcg : public OcgHandler {
     int hour = static_cast<int>((ts.tv_sec % 86400 / 3600));
     int min = static_cast<int>((ts.tv_sec / 60) % 60);
     int sec = static_cast<int>(ts.tv_sec % 60);
-    snprintf(trans_time, sizeof(TransactionTime), "%s-%02d:%02d:%02d.%03d",
-             date_, hour, min, sec, static_cast<int>(ts.tv_nsec / 1000000));
+    snprintf(trans_time, sizeof(TransactionTime), "%s-%02d:%02d:%02d.%03d", date_, hour, min, sec,
+             static_cast<int>(ts.tv_nsec / 1000000));
   }
 
  private:
   struct ResendVisitor {
-    void init(VirtualOcg* self) { self_ = self; }
+    void Init(VirtualOcg* self) { self_ = self; }
 
     template <class Message>
     void operator()(Message& msg) {
@@ -250,7 +237,7 @@ class VirtualOcg : public OcgHandler {
   };
 
   struct ConsumerVisitor {
-    void init(VirtualOcg* self) { self_ = self; }
+    void Init(VirtualOcg* self) { self_ = self; }
 
     void set_header(MessageHeader* header) { header_ = header; }
 
@@ -285,8 +272,8 @@ class VirtualOcg : public OcgHandler {
 };
 
 template <class Message>
-bool VirtualOcg::verify_msg(const MessageHeader& header, const Message& msg,
-                            bool check_too_high, bool check_too_low) {
+bool VirtualOcg::verify_msg(const MessageHeader& header, const Message& msg, bool check_too_high,
+                            bool check_too_low) {
   if (!validate_logon_state(header)) {
     printf("failed. validate_logon_state\n");
     goto error;
@@ -324,8 +311,8 @@ bool VirtualOcg::verify_msg(const MessageHeader& header, const Message& msg,
   if (state_.is_recovering()) {
     if (header.sequence_number >= state_.resend_range.second) {
       // ResendRequest has been satisfied
-      printf("ResendRequest[%u, %u] has been satisfied\n",
-             state_.resend_range.first, state_.resend_range.second);
+      printf("ResendRequest[%u, %u] has been satisfied\n", state_.resend_range.first,
+             state_.resend_range.second);
       state_.set_resend_range(0, 0);
     }
   }
@@ -339,11 +326,9 @@ error:
 }
 
 template <class Message>
-bool VirtualOcg::handle_msg_seq_too_high(const MessageHeader& header,
-                                         const Message& msg) {
+bool VirtualOcg::handle_msg_seq_too_high(const MessageHeader& header, const Message& msg) {
   // todo: To be or not to be, that is the question
-  printf("handle_msg_seq_too_high: seq:%u type:%u\n", header.sequence_number,
-         header.message_type);
+  printf("handle_msg_seq_too_high: seq:%u type:%u\n", header.sequence_number, header.message_type);
 
   // 提前到的消息先缓存下来
   state_.cache_early_arriving_msg(header.sequence_number, header, msg);

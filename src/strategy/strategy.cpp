@@ -4,27 +4,26 @@
 
 namespace ft {
 
-void Strategy::run() {
-  on_init();
-  puller_.subscribe_order_rsp(strategy_id_);
+void Strategy::Run() {
+  OnInit();
+  puller_.SubscribeOrderResponse(strategy_id_);
 
   for (;;) {
-    auto reply = puller_.pull();
+    auto reply = puller_.Pull();
     if (reply) {
       if (strcmp(reply->element[1]->str, strategy_id_) == 0) {
-        auto rsp =
-            reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        on_order_rsp(*rsp);
+        auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
+        OnOrderResponse(*rsp);
       } else {
         auto tick = reinterpret_cast<TickData*>(reply->element[2]->str);
-        on_tick(*tick);
+        OnTick(*tick);
       }
     }
   }
 }
 
-void Strategy::subscribe(const std::vector<std::string>& sub_list) {
-  puller_.subscribe_md(sub_list);
+void Strategy::Subscribe(const std::vector<std::string>& sub_list) {
+  puller_.SubscribeMarketData(sub_list);
 }
 
 }  // namespace ft

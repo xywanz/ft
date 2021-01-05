@@ -71,10 +71,7 @@ enum MessageRejectCode : uint16_t {
   MSG_REJECT_CODE_OTHER = 99
 };
 
-enum LookupServiceStatus {
-  LOOKUP_SERVICE_REJECTED = 0,
-  LOOKUP_SERVICE_ACCEPTED = 1
-};
+enum LookupServiceStatus { LOOKUP_SERVICE_REJECTED = 0, LOOKUP_SERVICE_ACCEPTED = 1 };
 
 enum BssSessionStatus {
   SESSION_ACTIVE = 0,
@@ -154,7 +151,7 @@ using OrderStatus = uint8_t;
 using OrderType = uint8_t;  // 1: Market  2: Limit
 using Password = AlphanumericFixedLength<450>;
 using PortType = uint16_t;
-using PositionEffect = uint8_t;  // 1: close Applicable if side = 1
+using PositionEffect = uint8_t;  // 1: Close Applicable if side = 1
 using PossDupFlag = uint8_t;
 using PossResendFlag = uint8_t;
 using PresenceBitmap = uint8_t[32];
@@ -175,7 +172,7 @@ using SecurityIdSource = uint8_t;
 // 1 = Session password change
 // 2 = Session password due to expire
 // 3 = New session password does not comply with the policy
-// 4 = Session logout complete
+// 4 = Session Logout complete
 // 5 = Invalid username or password
 // 6 = Account locked
 // 7 = Logons are not allowed at this time
@@ -237,8 +234,8 @@ struct LookupResponse {
 };
 
 struct LogonMessage {
-  Password password;      // 0: N. As for BSS this field must be present
-  Password new_password;  // 1: N
+  Password password;                               // 0: N. As for BSS this field must be present
+  Password new_password;                           // 1: N
   MessageSequence next_expected_message_sequence;  // 2: Y
   SessionStatus session_status;                    // 3: N
   Text text;                                       // 4: N
@@ -289,24 +286,24 @@ struct NewOrderRequest {
   SecurityExchange security_exchange;   // 4: N
   BrokerLocationId broker_location_id;  // 5: N
   TransactionTime transaction_time;     // 6: Y
-  Side side;             // 7: Y, 1 = buy, 2 = sell, 5 = sell short
-  OrderType order_type;  // 8: Y. 1 = market, 2 = limit
+  Side side;                            // 7: Y, 1 = buy, 2 = sell, 5 = sell short
+  OrderType order_type;                 // 8: Y. 1 = market, 2 = limit
   // 9: N. if price is 1.23, set this field to 123,000,000 (1.23 * 1e8)
   Price price;
   // 10: Y. if quantity is 100, set this field to 10,000,000,000 (100 * 1e8)
   Quantity order_quantity;
   Tif tif;  // 11: N. 0 = day, 3 = IOC, 4 = FOK, 9 = at crossing
-  // 12: N. 1 = close
+  // 12: N. 1 = Close
   // applicable only if side = 1(buy) to indicatecovering a short sell
   PositionEffect position_effect;
   OrderRestrictions order_restrictions;  // 13: N
   // 14: N. if present, this should be set as 1
   MaxPriceLevels max_price_levels;
-  OrderCapacity order_capacity;  // 15: N. 1 = Agent, 2 = principal
-  Text text;                     // 16: N
+  OrderCapacity order_capacity;                    // 15: N. 1 = Agent, 2 = principal
+  Text text;                                       // 16: N
   ExecutionInstructions execution_instructions;    // 17: N
   DisclosureInstructions disclosure_instructions;  // 18: Y
-  LotType lot_type;  // 19: N. not included = board lot, 1 = odd lot
+  LotType lot_type;                                // 19: N. not included = board lot, 1 = odd lot
 };
 
 struct CancelRequest {
@@ -375,22 +372,22 @@ struct OboCancelRequest {
   SecurityExchange security_exchange;   // 4: N
   BrokerLocationId broker_location_id;  // 5: N
   TransactionTime transaction_time;     // 6: Y
-  Side side;                         // 7: Y. 1 = buy, 2 = sell, 5 = sell short
-  OrderId original_client_order_id;  // 8: N
-  OrderId order_id;                  // 9: Y
-  BrokerId owning_broker_id;         // 10: Y
-  Text text;                         // 11: N. free text
+  Side side;                            // 7: Y. 1 = buy, 2 = sell, 5 = sell short
+  OrderId original_client_order_id;     // 8: N
+  OrderId order_id;                     // 9: Y
+  BrokerId owning_broker_id;            // 10: Y
+  Text text;                            // 11: N. free text
 };
 
 struct OboMassCancelRequest {
-  OrderId client_order_id;              // 0: Y
-  BrokerId submitting_broker_id;        // 1: Y
-  SecurityId security_id;               // 2: N
-  SecurityIdSource security_id_source;  // 3: N
-  SecurityExchange security_exchange;   // 4: N
-  BrokerLocationId broker_location_id;  // 5: N
-  TransactionTime transaction_time;     // 6: Y
-  Side side;  // 7: N. 1 = buy, 2 = sell, 5 = sell short
+  OrderId client_order_id;                         // 0: Y
+  BrokerId submitting_broker_id;                   // 1: Y
+  SecurityId security_id;                          // 2: N
+  SecurityIdSource security_id_source;             // 3: N
+  SecurityExchange security_exchange;              // 4: N
+  BrokerLocationId broker_location_id;             // 5: N
+  TransactionTime transaction_time;                // 6: Y
+  Side side;                                       // 7: N. 1 = buy, 2 = sell, 5 = sell short
   MassCancelRequestType mass_cancel_request_type;  // 8: Y
   MarketSegmentId market_segment_id;               // 9: N
   BrokerId owning_broker_id;                       // 10: Y
@@ -677,21 +674,21 @@ struct OrderCancelRejectedReport {
 
 // The OCG sends this execution report when an Order Amend Request is rejected
 struct OrderAmendRejectedReport {
-  OrderId client_order_id;              // 0: Y
-  BrokerId submitting_broker_id;        // 1: Y
-  SecurityId security_id;               // 2: Y
-  SecurityIdSource security_id_source;  // 3: Y
-  SecurityExchange security_exchange;   // 4: N
-  BrokerLocationId broker_location_id;  // 5: N
-  TransactionTime transaction_time;     // 6: Y
-  Side side;                            // 7: Y
-  OrderId original_client_order_id;     // 8: Y
-  OrderId order_id;                     // 9: Y
-  OrderType order_type;                 // 11: N
-  Price price;                     // 12: N. required if Order Type = 2 (limit)
-  Quantity order_quantity;         // 13: N
-  Tif tif;                         // 14: N
-  PositionEffect position_effect;  // 15: N
+  OrderId client_order_id;               // 0: Y
+  BrokerId submitting_broker_id;         // 1: Y
+  SecurityId security_id;                // 2: Y
+  SecurityIdSource security_id_source;   // 3: Y
+  SecurityExchange security_exchange;    // 4: N
+  BrokerLocationId broker_location_id;   // 5: N
+  TransactionTime transaction_time;      // 6: Y
+  Side side;                             // 7: Y
+  OrderId original_client_order_id;      // 8: Y
+  OrderId order_id;                      // 9: Y
+  OrderType order_type;                  // 11: N
+  Price price;                           // 12: N. required if Order Type = 2 (limit)
+  Quantity order_quantity;               // 13: N
+  Tif tif;                               // 14: N
+  PositionEffect position_effect;        // 15: N
   OrderRestrictions order_restrictions;  // 16: N
   MaxPriceLevels max_price_levels;       // 17: N
   OrderCapacity order_capacity;          // 18: N
@@ -728,20 +725,20 @@ struct OrderAmendRejectedReport {
 
 // The OCG sends this execution report for an auto-matched trade
 struct TradeReport {
-  OrderId client_order_id;              // 0: Y
-  BrokerId submitting_broker_id;        // 1: Y
-  SecurityId security_id;               // 2: Y
-  SecurityIdSource security_id_source;  // 3: Y
-  SecurityExchange security_exchange;   // 4: N
-  BrokerLocationId broker_location_id;  // 5: N
-  TransactionTime transaction_time;     // 6: Y
-  Side side;                            // 7: Y
-  OrderId order_id;                     // 9: Y
-  OrderType order_type;                 // 11: N
-  Price price;                     // 12: N. required if Order Type = 2 (limit)
-  Quantity order_quantity;         // 13: N
-  Tif tif;                         // 14: N
-  PositionEffect position_effect;  // 15: N
+  OrderId client_order_id;               // 0: Y
+  BrokerId submitting_broker_id;         // 1: Y
+  SecurityId security_id;                // 2: Y
+  SecurityIdSource security_id_source;   // 3: Y
+  SecurityExchange security_exchange;    // 4: N
+  BrokerLocationId broker_location_id;   // 5: N
+  TransactionTime transaction_time;      // 6: Y
+  Side side;                             // 7: Y
+  OrderId order_id;                      // 9: Y
+  OrderType order_type;                  // 11: N
+  Price price;                           // 12: N. required if Order Type = 2 (limit)
+  Quantity order_quantity;               // 13: N
+  Tif tif;                               // 14: N
+  PositionEffect position_effect;        // 15: N
   OrderRestrictions order_restrictions;  // 16: N
   MaxPriceLevels max_price_levels;       // 17: N
   OrderCapacity order_capacity;          // 18: N
@@ -775,20 +772,20 @@ struct TradeReport {
 // This execution report message is sent by the OCG when an
 // auto-matched trade is cancelled by the exchange
 struct AutoMatchedTradeCancelledReport {
-  OrderId client_order_id;              // 0: Y
-  BrokerId submitting_broker_id;        // 1: Y
-  SecurityId security_id;               // 2: Y
-  SecurityIdSource security_id_source;  // 3: Y
-  SecurityExchange security_exchange;   // 4: N
-  BrokerLocationId broker_location_id;  // 5: N
-  TransactionTime transaction_time;     // 6: Y
-  Side side;                            // 7: Y
-  OrderId order_id;                     // 9: Y
-  OrderType order_type;                 // 11: N
-  Price price;                     // 12: N. required if Order Type = 2 (limit)
-  Quantity order_quantity;         // 13: N
-  Tif tif;                         // 14: N
-  PositionEffect position_effect;  // 15: N
+  OrderId client_order_id;               // 0: Y
+  BrokerId submitting_broker_id;         // 1: Y
+  SecurityId security_id;                // 2: Y
+  SecurityIdSource security_id_source;   // 3: Y
+  SecurityExchange security_exchange;    // 4: N
+  BrokerLocationId broker_location_id;   // 5: N
+  TransactionTime transaction_time;      // 6: Y
+  Side side;                             // 7: Y
+  OrderId order_id;                      // 9: Y
+  OrderType order_type;                  // 11: N
+  Price price;                           // 12: N. required if Order Type = 2 (limit)
+  Quantity order_quantity;               // 13: N
+  Tif tif;                               // 14: N
+  PositionEffect position_effect;        // 15: N
   OrderRestrictions order_restrictions;  // 16: N
   MaxPriceLevels max_price_levels;       // 17: N
   OrderCapacity order_capacity;          // 18: N
@@ -828,13 +825,13 @@ struct OddSpecLotOrderTradeReport {
   Side side;                            // 7: Y
   OrderId order_id;                     // 9: Y
   OrderType order_type;                 // 11: N
-  Price price;                     // 12: N. required if Order Type = 2 (limit)
-  Quantity order_quantity;         // 13: N
-  Tif tif;                         // 14: N
-  PositionEffect position_effect;  // 15: N
-  OrderCapacity order_capacity;    // 18: N
-  Text text;                       // 19: N
-  ExecutionId execution_id;        // 21: Y
+  Price price;                          // 12: N. required if Order Type = 2 (limit)
+  Quantity order_quantity;              // 13: N
+  Tif tif;                              // 14: N
+  PositionEffect position_effect;       // 15: N
+  OrderCapacity order_capacity;         // 18: N
+  Text text;                            // 19: N
+  ExecutionId execution_id;             // 21: Y
   // 22: Y
   // 2 = filled
   OrderStatus order_status;
@@ -873,13 +870,13 @@ struct SemiAutoMatchedTradeCancelledReport {
   Side side;                            // 7: Y
   OrderId order_id;                     // 9: Y
   OrderType order_type;                 // 11: N
-  Price price;                     // 12: N. required if Order Type = 2 (limit)
-  Quantity order_quantity;         // 13: N
-  Tif tif;                         // 14: N
-  PositionEffect position_effect;  // 15: N
-  OrderCapacity order_capacity;    // 18: N
-  Text text;                       // 19: N
-  ExecutionId execution_id;        // 21: Y
+  Price price;                          // 12: N. required if Order Type = 2 (limit)
+  Quantity order_quantity;              // 13: N
+  Tif tif;                              // 14: N
+  PositionEffect position_effect;       // 15: N
+  OrderCapacity order_capacity;         // 18: N
+  Text text;                            // 19: N
+  ExecutionId execution_id;             // 21: Y
   // 22: Y
   // 0 = new
   // 1 = partially filled
@@ -887,14 +884,13 @@ struct SemiAutoMatchedTradeCancelledReport {
   // 4 = cancelled
   // 12 = expired
   OrderStatus order_status;
-  ExecType exec_type;            // 23: Y. H = trade
-  Quantity cumulative_quantity;  // 24: Y
-  Quantity leaves_quantity;      // 25: Y
-  ExecRestatementReason
-      exec_restatement_reason;         // 28: N. 8 = market operations
-  Quantity execution_quantity;         // 32: N
-  Price execution_price;               // 33: N
-  ExecutionId reference_execution_id;  // 34: Y
+  ExecType exec_type;                             // 23: Y. H = trade
+  Quantity cumulative_quantity;                   // 24: Y
+  Quantity leaves_quantity;                       // 25: Y
+  ExecRestatementReason exec_restatement_reason;  // 28: N. 8 = market operations
+  Quantity execution_quantity;                    // 32: N
+  Price execution_price;                          // 33: N
+  ExecutionId reference_execution_id;             // 34: Y
   // 35: N
   // 1 = internal cross order
   // absence of this field means the trade is not concluded within the same firm

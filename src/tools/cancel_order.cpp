@@ -4,8 +4,8 @@
 
 #include "strategy/order_sender.h"
 
-static void usage() {
-  printf("usage:\n");
+static void Usage() {
+  printf("Usage:\n");
   printf("    --account           账户\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --order_id          订单号\n");
@@ -19,7 +19,7 @@ int main() {
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    Usage();
     exit(0);
   }
 
@@ -32,9 +32,9 @@ int main() {
   sender.set_account(account);
 
   if (order_id != 0)
-    sender.cancel_order(order_id);
+    sender.CancelOrder(order_id);
   else if (ticker == "all")
-    sender.cancel_all();
+    sender.CancelAll();
   else
-    sender.cancel_for_ticker(ticker);
+    sender.CancelForTicker(ticker);
 }

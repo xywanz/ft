@@ -20,27 +20,27 @@ char kPasswd[9];
 char kNewPasswd[9];
 
 void parse_cmd(int argc, char** argv);
-void usage();
+void Usage();
 int connect(const std::string& ip, int port);
 void send_cmd(const CmdHeader* hdr, const char* body);
 void logon(int argc, char** argv);
-void logout(int argc, char** argv);
+void Logout(int argc, char** argv);
 
 int main(int argc, char** argv) {
   if (argc < 2) {
     printf("please indicate op\n");
-    usage();
+    Usage();
   }
 
   parse_cmd(argc - 1, argv + 1);
 
   if (strcmp(argv[1], "logon") == 0) {
     logon(argc - 1, argv + 1);
-  } else if (strcmp(argv[1], "logout") == 0) {
-    logout(argc - 1, argv + 1);
+  } else if (strcmp(argv[1], "Logout") == 0) {
+    Logout(argc - 1, argv + 1);
   } else {
     printf("please input correct op\n");
-    usage();
+    Usage();
   }
 }
 
@@ -55,43 +55,43 @@ void parse_cmd(int argc, char** argv) {
 
   int opt, i;
   while ((opt = getopt_long(argc, argv, "", options, &i)) != -1) {
-    if (opt != 0) usage();
+    if (opt != 0) Usage();
 
     if (strcmp(options[i].name, "addr") == 0) {
       try {
         int n = sscanf(optarg, "%[^:]:%d", kIp, &kPort);
         if (n != 2) {
           printf("please input correct ip:port\n");
-          usage();
+          Usage();
         }
       } catch (...) {
         printf("please input correct ip:port\n");
-        usage();
+        Usage();
       }
     } else if (strcmp(options[i].name, "passwd") == 0) {
       if (strlen(optarg) != 8) {
         printf("please input correct password(length=8)\n");
-        usage();
+        Usage();
       }
       strncpy(kPasswd, optarg, sizeof(kPasswd));
     } else if (strcmp(options[i].name, "new-passwd") == 0) {
       if (strlen(optarg) != 8) {
         printf("please input correct new password(length=8)\n");
-        usage();
+        Usage();
       }
       strncpy(kNewPasswd, optarg, sizeof(kNewPasswd));
     } else if (strcmp(options[i].name, "help") == 0) {
-      usage();
+      Usage();
     }
   }
 
   if (kIp[0] == 0) {
     printf("please indicate ip:port\n");
-    usage();
+    Usage();
   }
 }
 
-void usage() { exit(-1); }
+void Usage() { exit(-1); }
 
 int connect(const std::string& ip, int port) {
   int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -146,7 +146,7 @@ void logon(int argc, char** argv) {
   close(sockfd);
 }
 
-void logout(int argc, char** argv) {
+void Logout(int argc, char** argv) {
   CmdHeader hdr{};
   hdr.magic = kCommandMagic;
   hdr.type = BSS_CMD_LOGOUT;

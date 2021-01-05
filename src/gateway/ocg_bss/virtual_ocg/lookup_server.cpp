@@ -50,8 +50,7 @@ void LookupServer::accept() {
   sockaddr cliaddr{};
   socklen_t socklen = sizeof(cliaddr);
 restart:
-  int sockfd =
-      ::accept(servfd_, reinterpret_cast<sockaddr*>(&cliaddr), &socklen);
+  int sockfd = ::accept(servfd_, reinterpret_cast<sockaddr*>(&cliaddr), &socklen);
   if (sockfd < 0) {
     if (errno == EINTR) goto restart;
     abort();

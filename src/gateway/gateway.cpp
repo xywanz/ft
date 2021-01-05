@@ -1,25 +1,25 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "cep/interface/gateway.h"
+#include "gateway/gateway.h"
 
 #include <functional>
 #include <map>
 
-#include "ctp/ctp_gateway.h"
-#include "ocg_bss/broker/broker.h"
-#include "virtual/virtual_gateway.h"
-#include "xtp/xtp_gateway.h"
+#include "gateway/ctp/ctp_gateway.h"
+#include "gateway/ocg_bss/broker/broker.h"
+#include "gateway/virtual/virtual_gateway.h"
+#include "gateway/xtp/xtp_gateway.h"
 
 namespace ft {
 
-std::map<std::string, __GATEWAY_CREATE_FUNC>& __get_api_map() {
+std::map<std::string, __GATEWAY_CREATE_FUNC>& __GetApiMap() {
   static std::map<std::string, __GATEWAY_CREATE_FUNC> type_map;
 
   return type_map;
 }
 
-Gateway* create_gateway(const std::string& name) {
-  auto& type_map = __get_api_map();
+Gateway* CreateGateway(const std::string& name) {
+  auto& type_map = __GetApiMap();
   auto iter = type_map.find(name);
   if (iter == type_map.end()) return nullptr;
   return iter->second();

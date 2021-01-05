@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_GATEWAY_XTP_XTP_QUOTE_API_H_
-#define FT_SRC_GATEWAY_XTP_XTP_QUOTE_API_H_
+#ifndef FT_SRC_GATEWAY_XTP__XTP_QUOTE_API_H_
+#define FT_SRC_GATEWAY_XTP__XTP_QUOTE_API_H_
 
 #include <xtp_quote_api.h>
 
@@ -11,31 +11,29 @@
 #include <string>
 #include <vector>
 
-#include "cep/data/config.h"
-#include "cep/data/contract.h"
-#include "cep/data/protocol.h"
-#include "cep/interface/oms_interface.h"
-#include "xtp_common.h"
+#include "gateway/xtp/xtp_common.h"
+#include "trading_server/datastruct/config.h"
+#include "trading_server/datastruct/contract.h"
+#include "trading_server/datastruct/protocol.h"
+#include "trading_server/order_management/base_oms.h"
 
 namespace ft {
 
 class XtpQuoteApi : public XTP::API::QuoteSpi {
  public:
-  explicit XtpQuoteApi(OMSInterface* oms);
+  explicit XtpQuoteApi(BaseOrderManagementSystem* oms);
   ~XtpQuoteApi();
 
-  bool login(const Config& config);
-  void logout();
-  bool subscribe(const std::vector<std::string>& sub_list);
+  bool Login(const Config& config);
+  void Logout();
+  bool Subscribe(const std::vector<std::string>& sub_list);
 
-  bool query_contracts(std::vector<Contract>* result);
+  bool QueryContractList(std::vector<Contract>* result);
 
-  void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info,
-                         bool is_last) override;
+  void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) override;
 
-  void OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[],
-                         int32_t bid1_count, int32_t max_bid1_count,
-                         int64_t ask1_qty[], int32_t ask1_count,
+  void OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int32_t bid1_count,
+                         int32_t max_bid1_count, int64_t ask1_qty[], int32_t ask1_count,
                          int32_t max_ask1_count) override;
 
  private:
@@ -51,7 +49,7 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
   }
 
  private:
-  OMSInterface* oms_;
+  BaseOrderManagementSystem* oms_;
   XtpUniquePtr<XTP::API::QuoteApi> quote_api_;
 
   std::vector<std::string> subscribed_list_;
@@ -64,4 +62,4 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
 
 }  // namespace ft
 
-#endif  // FT_SRC_GATEWAY_XTP_XTP_QUOTE_API_H_
+#endif  // FT_SRC_GATEWAY_XTP__XTP_QUOTE_API_H_

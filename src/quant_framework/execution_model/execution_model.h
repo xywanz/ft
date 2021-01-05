@@ -13,7 +13,7 @@ class ExecutionModel {
 
   virtual int timer_period() = 0;
   virtual bool execute() = 0;
-  virtual void on_order_rsp(const OrderResponse& rsp) = 0;
+  virtual void OnOrderResponse(const OrderResponse& rsp) = 0;
   virtual void terminate() = 0;
 };
 

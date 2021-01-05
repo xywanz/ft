@@ -6,11 +6,11 @@
 #include <fstream>
 #include <getopt.hpp>
 
-#include "cep/data/contract_table.h"
 #include "strategy/strategy.h"
+#include "trading_server/datastruct/contract_table.h"
 
-static void usage() {
-  printf("usage: ./strategy-loader [--account=<account>]\n");
+static void Usage() {
+  printf("Usage: ./strategy-loader [--account=<account>]\n");
   printf("                         [--contracts-file=<file>] [-h -? --help]\n");
   printf("                         [--id=<id>] [--loglevel=level]\n");
   printf("                         [--strategy=<so>]\n");
@@ -24,8 +24,7 @@ static void usage() {
 }
 
 int main() {
-  std::string contracts_file =
-      getarg("../config/contracts.csv", "--contracts-file");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("Strategy", "--id");
@@ -33,7 +32,7 @@ int main() {
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
-    usage();
+    Usage();
     exit(0);
   }
 
@@ -44,7 +43,7 @@ int main() {
     exit(-1);
   }
 
-  if (!ft::ContractTable::init(contracts_file)) {
+  if (!ft::ContractTable::Init(contracts_file)) {
     spdlog::error("Invalid file of contract list");
     exit(-1);
   }
@@ -56,15 +55,14 @@ int main() {
   }
 
   char* error;
-  auto create_strategy =
-      reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "create_strategy"));
+  auto CreateStrategy = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
   if ((error = dlerror()) != nullptr) {
-    spdlog::error("create_strategy not found. error: {}", error);
+    spdlog::error("CreateStrategy not found. error: {}", error);
     exit(-1);
   }
 
-  auto strategy = create_strategy();
+  auto strategy = CreateStrategy();
   strategy->set_id(strategy_id);
   strategy->set_account_id(account_id);
-  strategy->run();
+  strategy->Run();
 }

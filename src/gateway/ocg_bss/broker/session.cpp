@@ -10,11 +10,11 @@
 namespace ft::bss {
 
 Session::Session(BssBroker* broker) : broker_(broker) {
-  resend_visitor_.init(this);
-  consumer_visitor_.init(this);
+  resend_visitor_.Init(this);
+  consumer_visitor_.Init(this);
 }
 
-bool Session::init(const SessionConfig& conf) {
+bool Session::Init(const SessionConfig& conf) {
   passwd_encrypto_ = std::make_unique<PasswordEncrptor>(conf.rsa_pubkey_file);
 
   comp_id_ = conf.comp_id;
@@ -28,8 +28,7 @@ bool Session::init(const SessionConfig& conf) {
 /*
  * 调用者需要确保密码符合OCG文档对密码安全策略的要求
  */
-void Session::set_password(const std::string& passwd,
-                           const std::string& new_passwd) {
+void Session::set_password(const std::string& passwd, const std::string& new_passwd) {
   password_ = passwd;
   new_password_ = new_passwd;
 }
@@ -45,13 +44,11 @@ void Session::encrypt_password() {
   char buf[64];
   strftime(buf, sizeof(buf), "%Y%m%d%H%M%S", &_tm);
   std::string password = std::string(buf) + password_;
-  passwd_encrypto_->encrypt(password.c_str(), password.length(),
-                            logon_msg_.password);
+  passwd_encrypto_->encrypt(password.c_str(), password.length(), logon_msg_.password);
 
   if (!new_password_.empty()) {
     std::string new_password = std::string(buf) + new_password_;
-    passwd_encrypto_->encrypt(new_password.c_str(), new_password.length(),
-                              logon_msg_.new_password);
+    passwd_encrypto_->encrypt(new_password.c_str(), new_password.length(), logon_msg_.new_password);
   }
 }
 
@@ -104,24 +101,21 @@ void Session::on_logon_msg(MessageHeader* header, LogonMessage* msg) {
     state_.set_resend_range(state_.next_recv_msg_seq, header->sequence_number);
 
   state_.received_logon = true;
-  if (state_.next_recv_msg_seq == header->sequence_number)
-    ++state_.next_recv_msg_seq;
+  if (state_.next_recv_msg_seq == header->sequence_number) ++state_.next_recv_msg_seq;
 
-  printf("[Session::on_logon_msg] MsgSeq:%u Recovery:[%u, %u]\n",
-         header->sequence_number, state_.resend_range.first,
-         state_.resend_range.second);
+  printf("[Session::on_logon_msg] MsgSeq:%u Recovery:[%u, %u]\n", header->sequence_number,
+         state_.resend_range.first, state_.resend_range.second);
 
   broker_->on_msg(*msg);
 }
 
 void Session::on_logout_msg(MessageHeader* header, LogoutMessage* msg) {
-  printf("on logout\n");
+  printf("on Logout\n");
   // 对于logout，不检查SeqNum，只检查消息的合法性，收到立即登出
   if (!verify_msg(*header, *msg, false, false)) return;
 
   // 如果logout消息就是下一条待收消息，则递增序列号
-  if (header->sequence_number == state_.next_recv_msg_seq)
-    ++state_.next_recv_msg_seq;
+  if (header->sequence_number == state_.next_recv_msg_seq) ++state_.next_recv_msg_seq;
 
   broker_->on_msg(*msg);
 
@@ -132,10 +126,8 @@ void Session::on_logout_msg(MessageHeader* header, LogoutMessage* msg) {
       std::string_view reason = kReasonExpectedLargerThanOcgSndSeq;
       auto pos = std::string_view(msg->logout_text.data).find(reason);
       if (pos != std::string_view::npos) {
-        state_.next_recv_msg_seq =
-            std::stoul(msg->logout_text.data + reason.length());
-        printf("NextExpectedSeqNum fixed. Now is %u\n",
-               state_.next_recv_msg_seq);
+        state_.next_recv_msg_seq = std::stoul(msg->logout_text.data + reason.length());
+        printf("NextExpectedSeqNum fixed. Now is %u\n", state_.next_recv_msg_seq);
         internal_disconnect(DisconnectReason::LOGOUT);
         return;
       }
@@ -146,8 +138,7 @@ void Session::on_logout_msg(MessageHeader* header, LogoutMessage* msg) {
       std::string_view reason = kReasonLocalSndSeqLessThanOcgExpected;
       auto pos = std::string_view(msg->logout_text.data).find(reason);
       if (pos != std::string_view::npos) {
-        state_.next_send_msg_seq =
-            std::stoul(msg->logout_text.data + reason.length());
+        state_.next_send_msg_seq = std::stoul(msg->logout_text.data + reason.length());
         printf("NextSndSeqNum fixed. Now is %u\n", state_.next_send_msg_seq);
         internal_disconnect(DisconnectReason::LOGOUT);
         return;
@@ -163,9 +154,7 @@ void Session::on_logout_msg(MessageHeader* header, LogoutMessage* msg) {
 /*
  * 收到未校验通过的消息，要断开连接，因为数据可能错乱了
  */
-void Session::on_invalid_msg() {
-  internal_disconnect(DisconnectReason::INCORRECT_MSG);
-}
+void Session::on_invalid_msg() { internal_disconnect(DisconnectReason::INCORRECT_MSG); }
 
 void Session::on_heartbeat_msg(MessageHeader* header, HeartbeatMessage* msg) {
   process_msg(header, msg);
@@ -182,8 +171,7 @@ void Session::on_resend_request(MessageHeader* header, ResendRequest* req) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_sequence_reset_msg(MessageHeader* header,
-                                    SequenceResetMessage* msg) {
+void Session::on_sequence_reset_msg(MessageHeader* header, SequenceResetMessage* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -193,8 +181,7 @@ void Session::on_reject_msg(MessageHeader* header, RejectMessage* msg) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_business_reject_msg(MessageHeader* header,
-                                     BusinessRejectMessage* msg) {
+void Session::on_business_reject_msg(MessageHeader* header, BusinessRejectMessage* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -204,26 +191,22 @@ void Session::on_execution_report(MessageHeader* header, ExecutionReport* msg) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_mass_cancel_report(MessageHeader* header,
-                                    OrderMassCancelReport* msg) {
+void Session::on_mass_cancel_report(MessageHeader* header, OrderMassCancelReport* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_quote_status_report(MessageHeader* header,
-                                     QuoteStatusReport* msg) {
+void Session::on_quote_status_report(MessageHeader* header, QuoteStatusReport* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_trade_capture_report(MessageHeader* header,
-                                      TradeCaptureReport* msg) {
+void Session::on_trade_capture_report(MessageHeader* header, TradeCaptureReport* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void Session::on_trade_capture_report_ack(MessageHeader* header,
-                                          TradeCaptureReportAck* msg) {
+void Session::on_trade_capture_report_ack(MessageHeader* header, TradeCaptureReportAck* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -231,16 +214,12 @@ void Session::on_trade_capture_report_ack(MessageHeader* header,
 void Session::process_msg(MessageHeader* header, ResendRequest* req) {
   if (!verify_msg(*header, *req)) return;
 
-  if (req->start_sequence == 0 ||
-      req->start_sequence >= state_.next_send_msg_seq) {
-    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD,
-                    "Start Sequence");
+  if (req->start_sequence == 0 || req->start_sequence >= state_.next_send_msg_seq) {
+    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD, "Start Sequence");
     return;
-  } else if ((req->end_sequence != 0 &&
-              req->end_sequence < req->start_sequence) ||
+  } else if ((req->end_sequence != 0 && req->end_sequence < req->start_sequence) ||
              req->end_sequence >= state_.next_send_msg_seq) {
-    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD,
-                    "End Sequence");
+    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD, "End Sequence");
     return;
   }
 
@@ -260,14 +239,13 @@ void Session::process_msg(MessageHeader* header, SequenceResetMessage* msg) {
     return;
   }
 
-  printf("[Session::on_seq_reset] current:%u next:%u\n",
-         header->sequence_number, msg->new_sequence_number);
+  printf("[Session::on_seq_reset] current:%u next:%u\n", header->sequence_number,
+         msg->new_sequence_number);
 
   state_.next_recv_msg_seq = msg->new_sequence_number;
-  if (state_.is_recovering() &&
-      state_.next_recv_msg_seq > state_.resend_range.second) {
-    printf("ResendRequest[%u, %u] has been satisfied\n",
-           state_.resend_range.first, state_.resend_range.second);
+  if (state_.is_recovering() && state_.next_recv_msg_seq > state_.resend_range.second) {
+    printf("ResendRequest[%u, %u] has been satisfied\n", state_.resend_range.first,
+           state_.resend_range.second);
     state_.set_resend_range(0, 0);
   }
 }
@@ -278,8 +256,8 @@ bool Session::handle_msg_seq_too_low(const MessageHeader& header) {
   // 收到MsgSeqNum比ExpectedSeqNum小的消息，应该直接断开连接，
   // 如果是登录消息或是其他类型的未设置pos_dup_flag的消息，应该给予对方提示
   if (header.message_type == LOGON || header.poss_dup_flag == 0) {
-    printf("failed. msg seq num is too low, received:%u expected:%u\n",
-           header.sequence_number, state_.next_recv_msg_seq);
+    printf("failed. msg seq num is too low, received:%u expected:%u\n", header.sequence_number,
+           state_.next_recv_msg_seq);
     std::string logout_reason = kReasonLocalSndSeqLessThanOcgExpected;
     logout_reason += std::to_string(state_.next_recv_msg_seq);
     send_logout_msg(SESSION_STATUS_OTHER, logout_reason);
@@ -328,9 +306,8 @@ void Session::resend(uint32_t start_seq_num, uint32_t end_seq_num) {
     auto type = msg.type;
     // 如果是下列类型的消息则使用Sequence Reset Message跳过，因为重传这些会话
     // 控制类型的消息并没有意义
-    if (type == LOGON || type == LOGOUT || type == HEARTBEAT ||
-        type == TEST_REQUEST || type == RESEND_REQUEST ||
-        type == SEQUENCE_RESET) {
+    if (type == LOGON || type == LOGOUT || type == HEARTBEAT || type == TEST_REQUEST ||
+        type == RESEND_REQUEST || type == SEQUENCE_RESET) {
       // 可用一个seq reset跳过多条消息
       // 此处只是记录下一条消息跳到哪里，并不直接发送seq reset
       if (seq_reset_target == 0)
@@ -388,14 +365,12 @@ void Session::send_logon_msg() {
   }
 }
 
-void Session::send_logout_msg(BssSessionStatus status,
-                              const std::string& text) {
+void Session::send_logout_msg(BssSessionStatus status, const std::string& text) {
   LogoutMessage logout_msg{};
 
   logout_msg.session_status = status;
   if (!text.empty() && text.size() < sizeof(logout_msg.logout_text.data)) {
-    strncpy(logout_msg.logout_text.data, text.c_str(),
-            sizeof(logout_msg.logout_text.data));
+    strncpy(logout_msg.logout_text.data, text.c_str(), sizeof(logout_msg.logout_text.data));
     logout_msg.logout_text.len = text.size() + 1;
   }
 
@@ -427,8 +402,7 @@ void Session::disconnect(DisconnectReason reason, bool called_by_sender) {
       broker_->on_msg(logout_msg);
     }
 
-    while (!cached_snd_queue_.empty())
-      cached_snd_queue_.pop();  // 清空流速缓存队列
+    while (!cached_snd_queue_.empty()) cached_snd_queue_.pop();  // 清空流速缓存队列
     state_.reset_on_logout();
   } else {
     std::unique_lock<std::mutex> lock(mutex_);
@@ -449,8 +423,7 @@ bool Session::update_throttle() {
   if (!socket_sender_) return false;
 
   // current_sec_send_置0后再尝试发送缓存中的消息
-  for (current_sec_send_ = 0; current_sec_send_ < msg_limit_per_sec_;
-       ++current_sec_send_) {
+  for (current_sec_send_ = 0; current_sec_send_ < msg_limit_per_sec_; ++current_sec_send_) {
     if (cached_snd_queue_.empty()) return true;
 
     auto msgbuf = cached_snd_queue_.front();

@@ -19,17 +19,17 @@
 
 using namespace ft::bss;
 
-void VirtualOcg::init() {
+void VirtualOcg::Init() {
   // time_t t = wqutil::getWallTime();
   time_t t = time(nullptr);
   struct tm* _tm = localtime(&t);
-  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm->tm_mday + 1900,
-           _tm->tm_mon + 1, _tm->tm_mday);
+  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm->tm_mday + 1900, _tm->tm_mon + 1,
+           _tm->tm_mday);
 
   encoder_.set_comp_id(comp_id_);
   parser_.set_handler(this);
-  resend_visitor_.init(this);
-  consumer_visitor_.init(this);
+  resend_visitor_.Init(this);
+  consumer_visitor_.Init(this);
 
   timerfd_ = timerfd_create(CLOCK_MONOTONIC, 0);
   assert(timerfd_ >= 0);
@@ -97,8 +97,7 @@ again:
   } else {
     sockfd_ = sockfd;
     state_.last_received_time_ms = now_ms();
-    printf("bss connected to %s server\n",
-           is_primary ? "primary" : "secondary");
+    printf("bss connected to %s server\n", is_primary ? "primary" : "secondary");
   }
 }
 
@@ -156,7 +155,7 @@ void VirtualOcg::run() {
 
   close(sockfd_);
   should_disconnect_ = false;
-  parser_.clear();
+  parser_.Clear();
 }
 
 void VirtualOcg::send_logon_msg() {
@@ -174,14 +173,12 @@ void VirtualOcg::send_logon_msg() {
   state_.sent_logon = true;
 }
 
-void VirtualOcg::send_logout_msg(BssSessionStatus status,
-                                 const std::string& text) {
+void VirtualOcg::send_logout_msg(BssSessionStatus status, const std::string& text) {
   LogoutMessage logout_msg{};
 
   logout_msg.session_status = status;
   if (!text.empty() && text.size() < sizeof(logout_msg.logout_text.data)) {
-    strncpy(logout_msg.logout_text.data, text.c_str(),
-            sizeof(logout_msg.logout_text.data));
+    strncpy(logout_msg.logout_text.data, text.c_str(), sizeof(logout_msg.logout_text.data));
     logout_msg.logout_text.len = text.size() + 1;
   }
 
@@ -220,8 +217,7 @@ void VirtualOcg::resend(uint32_t start_seq_num, uint32_t end_seq_num) {
   encoder_.set_poss_dup_flag(1);
 
   if (end_seq_num == 0) end_seq_num = cur_next_send_seq - 1;
-  printf("resend[%u, %u] cur_next_snd:%u\n", start_seq_num, end_seq_num,
-         cur_next_send_seq);
+  printf("resend[%u, %u] cur_next_snd:%u\n", start_seq_num, end_seq_num, cur_next_send_seq);
 
   uint32_t seq_reset_target = 0;
   for (uint32_t num = start_seq_num; num <= end_seq_num; ++num) {
@@ -236,9 +232,8 @@ void VirtualOcg::resend(uint32_t start_seq_num, uint32_t end_seq_num) {
     auto type = msg.type;
     // 如果是下列类型的消息则使用Sequence Reset Message跳过，因为重传这些会话
     // 控制类型的消息并没有意义
-    if (type == LOGON || type == LOGOUT || type == HEARTBEAT ||
-        type == TEST_REQUEST || type == RESEND_REQUEST ||
-        type == SEQUENCE_RESET) {
+    if (type == LOGON || type == LOGOUT || type == HEARTBEAT || type == TEST_REQUEST ||
+        type == RESEND_REQUEST || type == SEQUENCE_RESET) {
       // 可用一个seq reset跳过多条消息
       // 此处只是记录下一条消息跳到哪里，并不直接发送seq reset
       if (seq_reset_target == 0)
@@ -288,8 +283,7 @@ void VirtualOcg::on_logout_msg(MessageHeader* header, LogoutMessage* msg) {
   process_msg(header, msg);
 }
 
-void VirtualOcg::on_heartbeat_msg(MessageHeader* header,
-                                  HeartbeatMessage* msg) {
+void VirtualOcg::on_heartbeat_msg(MessageHeader* header, HeartbeatMessage* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -309,14 +303,12 @@ void VirtualOcg::on_reject_msg(MessageHeader* header, RejectMessage* msg) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_sequence_reset_msg(MessageHeader* header,
-                                       SequenceResetMessage* msg) {
+void VirtualOcg::on_sequence_reset_msg(MessageHeader* header, SequenceResetMessage* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_new_order_request(MessageHeader* header,
-                                      NewOrderRequest* msg) {
+void VirtualOcg::on_new_order_request(MessageHeader* header, NewOrderRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -331,20 +323,17 @@ void VirtualOcg::on_cancel_request(MessageHeader* header, CancelRequest* msg) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_mass_cancel_request(MessageHeader* header,
-                                        MassCancelRequest* msg) {
+void VirtualOcg::on_mass_cancel_request(MessageHeader* header, MassCancelRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_obo_cancel_request(MessageHeader* header,
-                                       OboCancelRequest* msg) {
+void VirtualOcg::on_obo_cancel_request(MessageHeader* header, OboCancelRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_obo_mass_cancel_request(MessageHeader* header,
-                                            OboMassCancelRequest* msg) {
+void VirtualOcg::on_obo_mass_cancel_request(MessageHeader* header, OboMassCancelRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -354,20 +343,17 @@ void VirtualOcg::on_quote_request(MessageHeader* header, QuoteRequest* msg) {
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_quote_cancel_request(MessageHeader* header,
-                                         QuoteCancelRequest* msg) {
+void VirtualOcg::on_quote_cancel_request(MessageHeader* header, QuoteCancelRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_quote_cancel_request(MessageHeader* header,
-                                         TradeCaptureReport* msg) {
+void VirtualOcg::on_quote_cancel_request(MessageHeader* header, TradeCaptureReport* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
 
-void VirtualOcg::on_party_entitlement_request(MessageHeader* header,
-                                              PartyEntitlementRequest* msg) {
+void VirtualOcg::on_party_entitlement_request(MessageHeader* header, PartyEntitlementRequest* msg) {
   process_msg(header, msg);
   if (!is_msg_queue_empty()) consume_cached_msgs();
 }
@@ -375,15 +361,13 @@ void VirtualOcg::on_party_entitlement_request(MessageHeader* header,
 void VirtualOcg::on_invalid_msg() { disconnect(); }
 
 void VirtualOcg::process_msg(MessageHeader* header, LogonMessage* msg) {
-  printf("recv logon msg. CompID:%s MsgSeq:%u NextExepected:%u\n",
-         header->comp_id, header->sequence_number,
-         msg->next_expected_message_sequence);
+  printf("recv logon msg. CompID:%s MsgSeq:%u NextExepected:%u\n", header->comp_id,
+         header->sequence_number, msg->next_expected_message_sequence);
 
   if (!verify_msg(*header, *msg, false, true)) return;
 
   state_.received_logon = true;
-  if (state_.next_recv_msg_seq == header->sequence_number)
-    ++state_.next_recv_msg_seq;
+  if (state_.next_recv_msg_seq == header->sequence_number) ++state_.next_recv_msg_seq;
 
   uint32_t next_send_msg_seq = state_.next_send_msg_seq;
   if (msg->next_expected_message_sequence < next_send_msg_seq) {
@@ -406,15 +390,13 @@ void VirtualOcg::process_msg(MessageHeader* header, LogonMessage* msg) {
 void VirtualOcg::process_msg(MessageHeader* header, LogoutMessage* msg) {
   if (!verify_msg(*header, *msg, false, false)) return;
 
-  if (header->sequence_number == state_.next_recv_msg_seq)
-    ++state_.next_recv_msg_seq;
+  if (header->sequence_number == state_.next_recv_msg_seq) ++state_.next_recv_msg_seq;
 
   if (msg->session_status == SESSION_STATUS_OTHER && msg->logout_text.len > 0) {
     std::string_view reason = "Sequence number is less than expected : ";
     auto pos = std::string_view(msg->logout_text.data).find(reason);
     if (pos != std::string_view::npos) {
-      state_.next_send_msg_seq =
-          std::stoul(msg->logout_text.data + reason.length());
+      state_.next_send_msg_seq = std::stoul(msg->logout_text.data + reason.length());
       printf("NextSndSeqNum fixed. Now is %u\n", state_.next_send_msg_seq);
       disconnect();
       return;
@@ -442,8 +424,7 @@ void VirtualOcg::process_msg(MessageHeader* header, TestRequest* msg) {
 
   auto now = time(nullptr);
   auto local_time = localtime(&now);
-  printf("on_test_request. test_req_id:%u  time:%s", msg->test_request_id,
-         asctime(local_time));
+  printf("on_test_request. test_req_id:%u  time:%s", msg->test_request_id, asctime(local_time));
 
   send_raw_msg(HeartbeatMessage{msg->test_request_id});
 }
@@ -451,16 +432,12 @@ void VirtualOcg::process_msg(MessageHeader* header, TestRequest* msg) {
 void VirtualOcg::process_msg(MessageHeader* header, ResendRequest* msg) {
   if (!verify_msg(*header, *msg)) return;
 
-  if (msg->start_sequence == 0 ||
-      msg->start_sequence >= state_.next_send_msg_seq) {
-    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD,
-                    "Start Sequence");
+  if (msg->start_sequence == 0 || msg->start_sequence >= state_.next_send_msg_seq) {
+    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD, "Start Sequence");
     return;
-  } else if ((msg->end_sequence != 0 &&
-              msg->end_sequence < msg->start_sequence) ||
+  } else if ((msg->end_sequence != 0 && msg->end_sequence < msg->start_sequence) ||
              msg->end_sequence >= state_.next_send_msg_seq) {
-    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD,
-                    "End Sequence");
+    send_reject_msg(*header, MSG_REJECT_CODE_VALUE_IS_INCORRECT_FOR_THIS_FIELD, "End Sequence");
     return;
   }
 
@@ -486,8 +463,7 @@ void VirtualOcg::process_msg(MessageHeader* header, SequenceResetMessage* msg) {
 
   state_.next_recv_msg_seq = msg->new_sequence_number;
 
-  printf("on_seq_reset: current:%u next:%u\n", header->sequence_number,
-         msg->new_sequence_number);
+  printf("on_seq_reset: current:%u next:%u\n", header->sequence_number, msg->new_sequence_number);
 }
 
 void VirtualOcg::process_msg(MessageHeader* header, NewOrderRequest* msg) {
@@ -556,8 +532,7 @@ void VirtualOcg::process_msg(MessageHeader* header, TradeCaptureReport* msg) {
   ++state_.next_recv_msg_seq;
 }
 
-void VirtualOcg::process_msg(MessageHeader* header,
-                             PartyEntitlementRequest* msg) {
+void VirtualOcg::process_msg(MessageHeader* header, PartyEntitlementRequest* msg) {
   if (!verify_msg(*header, *msg)) return;
   printf("recv party entitlement request\n");
 

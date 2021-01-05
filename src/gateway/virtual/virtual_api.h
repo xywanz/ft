@@ -9,9 +9,9 @@
 #include <mutex>
 #include <unordered_map>
 
-#include "cep/data/account.h"
-#include "cep/data/constants.h"
-#include "cep/oms/portfolio.h"
+#include "trading_server/datastruct/account.h"
+#include "trading_server/datastruct/constants.h"
+#include "trading_server/order_management/portfolio.h"
 
 namespace ft {
 
@@ -40,24 +40,23 @@ class VirtualApi {
  public:
   VirtualApi();
   void set_spi(VirtualGateway* gateway);
-  void start_trade_server();
-  void start_quote_server();
+  void StartTradeServer();
+  void StartQuoteServer();
 
-  bool insert_order(VirtualOrderRequest* req);
-  bool cancel_order(uint64_t order_id);
-  void update_quote(uint32_t tid, double ask, double bid);
+  bool InsertOrder(VirtualOrderRequest* req);
+  bool CancelOrder(uint64_t order_id);
+  void UpdateQuote(uint32_t tid, double ask, double bid);
 
-  bool query_account(Account* result);
+  bool QueryAccount(Account* result);
 
  private:
   void process_pendings();
-  void disseminate_market_data();
+  void DisseminateMarketData();
 
-  bool check_order(const VirtualOrderRequest* req) const;
-  bool check_and_update_pos_account(const VirtualOrderRequest* req);
-  void update_canceled(const VirtualOrderRequest& order);
-  void update_traded(const VirtualOrderRequest& order,
-                     const LatestQuote& quote);
+  bool CheckOrder(const VirtualOrderRequest* req) const;
+  bool CheckAndUpdatePosAccount(const VirtualOrderRequest* req);
+  void UpdateCanceled(const VirtualOrderRequest& order);
+  void UpdateTraded(const VirtualOrderRequest& order, const LatestQuote& quote);
 
  private:
   VirtualGateway* gateway_;

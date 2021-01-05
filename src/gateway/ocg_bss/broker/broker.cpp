@@ -10,8 +10,8 @@
 #include "broker/cmd_processor.h"
 #include "broker/connection_manager.h"
 #include "broker/session.h"
-#include "cep/data/contract.h"
-#include "cep/data/contract_table.h"
+#include "trading_server/datastruct/contract.h"
+#include "trading_server/datastruct/contract_table.h"
 
 namespace ft {
 
@@ -69,12 +69,11 @@ BssBroker::BssBroker() {
   time_t t = time(nullptr);
   struct tm _tm;
   localtime_r(&t, &_tm);
-  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm.tm_mday + 1900,
-           _tm.tm_mon + 1, _tm.tm_mday);
+  snprintf(date_, sizeof(date_), "%04d%02d%02d", _tm.tm_mday + 1900, _tm.tm_mon + 1, _tm.tm_mday);
 }
 
 /* TODO: read config from a config file */
-bool BssBroker::login(OMSInterface *oms, const Config &config) {
+bool BssBroker::Login(BaseOrderManagementSystem *oms, const Config &config) {
   oms_ = oms;
   /* for test */
   {
@@ -88,7 +87,7 @@ bool BssBroker::login(OMSInterface *oms, const Config &config) {
   if (!check_config()) return false;
 
   session_ = std::make_unique<bss::Session>(this);
-  session_->init(sess_conf_);
+  session_->Init(sess_conf_);
   session_->enable();
 
   std::thread([this] {
@@ -110,8 +109,7 @@ bool BssBroker::check_config() const {
     return false;
   }
   if (!sess_conf_.new_password.empty() &&
-      (!verify_passwd(sess_conf_.new_password) ||
-       sess_conf_.password == sess_conf_.new_password)) {
+      (!verify_passwd(sess_conf_.new_password) || sess_conf_.password == sess_conf_.new_password)) {
     spdlog::error("[BssBroker::check_config] invalid new password");
     return false;
   }
@@ -119,14 +117,12 @@ bool BssBroker::check_config() const {
   return true;
 }
 
-void BssBroker::logon(const std::string &passwd,
-                      const std::string &new_passwd) {
+void BssBroker::logon(const std::string &passwd, const std::string &new_passwd) {
   if (!verify_passwd(passwd)) {
     spdlog::error("[BssBroker::logon] invalid password");
     return;
   }
-  if (!new_passwd.empty() &&
-      (!verify_passwd(new_passwd) || passwd == new_passwd)) {
+  if (!new_passwd.empty() && (!verify_passwd(new_passwd) || passwd == new_passwd)) {
     spdlog::error("[BssBroker::logon] invalid new password");
     return;
   }
@@ -135,9 +131,9 @@ void BssBroker::logon(const std::string &passwd,
   session_->enable();
 }
 
-void BssBroker::logout() { session_->disable(); }
+void BssBroker::Logout() { session_->disable(); }
 
-bool BssBroker::query_account(Account *result) {
+bool BssBroker::QueryAccount(Account *result) {
   // test
   {
     result->account_id = 1234;
@@ -147,11 +143,11 @@ bool BssBroker::query_account(Account *result) {
   return true;
 }
 
-bool BssBroker::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
+bool BssBroker::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
   (void)privdata_ptr;
 
   if (!is_logon_) {
-    spdlog::error("[BssBroker::send_order]: not logon");
+    spdlog::error("[BssBroker::SendOrder]: not logon");
     return false;
   }
 
@@ -160,8 +156,7 @@ bool BssBroker::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
   bss::NewOrderRequest req{};
   snprintf(req.client_order_id, sizeof(req.client_order_id), "%u",
            static_cast<uint32_t>(order.order_id));
-  strncpy(req.submitting_broker_id, broker_id_,
-          sizeof(req.submitting_broker_id));
+  strncpy(req.submitting_broker_id, broker_id_, sizeof(req.submitting_broker_id));
   strncpy(req.security_id, contract->ticker.c_str(), sizeof(req.security_id));
   req.side = bss_detail::diroff2side(order.direction, order.offset);
   switch (order.type) {
@@ -195,8 +190,7 @@ bool BssBroker::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
       return false;
     }
   }
-  if (req.order_type == bss::ORDER_TYPE_LIMIT)
-    req.price = (order.price + 0.0005) * 1e3 * 1e5;
+  if (req.order_type == bss::ORDER_TYPE_LIMIT) req.price = (order.price + 0.0005) * 1e3 * 1e5;
 
   req.order_quantity = order.volume * 1e8;
   req.security_id_source = 8;
@@ -207,19 +201,15 @@ bool BssBroker::send_order(const OrderRequest &order, uint64_t *privdata_ptr) {
   req.disclosure_instructions = 0;
 
   if (!session_->send_business_msg(req)) {
-    spdlog::error("[BssBroker::send_order] failed to send order");
+    spdlog::error("[BssBroker::SendOrder] failed to send order");
     return false;
   }
   return true;
 }
 
-bool BssBroker::cancel_order(uint64_t order_id, uint64_t privdata) {
-  return true;
-}
+bool BssBroker::CancelOrder(uint64_t order_id, uint64_t privdata) { return true; }
 
-bool BssBroker::amend_order(uint64_t order_id, const OrderRequest &order) {
-  return true;
-}
+bool BssBroker::amend_order(uint64_t order_id, const OrderRequest &order) { return true; }
 
 bool mass_cancel() { return true; }
 
@@ -238,22 +228,19 @@ void BssBroker::on_msg(const bss::LogonMessage &msg) {
 
 void BssBroker::on_msg(const bss::LogoutMessage &msg) {
   is_logon_ = false;
-  if (msg.session_status ==
-          bss::BssSessionStatus::INVAILD_USERNAME_OR_PASSWORD ||
+  if (msg.session_status == bss::BssSessionStatus::INVAILD_USERNAME_OR_PASSWORD ||
       msg.session_status == bss::BssSessionStatus::ACCOUNT_LOCKED ||
-      msg.session_status ==
-          bss::BssSessionStatus::LOGONS_NOT_ALLOWED_AT_THIS_TIME ||
+      msg.session_status == bss::BssSessionStatus::LOGONS_NOT_ALLOWED_AT_THIS_TIME ||
       msg.session_status == bss::BssSessionStatus::PASSWORD_EXPIRED ||
       msg.session_status == bss::BssSessionStatus::PASSWORD_CHANGE_REQUIRED) {
     session_->disable();
   }
-  if (msg.logout_text.len > 0)
-    spdlog::info("logout text: {}", msg.logout_text.data);
+  if (msg.logout_text.len > 0) spdlog::info("Logout text: {}", msg.logout_text.data);
 }
 
 void BssBroker::on_msg(const bss::RejectMessage &msg) {
-  spdlog::error("[BssBroker::on_session_rejected] RejectCode:{} Reason:{}",
-                msg.message_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_session_rejected] RejectCode:{} Reason:{}", msg.message_reject_code,
+                msg.reason.data);
   uint32_t client_order_id = atoi(msg.client_order_id);
 }
 
@@ -266,7 +253,7 @@ void BssBroker::on_msg(const bss::BusinessRejectMessage &msg) {
 void BssBroker::on_msg(const bss::ExecutionReport &report) {
   switch (report.exec_type) {
     case bss::OcgExecType::EXEC_TYPE_NEW: {
-      on_order_accepted(report);
+      OnOrderAccepted(report);
       break;
     }
     case bss::OcgExecType::EXEC_TYPE_CANCEL: {
@@ -274,11 +261,11 @@ void BssBroker::on_msg(const bss::ExecutionReport &report) {
       break;
     }
     case bss::OcgExecType::EXEC_TYPE_CANCEL_REJECT: {
-      on_order_cancel_rejected(report);
+      OnOrderCancelRejected(report);
       break;
     }
     case bss::OcgExecType::EXEC_TYPE_REJECT: {
-      on_order_rejected(report);
+      OnOrderRejected(report);
       break;
     }
     case bss::OcgExecType::EXEC_TYPE_AMEND: {
@@ -300,8 +287,7 @@ void BssBroker::on_msg(const bss::ExecutionReport &report) {
     case bss::OcgExecType::EXEC_TYPE_TRADE_CANCEL: {
     }
     default: {
-      spdlog::error("[BssBroker::on_ep]: exec type not supported. type:{}",
-                    report.exec_type);
+      spdlog::error("[BssBroker::on_ep]: exec type not supported. type:{}", report.exec_type);
       break;
     }
   }
@@ -315,9 +301,9 @@ void BssBroker::on_msg(const bss::TradeCaptureReport &report) {}
 
 void BssBroker::on_msg(const bss::TradeCaptureReportAck &ack) {}
 
-void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
+void BssBroker::OnOrderAccepted(const bss::ExecutionReport &msg) {
   spdlog::debug(
-      "[BssBroker::on_order_accepted] ClientOrderID:{} Security:{} "
+      "[BssBroker::OnOrderAccepted] ClientOrderID:{} Security:{} "
       "OrderQty:{} Price:{}",
       msg.client_order_id, msg.security_id, msg.order_quantity / 100000000,
       static_cast<double>(msg.price) / 1e8);
@@ -325,16 +311,16 @@ void BssBroker::on_order_accepted(const bss::ExecutionReport &msg) {
   OrderAcceptance rsp{};
   rsp.order_id = std::stoul(msg.client_order_id);
   // rsp.order_id = std::stoul(msg.order_id);
-  oms_->on_order_accepted(&rsp);
+  oms_->OnOrderAccepted(&rsp);
 }
 
-void BssBroker::on_order_rejected(const bss::ExecutionReport &msg) {
-  spdlog::error("[BssBroker::on_order_rejected] RejectCode:{} Reason:{}",
-                msg.order_reject_code, msg.reason.data);
+void BssBroker::OnOrderRejected(const bss::ExecutionReport &msg) {
+  spdlog::error("[BssBroker::OnOrderRejected] RejectCode:{} Reason:{}", msg.order_reject_code,
+                msg.reason.data);
 
   OrderRejection rsp{};
   rsp.order_id = std::stoul(msg.client_order_id);
-  oms_->on_order_rejected(&rsp);
+  oms_->OnOrderRejected(&rsp);
 }
 
 void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
@@ -351,7 +337,7 @@ void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
   rsp.volume = qty;
   rsp.price = price;
   rsp.trade_type = TradeType::SECONDARY_MARKET;
-  oms_->on_order_traded(&rsp);
+  oms_->OnOrderTraded(&rsp);
 }
 
 void BssBroker::on_order_cancelled(const bss::ExecutionReport &msg) {
@@ -362,15 +348,15 @@ void BssBroker::on_order_cancelled(const bss::ExecutionReport &msg) {
   OrderCancellation rsp{};
   rsp.order_id = std::stoul(msg.client_order_id);
   rsp.canceled_volume = total - traded;
-  oms_->on_order_canceled(&rsp);
+  oms_->OnOrderCanceled(&rsp);
 }
 
-void BssBroker::on_order_cancel_rejected(const bss::ExecutionReport &msg) {
-  spdlog::error("[BssBroker::on_order_cancel_rejected] RejectCode:{} Reason:{}",
+void BssBroker::OnOrderCancelRejected(const bss::ExecutionReport &msg) {
+  spdlog::error("[BssBroker::OnOrderCancelRejected] RejectCode:{} Reason:{}",
                 msg.cancel_reject_code, msg.reason.data);
   OrderCancelRejection rsp{};
   rsp.order_id = std::stoul(msg.original_client_order_id);
-  oms_->on_order_cancel_rejected(&rsp);
+  oms_->OnOrderCancelRejected(&rsp);
 }
 
 // 暂未支持
@@ -393,12 +379,12 @@ void BssBroker::on_order_amend_rejected(const bss::ExecutionReport &msg) {
 }
 
 void BssBroker::on_order_expired(const bss::ExecutionReport &msg) {
-  spdlog::error("[BssBroker::on_order_expired] RejectReason:{} Reason:{}",
-                msg.order_reject_code, msg.reason.data);
+  spdlog::error("[BssBroker::on_order_expired] RejectReason:{} Reason:{}", msg.order_reject_code,
+                msg.reason.data);
 
   OrderRejection rsp{};
   rsp.order_id = std::stoul(msg.client_order_id);
-  oms_->on_order_rejected(&rsp);
+  oms_->OnOrderRejected(&rsp);
 }
 
 }  // namespace ft

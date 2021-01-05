@@ -19,7 +19,7 @@ class OcgParser {
 
   void set_handler(OcgHandler* handler) { handler_ = handler; }
 
-  void clear() {
+  void Clear() {
     write_head_ = 0;
     read_head_ = 0;
   }
@@ -42,36 +42,30 @@ class OcgParser {
   OcgHandler* handler_ = nullptr;
 };
 
-const char* parse_lookup_request(const MessageHeader& header, const char* p,
-                                 LookupRequest* req);
+const char* parse_lookup_request(const MessageHeader& header, const char* p, LookupRequest* req);
 
 const char* parse_new_order_request(const MessageHeader& header, const char* p,
                                     NewOrderRequest* req);
 
-const char* parse_amend_request(const MessageHeader& header, const char* p,
-                                AmendRequest* req);
+const char* parse_amend_request(const MessageHeader& header, const char* p, AmendRequest* req);
 
-const char* parse_cancel_request(const MessageHeader& header, const char* p,
-                                 CancelRequest* req);
+const char* parse_cancel_request(const MessageHeader& header, const char* p, CancelRequest* req);
 
-const char* parse_mass_cancel_request(const MessageHeader& header,
-                                      const char* p, MassCancelRequest* req);
+const char* parse_mass_cancel_request(const MessageHeader& header, const char* p,
+                                      MassCancelRequest* req);
 
 const char* parse_obo_cancel_request(const MessageHeader& header, const char* p,
                                      OboCancelRequest* req);
 
-const char* parse_obo_mass_cancel_request(const MessageHeader& header,
-                                          const char* p,
+const char* parse_obo_mass_cancel_request(const MessageHeader& header, const char* p,
                                           OboMassCancelRequest* req);
 
-const char* parse_quote_request(const MessageHeader& header, const char* p,
-                                QuoteRequest* req);
+const char* parse_quote_request(const MessageHeader& header, const char* p, QuoteRequest* req);
 
-const char* parse_quote_cancel_request(const MessageHeader& header,
-                                       const char* p, QuoteCancelRequest* req);
+const char* parse_quote_cancel_request(const MessageHeader& header, const char* p,
+                                       QuoteCancelRequest* req);
 
-const char* parse_party_entitlement_request(const MessageHeader& header,
-                                            const char* p,
+const char* parse_party_entitlement_request(const MessageHeader& header, const char* p,
                                             PartyEntitlementRequest* req);
 
 #endif  // BSS_VIRTUAL_OCG_OCG_PARSER_H_

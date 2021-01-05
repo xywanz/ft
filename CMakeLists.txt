@@ -11,7 +11,7 @@ set(GATEWAY_LIB thostmduserapi_se thosttraderapi_se xtptraderapi xtpquoteapi)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/src/trading_platform
+    ${CMAKE_SOURCE_DIR}/src
     ${CTP_PATH}
     ${XTP_PATH}/include
     ${CMAKE_SOURCE_DIR}/dependencies/spdlog/include
@@ -37,7 +37,7 @@ add_definitions(-DFMT_HEADER_ONLY)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused")
 
 add_subdirectory(src)
-add_subdirectory(demo)
+# add_subdirectory(demo)
 
 # 如果不需要编译单元测试，注释下面一行
-add_subdirectory(test)
+# add_subdirectory(test)
