@@ -135,7 +135,7 @@ void OrderManagementSystem::ProcessRedisCmd() {
 
   for (;;) {
     auto reply = cmd_puller.Pull();
-    if (!reply) continue;
+    if (!reply || reply->elements != 3) continue;
 
     auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
     ExecuteCmd(*cmd);

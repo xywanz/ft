@@ -72,7 +72,8 @@ class RedisSession {
     argvlen[1] = key.length();
 
     auto* reply = reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
-    assert(reply);
+    if (!reply) return nullptr;
+
     return RedisReply(reply, RedisReplyDestructor());
   }
 
