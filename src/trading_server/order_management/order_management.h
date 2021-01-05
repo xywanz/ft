@@ -25,10 +25,10 @@
 
 namespace ft {
 
-class OMS : public BaseOrderManagementSystem {
+class OrderManagementSystem : public BaseOrderManagementSystem {
  public:
-  OMS();
-  ~OMS();
+  OrderManagementSystem();
+  ~OrderManagementSystem();
 
   bool Login(const Config& config);
 

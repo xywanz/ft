@@ -12,14 +12,13 @@ target_link_libraries(xtp-gateway ${COMMON_LIB} ${GATEWAY_LIB})
 
 aux_source_directory(virtual VIRTUAL_SRC)
 add_library(virtual-gateway STATIC ${VIRTUAL_SRC})
-target_link_libraries(virtual-gateway ${COMMON_LIB} oms)
+target_link_libraries(virtual-gateway ${COMMON_LIB} ${GATEWAY_LIB} trading_server_static)
 
 include_directories(ocg_bss)
 add_subdirectory(ocg_bss)
 
 add_library(gateway STATIC gateway.cpp)
-target_link_libraries(gateway
-  ctp-gateway
-  xtp-gateway
-  virtual-gateway
-  bss-broker)
+target_link_libraries(gateway ctp-gateway
+                              xtp-gateway
+                              virtual-gateway
+                              bss-broker)

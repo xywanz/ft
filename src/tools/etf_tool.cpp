@@ -6,7 +6,7 @@
 
 #include <fstream>
 
-#include "trading_server/order_management/config_loader.h"
+#include "trading_server/config_loader.h"
 #include "trading_server/risk_management/etf/etf.h"
 #include "utils/misc.h"
 
@@ -195,7 +195,7 @@ class EtfTool : public XTP::API::TraderSpi {
 
 int main() {
   ft::Config config;
-  ft::load_config("../config/my_xtp_config.yml", &config);
+  ft::LoadConfig("../config/my_xtp_config.yml", &config);
 
   EtfTool etf_tool;
   if (!etf_tool.Login(config)) {

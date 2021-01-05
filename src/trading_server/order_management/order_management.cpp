@@ -21,12 +21,12 @@
 
 namespace ft {
 
-OMS::OMS() { rms_ = std::make_unique<RiskManagementSystem>(); }
+OrderManagementSystem::OrderManagementSystem() { rms_ = std::make_unique<RiskManagementSystem>(); }
 
-OMS::~OMS() { Close(); }
+OrderManagementSystem::~OrderManagementSystem() { Close(); }
 
-bool OMS::Login(const Config& config) {
-  spdlog::info("***************OMS****************");
+bool OrderManagementSystem::Login(const Config& config) {
+  spdlog::info("***************OrderManagementSystem****************");
   spdlog::info("* version: {}", version());
   spdlog::info("* compiling time: {} {}", __TIME__, __DATE__);
   spdlog::info("********************************************");
@@ -35,27 +35,27 @@ bool OMS::Login(const Config& config) {
   // 如果有配置contracts file的路径，则尝试从文件加载
   if (!config.contracts_file.empty()) {
     if (!ContractTable::Init(config.contracts_file))
-      spdlog::warn("[OMS::OMS] Failed to Init contract table");
+      spdlog::warn("[OrderManagementSystem::OrderManagementSystem] Failed to Init contract table");
   }
 
   cmd_queue_key_ = config.key_of_cmd_queue;
 
   gateway_.reset(CreateGateway(config.api));
   if (!gateway_) {
-    spdlog::error("[OMS::Login] Failed. Unknown gateway");
+    spdlog::error("[OrderManagementSystem::Login] Failed. Unknown gateway");
     return false;
   }
 
   if (!gateway_->Login(this, config)) {
-    spdlog::error("[OMS::Login] Failed to Login");
+    spdlog::error("[OrderManagementSystem::Login] Failed to Login");
     return false;
   }
-  spdlog::info("[OMS::Login] Success. Login as {}", config.investor_id);
+  spdlog::info("[OrderManagementSystem::Login] Success. Login as {}", config.investor_id);
 
   if (!ContractTable::inited()) {
     std::vector<Contract> contracts;
     if (!gateway_->QueryContractList(&contracts)) {
-      spdlog::error("[OMS::Login] Failed to initialize contract table");
+      spdlog::error("[OrderManagementSystem::Login] Failed to initialize contract table");
       return false;
     }
     ContractTable::Init(std::move(contracts));
@@ -64,13 +64,13 @@ bool OMS::Login(const Config& config) {
 
   md_snapshot_.Init();
   if (!gateway_->Subscribe(config.subscription_list)) {
-    spdlog::error("[OMS::Login] Failed to Subscribe market data");
+    spdlog::error("[OrderManagementSystem::Login] Failed to Subscribe market data");
     return false;
   }
 
   Account init_acct{};
   if (!gateway_->QueryAccount(&init_acct)) {
-    spdlog::error("[OMS::Login] Failed to query account");
+    spdlog::error("[OrderManagementSystem::Login] Failed to query account");
     return false;
   }
   handle_account(&init_acct);
@@ -79,7 +79,7 @@ bool OMS::Login(const Config& config) {
   std::vector<Position> init_positions;
   portfolio_.Init(ContractTable::size(), true, account_.account_id);
   if (!gateway_->QueryPositionList(&init_positions)) {
-    spdlog::error("[OMS::Login] Failed to query positions");
+    spdlog::error("[OrderManagementSystem::Login] Failed to query positions");
     return false;
   }
   HandlePositions(&init_positions);
@@ -87,7 +87,7 @@ bool OMS::Login(const Config& config) {
   // query trades to update position
   std::vector<Trade> init_trades;
   if (!gateway_->QueryTradeList(&init_trades)) {
-    spdlog::error("[OMS::Login] Failed to query trades");
+    spdlog::error("[OrderManagementSystem::Login] Failed to query trades");
     return false;
   }
   HandleTrades(&init_trades);
@@ -106,30 +106,32 @@ bool OMS::Login(const Config& config) {
   if (config.api == "xtp") rms_->AddRule(std::make_shared<ArbitrageManager>());
   if (!config.no_receipt_mode) rms_->AddRule(std::make_shared<StrategyNotifier>());
   if (!rms_->Init(&risk_params)) {
-    spdlog::error("[OMS::Login] 风险管理对象初始化失败");
+    spdlog::error("[OrderManagementSystem::Login] 风险管理对象初始化失败");
     return false;
   }
 
   // 启动个线程去定时查询资金账户信息
-  timer_thread_ = std::make_unique<std::thread>(std::mem_fn(&OMS::HandleTimer), this);
+  timer_thread_ =
+      std::make_unique<std::thread>(std::mem_fn(&OrderManagementSystem::HandleTimer), this);
 
-  spdlog::info("[OMS::Login] Init done");
+  spdlog::info("[OrderManagementSystem::Login] Init done");
 
   is_logon_ = true;
   return true;
 }
 
-void OMS::ProcessCmd() {
+void OrderManagementSystem::ProcessCmd() {
   if (cmd_queue_key_ > 0)
     ProcessQueueCmd();
   else
     ProcessRedisCmd();
 }
 
-void OMS::ProcessRedisCmd() {
+void OrderManagementSystem::ProcessRedisCmd() {
   RedisTraderCmdPuller cmd_puller;
   cmd_puller.set_account(account_.account_id);
-  spdlog::info("[OMS::run] Start to recv cmd from topic: {}", cmd_puller.get_topic());
+  spdlog::info("[OrderManagementSystem::run] Start to recv cmd from topic: {}",
+               cmd_puller.get_topic());
 
   for (;;) {
     auto reply = cmd_puller.Pull();
@@ -140,7 +142,7 @@ void OMS::ProcessRedisCmd() {
   }
 }
 
-void OMS::ProcessQueueCmd() {
+void OrderManagementSystem::ProcessQueueCmd() {
   // 创建Queue的时候存在隐患，如果该key之前被其他应用创建且没有释放，
   // OMS还是会依附在这个key的共享内存上，大概率导致内存访问越界。
   // 如果都是同版本的OMS创建的则没有问题，可以重复使用。
@@ -153,18 +155,18 @@ void OMS::ProcessQueueCmd() {
   if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
     int res = LFQueue_create(cmd_queue_key_, te_user_id, sizeof(TraderCommand), 4096 * 4, false);
     if (res != 0) {
-      spdlog::info("OMS::run_with_queue] Failed to create cmd queue");
+      spdlog::info("OrderManagementSystem::run_with_queue] Failed to create cmd queue");
       abort();
     }
 
     if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
-      spdlog::info("OMS::run_with_queue] Failed to open cmd queue");
+      spdlog::info("OrderManagementSystem::run_with_queue] Failed to open cmd queue");
       abort();
     }
   }
 
   LFQueue_reset(cmd_queue);
-  spdlog::info("[OMS::run] Start to recv cmd from queue: {:#x}", cmd_queue_key_);
+  spdlog::info("[OrderManagementSystem::run] Start to recv cmd from queue: {:#x}", cmd_queue_key_);
 
   TraderCommand cmd{};
   int res;
@@ -177,17 +179,17 @@ void OMS::ProcessQueueCmd() {
   }
 }
 
-void OMS::Close() {
+void OrderManagementSystem::Close() {
   if (gateway_) gateway_->Logout();
 }
 
-void OMS::ExecuteCmd(const TraderCommand& cmd) {
+void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
 #ifdef FT_TIME_PERF
   auto start_time = std::chrono::steady_clock::now();
 #endif
 
   if (cmd.magic != TRADER_CMD_MAGIC) {
-    spdlog::error("[OMS::run] Recv unknown cmd: error magic num");
+    spdlog::error("[OrderManagementSystem::run] Recv unknown cmd: error magic num");
     return;
   }
 
@@ -220,15 +222,15 @@ void OMS::ExecuteCmd(const TraderCommand& cmd) {
 
 #ifdef FT_TIME_PERF
   auto end_time = std::chrono::steady_clock::now();
-  spdlog::info("[OMS::ExecuteCmd] cmd type: {}   time elapsed: {} ns", cmd.type,
+  spdlog::info("[OrderManagementSystem::ExecuteCmd] cmd type: {}   time elapsed: {} ns", cmd.type,
                (end_time - start_time).count());
 #endif
 }
 
-bool OMS::SendOrder(const TraderCommand& cmd) {
+bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   auto contract = ContractTable::get_by_index(cmd.order_req.tid);
   if (!contract) {
-    spdlog::error("[OMS::SendOrder] Contract not found");
+    spdlog::error("[OrderManagementSystem::SendOrder] Contract not found");
     return false;
   }
 
@@ -251,7 +253,7 @@ bool OMS::SendOrder(const TraderCommand& cmd) {
   if (!cmd.order_req.without_check) {
     int error_code = rms_->CheckOrderRequest(&order);
     if (error_code != NO_ERROR) {
-      spdlog::error("[OMS::SendOrder] 风控未通过: {}", ErrorCodeStr(error_code));
+      spdlog::error("[OrderManagementSystem::SendOrder] 风控未通过: {}", ErrorCodeStr(error_code));
       rms_->OnOrderRejected(&order, error_code);
       return false;
     }
@@ -259,7 +261,7 @@ bool OMS::SendOrder(const TraderCommand& cmd) {
 
   if (!gateway_->SendOrder(req, &order.privdata)) {
     spdlog::error(
-        "[OMS::SendOrder] Failed to SendOrder. {}, {}{}, {}, "
+        "[OrderManagementSystem::SendOrder] Failed to SendOrder. {}, {}{}, {}, "
         "Volume:{}, Price:{:.3f}",
         contract->ticker, DirectionToStr(req.direction), OffsetToStr(req.offset),
         OrderTypeToStr(req.type), static_cast<int>(req.volume), static_cast<double>(req.price));
@@ -272,7 +274,7 @@ bool OMS::SendOrder(const TraderCommand& cmd) {
   rms_->OnOrderSent(&order);
 
   spdlog::debug(
-      "[OMS::SendOrder] Success. {}, {}{}, {}, OrderID:{}, "
+      "[OrderManagementSystem::SendOrder] Success. {}, {}{}, {}, OrderID:{}, "
       "Volume:{}, Price: {:.3f}",
       contract->ticker, DirectionToStr(req.direction), OffsetToStr(req.offset),
       OrderTypeToStr(req.type), static_cast<uint64_t>(req.order_id), static_cast<int>(req.volume),
@@ -280,39 +282,39 @@ bool OMS::SendOrder(const TraderCommand& cmd) {
   return true;
 }
 
-void OMS::CancelOrder(uint64_t order_id) {
+void OrderManagementSystem::CancelOrder(uint64_t order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(order_id);
   if (iter == order_map_.end()) {
-    spdlog::error("[OMS::CancelOrder] Failed. Order not found");
+    spdlog::error("[OrderManagementSystem::CancelOrder] Failed. Order not found");
     return;
   }
   gateway_->CancelOrder(order_id, iter->second.privdata);
 }
 
-void OMS::CancelForTicker(uint32_t tid) {
+void OrderManagementSystem::CancelForTicker(uint32_t tid) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
     if (tid == order.req.contract->tid) gateway_->CancelOrder(order_id, order.privdata);
   }
 }
 
-void OMS::CancelAll() {
+void OrderManagementSystem::CancelAll() {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
     gateway_->CancelOrder(order_id, order.privdata);
   }
 }
 
-void OMS::handle_account(Account* account) {
+void OrderManagementSystem::handle_account(Account* account) {
   std::unique_lock<std::mutex> lock(mutex_);
   account_ = *account;
   lock.unlock();
 
-  spdlog::info("[OMS::on_query_account] {}", DumpAccount(*account));
+  spdlog::info("[OrderManagementSystem::on_query_account] {}", DumpAccount(*account));
 }
 
-void OMS::HandlePositions(std::vector<Position>* positions) {
+void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
     auto contract = ContractTable::get_by_index(position.tid);
     assert(contract);
@@ -320,7 +322,7 @@ void OMS::HandlePositions(std::vector<Position>* positions) {
     auto& lp = position.long_pos;
     auto& sp = position.short_pos;
     spdlog::info(
-        "[OMS::on_query_position] {}, LongVol:{}, LongYdVol:{}, "
+        "[OrderManagementSystem::on_query_position] {}, LongVol:{}, LongYdVol:{}, "
         "LongPrice:{:.2f}, LongFrozen:{}, LongPNL:{}, ShortVol:{}, "
         "ShortYdVol:{}, ShortPrice:{:.2f}, ShortFrozen:{}, ShortPNL:{}",
         contract->ticker, lp.holdings, lp.yd_holdings, lp.cost_price, lp.frozen, lp.float_pnl,
@@ -332,7 +334,7 @@ void OMS::HandlePositions(std::vector<Position>* positions) {
   }
 }
 
-void OMS::OnTick(TickData* tick) {
+void OrderManagementSystem::OnTick(TickData* tick) {
   if (!is_logon_) return;
 
   auto contract = ContractTable::get_by_index(tick->tid);
@@ -340,17 +342,17 @@ void OMS::OnTick(TickData* tick) {
   md_pusher_.Push(contract->ticker, *tick);
 
   md_snapshot_.UpdateSnapshot(*tick);
-  spdlog::trace("[OMS::process_tick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick->ask[0],
-                tick->bid[0]);
+  spdlog::trace("[OrderManagementSystem::process_tick] {}  ask:{:.3f}  bid:{:.3f}",
+                contract->ticker, tick->ask[0], tick->bid[0]);
 }
 
-void OMS::HandleTrades(std::vector<Trade>* trades) {
+void OrderManagementSystem::HandleTrades(std::vector<Trade>* trades) {
   for (auto& trade : *trades) {
     portfolio_.UpdateOnQueryTrade(trade.tid, trade.direction, trade.offset, trade.volume);
   }
 }
 
-void OMS::HandleTimer() {
+void OrderManagementSystem::HandleTimer() {
   Account tmp{};
   for (;;) {
     std::this_thread::sleep_for(std::chrono::seconds(15));
@@ -363,11 +365,12 @@ void OMS::HandleTimer() {
  * 订单被市场接受后通知策略
  * 告知策略order_id，策略可通过此order_id撤单
  */
-void OMS::OnOrderAccepted(OrderAcceptance* rsp) {
+void OrderManagementSystem::OnOrderAccepted(OrderAcceptance* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderAccepted] Order not found. OrderID: {}", rsp->order_id);
+    spdlog::warn("[OrderManagementSystem::OnOrderAccepted] Order not found. OrderID: {}",
+                 rsp->order_id);
     return;
   }
 
@@ -378,18 +381,19 @@ void OMS::OnOrderAccepted(OrderAcceptance* rsp) {
   rms_->OnOrderAccepted(&order);
 
   spdlog::info(
-      "[OMS::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
+      "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
       "Volume:{}, Price:{:.2f}, OrderType:{}",
       rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
       OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
       static_cast<double>(order.req.price), OrderTypeToStr(order.req.type));
 }
 
-void OMS::OnOrderRejected(OrderRejection* rsp) {
+void OrderManagementSystem::OnOrderRejected(OrderRejection* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderRejected] Order not found. OrderID: {}", rsp->order_id);
+    spdlog::warn("[OrderManagementSystem::OnOrderRejected] Order not found. OrderID: {}",
+                 rsp->order_id);
     return;
   }
 
@@ -397,7 +401,7 @@ void OMS::OnOrderRejected(OrderRejection* rsp) {
   rms_->OnOrderRejected(&order, ERR_REJECTED);
 
   spdlog::error(
-      "[OMS::OnOrderRejected] 报单被拒：{}. {}, {}{}, Volume:{}, "
+      "[OrderManagementSystem::OnOrderRejected] 报单被拒：{}. {}, {}{}, Volume:{}, "
       "Price:{:.3f}",
       rsp->reason, order.req.contract->ticker, DirectionToStr(order.req.direction),
       OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
@@ -406,19 +410,19 @@ void OMS::OnOrderRejected(OrderRejection* rsp) {
   order_map_.erase(iter);
 }
 
-void OMS::OnOrderTraded(Trade* rsp) {
+void OrderManagementSystem::OnOrderTraded(Trade* rsp) {
   if (rsp->trade_type == TradeType::SECONDARY_MARKET)
     OnSecondaryMarketTraded(rsp);
   else
     OnPrimaryMarketTraded(rsp);
 }
 
-void OMS::OnPrimaryMarketTraded(Trade* rsp) {
+void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[OMS::OnPrimaryMarketTraded] Order not found. "
+        "[OrderManagementSystem::OnPrimaryMarketTraded] Order not found. "
         "OrderID:{}, Traded:{}, Price:{:.3f}",
         rsp->order_id, rsp->volume, rsp->price);
     return;
@@ -430,7 +434,7 @@ void OMS::OnPrimaryMarketTraded(Trade* rsp) {
     rms_->OnOrderAccepted(&order);
 
     spdlog::info(
-        "[OMS::OnOrderAccepted] 报单委托成功. {}, {}, "
+        "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. {}, {}, "
         "OrderID:{}, Volume:{}",
         order.req.contract->ticker, DirectionToStr(order.req.direction),
         static_cast<uint32_t>(rsp->order_id), static_cast<int>(order.req.volume));
@@ -446,18 +450,19 @@ void OMS::OnPrimaryMarketTraded(Trade* rsp) {
     order.traded_volume = rsp->volume;
     rms_->OnOrderTraded(&order, rsp);
     // risk_mgr_->OnOrderCompleted(&order);
-    spdlog::info("[OMS::OnPrimaryMarketTraded] done. {}, {}, Volume:{}", order.req.contract->ticker,
-                 DirectionToStr(order.req.direction), static_cast<int>(order.req.volume));
+    spdlog::info("[OrderManagementSystem::OnPrimaryMarketTraded] done. {}, {}, Volume:{}",
+                 order.req.contract->ticker, DirectionToStr(order.req.direction),
+                 static_cast<int>(order.req.volume));
     order_map_.erase(iter);
   }
 }
 
-void OMS::OnSecondaryMarketTraded(Trade* rsp) {
+void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
-        "[OMS::OnSecondaryMarketTraded] Order not found. "
+        "[OrderManagementSystem::OnSecondaryMarketTraded] Order not found. "
         "OrderID:{}, Traded:{}, Price:{:.3f}",
         rsp->order_id, rsp->volume, rsp->price);
     return;
@@ -469,7 +474,7 @@ void OMS::OnSecondaryMarketTraded(Trade* rsp) {
     rms_->OnOrderAccepted(&order);
 
     spdlog::info(
-        "[OMS::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
+        "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
         "Volume:{}, Price:{:.2f}, OrderType:{}",
         rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
         OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
@@ -479,7 +484,7 @@ void OMS::OnSecondaryMarketTraded(Trade* rsp) {
   order.traded_volume += rsp->volume;
 
   spdlog::info(
-      "[OMS::OnOrderTraded] 报单成交. OrderID: {}, {}, {}{}, Traded:{}, "
+      "[OrderManagementSystem::OnOrderTraded] 报单成交. OrderID: {}, {}, {}{}, Traded:{}, "
       "Price:{:.3f}, TotalTraded/Original:{}/{}",
       rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
       OffsetToStr(order.req.offset), static_cast<int>(rsp->volume), static_cast<double>(rsp->price),
@@ -489,7 +494,7 @@ void OMS::OnSecondaryMarketTraded(Trade* rsp) {
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
-        "[OMS::OnOrderTraded] 报单完成. OrderID:{}, {}, {}{}, "
+        "[OrderManagementSystem::OnOrderTraded] 报单完成. OrderID:{}, {}, {}{}, "
         "Traded/Original: {}/{}",
         rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
         OffsetToStr(order.req.offset), static_cast<int>(order.traded_volume),
@@ -501,11 +506,12 @@ void OMS::OnSecondaryMarketTraded(Trade* rsp) {
   }
 }
 
-void OMS::OnOrderCanceled(OrderCancellation* rsp) {
+void OrderManagementSystem::OnOrderCanceled(OrderCancellation* rsp) {
   std::unique_lock<std::mutex> lock(mutex_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderCanceled] Order not found. OrderID:{}", rsp->order_id);
+    spdlog::warn("[OrderManagementSystem::OnOrderCanceled] Order not found. OrderID:{}",
+                 rsp->order_id);
     return;
   }
 
@@ -513,7 +519,7 @@ void OMS::OnOrderCanceled(OrderCancellation* rsp) {
   order.canceled_volume = rsp->canceled_volume;
 
   spdlog::info(
-      "[OMS::OnOrderCanceled] 报单已撤. {}, {}{}, OrderID:{}, "
+      "[OrderManagementSystem::OnOrderCanceled] 报单已撤. {}, {}{}, OrderID:{}, "
       "Canceled:{}",
       order.req.contract->ticker, DirectionToStr(order.req.direction),
       OffsetToStr(order.req.offset), rsp->order_id, rsp->canceled_volume);
@@ -522,7 +528,7 @@ void OMS::OnOrderCanceled(OrderCancellation* rsp) {
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
-        "[OMS::OnOrderCanceled] 报单完成. {}, {}{}, OrderID:{}, "
+        "[OrderManagementSystem::OnOrderCanceled] 报单完成. {}, {}{}, OrderID:{}, "
         "Traded/Original:{}/{}",
         order.req.contract->ticker, DirectionToStr(order.req.direction),
         OffsetToStr(order.req.offset), static_cast<uint64_t>(rsp->order_id),
@@ -533,9 +539,9 @@ void OMS::OnOrderCanceled(OrderCancellation* rsp) {
   }
 }
 
-void OMS::OnOrderCancelRejected(OrderCancelRejection* rsp) {
-  spdlog::warn("[OMS::OnOrderCancelRejected] 订单不可撤：{}. OrderID: {}", rsp->reason,
-               rsp->order_id);
+void OrderManagementSystem::OnOrderCancelRejected(OrderCancelRejection* rsp) {
+  spdlog::warn("[OrderManagementSystem::OnOrderCancelRejected] 订单不可撤：{}. OrderID: {}",
+               rsp->reason, rsp->order_id);
 }
 
 }  // namespace ft

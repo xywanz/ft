@@ -4,11 +4,9 @@
 
 #include <getopt.hpp>
 
+#include "trading_server/config_loader.h"
 #include "trading_server/datastruct/contract_table.h"
-#include "trading_server/order_management/config_loader.h"
 #include "trading_server/order_management/order_management.h"
-
-ft::OMS* oms = nullptr;
 
 static void Usage(const char* pname) {
   printf("Usage: %s [--config=<file>] [-h -? --help] [--loglevel=level]\n", pname);
@@ -30,9 +28,9 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::from_str(log_level));
 
   ft::Config config;
-  ft::load_config(login_config_file, &config);
+  ft::LoadConfig(login_config_file, &config);
 
-  oms = new ft::OMS;
+  auto oms = std::make_unique<ft::OrderManagementSystem>();
   if (!oms->Login(config)) exit(-1);
 
   oms->ProcessCmd();

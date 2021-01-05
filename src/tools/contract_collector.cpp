@@ -5,8 +5,8 @@
 #include <getopt.hpp>
 
 #include "gateway/gateway.h"
+#include "trading_server/config_loader.h"
 #include "trading_server/datastruct/contract_table.h"
-#include "trading_server/order_management/config_loader.h"
 
 class ContractCollector : public ft::BaseOrderManagementSystem {
  public:
@@ -50,7 +50,7 @@ int main() {
 
   ContractCollector collector;
   ft::Config config;
-  ft::load_config(login_yml, &config);
+  ft::LoadConfig(login_yml, &config);
   if (!collector.Login(config)) {
     printf("failed to Login\n");
     exit(-1);

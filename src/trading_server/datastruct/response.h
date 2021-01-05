@@ -6,7 +6,7 @@
 #include <string>
 
 /*
- * GATEWAY --> OMS
+ * GATEWAY --> OrderManagementSystem
  */
 
 namespace ft {
