@@ -21,6 +21,36 @@
 
 namespace ft {
 
+namespace {
+void ShowConfig(const Config& cfg) {
+  spdlog::info("Config:");
+  spdlog::info("  trade_server_address: {}", cfg.trade_server_address);
+  spdlog::info("  quote_server_address: {}", cfg.quote_server_address);
+  spdlog::info("  broker_id: {}", cfg.broker_id);
+  spdlog::info("  investor_id: {}", cfg.investor_id);
+  spdlog::info("  password: ******");
+  spdlog::info("  auth_code: {}", cfg.auth_code);
+  spdlog::info("  app_id: {}", cfg.app_id);
+  std::string subs_list = "";
+  for (const auto& ticker : cfg.subscription_list) {
+    subs_list += ticker + ",";
+  }
+  spdlog::info("  subscription_list: {}", subs_list);
+  spdlog::info("  contracts_file: {}", cfg.contracts_file.c_str());
+  spdlog::info("  cancel_outstanding_orders_on_startup: {}",
+               cfg.cancel_outstanding_orders_on_startup);
+  if (!cfg.arg0.empty()) spdlog::info("  arg0: {}", cfg.arg0);
+  if (!cfg.arg1.empty()) spdlog::info("  arg1: {}", cfg.arg1);
+  if (!cfg.arg2.empty()) spdlog::info("  arg2: {}", cfg.arg2);
+  if (!cfg.arg3.empty()) spdlog::info("  arg3: {}", cfg.arg3);
+  if (!cfg.arg4.empty()) spdlog::info("  arg4: {}", cfg.arg4);
+  if (!cfg.arg5.empty()) spdlog::info("  arg5: {}", cfg.arg5);
+  if (!cfg.arg6.empty()) spdlog::info("  arg6: {}", cfg.arg6);
+  if (!cfg.arg7.empty()) spdlog::info("  arg7: {}", cfg.arg7);
+  if (!cfg.arg8.empty()) spdlog::info("  arg8: {}", cfg.arg8);
+}
+}  // namespace
+
 OrderManagementSystem::OrderManagementSystem() { rms_ = std::make_unique<RiskManagementSystem>(); }
 
 OrderManagementSystem::~OrderManagementSystem() { Close(); }
@@ -30,7 +60,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   spdlog::info("* version: {}", version());
   spdlog::info("* compiling time: {} {}", __TIME__, __DATE__);
   spdlog::info("********************************************");
-  config.Show();
+  ShowConfig(config);
 
   // 如果有配置contracts file的路径，则尝试从文件加载
   if (!config.contracts_file.empty()) {
@@ -306,7 +336,7 @@ void OrderManagementSystem::CancelAll() {
   }
 }
 
-void OrderManagementSystem::handle_account(Account* account) {
+void OrderManagementSystem::HandleAccount(Account* account) {
   std::unique_lock<std::mutex> lock(mutex_);
   account_ = *account;
   lock.unlock();
@@ -317,7 +347,10 @@ void OrderManagementSystem::handle_account(Account* account) {
 void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
     auto contract = ContractTable::get_by_index(position.tid);
-    assert(contract);
+    if (!contract) {
+      spdlog::error("Cannot find contract with tid={}", position.tid);
+      exit(-1);
+    }
 
     auto& lp = position.long_pos;
     auto& sp = position.short_pos;
@@ -357,7 +390,7 @@ void OrderManagementSystem::HandleTimer() {
   for (;;) {
     std::this_thread::sleep_for(std::chrono::seconds(15));
     gateway_->QueryAccount(&tmp);
-    handle_account(&tmp);
+    HandleAccount(&tmp);
   }
 }
 

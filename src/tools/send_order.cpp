@@ -7,7 +7,7 @@
 static void Usage() {
   printf("Usage:\n");
   printf("    --account           账户\n");
-  printf("    --contracts-file    合约列表文件\n");
+  printf("    --contracts         合约列表文件\n");
   printf("    --direction         buy, sell, purchase or redeem\n");
   printf("    --offset            open, Close, close_today or close_yesterday\n");
   printf("    --order_type        limit, market, fak or fok\n");
@@ -18,7 +18,7 @@ static void Usage() {
 }
 
 int main() {
-  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts");
   std::string ticker = getarg("", "--ticker");
   std::string direction = getarg("", "--direction");
   std::string offset = getarg("open", "--offset");

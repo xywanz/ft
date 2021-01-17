@@ -19,7 +19,7 @@ namespace ft {
 
 struct RiskRuleParams {
   const Config* config;
-  const MdSnapshot* md_snapshot;
+  const MarketDataSnashot* md_snapshot;
   Account* account;
   Portfolio* portfolio;
   OrderMap* order_map;

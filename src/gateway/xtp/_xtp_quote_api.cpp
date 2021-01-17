@@ -38,10 +38,13 @@ bool XtpQuoteApi::Login(const Config& config) {
 
   try {
     int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d", protocol, ip, &port);
-    UNUSED(ret);
-    assert(ret == 3);
+    if (ret != 3) {
+      spdlog::error("FAILED to parse server address: {}", config.quote_server_address);
+      return false;
+    }
   } catch (...) {
-    assert(false);
+    spdlog::error("FAILED to parse server address: {}", config.quote_server_address);
+    return false;
   }
 
   XTP_PROTOCOL_TYPE sock_type = XTP_PROTOCOL_TCP;

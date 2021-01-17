@@ -11,12 +11,12 @@
 
 static void Usage() {
   printf("Usage: ./strategy-loader [--account=<account>]\n");
-  printf("                         [--contracts-file=<file>] [-h -? --help]\n");
+  printf("                         [--contracts=<file>] [-h -? --help]\n");
   printf("                         [--id=<id>] [--loglevel=level]\n");
   printf("                         [--strategy=<so>]\n");
   printf("\n");
   printf("    --account           账户\n");
-  printf("    --contracts-file    合约列表文件\n");
+  printf("    --contracts         合约列表文件\n");
   printf("    -h, -?, --help      帮助\n");
   printf("    --id                策略的唯一标识，用于接收订单回报\n");
   printf("    --loglevel          日志等级(trace, debug, info, warn, error)\n");
@@ -24,10 +24,10 @@ static void Usage() {
 }
 
 int main() {
-  std::string contracts_file = getarg("../config/contracts.csv", "--contracts-file");
+  std::string contracts_file = getarg("../config/contracts.csv", "--contracts");
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
-  std::string strategy_id = getarg("Strategy", "--id");
+  std::string strategy_id = getarg("strategy", "--id");
   uint64_t account_id = getarg(0ULL, "--account");
   bool help = getarg(false, "-h", "--help", "-?");
 
@@ -54,11 +54,13 @@ int main() {
     exit(-1);
   }
 
-  char* error;
   auto CreateStrategy = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
-  if ((error = dlerror()) != nullptr) {
-    spdlog::error("CreateStrategy not found. error: {}", error);
-    exit(-1);
+  if (CreateStrategy == nullptr) {
+    char* error_str = dlerror();
+    if (error_str) {
+      spdlog::error("CreateStrategy not found. error: {}", error_str);
+      exit(-1);
+    }
   }
 
   auto strategy = CreateStrategy();

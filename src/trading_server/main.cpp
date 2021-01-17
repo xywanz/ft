@@ -16,7 +16,7 @@ static void Usage(const char* pname) {
 }
 
 int main(int argc, char** argv) {
-  std::string login_config_file = getarg("../config/config.yml", "--config");
+  std::string config_file = getarg("../config/config.yml", "--config");
   std::string log_level = getarg("info", "--loglevel");
   bool help = getarg(false, "-h", "--help", "-?");
 
@@ -28,10 +28,16 @@ int main(int argc, char** argv) {
   spdlog::set_level(spdlog::level::from_str(log_level));
 
   ft::Config config;
-  ft::LoadConfig(login_config_file, &config);
+  if (!ft::LoadConfig(config_file, &config)) {
+    spdlog::error("FAILED to load config from {}", config_file);
+  }
 
   auto oms = std::make_unique<ft::OrderManagementSystem>();
-  if (!oms->Login(config)) exit(-1);
+  if (!oms->Login(config)) {
+    spdlog::error("FAILED to login");
+    exit(-1);
+  }
 
+  spdlog::info("Successfully login. Ready to process commands");
   oms->ProcessCmd();
 }

@@ -15,7 +15,7 @@
 
 namespace ft {
 
-void LoadConfig(const std::string& file, ft::Config* config);
+bool LoadConfig(const std::string& file, ft::Config* config);
 
 }  // namespace ft
 

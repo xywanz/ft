@@ -4,9 +4,11 @@
 
 namespace ft {
 
-void LoadConfig(const std::string& file, ft::Config* config) {
+bool LoadConfig(const std::string& file, ft::Config* config) {
   std::ifstream ifs(file);
-  assert(ifs);
+  if (!ifs) {
+    return false;
+  }
 
   YAML::Node node = YAML::LoadFile(file);
 
@@ -43,6 +45,8 @@ void LoadConfig(const std::string& file, ft::Config* config) {
   config->arg6 = node["arg6"].as<std::string>("");
   config->arg7 = node["arg7"].as<std::string>("");
   config->arg8 = node["arg8"].as<std::string>("");
+
+  return true;
 }
 
 }  // namespace ft

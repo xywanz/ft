@@ -22,9 +22,9 @@ struct TickDataSnapshot {
   double lower_limit_price;
 };
 
-class MdSnapshot {
+class MarketDataSnashot {
  public:
-  MdSnapshot() {}
+  MarketDataSnashot() {}
 
   void Init() { snapshot_.resize(ContractTable::size() + 1, nullptr); }
 

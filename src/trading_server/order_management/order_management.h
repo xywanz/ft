@@ -57,7 +57,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   void OnOrderCancelRejected(OrderCancelRejection* rsp) override;
 
  private:
-  void handle_account(Account* account);
+  void HandleAccount(Account* account);
   void HandlePositions(std::vector<Position>* positions);
   void HandleTrades(std::vector<Trade>* trades);
   void HandleTimer();
@@ -78,7 +78,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   RedisMdPusher md_pusher_;
-  MdSnapshot md_snapshot_;
+  MarketDataSnashot md_snapshot_;
   std::mutex mutex_;
   std::unique_ptr<std::thread> timer_thread_;
 

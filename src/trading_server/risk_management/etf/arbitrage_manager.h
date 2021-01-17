@@ -31,7 +31,7 @@ class ArbitrageManager : public RiskRule {
   Account* account_;
   Portfolio* portfolio_;
   OrderMap* order_map_;
-  const MdSnapshot* md_snapshot_;
+  const MarketDataSnashot* md_snapshot_;
 };
 
 }  // namespace ft

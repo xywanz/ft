@@ -2,9 +2,9 @@
 
 #include <fmt/format.h>
 
-#include "cep/rms/etf/etf_table.h"
 #include "ipc/redis.h"
 #include "strategy/order_sender.h"
+#include "trading_server/risk_management/etf/etf_table.h"
 
 using namespace ft;
 
@@ -15,15 +15,12 @@ int wait_for_receipt(RedisSession* redis, int volume) {
     auto reply = redis->get_sub_reply();
     if (reply) {
       if (strcmp(reply->element[1]->str, strategy_id) == 0) {
-        auto rsp =
-            reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
+        auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         auto contract = ContractTable::get_by_index(rsp->tid);
-        spdlog::info(
-            "rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
-            rsp->client_order_id, contract->ticker,
-            direction_str(rsp->direction), offset_str(rsp->offset),
-            rsp->traded_volume, rsp->original_volume, rsp->this_traded,
-            rsp->this_traded_price, rsp->completed);
+        spdlog::info("rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
+                     rsp->client_order_id, contract->ticker, DirectionToStr(rsp->direction),
+                     OffsetToStr(rsp->offset), rsp->traded_volume, rsp->original_volume,
+                     rsp->this_traded, rsp->this_traded_price, rsp->completed);
         if (rsp->completed) return volume - rsp->traded_volume;
       }
     }
@@ -31,10 +28,9 @@ int wait_for_receipt(RedisSession* redis, int volume) {
 }
 
 int main() {
-  ContractTable::init("../config/xtp_contracts.csv");
+  ContractTable::Init("../config/xtp_contracts.csv");
   spdlog::set_level(spdlog::level::from_str("debug"));
-  bool init_res =
-      EtfTable::init("../config/etf_list.csv", "../config/etf_components.csv");
+  bool init_res = EtfTable::Init("../config/etf_list.csv", "../config/etf_components.csv");
   spdlog::info("init_res: {}", init_res);
 
   auto etf = EtfTable::get_by_ticker("159901");
@@ -43,7 +39,7 @@ int main() {
 
   sender.set_account(5319);
   sender.set_id(strategy_id);
-  redis.subscribe({strategy_id});
+  redis.Subscribe({strategy_id});
 
   uint32_t client_order_id = 1;
   int left;
@@ -52,8 +48,8 @@ int main() {
     UNUSED(tid);
     left = component.volume;
     for (;;) {
-      sender.send_order(component.contract->ticker, left, Direction::BUY,
-                        Offset::OPEN, OrderType::MARKET, 0, client_order_id);
+      sender.SendOrder(component.contract->ticker, left, Direction::BUY, Offset::OPEN,
+                       OrderType::MARKET, 0, client_order_id);
       left = wait_for_receipt(&redis, left);
       if (left == 0) break;
     }
@@ -65,8 +61,8 @@ int main() {
   ++client_order_id;
   left = etf->unit;
   for (;;) {
-    sender.send_order(etf->contract->ticker, left, Direction::PURCHASE,
-                      Offset::OPEN, OrderType::LIMIT, 0, client_order_id);
+    sender.SendOrder(etf->contract->ticker, left, Direction::PURCHASE, Offset::OPEN,
+                     OrderType::LIMIT, 0, client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }
@@ -74,9 +70,8 @@ int main() {
   ++client_order_id;
   left = etf->unit;
   for (;;) {
-    sender.send_order(etf->contract->ticker, left, Direction::SELL,
-                      Offset::CLOSE_YESTERDAY, OrderType::MARKET, 0,
-                      client_order_id);
+    sender.SendOrder(etf->contract->ticker, left, Direction::SELL, Offset::CLOSE_YESTERDAY,
+                     OrderType::MARKET, 0, client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }

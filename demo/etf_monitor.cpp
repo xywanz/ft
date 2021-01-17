@@ -4,8 +4,8 @@
 
 #include <vector>
 
-#include "cep/rms/etf/etf_table.h"
 #include "strategy/strategy.h"
+#include "trading_server/risk_management/etf/etf_table.h"
 #include "utils/misc.h"
 
 using namespace ft;
@@ -17,10 +17,10 @@ struct Snapshot {
 
 class EtfMonitor : public Strategy {
  public:
-  void on_init() override {
+  void OnInit() override {
     spdlog::info("[GridStrategy::on_init]");
 
-    EtfTable::init("../config/etf_list.csv", "../config/etf_components.csv");
+    EtfTable::Init("../config/etf_list.csv", "../config/etf_components.csv");
 
     auto etf = EtfTable::get_by_ticker("159901");
     if (!etf) abort();
@@ -31,14 +31,14 @@ class EtfMonitor : public Strategy {
       UNUSED(tid);
       sub_list.emplace_back(component.contract->ticker);
     }
-    subscribe(sub_list);
+    Subscribe(sub_list);
 
     etf_ = etf;
     components_ = &etf->components;
     etf_contract_ = ContractTable::get_by_ticker("159901");
   }
 
-  void on_tick(const ft::TickData& tick) override {
+  void OnTick(const ft::TickData& tick) override {
     auto contract = ContractTable::get_by_index(tick.tid);
     assert(contract);
 
@@ -56,8 +56,7 @@ class EtfMonitor : public Strategy {
       }
 
       double value_L1 = value / etf_->unit;
-      spdlog::info("L1:{:.4f}  L2:{:.4f}", value_L1,
-                   snapshots_[etf_contract_->tid].last_price);
+      spdlog::info("L1:{:.4f}  L2:{:.4f}", value_L1, snapshots_[etf_contract_->tid].last_price);
     }
   }
 
