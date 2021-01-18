@@ -103,7 +103,7 @@ bool OrderManagementSystem::Login(const Config& config) {
     spdlog::error("[OrderManagementSystem::Login] Failed to query account");
     return false;
   }
-  handle_account(&init_acct);
+  HandleAccount(&init_acct);
 
   // query all positions
   std::vector<Position> init_positions;
