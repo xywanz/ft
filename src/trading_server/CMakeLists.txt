@@ -15,11 +15,8 @@ set(RISK_MANAGEMENT_SRC ${RISK_MANAGEMENT_MAIN_SRC}
                         ${RISK_MANAGEMENT_FUTURES_SRC}
                         ${RISK_MANAGEMENT_STOCK_SRC})
 
-add_library(trading_server_static STATIC ${ORDER_BOOK_SRC}
-                                         ${ORDER_MANAGEMENT_SRC}
-                                         ${RISK_MANAGEMENT_SRC}
-                                         config_loader.cpp)
-target_link_libraries(trading_server_static ${COMMON_LIB} gateway ipc)
-
-add_executable(trading_server main.cpp)
-target_link_libraries(trading_server gateway ipc trading_server_static)
+add_executable(trading_server main.cpp
+                              ${ORDER_BOOK_SRC}
+                              ${ORDER_MANAGEMENT_SRC}
+                              ${RISK_MANAGEMENT_SRC})
+target_link_libraries(trading_server ipc ${COMMON_LIB} utils dl pthread)

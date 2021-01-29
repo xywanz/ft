@@ -2,6 +2,7 @@
 
 #include "trading_server/order_management/order_management.h"
 
+#include <dlfcn.h>
 #include <spdlog/spdlog.h>
 
 #include <utility>
@@ -17,6 +18,7 @@
 #include "trading_server/risk_management/common/strategy_notifier.h"
 #include "trading_server/risk_management/common/throttle_rate_limit.h"
 #include "trading_server/risk_management/etf/arbitrage_manager.h"
+#include "utils/config_loader.h"
 #include "utils/misc.h"
 
 namespace ft {
@@ -24,6 +26,7 @@ namespace ft {
 namespace {
 void ShowConfig(const Config& cfg) {
   spdlog::info("Config:");
+  spdlog::info("  api: {}", cfg.api);
   spdlog::info("  trade_server_address: {}", cfg.trade_server_address);
   spdlog::info("  quote_server_address: {}", cfg.quote_server_address);
   spdlog::info("  broker_id: {}", cfg.broker_id);
@@ -59,7 +62,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   spdlog::info("***************OrderManagementSystem****************");
   spdlog::info("* version: {}", version());
   spdlog::info("* compiling time: {} {}", __TIME__, __DATE__);
-  spdlog::info("********************************************");
+  spdlog::info("****************************************************");
   ShowConfig(config);
 
   // 如果有配置contracts file的路径，则尝试从文件加载
@@ -70,7 +73,26 @@ bool OrderManagementSystem::Login(const Config& config) {
 
   cmd_queue_key_ = config.key_of_cmd_queue;
 
-  gateway_.reset(CreateGateway(config.api));
+  void* gateway_dl_handle_ = dlopen(config.api.c_str(), RTLD_LAZY);
+  if (!gateway_dl_handle_) {
+    spdlog::error("[OrderManagementSystem::Login] Failed to load api: {}", config.api);
+    return false;
+  }
+  auto gateway_ctor =
+      reinterpret_cast<GatewayCreateFunc>(dlsym(gateway_dl_handle_, "CreateGateway"));
+  if (!gateway_ctor) {
+    spdlog::error("[OrderManagementSystem::Login] Failed to load api. CreateGateway not found: {}",
+                  config.api);
+    return false;
+  }
+  auto gateway_dtor_ =
+      reinterpret_cast<GatewayDestroyFunc>(dlsym(gateway_dl_handle_, "DestroyGateway"));
+  if (!gateway_dtor_) {
+    spdlog::error("[OrderManagementSystem::Login] Failed to load api. DestroyGateway not found: {}",
+                  config.api);
+    return false;
+  }
+  gateway_ = gateway_ctor();
   if (!gateway_) {
     spdlog::error("[OrderManagementSystem::Login] Failed. Unknown gateway");
     return false;
@@ -210,7 +232,16 @@ void OrderManagementSystem::ProcessQueueCmd() {
 }
 
 void OrderManagementSystem::Close() {
-  if (gateway_) gateway_->Logout();
+  if (gateway_) {
+    gateway_->Logout();
+    gateway_ = nullptr;
+
+    gateway_dtor_(gateway_);
+    gateway_dtor_ = nullptr;
+
+    dlclose(gateway_dl_handle_);
+    gateway_dl_handle_ = nullptr;
+  };
 }
 
 void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {

@@ -3,7 +3,6 @@
 #ifndef FT_SRC_GATEWAY_GATEWAY_H_
 #define FT_SRC_GATEWAY_GATEWAY_H_
 
-#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -91,18 +90,12 @@ class Gateway {
   virtual bool QueryCommisionRate(const std::string& ticker) { return true; }
 };
 
-using __GATEWAY_CREATE_FUNC = std::function<Gateway*()>;
-std::map<std::string, __GATEWAY_CREATE_FUNC>& __GetApiMap();
-Gateway* CreateGateway(const std::string& name);
-void DestroyGateway(Gateway* api);
+using GatewayCreateFunc = Gateway* (*)();
+using GatewayDestroyFunc = void (*)(Gateway*);
 
-#define REGISTER_GATEWAY(name, type)                                    \
-  static inline ::ft::Gateway* __create_##type() { return new type(); } \
-  static inline bool __is_##type##_registered = [] {                    \
-    auto& type_map = ::ft::__GetApiMap();                               \
-    auto res = type_map.emplace(name, __create_##type);                 \
-    return res.second;                                                  \
-  }()
+#define REGISTER_GATEWAY(type)                                     \
+  extern "C" ::ft::Gateway* CreateGateway() { return new type(); } \
+  extern "C" void DestroyGateway(::ft::Gateway* p) { delete p; }
 
 }  // namespace ft
 

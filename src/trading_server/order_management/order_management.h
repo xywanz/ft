@@ -68,7 +68,9 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   uint64_t next_order_id() { return next_oms_order_id_++; }
 
  private:
-  std::unique_ptr<Gateway> gateway_{nullptr};
+  Gateway* gateway_{nullptr};
+  GatewayDestroyFunc gateway_dtor_{nullptr};
+  void* gateway_dl_handle_{nullptr};
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};

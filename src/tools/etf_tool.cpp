@@ -6,7 +6,7 @@
 
 #include <fstream>
 
-#include "trading_server/config_loader.h"
+#include "utils/config_loader.h"
 #include "trading_server/risk_management/etf/etf.h"
 #include "utils/misc.h"
 

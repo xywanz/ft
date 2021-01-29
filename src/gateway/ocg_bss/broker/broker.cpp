@@ -387,4 +387,6 @@ void BssBroker::on_order_expired(const bss::ExecutionReport &msg) {
   oms_->OnOrderRejected(&rsp);
 }
 
+REGISTER_GATEWAY(::ft::BssBroker);
+
 }  // namespace ft

@@ -73,4 +73,6 @@ void VirtualGateway::OnOrderCanceled(uint64_t order_id, int canceled) {
 
 void VirtualGateway::OnTick(TickData* tick) { oms_->OnTick(tick); }
 
+REGISTER_GATEWAY(::ft::VirtualGateway);
+
 }  // namespace ft

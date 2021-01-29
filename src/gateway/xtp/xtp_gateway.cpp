@@ -67,4 +67,6 @@ bool XtpGateway::QueryTradeList(std::vector<Trade>* result) {
 
 bool XtpGateway::QueryOrderList() { return trade_api_->QueryOrderList(); }
 
+REGISTER_GATEWAY(::ft::XtpGateway);
+
 }  // namespace ft

@@ -1,17 +1,23 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
+#include <dlfcn.h>
 #include <spdlog/spdlog.h>
 
 #include <getopt.hpp>
 
 #include "gateway/gateway.h"
-#include "trading_server/config_loader.h"
 #include "trading_server/datastruct/contract_table.h"
+#include "utils/config_loader.h"
 
 class ContractCollector : public ft::BaseOrderManagementSystem {
  public:
   bool Login(const ft::Config& config) {
-    gateway_.reset(ft::CreateGateway(config.api));
+    void* handle = dlopen(config.api.c_str(), RTLD_LAZY);
+    auto gateway_ctor = reinterpret_cast<ft::GatewayCreateFunc>(dlsym(handle, "CreateGateway"));
+    if (!gateway_ctor) {
+      return false;
+    }
+    gateway_.reset(gateway_ctor());
     if (!gateway_) return false;
 
     return gateway_->Login(this, config);

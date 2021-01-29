@@ -84,4 +84,6 @@ bool CtpGateway::QueryMarginRate(const std::string &ticker) {
   return trade_api_->QueryMarginRate(ticker);
 }
 
+REGISTER_GATEWAY(::ft::CtpGateway);
+
 }  // namespace ft

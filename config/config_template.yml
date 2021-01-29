@@ -1,6 +1,6 @@
 # virtual api只需要且必须要填api以及contracts_file配置项
 # 以下模板为模拟盘或实盘的模板，以ctp为例
-api:  ctp                                               # 必填。现支持ctp/xtp/virtual
+api:  ./libctp-gateway.so                               # 必填。现支持ctp/xtp/virtual
 trade_server_address: tcp://123.123.123.123:8888        # 必填。交易柜台地址
 quote_server_address: tcp://180.168.146.187:10131       # 必填。行情服务器地址
 broker_id: 9999                                         # 选填。broker id，根据API选填
