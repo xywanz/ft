@@ -16,7 +16,7 @@ int wait_for_receipt(RedisSession* redis, int volume) {
     if (reply) {
       if (strcmp(reply->element[1]->str, strategy_id) == 0) {
         auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        auto contract = ContractTable::get_by_index(rsp->tid);
+        auto contract = ContractTable::get_by_index(rsp->ticker_id);
         spdlog::info("rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
                      rsp->client_order_id, contract->ticker, DirectionToStr(rsp->direction),
                      OffsetToStr(rsp->offset), rsp->traded_volume, rsp->original_volume,

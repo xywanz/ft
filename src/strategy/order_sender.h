@@ -5,10 +5,10 @@
 
 #include <string>
 
-#include "utils/redis_trader_cmd_helper.h"
 #include "trading_server/datastruct/constants.h"
 #include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/protocol.h"
+#include "utils/redis_trader_cmd_helper.h"
 
 namespace ft {
 
@@ -27,9 +27,9 @@ class OrderSender {
     SendOrder(ticker, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
   }
 
-  void BuyOpen(uint32_t tid, int volume, double price, uint64_t type = OrderType::FAK,
+  void BuyOpen(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
                uint32_t client_order_id = 0) {
-    SendOrder(tid, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
+    SendOrder(ticker_id, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
   }
 
   void BuyClose(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
@@ -37,9 +37,9 @@ class OrderSender {
     SendOrder(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price, client_order_id);
   }
 
-  void BuyClose(uint32_t tid, int volume, double price, uint64_t type = OrderType::FAK,
+  void BuyClose(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
                 uint32_t client_order_id = 0) {
-    SendOrder(tid, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price, client_order_id);
+    SendOrder(ticker_id, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price, client_order_id);
   }
 
   void SellOpen(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
@@ -47,9 +47,9 @@ class OrderSender {
     SendOrder(ticker, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
   }
 
-  void SellOpen(uint32_t tid, int volume, double price, uint64_t type = OrderType::FAK,
+  void SellOpen(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
                 uint32_t client_order_id = 0) {
-    SendOrder(tid, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
+    SendOrder(ticker_id, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
   }
 
   void SellClose(const std::string& ticker, int volume, double price,
@@ -57,19 +57,20 @@ class OrderSender {
     SendOrder(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price, client_order_id);
   }
 
-  void SellClose(uint32_t tid, int volume, double price, uint64_t type = OrderType::FAK,
+  void SellClose(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
                  uint32_t client_order_id = 0) {
-    SendOrder(tid, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price, client_order_id);
+    SendOrder(ticker_id, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price,
+              client_order_id);
   }
 
-  void SendOrder(uint32_t tid, int volume, uint32_t direction, uint32_t offset, uint32_t type,
+  void SendOrder(uint32_t ticker_id, int volume, uint32_t direction, uint32_t offset, uint32_t type,
                  double price, uint32_t client_order_id) {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CMD_NEW_ORDER;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.client_order_id = client_order_id;
-    cmd.order_req.tid = tid;
+    cmd.order_req.ticker_id = ticker_id;
     cmd.order_req.volume = volume;
     cmd.order_req.direction = direction;
     cmd.order_req.offset = offset;
@@ -87,7 +88,7 @@ class OrderSender {
     contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
-    SendOrder(contract->tid, volume, direction, offset, type, price, client_order_id);
+    SendOrder(contract->ticker_id, volume, direction, offset, type, price, client_order_id);
   }
 
   void CancelOrder(uint64_t order_id) {
@@ -105,7 +106,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = TRADER_CMD_MAGIC;
     cmd.type = CMD_CANCEL_TICKER;
-    cmd.cancel_ticker_req.tid = contract->tid;
+    cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
     cmd_pusher_.Push(cmd);
   }

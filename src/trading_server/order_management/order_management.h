@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "gateway/gateway.h"
-#include "utils/redis_md_helper.h"
 #include "trading_server/datastruct/account.h"
 #include "trading_server/datastruct/config.h"
 #include "trading_server/datastruct/error_code.h"
@@ -22,6 +21,7 @@
 #include "trading_server/order_management/portfolio.h"
 #include "trading_server/risk_management/risk_management.h"
 #include "trading_server/risk_management/types.h"
+#include "utils/redis_md_helper.h"
 
 namespace ft {
 
@@ -45,7 +45,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
 
   bool SendOrder(const TraderCommand& cmd);
   void CancelOrder(uint64_t order_id);
-  void CancelForTicker(uint32_t tid);
+  void CancelForTicker(uint32_t ticker_id);
   void CancelAll();
 
   void OnTick(TickData* tick) override;

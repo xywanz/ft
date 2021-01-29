@@ -39,7 +39,7 @@ struct Contract {
   int delivery_year;
   int delivery_month;
 
-  uint32_t tid;  // local index
+  uint32_t ticker_id;  // local index
 };
 
 inline std::string ToString(ProductType product) {

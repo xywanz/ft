@@ -197,7 +197,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
       return;
 
     // 收到成分股回报，需要设置tid, direction等信息
-    rsp.tid = contract->tid;
+    rsp.ticker_id = contract->ticker_id;
     rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE : Direction::REDEEM;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
@@ -271,8 +271,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error
       goto check_last;
     }
 
-    auto& pos = pos_cache_[contract->tid];
-    pos.tid = contract->tid;
+    auto& pos = pos_cache_[contract->ticker_id];
+    pos.ticker_id = contract->ticker_id;
 
     // 暂时只支持普通股票
     auto& pos_detail = pos.long_pos;
@@ -284,8 +284,8 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error
 
 check_last:
   if (is_last) {
-    for (auto& [tid, pos] : pos_cache_) {
-      UNUSED(tid);
+    for (auto& [ticker_id, pos] : pos_cache_) {
+      UNUSED(ticker_id);
       if (position_results_) position_results_->emplace_back(pos);
     }
     pos_cache_.clear();
@@ -409,7 +409,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
     assert(contract);
 
     Trade trade{};
-    trade.tid = contract->tid;
+    trade.ticker_id = contract->ticker_id;
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;
     if (trade_info->side == XTP_SIDE_BUY) {

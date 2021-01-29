@@ -17,7 +17,7 @@ namespace ft::orderbook {
 
 class OrderBook {
  public:
-  explicit OrderBook(uint32_t tid) : tid_(tid) {}
+  explicit OrderBook(uint32_t ticker_id) : tid_(ticker_id) {}
 
   const PriceLevel* best_bid() const {
     if (!buy_levels_.empty()) return &buy_levels_.begin()->second;

@@ -17,7 +17,7 @@ namespace ft {
 
 struct VirtualOrderRequest {
   uint64_t oms_order_id;
-  uint32_t tid;
+  uint32_t ticker_id;
   uint32_t type;
   uint32_t direction;
   uint32_t offset;
@@ -45,7 +45,7 @@ class VirtualApi {
 
   bool InsertOrder(VirtualOrderRequest* req);
   bool CancelOrder(uint64_t order_id);
-  void UpdateQuote(uint32_t tid, double ask, double bid);
+  void UpdateQuote(uint32_t ticker_id, double ask, double bid);
 
   bool QueryAccount(Account* result);
 

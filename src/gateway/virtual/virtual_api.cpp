@@ -30,17 +30,17 @@ bool VirtualApi::InsertOrder(VirtualOrderRequest* req) {
   return true;
 }
 
-void VirtualApi::UpdateQuote(uint32_t tid, double ask, double bid) {
+void VirtualApi::UpdateQuote(uint32_t ticker_id, double ask, double bid) {
   std::unique_lock<std::mutex> lock(mutex_);
-  auto& quote = lastest_quotes_[tid];
+  auto& quote = lastest_quotes_[ticker_id];
   quote.ask = ask;
   quote.bid = bid;
 
-  auto& order_list = limit_orders_[tid];
+  auto& order_list = limit_orders_[ticker_id];
   for (auto iter = order_list.begin(); iter != order_list.end();) {
     auto& order = *iter;
 
-    auto quote_iter = lastest_quotes_.find(tid);
+    auto quote_iter = lastest_quotes_.find(ticker_id);
     if (quote_iter == lastest_quotes_.end()) {
       ++iter;
       continue;
@@ -59,8 +59,8 @@ void VirtualApi::UpdateQuote(uint32_t tid, double ask, double bid) {
 
 bool VirtualApi::CancelOrder(uint64_t oms_order_id) {
   std::unique_lock<std::mutex> lock(mutex_);
-  for (auto& [tid, order_list] : limit_orders_) {
-    UNUSED(tid);
+  for (auto& [ticker_id, order_list] : limit_orders_) {
+    UNUSED(ticker_id);
     for (auto iter = order_list.begin(); iter != order_list.end(); ++iter) {
       auto& order = *iter;
       if (oms_order_id == order.oms_order_id) {
@@ -109,7 +109,7 @@ void VirtualApi::process_pendings() {
 
       gateway_->OnOrderAccepted(order.oms_order_id);
 
-      auto iter = lastest_quotes_.find(order.tid);
+      auto iter = lastest_quotes_.find(order.ticker_id);
       if (iter == lastest_quotes_.end()) {
         if (order.type == OrderType::FAK || order.type == OrderType::FOK) {
           UpdateCanceled(order);
@@ -124,7 +124,7 @@ void VirtualApi::process_pendings() {
            order.price <= quote.bid + 1e-5)) {
         UpdateTraded(order, quote);
       } else if (order.type == OrderType::LIMIT) {
-        limit_orders_[order.tid].emplace_back(order);
+        limit_orders_[order.ticker_id].emplace_back(order);
       } else {
         UpdateCanceled(order);
       }
@@ -142,12 +142,12 @@ void VirtualApi::DisseminateMarketData() {
 
   for (;;) {
     TickData tick{};
-    tick.tid = contract->tid;
+    tick.ticker_id = contract->ticker_id;
     tick.ask[0] = walker.next();
     tick.bid[0] = tick.ask[0] - 2;
     tick.last_price = (random() & 0xf) >= 8 ? tick.ask[0] : tick.bid[0];
 
-    UpdateQuote(tick.tid, tick.ask[0], tick.bid[0]);
+    UpdateQuote(tick.ticker_id, tick.ask[0], tick.bid[0]);
     gateway_->OnTick(&tick);
     std::this_thread::sleep_for(std::chrono::milliseconds(15));
   }
@@ -170,7 +170,7 @@ bool VirtualApi::CheckOrder(const VirtualOrderRequest* req) const {
     spdlog::error("[VirtualApi::CheckOrder] unsupported direction");
     return false;
   }
-  if (!ContractTable::get_by_index(req->tid)) {
+  if (!ContractTable::get_by_index(req->ticker_id)) {
     spdlog::error("[VirtualApi::CheckOrder] Contract not found");
     return false;
   }
@@ -185,12 +185,12 @@ bool VirtualApi::CheckAndUpdatePosAccount(const VirtualOrderRequest* req) {
     account_.cash -= fund_needed;
     account_.frozen += fund_needed;
   } else {
-    const auto* pos = positions_.get_position(req->tid);
+    const auto* pos = positions_.get_position(req->ticker_id);
     const auto& detail = req->direction == Direction::SELL ? pos->long_pos : pos->short_pos;
     if (detail.holdings - detail.close_pending < req->volume) return false;
   }
 
-  positions_.UpdatePending(req->tid, req->direction, req->offset, req->volume);
+  positions_.UpdatePending(req->ticker_id, req->direction, req->offset, req->volume);
   return true;
 }
 
@@ -200,7 +200,7 @@ void VirtualApi::UpdateCanceled(const VirtualOrderRequest& order) {
     account_.frozen -= fund_returned;
     account_.cash += fund_returned;
   }
-  positions_.UpdatePending(order.tid, order.direction, order.offset, 0 - order.volume);
+  positions_.UpdatePending(order.ticker_id, order.direction, order.offset, 0 - order.volume);
   gateway_->OnOrderCanceled(order.oms_order_id, order.volume);
 }
 
@@ -218,7 +218,7 @@ void VirtualApi::UpdateTraded(const VirtualOrderRequest& order, const LatestQuot
     // account_.margin -= fund_returned;
     account_.cash += fund_returned;
   }
-  positions_.UpdateTraded(order.tid, order.direction, order.offset, order.volume, quote.ask);
+  positions_.UpdateTraded(order.ticker_id, order.direction, order.offset, order.volume, quote.ask);
   gateway_->OnOrderTraded(order.oms_order_id, order.volume, quote.ask);
 }
 

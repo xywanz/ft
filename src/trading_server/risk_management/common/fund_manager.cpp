@@ -23,7 +23,7 @@ int FundManager::CheckOrderRequest(const Order* order) {
   auto* req = &order->req;
   if (IsOffsetClose(req->offset)) return NO_ERROR;
 
-  auto contract = ContractTable::get_by_index(req->contract->tid);
+  auto contract = ContractTable::get_by_index(req->contract->ticker_id);
   assert(contract);
   assert(contract->size > 0);
 

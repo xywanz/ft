@@ -31,7 +31,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   void Logout();
 
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr);
-  bool CancelOrder(uint64_t order_id, uint64_t tid);
+  bool CancelOrder(uint64_t order_id, uint64_t ticker_id);
 
   bool QueryContractList(std::vector<Contract> *result);
   bool QueryPositionList(std::vector<Position> *result);

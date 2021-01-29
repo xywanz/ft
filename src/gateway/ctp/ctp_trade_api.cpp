@@ -271,7 +271,7 @@ bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
       "Volume:{}, Price:{:.3f}",
       order.order_id, order_ref, contract->ticker, DirectionToStr(order.direction),
       OffsetToStr(order.offset), order.volume, order.price);
-  *privdata_ptr = static_cast<uint64_t>(order.contract->tid);
+  *privdata_ptr = static_cast<uint64_t>(order.contract->ticker_id);
   return true;
 }
 
@@ -371,8 +371,8 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   oms_->OnOrderTraded(&rsp);
 }
 
-bool CtpTradeApi::CancelOrder(uint64_t order_id, uint64_t tid) {
-  auto contract = ContractTable::get_by_index(tid);
+bool CtpTradeApi::CancelOrder(uint64_t order_id, uint64_t ticker_id) {
+  auto contract = ContractTable::get_by_index(ticker_id);
   assert(contract);
 
   CThostFtdcInputOrderActionField req{};
@@ -490,8 +490,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
       goto check_last;
     }
 
-    auto &pos = pos_cache_[contract->tid];
-    pos.tid = contract->tid;
+    auto &pos = pos_cache_[contract->ticker_id];
+    pos.ticker_id = contract->ticker_id;
 
     bool is_long_pos = position->PosiDirection == THOST_FTDC_PD_Long;
     auto &pos_detail = is_long_pos ? pos.long_pos : pos.short_pos;
@@ -516,8 +516,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
 
 check_last:
   if (is_last) {
-    for (auto &[tid, pos] : pos_cache_) {
-      UNUSED(tid);
+    for (auto &[ticker_id, pos] : pos_cache_) {
+      UNUSED(ticker_id);
       if (position_results_) position_results_->emplace_back(pos);
     }
     pos_cache_.clear();
@@ -632,7 +632,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoFi
     assert(contract);
 
     Trade td{};
-    td.tid = contract->tid;
+    td.ticker_id = contract->ticker_id;
     td.volume = trade->Volume;
     td.price = trade->Price;
     td.direction = direction(trade->Direction);

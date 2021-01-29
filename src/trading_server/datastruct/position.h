@@ -24,14 +24,14 @@ struct PositionDetail {
 };
 
 struct Position {
-  uint32_t tid = 0;
+  uint32_t ticker_id = 0;
   PositionDetail long_pos;
   PositionDetail short_pos;
 };
 
 inline std::string DumpPosition(const Position& pos) {
   std::string_view ticker = "";
-  auto contract = ContractTable::get_by_index(pos.tid);
+  auto contract = ContractTable::get_by_index(pos.ticker_id);
   if (contract) ticker = contract->ticker;
 
   auto& lp = pos.long_pos;

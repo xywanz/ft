@@ -56,7 +56,7 @@ void OrderBook::RemoveOrder(LimitOrder* order) {
 }
 
 void OrderBook::to_tick(TickData* tick) {
-  tick->tid = tid_;
+  tick->ticker_id = tid_;
 
   int i = 0;
   for (auto& [_, bid_level] : buy_levels_) {

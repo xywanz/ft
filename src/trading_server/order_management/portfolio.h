@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "utils/redis_position_helper.h"
 #include "trading_server/datastruct/position.h"
 #include "trading_server/datastruct/protocol.h"
+#include "utils/redis_position_helper.h"
 
 namespace ft {
 
@@ -23,31 +23,32 @@ class Portfolio {
 
   void set_position(const Position& pos);
 
-  void UpdatePending(uint32_t tid, uint32_t direction, uint32_t offset, int changed);
+  void UpdatePending(uint32_t ticker_id, uint32_t direction, uint32_t offset, int changed);
 
-  void UpdateTraded(uint32_t tid, uint32_t direction, uint32_t offset, int traded,
+  void UpdateTraded(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
                     double traded_price);
 
-  void UpdateComponentStock(uint32_t tid, int traded, bool acquire);
+  void UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire);
 
-  void UpdateFloatPnl(uint32_t tid, double last_price);
+  void UpdateFloatPnl(uint32_t ticker_id, double last_price);
 
-  void UpdateOnQueryTrade(uint32_t tid, uint32_t direction, uint32_t offset, int closed_volume);
+  void UpdateOnQueryTrade(uint32_t ticker_id, uint32_t direction, uint32_t offset,
+                          int closed_volume);
 
-  const Position* get_position(uint32_t tid) const {
-    if (tid == 0 || tid >= positions_.size()) return nullptr;
-    return &positions_[tid];
+  const Position* get_position(uint32_t ticker_id) const {
+    if (ticker_id == 0 || ticker_id >= positions_.size()) return nullptr;
+    return &positions_[ticker_id];
   }
 
  private:
-  void UpdateBuyOrSellPending(uint32_t tid, uint32_t direction, uint32_t offset, int changed);
+  void UpdateBuyOrSellPending(uint32_t ticker_id, uint32_t direction, uint32_t offset, int changed);
 
-  void UpdatePurchaseOrRedeemPending(uint32_t tid, uint32_t direction, int changed);
+  void UpdatePurchaseOrRedeemPending(uint32_t ticker_id, uint32_t direction, int changed);
 
-  void UpdateBuyOrSell(uint32_t tid, uint32_t direction, uint32_t offset, int traded,
+  void UpdateBuyOrSell(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
                        double traded_price);
 
-  void UpdatePurchaseOrRedeem(uint32_t tid, uint32_t direction, int traded);
+  void UpdatePurchaseOrRedeem(uint32_t ticker_id, uint32_t direction, int traded);
 
  private:
   std::vector<Position> positions_;

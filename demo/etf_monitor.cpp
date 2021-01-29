@@ -27,8 +27,8 @@ class EtfMonitor : public Strategy {
 
     std::vector<std::string> sub_list;
     sub_list.emplace_back("159901");
-    for (const auto& [tid, component] : etf->components) {
-      UNUSED(tid);
+    for (const auto& [ticker_id, component] : etf->components) {
+      UNUSED(ticker_id);
       sub_list.emplace_back(component.contract->ticker);
     }
     Subscribe(sub_list);
@@ -39,24 +39,25 @@ class EtfMonitor : public Strategy {
   }
 
   void OnTick(const ft::TickData& tick) override {
-    auto contract = ContractTable::get_by_index(tick.tid);
+    auto contract = ContractTable::get_by_index(tick.ticker_id);
     assert(contract);
 
-    auto& s = snapshots_[tick.tid];
+    auto& s = snapshots_[tick.ticker_id];
     s.last_price = tick.last_price;
-    if (tick.tid == etf_contract_->tid) s.iopv = tick.etf.iopv;
+    if (tick.ticker_id == etf_contract_->ticker_id) s.iopv = tick.etf.iopv;
 
     if (snapshots_.size() == components_->size() + 1) {
       double value = etf_->cash_component + etf_->must_cash_substitution;
-      for (const auto& [tid, snapshot] : snapshots_) {
-        if (tid == etf_contract_->tid) continue;
+      for (const auto& [ticker_id, snapshot] : snapshots_) {
+        if (ticker_id == etf_contract_->ticker_id) continue;
 
-        auto& component = components_->find(tid)->second;
+        auto& component = components_->find(ticker_id)->second;
         value += component.volume * snapshot.last_price;
       }
 
       double value_L1 = value / etf_->unit;
-      spdlog::info("L1:{:.4f}  L2:{:.4f}", value_L1, snapshots_[etf_contract_->tid].last_price);
+      spdlog::info("L1:{:.4f}  L2:{:.4f}", value_L1,
+                   snapshots_[etf_contract_->ticker_id].last_price);
     }
   }
 

@@ -96,7 +96,7 @@ class ContractTable {
       contracts = std::move(vec);
       for (std::size_t i = 0; i < contracts.size(); ++i) {
         auto& contract = contracts[i];
-        contract.tid = i + 1;
+        contract.ticker_id = i + 1;
         ticker2contract.emplace(contract.ticker, &contract);
       }
       get()->is_inited_ = true;
@@ -112,7 +112,7 @@ class ContractTable {
       if (!LoadContractList(file, &contracts)) return false;
       for (std::size_t i = 0; i < contracts.size(); ++i) {
         auto& contract = contracts[i];
-        contract.tid = i + 1;
+        contract.ticker_id = i + 1;
         ticker2contract.emplace(contract.ticker, &contract);
       }
       get()->is_inited_ = true;
@@ -132,10 +132,10 @@ class ContractTable {
     return iter->second;
   }
 
-  static const Contract* get_by_index(uint32_t tid) {
+  static const Contract* get_by_index(uint32_t ticker_id) {
     auto& contracts = get()->contracts_;
-    if (tid == 0 || tid > contracts.size()) return nullptr;
-    return &contracts[tid - 1];
+    if (ticker_id == 0 || ticker_id > contracts.size()) return nullptr;
+    return &contracts[ticker_id - 1];
   }
 
   static std::size_t size() { return get()->contracts_.size(); }

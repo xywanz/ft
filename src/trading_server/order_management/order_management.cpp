@@ -267,7 +267,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
     }
     case CMD_CANCEL_TICKER: {
       spdlog::debug("cancel all for ticker");
-      CancelForTicker(cmd.cancel_ticker_req.tid);
+      CancelForTicker(cmd.cancel_ticker_req.ticker_id);
       break;
     }
     case CMD_CANCEL_ALL: {
@@ -289,7 +289,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
 }
 
 bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
-  auto contract = ContractTable::get_by_index(cmd.order_req.tid);
+  auto contract = ContractTable::get_by_index(cmd.order_req.ticker_id);
   if (!contract) {
     spdlog::error("[OrderManagementSystem::SendOrder] Contract not found");
     return false;
@@ -353,10 +353,10 @@ void OrderManagementSystem::CancelOrder(uint64_t order_id) {
   gateway_->CancelOrder(order_id, iter->second.privdata);
 }
 
-void OrderManagementSystem::CancelForTicker(uint32_t tid) {
+void OrderManagementSystem::CancelForTicker(uint32_t ticker_id) {
   std::unique_lock<std::mutex> lock(mutex_);
   for (const auto& [order_id, order] : order_map_) {
-    if (tid == order.req.contract->tid) gateway_->CancelOrder(order_id, order.privdata);
+    if (ticker_id == order.req.contract->ticker_id) gateway_->CancelOrder(order_id, order.privdata);
   }
 }
 
@@ -377,9 +377,9 @@ void OrderManagementSystem::HandleAccount(Account* account) {
 
 void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
-    auto contract = ContractTable::get_by_index(position.tid);
+    auto contract = ContractTable::get_by_index(position.ticker_id);
     if (!contract) {
-      spdlog::error("Cannot find contract with tid={}", position.tid);
+      spdlog::error("Cannot find contract with ticker_id={}", position.ticker_id);
       exit(-1);
     }
 
@@ -401,7 +401,7 @@ void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
 void OrderManagementSystem::OnTick(TickData* tick) {
   if (!is_logon_) return;
 
-  auto contract = ContractTable::get_by_index(tick->tid);
+  auto contract = ContractTable::get_by_index(tick->ticker_id);
   assert(contract);
   md_pusher_.Push(contract->ticker, *tick);
 
@@ -412,7 +412,7 @@ void OrderManagementSystem::OnTick(TickData* tick) {
 
 void OrderManagementSystem::HandleTrades(std::vector<Trade>* trades) {
   for (auto& trade : *trades) {
-    portfolio_.UpdateOnQueryTrade(trade.tid, trade.direction, trade.offset, trade.volume);
+    portfolio_.UpdateOnQueryTrade(trade.ticker_id, trade.direction, trade.offset, trade.volume);
   }
 }
 

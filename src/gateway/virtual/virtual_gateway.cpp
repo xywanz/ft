@@ -25,7 +25,7 @@ bool VirtualGateway::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr
 
   VirtualOrderRequest req{};
   req.oms_order_id = order.order_id;
-  req.tid = order.contract->tid;
+  req.ticker_id = order.contract->ticker_id;
   req.direction = order.direction;
   req.offset = order.offset;
   req.type = order.type;

@@ -13,7 +13,7 @@ inline const std::size_t kDateLen = 9;
 
 struct TickData {
   uint32_t source;
-  uint32_t tid;
+  uint32_t ticker_id;
   uint64_t date;
   uint64_t time_sec;
   uint64_t time_ms;

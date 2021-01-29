@@ -48,7 +48,7 @@ class EtfTable {
       etf->cash_component = std::stod(tokens[6]);
       etf->must_cash_substitution = 0;
 
-      etf_vec_[contract->tid] = etf;
+      etf_vec_[contract->ticker_id] = etf;
       etf_map_[contract->ticker] = etf;
     }
 
@@ -77,7 +77,7 @@ class EtfTable {
         // 查找不到成分股信息，直接禁止该ETF的申赎
         if (!contract) {
           spdlog::warn("[etf] {} is not allowed to purchase/redeem", etf->contract->ticker);
-          etf_vec_[etf->contract->tid] = nullptr;
+          etf_vec_[etf->contract->ticker_id] = nullptr;
           etf_map_.erase(iter);
           delete etf;
           continue;
@@ -88,16 +88,16 @@ class EtfTable {
         component.etf_contract = etf->contract;
         component.replace_type = replace_type;
         component.volume = std::stod(tokens[5]);
-        etf->components.emplace(contract->tid, component);
+        etf->components.emplace(contract->ticker_id, component);
       }
     }
 
     return true;
   }
 
-  static const ETF* get_by_index(uint32_t tid) {
-    if (tid >= etf_vec_.size()) return nullptr;
-    return etf_vec_[tid];
+  static const ETF* get_by_index(uint32_t ticker_id) {
+    if (ticker_id >= etf_vec_.size()) return nullptr;
+    return etf_vec_[ticker_id];
   }
 
   static const ETF* get_by_ticker(const std::string& ticker) {
