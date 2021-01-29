@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/tick_data.h"
+#include "utils/contract_table.h"
 
 namespace ft {
 

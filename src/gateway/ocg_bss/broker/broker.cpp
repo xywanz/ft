@@ -11,7 +11,7 @@
 #include "broker/connection_manager.h"
 #include "broker/session.h"
 #include "trading_server/datastruct/contract.h"
-#include "trading_server/datastruct/contract_table.h"
+#include "utils/contract_table.h"
 
 namespace ft {
 

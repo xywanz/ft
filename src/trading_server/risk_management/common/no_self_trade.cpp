@@ -2,7 +2,7 @@
 
 #include "trading_server/risk_management/common/no_self_trade.h"
 
-#include "trading_server/datastruct/contract_table.h"
+#include "utils/contract_table.h"
 #include "utils/misc.h"
 
 namespace ft {

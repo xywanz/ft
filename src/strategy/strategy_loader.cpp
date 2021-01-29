@@ -7,7 +7,7 @@
 #include <getopt.hpp>
 
 #include "strategy/strategy.h"
-#include "trading_server/datastruct/contract_table.h"
+#include "utils/contract_table.h"
 
 static void Usage() {
   printf("Usage: ./strategy-loader [--account=<account>]\n");

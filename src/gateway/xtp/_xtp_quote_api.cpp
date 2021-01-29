@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include "trading_server/datastruct/contract_table.h"
+#include "utils/contract_table.h"
 #include "utils/misc.h"
 
 namespace ft {

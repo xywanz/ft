@@ -6,8 +6,8 @@
 #include <getopt.hpp>
 
 #include "gateway/gateway.h"
-#include "trading_server/datastruct/contract_table.h"
 #include "utils/config_loader.h"
+#include "utils/contract_table.h"
 
 class ContractCollector : public ft::BaseOrderManagementSystem {
  public:

@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/protocol.h"
+#include "utils/contract_table.h"
 #include "utils/redis.h"
 
 namespace ft {
