@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "ipc/redis_position_helper.h"
+#include "utils/redis_position_helper.h"
 #include "trading_server/datastruct/position.h"
 #include "trading_server/datastruct/protocol.h"
 

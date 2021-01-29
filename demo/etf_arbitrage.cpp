@@ -2,9 +2,9 @@
 
 #include <fmt/format.h>
 
-#include "ipc/redis.h"
 #include "strategy/order_sender.h"
 #include "trading_server/risk_management/etf/etf_table.h"
+#include "utils/redis.h"
 
 using namespace ft;
 
@@ -39,7 +39,7 @@ int main() {
 
   sender.set_account(5319);
   sender.set_id(strategy_id);
-  redis.Subscribe({strategy_id});
+  redis.subscribe({strategy_id});
 
   uint32_t client_order_id = 1;
   int left;

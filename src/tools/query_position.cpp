@@ -2,7 +2,7 @@
 
 #include <getopt.hpp>
 
-#include "ipc/redis_position_helper.h"
+#include "utils/redis_position_helper.h"
 
 static void Usage() {
   printf("Usage:\n");

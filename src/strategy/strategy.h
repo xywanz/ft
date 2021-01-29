@@ -7,9 +7,9 @@
 #include <string>
 #include <vector>
 
-#include "ipc/redis.h"
-#include "ipc/redis_md_helper.h"
-#include "ipc/redis_position_helper.h"
+#include "utils/redis.h"
+#include "utils/redis_md_helper.h"
+#include "utils/redis_position_helper.h"
 #include "strategy/order_sender.h"
 #include "trading_server/datastruct/constants.h"
 #include "trading_server/datastruct/contract.h"

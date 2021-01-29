@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ipc/lockfree-queue/queue.h"
+#include "utils/lockfree-queue/queue.h"
 
 #include <unistd.h>
 #include <sys/shm.h>

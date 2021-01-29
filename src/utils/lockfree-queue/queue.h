@@ -8,7 +8,7 @@
 #endif
 
 #include <stdbool.h>
-#include "ipc/lockfree-queue/ring.h"
+#include "utils/lockfree-queue/ring.h"
 
 #ifdef __cplusplus
 extern "C" {

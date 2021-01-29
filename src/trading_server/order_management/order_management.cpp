@@ -7,8 +7,6 @@
 
 #include <utility>
 
-#include "ipc/lockfree-queue/queue.h"
-#include "ipc/redis_trader_cmd_helper.h"
 #include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/error_code.h"
 #include "trading_server/datastruct/protocol.h"
@@ -19,7 +17,9 @@
 #include "trading_server/risk_management/common/throttle_rate_limit.h"
 #include "trading_server/risk_management/etf/arbitrage_manager.h"
 #include "utils/config_loader.h"
+#include "utils/lockfree-queue/queue.h"
 #include "utils/misc.h"
+#include "utils/redis_trader_cmd_helper.h"
 
 namespace ft {
 

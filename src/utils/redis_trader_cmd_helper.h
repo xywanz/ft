@@ -1,15 +1,15 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_IPC_REDIS_TRADER_CMD_HELPER_H_
-#define FT_INCLUDE_IPC_REDIS_TRADER_CMD_HELPER_H_
+#ifndef FT_SRC_UTILS_REDIS_TRADER_CMD_HELPER_H_
+#define FT_SRC_UTILS_REDIS_TRADER_CMD_HELPER_H_
 
 #include <fmt/format.h>
 
 #include <string>
 
-#include "ipc/redis.h"
 #include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/protocol.h"
+#include "utils/redis.h"
 
 namespace ft {
 
@@ -40,7 +40,7 @@ class RedisTraderCmdPuller {
   void set_account(uint64_t account) {
     account_abbreviation_ = std::to_string(account).substr(0, 4);
     trader_cmd_topic_ = fmt::format("trader_cmd-{}", account_abbreviation_);
-    redis_.Subscribe({trader_cmd_topic_});
+    redis_.subscribe({trader_cmd_topic_});
   }
 
   RedisReply Pull() { return redis_.get_sub_reply(); }
@@ -56,4 +56,4 @@ class RedisTraderCmdPuller {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_IPC_REDIS_TRADER_CMD_HELPER_H_
+#endif  // FT_SRC_UTILS_REDIS_TRADER_CMD_HELPER_H_

@@ -3,7 +3,7 @@
 #ifndef FT_SRC_TRADING_SERVER_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
 #define FT_SRC_TRADING_SERVER_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
 
-#include "ipc/redis.h"
+#include "utils/redis.h"
 #include "trading_server/risk_management/risk_rule.h"
 
 namespace ft {

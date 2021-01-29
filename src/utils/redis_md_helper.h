@@ -1,16 +1,16 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_IPC_REDIS_MD_HELPER_H_
-#define FT_INCLUDE_IPC_REDIS_MD_HELPER_H_
+#ifndef FT_SRC_UTILS_REDIS_MD_HELPER_H_
+#define FT_SRC_UTILS_REDIS_MD_HELPER_H_
 
 #include <fmt/format.h>
 
 #include <string>
 #include <vector>
 
-#include "ipc/redis.h"
 #include "trading_server/datastruct/contract_table.h"
 #include "trading_server/datastruct/tick_data.h"
+#include "utils/redis.h"
 
 namespace ft {
 
@@ -30,10 +30,10 @@ class RedisTERspPuller {
  public:
   RedisTERspPuller() {}
 
-  void SubscribeOrderResponse(const std::string strategy_id) { redis_.Subscribe({strategy_id}); }
+  void SubscribeOrderResponse(const std::string strategy_id) { redis_.subscribe({strategy_id}); }
 
   void SubscribeMarketData(const std::vector<std::string> ticker_vec) {
-    for (const auto& ticker : ticker_vec) redis_.Subscribe({fmt::format("quote-{}", ticker)});
+    for (const auto& ticker : ticker_vec) redis_.subscribe({fmt::format("quote-{}", ticker)});
   }
 
   RedisReply Pull() { return redis_.get_sub_reply(); }
@@ -44,4 +44,4 @@ class RedisTERspPuller {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_IPC_REDIS_MD_HELPER_H_
+#endif  // FT_SRC_UTILS_REDIS_MD_HELPER_H_

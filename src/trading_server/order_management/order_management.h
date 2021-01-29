@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "gateway/gateway.h"
-#include "ipc/redis_md_helper.h"
+#include "utils/redis_md_helper.h"
 #include "trading_server/datastruct/account.h"
 #include "trading_server/datastruct/config.h"
 #include "trading_server/datastruct/error_code.h"

@@ -1,12 +1,12 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_IPC_REDIS_POSITION_HELPER_H_
-#define FT_INCLUDE_IPC_REDIS_POSITION_HELPER_H_
+#ifndef FT_SRC_UTILS_REDIS_POSITION_HELPER_H_
+#define FT_SRC_UTILS_REDIS_POSITION_HELPER_H_
 
 #include <string>
 
 #include "fmt/format.h"
-#include "ipc/redis.h"
+#include "utils/redis.h"
 #include "trading_server/datastruct/position.h"
 
 namespace ft {
@@ -59,4 +59,4 @@ class RedisPositionSetter : public RedisPositionGetter {
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_IPC_REDIS_POSITION_HELPER_H_
+#endif  // FT_SRC_UTILS_REDIS_POSITION_HELPER_H_
