@@ -100,4 +100,6 @@ bool ContractTable::Init(const std::string& file) {
   return true;
 }
 
+void ContractTable::Store(const std::string& file) { StoreContractList(file, get()->contracts_); }
+
 }  // namespace ft

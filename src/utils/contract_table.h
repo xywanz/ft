@@ -24,10 +24,9 @@ class ContractTable {
  public:
   static bool Init(std::vector<Contract>&& vec);
   static bool Init(const std::string& file);
-
-  static bool inited() { return get()->is_inited_; }
-
-  static void store(const std::string& file) { StoreContractList(file, get()->contracts_); }
+  static void Store(const std::string& file);
+  static bool is_inited() { return get()->is_inited_; }
+  static std::size_t size() { return get()->contracts_.size(); }
 
   static const Contract* get_by_ticker(const std::string& ticker) {
     auto& ticker2contract = get()->ticker2contract_;
@@ -41,8 +40,6 @@ class ContractTable {
     if (ticker_id == 0 || ticker_id > contracts.size()) return nullptr;
     return &contracts[ticker_id - 1];
   }
-
-  static std::size_t size() { return get()->contracts_.size(); }
 
  private:
   static ContractTable* get() {

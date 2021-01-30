@@ -104,14 +104,14 @@ bool OrderManagementSystem::Login(const Config& config) {
   }
   spdlog::info("[OrderManagementSystem::Login] Success. Login as {}", config.investor_id);
 
-  if (!ContractTable::inited()) {
+  if (!ContractTable::is_inited()) {
     std::vector<Contract> contracts;
     if (!gateway_->QueryContractList(&contracts)) {
       spdlog::error("[OrderManagementSystem::Login] Failed to initialize contract table");
       return false;
     }
     ContractTable::Init(std::move(contracts));
-    ContractTable::store("./contracts.csv");
+    ContractTable::Store("./contracts.csv");
   }
 
   md_snapshot_.Init();
