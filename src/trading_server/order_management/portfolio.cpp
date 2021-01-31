@@ -35,24 +35,23 @@ void Portfolio::set_position(const Position& pos) {
   }
 }
 
-void Portfolio::UpdatePending(uint32_t ticker_id, uint32_t direction, uint32_t offset,
-                              int changed) {
+void Portfolio::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset, int changed) {
   if (changed == 0) return;
 
-  if (direction == Direction::BUY || direction == Direction::SELL) {
+  if (direction == Direction::kBuy || direction == Direction::kSell) {
     UpdateBuyOrSellPending(ticker_id, direction, offset, changed);
-  } else if (direction == Direction::PURCHASE || direction == Direction::REDEEM) {
+  } else if (direction == Direction::kPurchase || direction == Direction::kRedeem) {
     UpdatePurchaseOrRedeemPending(ticker_id, direction, changed);
   }
 }
 
-void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, uint32_t direction, uint32_t offset,
+void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, Offset offset,
                                        int changed) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) direction = OppositeDirection(direction);
 
   auto& pos = positions_[ticker_id];
-  auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
+  auto& pos_detail = direction == Direction::kBuy ? pos.long_pos : pos.short_pos;
   if (is_close)
     pos_detail.close_pending += changed;
   else
@@ -77,11 +76,12 @@ void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, uint32_t direction, u
   }
 }
 
-void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, uint32_t direction, int changed) {
+void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction,
+                                              int changed) {
   auto& pos = positions_[ticker_id];
   auto& pos_detail = pos.long_pos;
 
-  if (direction == Direction::PURCHASE) {
+  if (direction == Direction::kPurchase) {
     pos_detail.open_pending += changed;
   } else {
     pos_detail.close_pending += changed;
@@ -106,31 +106,31 @@ void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, uint32_t direc
   }
 }
 
-void Portfolio::UpdateTraded(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
+void Portfolio::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                              double traded_price) {
   if (traded <= 0) return;
 
-  if (direction == Direction::BUY || direction == Direction::SELL) {
+  if (direction == Direction::kBuy || direction == Direction::kSell) {
     UpdateBuyOrSell(ticker_id, direction, offset, traded, traded_price);
-  } else if (direction == Direction::PURCHASE || direction == Direction::REDEEM) {
+  } else if (direction == Direction::kPurchase || direction == Direction::kRedeem) {
     UpdatePurchaseOrRedeem(ticker_id, direction, traded);
   }
 }
 
-void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
+void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                                 double traded_price) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) direction = OppositeDirection(direction);
 
   auto& pos = positions_[ticker_id];
-  auto& pos_detail = direction == Direction::BUY ? pos.long_pos : pos.short_pos;
+  auto& pos_detail = direction == Direction::kBuy ? pos.long_pos : pos.short_pos;
 
   if (is_close) {
     pos_detail.close_pending -= traded;
     pos_detail.holdings -= traded;
     // 这里close_yesterday也执行这个操作是为了防止有些交易所不区分昨今仓，
     // 但用户平仓的时候却使用了close_yesterday
-    if (offset == Offset::CLOSE_YESTERDAY || offset == Offset::CLOSE)
+    if (offset == Offset::kCloseYesterday || offset == Offset::kClose)
       pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
 
     if (pos_detail.holdings < pos_detail.yd_holdings) {
@@ -179,11 +179,11 @@ void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, uint32_t direction, uint32_t
   if (redis_) redis_->set(contract->ticker, pos);
 }
 
-void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, uint32_t direction, int traded) {
+void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded) {
   auto& pos = positions_[ticker_id];
   auto& pos_detail = pos.long_pos;
 
-  if (direction == Direction::PURCHASE) {
+  if (direction == Direction::kPurchase) {
     pos_detail.open_pending -= traded;
     pos_detail.holdings += traded;
     pos_detail.yd_holdings += traded;
@@ -254,7 +254,7 @@ void Portfolio::UpdateFloatPnl(uint32_t ticker_id, double last_price) {
   }
 }
 
-void Portfolio::UpdateOnQueryTrade(uint32_t ticker_id, uint32_t direction, uint32_t offset,
+void Portfolio::UpdateOnQueryTrade(uint32_t ticker_id, Direction direction, Offset offset,
                                    int closed_volume) {
   // auto* pos = find(ticker_id);
   // if (!pos) return;

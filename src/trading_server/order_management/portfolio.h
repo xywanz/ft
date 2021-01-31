@@ -23,16 +23,16 @@ class Portfolio {
 
   void set_position(const Position& pos);
 
-  void UpdatePending(uint32_t ticker_id, uint32_t direction, uint32_t offset, int changed);
+  void UpdatePending(uint32_t ticker_id, Direction direction, Offset offset, int changed);
 
-  void UpdateTraded(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
+  void UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                     double traded_price);
 
   void UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire);
 
   void UpdateFloatPnl(uint32_t ticker_id, double last_price);
 
-  void UpdateOnQueryTrade(uint32_t ticker_id, uint32_t direction, uint32_t offset,
+  void UpdateOnQueryTrade(uint32_t ticker_id, Direction direction, Offset offset,
                           int closed_volume);
 
   const Position* get_position(uint32_t ticker_id) const {
@@ -41,14 +41,14 @@ class Portfolio {
   }
 
  private:
-  void UpdateBuyOrSellPending(uint32_t ticker_id, uint32_t direction, uint32_t offset, int changed);
+  void UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, Offset offset, int changed);
 
-  void UpdatePurchaseOrRedeemPending(uint32_t ticker_id, uint32_t direction, int changed);
+  void UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction, int changed);
 
-  void UpdateBuyOrSell(uint32_t ticker_id, uint32_t direction, uint32_t offset, int traded,
+  void UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                        double traded_price);
 
-  void UpdatePurchaseOrRedeem(uint32_t ticker_id, uint32_t direction, int traded);
+  void UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded);
 
  private:
   std::vector<Position> positions_;

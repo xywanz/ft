@@ -48,8 +48,8 @@ int main() {
     UNUSED(tid);
     left = component.volume;
     for (;;) {
-      sender.SendOrder(component.contract->ticker, left, Direction::BUY, Offset::OPEN,
-                       OrderType::MARKET, 0, client_order_id);
+      sender.SendOrder(component.contract->ticker, left, Direction::kBuy, Offset::kOpen,
+                       OrderType::kMarket, 0, client_order_id);
       left = wait_for_receipt(&redis, left);
       if (left == 0) break;
     }
@@ -61,8 +61,8 @@ int main() {
   ++client_order_id;
   left = etf->unit;
   for (;;) {
-    sender.SendOrder(etf->contract->ticker, left, Direction::PURCHASE, Offset::OPEN,
-                     OrderType::LIMIT, 0, client_order_id);
+    sender.SendOrder(etf->contract->ticker, left, Direction::kPurchase, Offset::kOpen,
+                     OrderType::kLimit, 0, client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }
@@ -70,8 +70,8 @@ int main() {
   ++client_order_id;
   left = etf->unit;
   for (;;) {
-    sender.SendOrder(etf->contract->ticker, left, Direction::SELL, Offset::CLOSE_YESTERDAY,
-                     OrderType::MARKET, 0, client_order_id);
+    sender.SendOrder(etf->contract->ticker, left, Direction::kSell, Offset::kCloseYesterday,
+                     OrderType::kMarket, 0, client_order_id);
     left = wait_for_receipt(&redis, left);
     if (left == 0) break;
   }

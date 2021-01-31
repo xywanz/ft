@@ -47,8 +47,8 @@ void VirtualApi::UpdateQuote(uint32_t ticker_id, double ask, double bid) {
     }
 
     const auto& quote = quote_iter->second;
-    if ((order.direction == Direction::BUY && quote.ask > 0 && order.price >= quote.ask - 1e-5) ||
-        (order.direction == Direction::SELL && quote.bid > 0 && order.price <= quote.bid + 1e-5)) {
+    if ((order.direction == Direction::kBuy && quote.ask > 0 && order.price >= quote.ask - 1e-5) ||
+        (order.direction == Direction::kSell && quote.bid > 0 && order.price <= quote.bid + 1e-5)) {
       UpdateTraded(order, quote);
       iter = order_list.erase(iter);
     } else {
@@ -111,7 +111,7 @@ void VirtualApi::process_pendings() {
 
       auto iter = lastest_quotes_.find(order.ticker_id);
       if (iter == lastest_quotes_.end()) {
-        if (order.type == OrderType::FAK || order.type == OrderType::FOK) {
+        if (order.type == OrderType::kFak || order.type == OrderType::FOK) {
           UpdateCanceled(order);
           pending_iter = pendings_.erase(pending_iter);
           continue;
@@ -119,11 +119,12 @@ void VirtualApi::process_pendings() {
       }
 
       const auto& quote = iter->second;
-      if ((order.direction == Direction::BUY && quote.ask > 0 && order.price >= quote.ask - 1e-5) ||
-          (order.direction == Direction::SELL && quote.bid > 0 &&
+      if ((order.direction == Direction::kBuy && quote.ask > 0 &&
+           order.price >= quote.ask - 1e-5) ||
+          (order.direction == Direction::kSell && quote.bid > 0 &&
            order.price <= quote.bid + 1e-5)) {
         UpdateTraded(order, quote);
-      } else if (order.type == OrderType::LIMIT) {
+      } else if (order.type == OrderType::kLimit) {
         limit_orders_[order.ticker_id].emplace_back(order);
       } else {
         UpdateCanceled(order);
@@ -166,7 +167,7 @@ bool VirtualApi::CheckOrder(const VirtualOrderRequest* req) const {
     spdlog::error("[VirtualApi::CheckOrder] Invalid price");
     return false;
   }
-  if (req->direction != Direction::BUY && req->direction != Direction::SELL) {
+  if (req->direction != Direction::kBuy && req->direction != Direction::kSell) {
     spdlog::error("[VirtualApi::CheckOrder] unsupported direction");
     return false;
   }
@@ -179,14 +180,14 @@ bool VirtualApi::CheckOrder(const VirtualOrderRequest* req) const {
 
 bool VirtualApi::CheckAndUpdatePosAccount(const VirtualOrderRequest* req) {
   std::unique_lock<std::mutex> lock(mutex_);
-  if (req->offset == Offset::OPEN) {
+  if (req->offset == Offset::kOpen) {
     double fund_needed = req->price * req->volume;
     if (account_.cash < fund_needed) return false;
     account_.cash -= fund_needed;
     account_.frozen += fund_needed;
   } else {
     const auto* pos = positions_.get_position(req->ticker_id);
-    const auto& detail = req->direction == Direction::SELL ? pos->long_pos : pos->short_pos;
+    const auto& detail = req->direction == Direction::kSell ? pos->long_pos : pos->short_pos;
     if (detail.holdings - detail.close_pending < req->volume) return false;
   }
 
@@ -195,7 +196,7 @@ bool VirtualApi::CheckAndUpdatePosAccount(const VirtualOrderRequest* req) {
 }
 
 void VirtualApi::UpdateCanceled(const VirtualOrderRequest& order) {
-  if (order.offset == Offset::OPEN) {
+  if (order.offset == Offset::kOpen) {
     double fund_returned = order.volume * order.price;
     account_.frozen -= fund_returned;
     account_.cash += fund_returned;
@@ -205,8 +206,8 @@ void VirtualApi::UpdateCanceled(const VirtualOrderRequest& order) {
 }
 
 void VirtualApi::UpdateTraded(const VirtualOrderRequest& order, const LatestQuote& quote) {
-  double price = order.direction == Direction::BUY ? quote.ask : quote.bid;
-  if (order.offset == Offset::OPEN) {
+  double price = order.direction == Direction::kBuy ? quote.ask : quote.bid;
+  if (order.offset == Offset::kOpen) {
     double fund_returned = order.volume * order.price;
     double cost = order.volume * price;
     account_.frozen -= fund_returned;

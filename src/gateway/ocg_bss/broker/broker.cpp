@@ -160,28 +160,28 @@ bool BssBroker::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
   strncpy(req.security_id, contract->ticker.c_str(), sizeof(req.security_id));
   req.side = bss_detail::diroff2side(order.direction, order.offset);
   switch (order.type) {
-    case ::ft::OrderType::hkex::MO_AT_CROSSING: {
+    case ::ft::OrderType::kHKEX_MO_AT_CROSSING: {
       req.tif = bss::TIF_AT_CROSSING;
       req.order_type = bss::ORDER_TYPE_MARKET;
       break;
     }
-    case ::ft::OrderType::hkex::LO_AT_CROSSING: {
+    case ::ft::OrderType::kHKEX_LO_AT_CROSSING: {
       req.tif = bss::TIF_AT_CROSSING;
       req.order_type = bss::ORDER_TYPE_LIMIT;
       break;
     }
-    case ::ft::OrderType::hkex::LO: {
+    case ::ft::OrderType::kHKEX_LO: {
       req.tif = bss::TIF_DAY;
       req.order_type = bss::ORDER_TYPE_LIMIT;
       req.max_price_levels = 1;
       break;
     }
-    case ::ft::OrderType::hkex::ELO: {
+    case ::ft::OrderType::kHKEX_ELO: {
       req.tif = bss::TIF_DAY;
       req.order_type = bss::ORDER_TYPE_LIMIT;
       break;
     }
-    case ::ft::OrderType::hkex::SLO: {
+    case ::ft::OrderType::kHKEX_SLO: {
       req.tif = bss::TIF_IOC;
       req.order_type = bss::ORDER_TYPE_LIMIT;
       break;
@@ -336,7 +336,7 @@ void BssBroker::on_order_executed(const bss::ExecutionReport &msg) {
   // rsp.order_id = std::stoul(msg.order_id);
   rsp.volume = qty;
   rsp.price = price;
-  rsp.trade_type = TradeType::SECONDARY_MARKET;
+  rsp.trade_type = TradeType::kSecondaryMarket;
   oms_->OnOrderTraded(&rsp);
 }
 

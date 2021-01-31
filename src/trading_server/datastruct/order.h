@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 
+#include "trading_server/datastruct/constants.h"
 #include "trading_server/datastruct/contract.h"
 
 namespace ft {
@@ -14,12 +15,12 @@ namespace ft {
 struct OrderRequest {
   uint64_t order_id;
   const Contract* contract;
-  uint32_t type;
-  uint32_t direction;
-  uint32_t offset;
+  OrderType type;
+  Direction direction;
+  Offset offset;
   int volume;
   double price;
-  uint32_t flags;
+  OrderFlag flags;
 } __attribute__((packed));
 
 enum class OrderStatus {

@@ -14,7 +14,7 @@ bool PositionManager::Init(RiskRuleParams* params) {
 }
 
 int PositionManager::CheckOrderRequest(const Order* order) {
-  if (order->req.direction != Direction::BUY && order->req.direction != Direction::SELL)
+  if (order->req.direction != Direction::kBuy && order->req.direction != Direction::kSell)
     return NO_ERROR;
 
   auto* req = &order->req;
@@ -23,8 +23,8 @@ int PositionManager::CheckOrderRequest(const Order* order) {
     auto pos = const_cast<const Portfolio*>(portfolio_)->get_position(req->contract->ticker_id);
 
     if (pos) {
-      uint32_t d = OppositeDirection(req->direction);
-      auto& detail = d == Direction::BUY ? pos->long_pos : pos->short_pos;
+      auto& detail =
+          (OppositeDirection(req->direction) == Direction::kBuy ? pos->long_pos : pos->short_pos);
       available = detail.holdings - detail.close_pending;
     }
 
@@ -46,15 +46,15 @@ void PositionManager::OnOrderSent(const Order* order) {
 }
 
 void PositionManager::OnOrderTraded(const Order* order, const Trade* trade) {
-  if (trade->trade_type == TradeType::SECONDARY_MARKET ||
-      trade->trade_type == TradeType::PRIMARY_MARKET) {
+  if (trade->trade_type == TradeType::kSecondaryMarket ||
+      trade->trade_type == TradeType::kPrimaryMarket) {
     portfolio_->UpdateTraded(order->req.contract->ticker_id, order->req.direction,
                              order->req.offset, trade->volume, trade->price);
-  } else if (trade->trade_type == TradeType::ACQUIRED_STOCK) {
+  } else if (trade->trade_type == TradeType::kAcquireStock) {
     auto contract = ContractTable::get_by_index(trade->ticker_id);
     assert(contract);
     portfolio_->UpdateComponentStock(contract->ticker_id, trade->volume, true);
-  } else if (trade->trade_type == TradeType::RELEASED_STOCK) {
+  } else if (trade->trade_type == TradeType::kReleaseStock) {
     auto contract = ContractTable::get_by_index(trade->ticker_id);
     assert(contract);
     portfolio_->UpdateComponentStock(contract->ticker_id, trade->volume, false);

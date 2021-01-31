@@ -80,7 +80,7 @@ class BssBroker : public Gateway {
 };
 
 namespace bss_detail {
-inline bss::Side diroff2side(uint32_t direction, uint32_t offset) { return 1; }
+inline bss::Side diroff2side(Direction direction, Offset offset) { return 1; }
 }  // namespace bss_detail
 
 }  // namespace ft

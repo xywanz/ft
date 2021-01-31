@@ -9,10 +9,7 @@
 
 namespace ft {
 
-/*
- * 下列是交易所的英文简称
- */
-
+// 交易所的英文简称
 // 上海期货交易所
 inline const std::string SHFE = "SHFE";
 
@@ -34,169 +31,134 @@ inline const std::string SSE = "SH";
 // 深圳证券交易所-A股
 inline const std::string SZE = "SZ";
 
-/*
- * 订单价格类型
- * 订单价格类型还需要继续细分
- */
-namespace OrderType {
+// 订单价格类型
+enum class OrderType : uint8_t {
+  // 市价单，不同的平台对市价单的支持不同
+  kMarket = 1,
+  // 限价单，指定价格的挂单，订单时限为当日有效
+  kLimit = 2,
+  // 对方最优价格的限价单
+  kBest = 3,
+  // 立即全部成交否则立即撤销，不同平台的实现也不同
+  // 对于CTP来说是限价单，需要指定价格
+  kFak = 4,
+  // 立即成交剩余部分立即撤单，不同平台的实现也不同
+  // 对于CTP来说是限价单，需要指定价格
+  kFok = 5,
+  kUnknown = 6,
 
-// 市价单，不同的平台对市价单的支持不同
-inline const uint32_t MARKET = 1;
+  // 下面是港交所的订单类型
+  // 竞价盘
+  kHKEX_MO_AT_CROSSING = 10,
+  // 竞价现价盘
+  kHKEX_LO_AT_CROSSING = 11,
+  // 限价盘
+  kHKEX_LO = 12,
+  // 增强现价盘
+  kHKEX_ELO = 13,
+  // 特殊限价盘
+  kHKEX_SLO = 14,
+};
 
-// 限价单，指定价格的挂单，订单时限为当日有效
-inline const uint32_t LIMIT = 2;
-
-// 对方最优价格的限价单
-inline const uint32_t BEST = 3;
-
-// 立即全部成交否则立即撤销，不同平台的实现也不同
-// 对于CTP来说是限价单，需要指定价格
-inline const uint32_t FAK = 4;
-
-// 立即成交剩余部分立即撤单，不同平台的实现也不同
-// 对于CTP来说是限价单，需要指定价格
-inline const uint32_t FOK = 5;
-
-// 下面是港交所的订单类型
-namespace hkex {
-
-// 竞价盘
-inline const uint32_t MO_AT_CROSSING = 10;
-
-// 竞价现价盘
-inline const uint32_t LO_AT_CROSSING = 11;
-
-// 限价盘
-inline const uint32_t LO = 12;
-
-// 增强现价盘
-inline const uint32_t ELO = 13;
-
-// 特殊限价盘
-inline const uint32_t SLO = 14;
-
-}  // namespace hkex
-
-}  // namespace OrderType
-
-/*
- * 交易的方向
- */
-namespace Direction {
-// 买入
-inline const uint32_t BUY = 1;
-
-// 卖出
-inline const uint32_t SELL = 2;
-
-// 申购，暂时不支持
-inline const uint32_t PURCHASE = 4;
-
-// 赎回，暂时不支持
-inline const uint32_t REDEEM = 5;
-}  // namespace Direction
+// 交易的方向
+enum class Direction : uint8_t {
+  kBuy = 1,       // 买入
+  kSell = 2,      // 卖出
+  kPurchase = 4,  // 申购
+  kRedeem = 5,    // 赎回
+  kUnknown = 6,
+};
 
 /*
  * 开平类型
  * 不是所有金融产品的交易都需要开平类型
  * 例如A股普通股票的买卖就只涉及交易方向而不涉及开平类型
  */
-namespace Offset {
-// 开仓
-inline const uint32_t OPEN = 1;
-
-// 平仓
-inline const uint32_t CLOSE = 2;
-
-// 平今
-inline const uint32_t CLOSE_TODAY = 4;
-
-// 平昨
-inline const uint32_t CLOSE_YESTERDAY = 8;
-}  // namespace Offset
+enum class Offset : uint8_t {
+  kOpen = 1,
+  kClose = 2,
+  kCloseToday = 4,
+  kCloseYesterday = 8,
+  kOffsetNone = 9,
+  kUnknown = 10,
+};
 
 /*
  * 订单的一些标志位，如CTP的套保等
  */
-namespace OrderFlag {
-// 套保标志
-inline const uint32_t HEDGE = 0x1;
-}  // namespace OrderFlag
+enum OrderFlag : uint8_t {
+  kNone = 0x0,
+  kHedge = 0x1,  // 套保标志
+};
 
-namespace TradeType {
-
-// 二级市场买卖
-inline const uint32_t SECONDARY_MARKET = 0;
-
-// 一级市场成交，如申赎完成会返回此类型
-inline const uint32_t PRIMARY_MARKET = 1;
-
-// ETF申赎的现金替代，也会以回报的形式通知
-inline const uint32_t CASH_SUBSTITUTION = 2;
-
-// ETF赎回获得股票，获得成分股的回报
-inline const uint32_t ACQUIRED_STOCK = 3;
-
-// ETF申购消耗股票，消耗成分股的回报
-inline const uint32_t RELEASED_STOCK = 4;
-
-}  // namespace TradeType
-
-inline const uint32_t kMarketSourceCtp = 100;
-inline const uint32_t kMarketSourceXtp = 101;
+enum class TradeType {
+  kSecondaryMarket = 0,   // 二级市场买卖
+  kPrimaryMarket = 1,     // 一级市场成交，如申赎完成会返回此类型
+  kCashSubstitution = 2,  // ETF申赎的现金替代，也会以回报的形式通知
+  kAcquireStock = 3,      // ETF赎回获得股票，获得成分股的回报
+  kReleaseStock = 4,      // ETF申购消耗股票，消耗成分股的回报
+  kUnknown = 5,
+};
 
 /*
  * 对手方，只针买卖方向有效
  */
-inline uint32_t OppositeDirection(uint32_t d) {
-  return d == Direction::BUY ? Direction::SELL : Direction::BUY;
+inline Direction OppositeDirection(Direction direction) {
+  return direction == Direction::kBuy ? Direction::kSell : Direction::kBuy;
 }
 
 /*
  * 是否是开仓
  */
-inline bool IsOffsetOpen(uint32_t offset) { return offset == Offset::OPEN; }
+inline bool IsOffsetOpen(Offset offset) { return offset == Offset::kOpen; }
 
 /*
  * 是否是平仓，平仓包括平仓、平今、平昨
  */
-inline bool IsOffsetClose(uint32_t offset) {
-  return offset & (Offset::CLOSE | Offset::CLOSE_TODAY | Offset::CLOSE_YESTERDAY);
+inline bool IsOffsetClose(Offset offset) {
+  return static_cast<uint8_t>(offset) &
+         (static_cast<uint8_t>(Offset::kClose) | static_cast<uint8_t>(Offset::kCloseToday) |
+          static_cast<uint8_t>(Offset::kCloseYesterday));
 }
 
-namespace internal {
-static inline const std::string __empty_str = "";
-}
 /*
  * 交易方向转为string
  */
-inline const std::string& DirectionToStr(uint32_t d) {
-  static const std::string d_str[] = {"Unknown", "Buy", "Sell", "Unknown", "Purchase", "Redeem"};
+inline std::string DirectionToStr(Direction direction) {
+  static const char* direction_str[] = {"Unknown", "Buy", "Sell", "Unknown", "Purchase", "Redeem"};
 
-  if (d > Direction::REDEEM) return internal::__empty_str;
-  return d_str[d];
+  auto index = static_cast<uint8_t>(direction);
+  if (index >= static_cast<uint8_t>(Direction::kUnknown)) {
+    return "Unknown";
+  }
+  return direction_str[index];
 }
 
 /*
  * 开平类型转为string
  */
-inline const std::string& OffsetToStr(uint32_t off) {
-  static const std::string off_str[] = {"Unknown", "Open",       "Close",
-                                        "Unknown", "CloseToday", "Unknown",
-                                        "Unknown", "Unknown",    "CloseYesterday"};
+inline std::string OffsetToStr(Offset offset) {
+  static const char* offset_str[] = {"Unknown", "Open",    "Close",   "Unknown",       "CloseToday",
+                                     "Unknown", "Unknown", "Unknown", "CloseYesterday"};
 
-  if (off > Offset::CLOSE_YESTERDAY) return internal::__empty_str;
-  return off_str[off];
+  auto index = static_cast<uint8_t>(offset);
+  if (index > static_cast<uint8_t>(Offset::kUnknown)) {
+    return "Unknown";
+  }
+  return offset_str[index];
 }
 
 /*
  * 订单价格类型转string
  */
-inline const std::string& OrderTypeToStr(uint32_t t) {
-  static const std::string t_str[] = {"Unknown", "Market", "Limit", "Best", "FAK", "FOK"};
+inline std::string OrderTypeToStr(OrderType order_type) {
+  static const char* order_type_str[] = {"Unknown", "Market", "Limit", "Best", "FAK", "FOK"};
 
-  if (t > OrderType::FOK) return internal::__empty_str;
-  return t_str[t];
+  auto index = static_cast<uint8_t>(order_type);
+  if (index > static_cast<uint8_t>(OrderType::kUnknown)) {
+    return "Unknown";
+  }
+  return order_type_str[index];
 }
 
 /*

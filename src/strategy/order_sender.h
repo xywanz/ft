@@ -20,53 +20,54 @@ class OrderSender {
 
   void set_account(uint64_t account_id) { cmd_pusher_.set_account(account_id); }
 
-  void set_order_flags(uint32_t flags) { flags_ = flags; }
+  void set_order_flags(OrderFlag flags) { flags_ = flags; }
 
-  void BuyOpen(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
+  void BuyOpen(const std::string& ticker, int volume, double price,
+               OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
+  }
+
+  void BuyOpen(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
                uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
+    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
   }
 
-  void BuyOpen(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
-               uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
+  void BuyClose(const std::string& ticker, int volume, double price,
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    SendOrder(ticker, volume, Direction::kBuy, Offset::kCloseToday, type, price, client_order_id);
   }
 
-  void BuyClose(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
+  void BuyClose(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
                 uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price, client_order_id);
-  }
-
-  void BuyClose(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
-                uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price, client_order_id);
-  }
-
-  void SellOpen(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
-                uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
-  }
-
-  void SellOpen(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
-                uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
-  }
-
-  void SellClose(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price, client_order_id);
-  }
-
-  void SellClose(uint32_t ticker_id, int volume, double price, uint64_t type = OrderType::FAK,
-                 uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price,
+    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kCloseToday, type, price,
               client_order_id);
   }
 
-  void SendOrder(uint32_t ticker_id, int volume, uint32_t direction, uint32_t offset, uint32_t type,
+  void SellOpen(const std::string& ticker, int volume, double price,
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id);
+  }
+
+  void SellOpen(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
+                uint32_t client_order_id = 0) {
+    SendOrder(ticker_id, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id);
+  }
+
+  void SellClose(const std::string& ticker, int volume, double price,
+                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    SendOrder(ticker, volume, Direction::kSell, Offset::kCloseToday, type, price, client_order_id);
+  }
+
+  void SellClose(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
+                 uint32_t client_order_id = 0) {
+    SendOrder(ticker_id, volume, Direction::kSell, Offset::kCloseToday, type, price,
+              client_order_id);
+  }
+
+  void SendOrder(uint32_t ticker_id, int volume, Direction direction, Offset offset, OrderType type,
                  double price, uint32_t client_order_id) {
     TraderCommand cmd{};
-    cmd.magic = TRADER_CMD_MAGIC;
+    cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_NEW_ORDER;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.client_order_id = client_order_id;
@@ -82,8 +83,8 @@ class OrderSender {
     cmd_pusher_.Push(cmd);
   }
 
-  void SendOrder(const std::string& ticker, int volume, uint32_t direction, uint32_t offset,
-                 uint32_t type, double price, uint32_t client_order_id) {
+  void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
+                 OrderType type, double price, uint32_t client_order_id) {
     const Contract* contract;
     contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
@@ -93,7 +94,7 @@ class OrderSender {
 
   void CancelOrder(uint64_t order_id) {
     TraderCommand cmd{};
-    cmd.magic = TRADER_CMD_MAGIC;
+    cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
 
@@ -104,7 +105,7 @@ class OrderSender {
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
     TraderCommand cmd{};
-    cmd.magic = TRADER_CMD_MAGIC;
+    cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
@@ -113,7 +114,7 @@ class OrderSender {
 
   void CancelAll() {
     TraderCommand cmd{};
-    cmd.magic = TRADER_CMD_MAGIC;
+    cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ALL;
 
     cmd_pusher_.Push(cmd);
@@ -122,7 +123,7 @@ class OrderSender {
  private:
   StrategyIdType strategy_id_;
   RedisTraderCmdPusher cmd_pusher_;
-  uint32_t flags_{0};
+  OrderFlag flags_{0};
 };
 
 }  // namespace ft

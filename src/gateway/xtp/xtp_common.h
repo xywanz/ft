@@ -45,52 +45,52 @@ inline XTP_MARKET_TYPE xtp_market_type(const std::string& type) {
     return XTP_MKT_UNKNOWN;
 }
 
-inline uint8_t xtp_side(uint32_t direction) {
-  if (direction == Direction::BUY)
+inline uint8_t xtp_side(Direction direction) {
+  if (direction == Direction::kBuy)
     return XTP_SIDE_BUY;
-  else if (direction == Direction::SELL)
+  else if (direction == Direction::kSell)
     return XTP_SIDE_SELL;
-  else if (direction == Direction::PURCHASE)
+  else if (direction == Direction::kPurchase)
     return XTP_SIDE_PURCHASE;
-  else if (direction == Direction::REDEEM)
+  else if (direction == Direction::kRedeem)
     return XTP_SIDE_REDEMPTION;
   return XTP_SIDE_UNKNOWN;
 }
 
-inline XTP_PRICE_TYPE xtp_price_type(uint32_t order_type) {
-  if (order_type == OrderType::LIMIT)
+inline XTP_PRICE_TYPE xtp_price_type(OrderType order_type) {
+  if (order_type == OrderType::kLimit)
     return XTP_PRICE_LIMIT;
-  else if (order_type == OrderType::MARKET)
+  else if (order_type == OrderType::kMarket)
     return XTP_PRICE_BEST5_OR_CANCEL;
-  else if (order_type == OrderType::BEST)
+  else if (order_type == OrderType::kBest)
     return XTP_PRICE_REVERSE_BEST_LIMIT;
-  else if (order_type == OrderType::FAK)
+  else if (order_type == OrderType::kFak)
     return XTP_PRICE_BEST5_OR_CANCEL;
-  else if (order_type == OrderType::FOK)
+  else if (order_type == OrderType::kFok)
     return XTP_PRICE_ALL_OR_CANCEL;
   else
     return XTP_PRICE_TYPE_UNKNOWN;
 }
 
 // 仅适用于ETF申赎
-inline uint32_t ft_trade_type(XTP_SIDE_TYPE side, TXTPTradeTypeType type) {
+inline TradeType ft_trade_type(XTP_SIDE_TYPE side, TXTPTradeTypeType type) {
   if (side == XTP_SIDE_PURCHASE) {
     if (type == XTP_TRDT_COMMON)
-      return TradeType::RELEASED_STOCK;
+      return TradeType::kReleaseStock;
     else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
-      return TradeType::CASH_SUBSTITUTION;
+      return TradeType::kCashSubstitution;
     else if (type == XTP_TRDT_PRIMARY)
-      return TradeType::PRIMARY_MARKET;
+      return TradeType::kPrimaryMarket;
   } else if (side == XTP_SIDE_REDEMPTION) {
     if (type == XTP_TRDT_COMMON)
-      return TradeType::ACQUIRED_STOCK;
+      return TradeType::kAcquireStock;
     else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
-      return TradeType::CASH_SUBSTITUTION;
+      return TradeType::kCashSubstitution;
     else if (type == XTP_TRDT_PRIMARY)
-      return TradeType::PRIMARY_MARKET;
+      return TradeType::kPrimaryMarket;
   }
 
-  return -1U;
+  return TradeType::kUnknown;
 }
 
 }  // namespace ft

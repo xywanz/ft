@@ -11,8 +11,13 @@ namespace ft {
 inline const std::size_t kMaxMarketLevel = 10;
 inline const std::size_t kDateLen = 9;
 
+enum class MarketDataSource : uint8_t {
+  kCTP = 1,
+  kXTP = 2,
+};
+
 struct TickData {
-  uint32_t source;
+  MarketDataSource source;
   uint32_t ticker_id;
   uint64_t date;
   uint64_t time_sec;

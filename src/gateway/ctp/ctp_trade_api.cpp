@@ -239,23 +239,23 @@ bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
   req.LimitPrice = order.price;
   req.VolumeTotalOriginal = order.volume;
   req.CombHedgeFlag[0] =
-      order.flags & OrderFlag::HEDGE ? THOST_FTDC_HF_Hedge : THOST_FTDC_HF_Speculation;
+      order.flags & OrderFlag::kHedge ? THOST_FTDC_HF_Hedge : THOST_FTDC_HF_Speculation;
   req.ContingentCondition = THOST_FTDC_CC_Immediately;
   req.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
   req.MinVolume = 1;
   req.IsAutoSuspend = 0;
   req.UserForceClose = 0;
 
-  if (order.type == OrderType::FAK) {
+  if (order.type == OrderType::kFak) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_AV;
-  } else if (order.type == OrderType::FOK) {
+  } else if (order.type == OrderType::kFok) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_CV;
-  } else if (order.type == OrderType::LIMIT) {
+  } else if (order.type == OrderType::kLimit) {
     req.TimeCondition = THOST_FTDC_TC_GFD;
     req.VolumeCondition = THOST_FTDC_VC_AV;
-  } else if (order.type == OrderType::MARKET) {
+  } else if (order.type == OrderType::kMarket) {
     req.TimeCondition = THOST_FTDC_TC_IOC;
     req.VolumeCondition = THOST_FTDC_VC_AV;
     req.LimitPrice = 0.0;
@@ -367,7 +367,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   rsp.order_id = get_order_id(std::stoul(trade->OrderRef));
   rsp.volume = trade->Volume;
   rsp.price = trade->Price;
-  rsp.trade_type = TradeType::SECONDARY_MARKET;
+  rsp.trade_type = TradeType::kSecondaryMarket;
   oms_->OnOrderTraded(&rsp);
 }
 

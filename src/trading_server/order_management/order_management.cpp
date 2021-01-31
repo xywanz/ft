@@ -241,7 +241,7 @@ void OrderManagementSystem::Close() {
 
     dlclose(gateway_dl_handle_);
     gateway_dl_handle_ = nullptr;
-  };
+  }
 }
 
 void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
@@ -249,7 +249,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
   auto start_time = std::chrono::steady_clock::now();
 #endif
 
-  if (cmd.magic != TRADER_CMD_MAGIC) {
+  if (cmd.magic != kTradingCmdMagic) {
     spdlog::error("[OrderManagementSystem::run] Recv unknown cmd: error magic num");
     return;
   }
@@ -475,7 +475,7 @@ void OrderManagementSystem::OnOrderRejected(OrderRejection* rsp) {
 }
 
 void OrderManagementSystem::OnOrderTraded(Trade* rsp) {
-  if (rsp->trade_type == TradeType::SECONDARY_MARKET)
+  if (rsp->trade_type == TradeType::kSecondaryMarket)
     OnSecondaryMarketTraded(rsp);
   else
     OnPrimaryMarketTraded(rsp);
@@ -504,13 +504,13 @@ void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
         static_cast<uint32_t>(rsp->order_id), static_cast<int>(order.req.volume));
   }
 
-  if (rsp->trade_type == TradeType::ACQUIRED_STOCK) {
+  if (rsp->trade_type == TradeType::kAcquireStock) {
     rms_->OnOrderTraded(&order, rsp);
-  } else if (rsp->trade_type == TradeType::RELEASED_STOCK) {
+  } else if (rsp->trade_type == TradeType::kReleaseStock) {
     rms_->OnOrderTraded(&order, rsp);
-  } else if (rsp->trade_type == TradeType::CASH_SUBSTITUTION) {
+  } else if (rsp->trade_type == TradeType::kCashSubstitution) {
     rms_->OnOrderTraded(&order, rsp);
-  } else if (rsp->trade_type == TradeType::PRIMARY_MARKET) {
+  } else if (rsp->trade_type == TradeType::kPrimaryMarket) {
     order.traded_volume = rsp->volume;
     rms_->OnOrderTraded(&order, rsp);
     // risk_mgr_->OnOrderCompleted(&order);

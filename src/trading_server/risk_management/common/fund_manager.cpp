@@ -17,7 +17,7 @@ int FundManager::CheckOrderRequest(const Order* order) {
   // 暂时只针对买卖进行管理，申赎等操作由其他模块计算资金占用
   // 融资融券暂不支持
   // TODO(Kevin): 市价单不会进行资金的预先冻结，因为不知道价格，这算是个bug
-  if (order->req.direction != Direction::BUY && order->req.direction != Direction::SELL)
+  if (order->req.direction != Direction::kBuy && order->req.direction != Direction::kSell)
     return NO_ERROR;
 
   auto* req = &order->req;
@@ -28,9 +28,9 @@ int FundManager::CheckOrderRequest(const Order* order) {
   assert(contract->size > 0);
 
   double estimated = 0;
-  if (req->direction == Direction::BUY) {
+  if (req->direction == Direction::kBuy) {
     estimated = req->price * req->volume * contract->size * contract->long_margin_rate;
-  } else if (req->direction == Direction::SELL) {
+  } else if (req->direction == Direction::kSell) {
     estimated = req->price * req->volume * contract->size * contract->short_margin_rate;
   }
 
@@ -43,8 +43,8 @@ void FundManager::OnOrderSent(const Order* order) {
   auto contract = order->req.contract;
 
   if (IsOffsetOpen(order->req.offset)) {
-    auto margin_rate = order->req.direction == Direction::BUY ? contract->long_margin_rate
-                                                              : contract->short_margin_rate;
+    auto margin_rate = order->req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                               : contract->short_margin_rate;
     double changed = contract->size * order->req.volume * order->req.price * margin_rate;
     account_->cash -= changed;
     account_->frozen += changed;
@@ -54,12 +54,12 @@ void FundManager::OnOrderSent(const Order* order) {
 }
 
 void FundManager::OnOrderTraded(const Order* order, const Trade* trade) {
-  if (trade->trade_type == TradeType::SECONDARY_MARKET) {
+  if (trade->trade_type == TradeType::kSecondaryMarket) {
     auto contract = order->req.contract;
 
     if (IsOffsetOpen(order->req.offset)) {
-      auto margin_rate = order->req.direction == Direction::BUY ? contract->long_margin_rate
-                                                                : contract->short_margin_rate;
+      auto margin_rate = order->req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                                 : contract->short_margin_rate;
       auto frozen_released = contract->size * trade->volume * order->req.price * margin_rate;
       auto margin = contract->size * trade->volume * trade->price * margin_rate;
       account_->frozen -= frozen_released;
@@ -67,8 +67,8 @@ void FundManager::OnOrderTraded(const Order* order, const Trade* trade) {
       // 如果冻结的时候冻结多了需要释放，冻结少了则需要回补
       account_->cash += frozen_released - margin;
     } else if (IsOffsetClose(order->req.offset)) {
-      auto margin_rate = order->req.direction == Direction::BUY ? contract->long_margin_rate
-                                                                : contract->short_margin_rate;
+      auto margin_rate = order->req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                                 : contract->short_margin_rate;
       auto margin = contract->size * trade->volume * trade->price * margin_rate;
       account_->margin -= margin;
       account_->cash += margin;
@@ -76,11 +76,11 @@ void FundManager::OnOrderTraded(const Order* order, const Trade* trade) {
       spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}", account_->total_asset,
                     account_->frozen, account_->margin);
     }
-  } else if (trade->trade_type == TradeType::CASH_SUBSTITUTION) {
-    if (order->req.direction == Direction::PURCHASE) {
+  } else if (trade->trade_type == TradeType::kCashSubstitution) {
+    if (order->req.direction == Direction::kPurchase) {
       account_->margin -= trade->amount;
       account_->cash += trade->amount;
-    } else if (order->req.direction == Direction::REDEEM) {
+    } else if (order->req.direction == Direction::kRedeem) {
       account_->margin += trade->amount;
       account_->cash -= trade->amount;
     }
@@ -90,8 +90,8 @@ void FundManager::OnOrderTraded(const Order* order, const Trade* trade) {
 void FundManager::OnOrderCanceled(const Order* order, int canceled) {
   if (IsOffsetOpen(order->req.offset)) {
     auto contract = order->req.contract;
-    auto margin_rate = order->req.direction == Direction::BUY ? contract->long_margin_rate
-                                                              : contract->short_margin_rate;
+    auto margin_rate = order->req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                               : contract->short_margin_rate;
     double changed = contract->size * canceled * order->req.price * margin_rate;
     account_->frozen -= changed;
     account_->cash += changed;

@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <string>
 
+#include "trading_server/datastruct/constants.h"
+
 namespace ft {
 
 using StrategyIdType = char[16];
@@ -17,7 +19,7 @@ using StrategyIdType = char[16];
  * Strategy通过IPC向TradingEngine发送交易相关指令
  */
 
-inline const uint32_t TRADER_CMD_MAGIC = 0x1709394;
+inline const uint32_t kTradingCmdMagic = 0x1709394;
 
 enum TraderCmdType {
   CMD_NEW_ORDER = 1,
@@ -29,13 +31,13 @@ enum TraderCmdType {
 struct TraderOrderReq {
   uint32_t client_order_id;
   uint32_t ticker_id;
-  uint32_t direction;
-  uint32_t offset;
-  uint32_t type;
+  Direction direction;
+  Offset offset;
+  OrderType type;
   int volume;
   double price;
 
-  uint32_t flags;
+  OrderFlag flags;
   bool without_check;
 } __attribute__((packed));
 
@@ -65,8 +67,8 @@ struct OrderResponse {
   uint32_t client_order_id;
   uint32_t order_id;
   uint32_t ticker_id;
-  uint32_t direction;
-  uint32_t offset;
+  Direction direction;
+  Offset offset;
   int original_volume;
   int traded_volume;
 

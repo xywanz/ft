@@ -149,9 +149,9 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool
     contract.long_margin_rate = 1.0;
     contract.short_margin_rate = 1.0;
     if (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK)
-      contract.product_type = ProductType::STOCK;
+      contract.product_type = ProductType::kStock;
     else if (ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)
-      contract.product_type = ProductType::FUND;
+      contract.product_type = ProductType::kFund;
     contract.size = 1;
 
     if (contract_results_) contract_results_->emplace_back(contract);
@@ -176,7 +176,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   }
 
   TickData tick{};
-  tick.source = kMarketSourceXtp;
+  tick.source = MarketDataSource::kXTP;
   tick.ticker_id = contract->ticker_id;
 
   uint64_t sec = (market_data->data_time / 1000) % 100;

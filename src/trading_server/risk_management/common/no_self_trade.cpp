@@ -13,23 +13,23 @@ bool NoSelfTradeRule::Init(RiskRuleParams* params) {
 }
 
 int NoSelfTradeRule::CheckOrderRequest(const Order* order) {
-  if (order->req.direction != Direction::BUY && order->req.direction != Direction::SELL)
+  if (order->req.direction != Direction::kBuy && order->req.direction != Direction::kSell)
     return NO_ERROR;
 
   auto req = &order->req;
   auto contract = req->contract;
 
-  uint64_t opp_d = OppositeDirection(req->direction);  // 对手方
+  auto oppsite_direction = OppositeDirection(req->direction);  // 对手方
   const OrderRequest* pending_order;
   for (auto& [oms_order_id, o] : *order_map_) {
     UNUSED(oms_order_id);
     pending_order = &o.req;
-    if (pending_order->direction != opp_d) continue;
+    if (pending_order->direction != oppsite_direction) continue;
 
     // 存在市价单直接拒绝
-    if (pending_order->price < 1e-5 || pending_order->type == OrderType::MARKET ||
-        (req->direction == Direction::BUY && req->price > pending_order->price - 1e-5) ||
-        (req->direction == Direction::SELL && req->price < pending_order->price + 1e-5)) {
+    if (pending_order->price < 1e-5 || pending_order->type == OrderType::kMarket ||
+        (req->direction == Direction::kBuy && req->price > pending_order->price - 1e-5) ||
+        (req->direction == Direction::kSell && req->price < pending_order->price + 1e-5)) {
       spdlog::error(
           "[RiskMgr] Self trade! Ticker: {}. This Order: "
           "[Direction: {}, Type: {}, Price: {:.2f}]. "

@@ -8,16 +8,11 @@
 namespace ft {
 
 enum class ProductType {
-  FUTURES = 0,
-  OPTIONS,
-  STOCK,
-  FUND,
-  UNKNOWN,
-};
-
-enum SpecTickerIndex : uint32_t {
-  NONE_TICKER = 0,
-  ALL_TICKERS = UINT32_MAX,
+  kFutures = 0,
+  kOptions,
+  kStock,
+  kFund,
+  kUnknown,
 };
 
 struct Contract {
@@ -43,21 +38,21 @@ struct Contract {
 };
 
 inline std::string ToString(ProductType product) {
-  if (product == ProductType::FUTURES) return "Futures";
-  if (product == ProductType::OPTIONS) return "Options";
-  if (product == ProductType::STOCK) return "Stock";
-  if (product == ProductType::FUND) return "Fund";
+  if (product == ProductType::kFutures) return "Futures";
+  if (product == ProductType::kOptions) return "Options";
+  if (product == ProductType::kStock) return "Stock";
+  if (product == ProductType::kFund) return "Fund";
 
   return "Unknown";
 }
 
 inline ProductType string2product(const std::string& product) {
-  if (product == "Futures") return ProductType::FUTURES;
-  if (product == "Options") return ProductType::OPTIONS;
-  if (product == "Stock") return ProductType::STOCK;
-  if (product == "Fund") return ProductType::FUND;
+  if (product == "Futures") return ProductType::kFutures;
+  if (product == "Options") return ProductType::kOptions;
+  if (product == "Stock") return ProductType::kStock;
+  if (product == "Fund") return ProductType::kFund;
 
-  return ProductType::UNKNOWN;
+  return ProductType::kUnknown;
 }
 
 }  // namespace ft

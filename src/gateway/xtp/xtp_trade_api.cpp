@@ -80,8 +80,8 @@ void XtpTradeApi::Logout() {
 }
 
 bool XtpTradeApi::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) {
-  if ((order.direction == Direction::BUY && IsOffsetClose(order.offset)) ||
-      (order.direction == Direction::SELL && IsOffsetOpen(order.offset))) {
+  if ((order.direction == Direction::kBuy && IsOffsetClose(order.offset)) ||
+      (order.direction == Direction::kSell && IsOffsetOpen(order.offset))) {
     spdlog::info("[XtpTradeApi::SendOrder] 不支持BuyClose或是SellOpen");
     return false;
   }
@@ -95,7 +95,7 @@ bool XtpTradeApi::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) {
     return false;
   }
 
-  if (order.direction == Direction::BUY || order.direction == Direction::SELL) {
+  if (order.direction == Direction::kBuy || order.direction == Direction::kSell) {
     req.price_type = xtp_price_type(order.type);
     if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
       spdlog::error("[XtpTradeApi::SendOrder] 不支持的订单价格类型");
@@ -193,18 +193,19 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
     // 即ETF的普通成交类型
     // 这个信息对我们来说没有用处，反而会扰乱仓位的计算
     // 所以在此处过滤掉该回报
-    if (contract->product_type == ProductType::FUND && trade_info->trade_type == XTP_TRDT_COMMON)
+    if (contract->product_type == ProductType::kFund && trade_info->trade_type == XTP_TRDT_COMMON)
       return;
 
     // 收到成分股回报，需要设置tid, direction等信息
     rsp.ticker_id = contract->ticker_id;
-    rsp.direction = trade_info->side == XTP_SIDE_PURCHASE ? Direction::PURCHASE : Direction::REDEEM;
+    rsp.direction =
+        trade_info->side == XTP_SIDE_PURCHASE ? Direction::kPurchase : Direction::kRedeem;
     rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
     rsp.amount = trade_info->trade_amount;
   } else {
     // 二级市场成交，这里无需设置tid，因为该tid和order_req中
     // 的是一样的；direction和offset同理
-    rsp.trade_type = TradeType::SECONDARY_MARKET;
+    rsp.trade_type = TradeType::kSecondaryMarket;
   }
 
   rsp.order_id = trade_info->order_client_id;
@@ -413,11 +414,11 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;
     if (trade_info->side == XTP_SIDE_BUY) {
-      trade.direction = Direction::BUY;
-      trade.offset = Offset::OPEN;
+      trade.direction = Direction::kBuy;
+      trade.offset = Offset::kOpen;
     } else if (trade_info->side == XTP_SIDE_SELL) {
-      trade.direction = Direction::SELL;
-      trade.offset = Offset::CLOSE_YESTERDAY;
+      trade.direction = Direction::kSell;
+      trade.offset = Offset::kCloseYesterday;
     }
 
     if (trade_results_) trade_results_->emplace_back(trade);

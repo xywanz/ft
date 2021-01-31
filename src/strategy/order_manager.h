@@ -14,8 +14,8 @@ struct OrderInfo {
   uint32_t client_order_id = 0;
   uint32_t order_id = 0;
   uint32_t ticker_id = 0;
-  uint32_t direction = 0;
-  uint32_t offset = 0;
+  Direction direction = Direction::kUnknown;
+  Offset offset = Offset::kUnknown;
   int original_volume = 0;
   int traded_volume = 0;
 };

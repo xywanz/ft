@@ -65,7 +65,7 @@ inline PriceType adjust_price(PriceType price) {
   return ret;
 }
 
-inline char order_type(uint32_t type) {
+inline char order_type(OrderType type) {
   static const char ft2ctp[] = {
       0,
       THOST_FTDC_OPT_AnyPrice,    // MARKET
@@ -75,35 +75,35 @@ inline char order_type(uint32_t type) {
       THOST_FTDC_OPT_LimitPrice   // LIMIT
   };
 
-  return ft2ctp[type];
+  return ft2ctp[static_cast<uint8_t>(type)];
 }
 
-inline uint32_t direction(char ctp_type) { return ctp_type - '0' + 1; }
+inline Direction direction(char ctp_type) { return static_cast<Direction>(ctp_type - '0' + 1); }
 
-inline char direction(uint32_t type) { return type + '0' - 1; }
+inline char direction(Direction type) { return static_cast<uint8_t>(type) + '0' - 1; }
 
-inline uint32_t offset(char ctp_type) {
-  static const uint32_t ctp2ft[] = {Offset::OPEN, Offset::CLOSE, 0, Offset::CLOSE_TODAY,
-                                    Offset::CLOSE_YESTERDAY};
+inline Offset offset(char ctp_type) {
+  static const Offset ctp2ft[] = {Offset::kOpen, Offset::kClose, Offset::kUnknown,
+                                  Offset::kCloseToday, Offset::kCloseYesterday};
 
   return ctp2ft[ctp_type - '0'];
 }
 
-inline char offset(uint32_t type) {
+inline char offset(Offset offset) {
   static const uint32_t ft2ctp[] = {
       0, THOST_FTDC_OF_Open,          THOST_FTDC_OF_Close, 0, THOST_FTDC_OF_CloseToday, 0, 0,
       0, THOST_FTDC_OF_CloseYesterday};
-  return ft2ctp[type];
+  return ft2ctp[static_cast<uint8_t>(offset)];
 }
 
 inline ProductType product_type(char ctp_type) {
-  static const ProductType ctp2ft[] = {ProductType::FUTURES, ProductType::OPTIONS};
+  static const ProductType ctp2ft[] = {ProductType::kFutures, ProductType::kOptions};
 
   return ctp2ft[ctp_type - '1'];
 }
 
 inline char product_type(ProductType type) {
-  return type == ProductType::FUTURES ? THOST_FTDC_PC_Futures : THOST_FTDC_PC_Options;
+  return type == ProductType::kFutures ? THOST_FTDC_PC_Futures : THOST_FTDC_PC_Options;
 }
 
 }  // namespace ft

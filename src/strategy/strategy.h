@@ -51,25 +51,26 @@ class Strategy {
  protected:
   void Subscribe(const std::vector<std::string>& sub_list);
 
-  void BuyOpen(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
-               uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::BUY, Offset::OPEN, type, price, client_order_id);
+  void BuyOpen(const std::string& ticker, int volume, double price,
+               OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
   }
 
-  void BuyClose(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
-                uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::BUY, Offset::CLOSE_TODAY, type, price,
+  void BuyClose(const std::string& ticker, int volume, double price,
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kBuy, Offset::kCloseToday, type, price,
                       client_order_id);
   }
 
-  void SellOpen(const std::string& ticker, int volume, double price, uint64_t type = OrderType::FAK,
-                uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::SELL, Offset::OPEN, type, price, client_order_id);
+  void SellOpen(const std::string& ticker, int volume, double price,
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price,
+                      client_order_id);
   }
 
   void SellClose(const std::string& ticker, int volume, double price,
-                 uint64_t type = OrderType::FAK, uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::SELL, Offset::CLOSE_TODAY, type, price,
+                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kSell, Offset::kCloseToday, type, price,
                       client_order_id);
   }
 
@@ -86,8 +87,8 @@ class Strategy {
   }
 
  private:
-  void SendOrder(const std::string& ticker, int volume, uint32_t direction, uint32_t offset,
-                 uint32_t type, double price, uint32_t client_order_id) {
+  void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
+                 OrderType type, double price, uint32_t client_order_id) {
     sender_.SendOrder(ticker, volume, direction, offset, type, price, client_order_id);
   }
 

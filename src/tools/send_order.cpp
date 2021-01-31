@@ -54,44 +54,44 @@ int main() {
     exit(-1);
   }
 
-  uint64_t d;
+  ft::Direction d;
   if (direction == "buy") {
-    d = ft::Direction::BUY;
+    d = ft::Direction::kBuy;
   } else if (direction == "sell") {
-    d = ft::Direction::SELL;
+    d = ft::Direction::kSell;
   } else if (direction == "purchase") {
-    d = ft::Direction::PURCHASE;
+    d = ft::Direction::kPurchase;
   } else if (direction == "redeem") {
-    d = ft::Direction::REDEEM;
+    d = ft::Direction::kRedeem;
   } else {
     printf("unknown direction: %s\n", direction.c_str());
     exit(-1);
   }
 
-  uint64_t o = 0;
-  uint64_t k = 0;
-  if (d == ft::Direction::BUY || d == ft::Direction::SELL) {
+  ft::Offset o = ft::Offset::kUnknown;
+  ft::OrderType k = ft::OrderType::kUnknown;
+  if (d == ft::Direction::kBuy || d == ft::Direction::kSell) {
     if (offset == "open") {
-      o = ft::Offset::OPEN;
+      o = ft::Offset::kOpen;
     } else if (offset == "close") {
-      o = ft::Offset::CLOSE;
+      o = ft::Offset::kClose;
     } else if (offset == "close_today") {
-      o = ft::Offset::CLOSE_TODAY;
+      o = ft::Offset::kCloseToday;
     } else if (offset == "close_yesterday") {
-      o = ft::Offset::CLOSE_YESTERDAY;
+      o = ft::Offset::kCloseYesterday;
     } else {
       printf("unknown offset: %s\n", offset.c_str());
       exit(-1);
     }
 
     if (order_type == "limit") {
-      k = ft::OrderType::LIMIT;
+      k = ft::OrderType::kLimit;
     } else if (order_type == "market") {
-      k = ft::OrderType::MARKET;
+      k = ft::OrderType::kMarket;
     } else if (order_type == "fak") {
-      k = ft::OrderType::FAK;
+      k = ft::OrderType::kFak;
     } else if (order_type == "fok") {
-      k = ft::OrderType::FOK;
+      k = ft::OrderType::kFok;
     } else {
       printf("unknown order type: %s\n", order_type.c_str());
       exit(-1);
