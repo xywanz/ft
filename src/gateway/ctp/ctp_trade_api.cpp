@@ -307,13 +307,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     return;
   }
 
-  // 听说CTP会收到别人的订单回报？判断一下
+  // 过滤不是自己的订单
   if (order->InvestorID != investor_id_) {
     spdlog::warn("[CtpTradeApi::OnRtnOrder] Failed. Unknown order");
     return;
   }
 
-  // CTP返回的OrderRef不会有问题吧？
   uint64_t order_id = get_order_id(std::stoul(order->OrderRef));
 
   // 被拒单或撤销被拒，回调相应函数
