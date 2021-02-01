@@ -6,8 +6,8 @@
 #include <string>
 
 #include "fmt/format.h"
-#include "utils/redis.h"
 #include "trading_server/datastruct/position.h"
+#include "utils/redis.h"
 
 namespace ft {
 
@@ -22,7 +22,7 @@ class RedisPositionGetter {
 
   bool get(const std::string& ticker, Position* pos) const {
     auto reply = redis_.get(fmt::format("{}{}", pos_key_prefix_, ticker));
-    if (!reply) return false;
+    if (!reply || reply->len == 0) return false;
 
     *pos = *reinterpret_cast<const Position*>(reply->str);
     return true;
