@@ -1,11 +1,6 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-cmake_minimum_required(VERSION 3.0)
-project(ocg-bss)
-
-include_directories(
-        ${CMAKE_SOURCE_DIR}/src/trading_platform/gateway/ocg_bss
-)
+include_directories(.)
 
 add_subdirectory(broker)
 add_subdirectory(phase_1)
