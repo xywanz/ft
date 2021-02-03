@@ -29,6 +29,7 @@ int main() {
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("strategy", "--id");
   uint64_t account_id = getarg(0ULL, "--account");
+  bool backtest_mode = getarg(false, "--backtest");
   bool help = getarg(false, "-h", "--help", "-?");
 
   if (help) {
@@ -54,8 +55,8 @@ int main() {
     exit(-1);
   }
 
-  auto CreateStrategy = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
-  if (CreateStrategy == nullptr) {
+  auto strategy_ctor = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
+  if (!strategy_ctor) {
     char* error_str = dlerror();
     if (error_str) {
       spdlog::error("CreateStrategy not found. error: {}", error_str);
@@ -63,8 +64,15 @@ int main() {
     }
   }
 
-  auto strategy = CreateStrategy();
+  auto strategy = strategy_ctor();
   strategy->set_id(strategy_id);
   strategy->set_account_id(account_id);
-  strategy->Run();
+
+  spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
+  if (backtest_mode) {
+    spdlog::info("backtest mode");
+    strategy->RunBackTest();
+  } else {
+    strategy->Run();
+  }
 }

@@ -34,10 +34,12 @@ class Strategy {
 
   virtual void OnExit() {}
 
-  /* 仅供加载器调用，内部不可使用 */
+  // 仅供加载器调用，内部不可使用
   void Run();
 
-  /* 策略启动后请勿更改id */
+  void RunBackTest();
+
+  // 策略启动后请勿更改id
   void set_id(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
     sender_.set_id(name);
@@ -79,6 +81,8 @@ class Strategy {
   void CancelForTicker(const std::string& ticker) { sender_.CancelForTicker(ticker); }
 
   void CancelAll() { sender_.CancelAll(); }
+
+  void SendNotification(uint64_t signal) { sender_.SendNotification(signal); }
 
   Position get_position(const std::string& ticker) const {
     Position pos{};

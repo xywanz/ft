@@ -275,6 +275,11 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
       CancelAll();
       break;
     }
+    case CMD_NOTIFY: {
+      spdlog::debug("notify");
+      gateway_->Notify(cmd.notification.signal);
+      break;
+    }
     default: {
       spdlog::error("[StrategyEngine::run] Unknown cmd");
       break;

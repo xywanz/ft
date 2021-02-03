@@ -12,8 +12,8 @@
 #include "trading_server/datastruct/md_snapshot.h"
 #include "trading_server/datastruct/order.h"
 #include "trading_server/order_management/base_oms.h"
-#include "trading_server/order_management/portfolio.h"
 #include "trading_server/risk_management/types.h"
+#include "utils/portfolio.h"
 
 namespace ft {
 

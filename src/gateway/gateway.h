@@ -88,6 +88,9 @@ class Gateway {
   virtual bool QueryMarginRate(const std::string& ticker) { return true; }
 
   virtual bool QueryCommisionRate(const std::string& ticker) { return true; }
+
+  // 扩展接口，用于向Gateway发送自定义消息
+  virtual void Notify(uint64_t signal) {}
 };
 
 using GatewayCreateFunc = Gateway* (*)();

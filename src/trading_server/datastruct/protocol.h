@@ -26,6 +26,7 @@ enum TraderCmdType {
   CMD_CANCEL_ORDER,
   CMD_CANCEL_TICKER,
   CMD_CANCEL_ALL,
+  CMD_NOTIFY,
 };
 
 struct TraderOrderReq {
@@ -49,6 +50,10 @@ struct TraderCancelTickerReq {
   uint32_t ticker_id;
 } __attribute__((packed));
 
+struct TraderNotification {
+  uint64_t signal;
+} __attribute__((packed));
+
 struct TraderCommand {
   uint32_t magic;
   uint32_t type;
@@ -57,6 +62,7 @@ struct TraderCommand {
     TraderOrderReq order_req;
     TraderCancelReq cancel_req;
     TraderCancelTickerReq cancel_ticker_req;
+    TraderNotification notification;
   };
 } __attribute__((packed));
 
@@ -65,7 +71,7 @@ struct TraderCommand {
  */
 struct OrderResponse {
   uint32_t client_order_id;
-  uint32_t order_id;
+  uint64_t order_id;
   uint32_t ticker_id;
   Direction direction;
   Offset offset;

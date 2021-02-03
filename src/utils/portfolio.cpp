@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "trading_server/order_management/portfolio.h"
+#include "utils/portfolio.h"
 
 #include <spdlog/spdlog.h>
 
@@ -13,14 +13,14 @@ namespace ft {
 
 Portfolio::Portfolio() {}
 
-void Portfolio::Init(uint32_t max_tid, bool sync_to_redis, uint64_t account) {
+void Portfolio::Init(uint32_t max_ticker_id, bool sync_to_redis, uint64_t account) {
   if (sync_to_redis) {
     redis_ = std::make_unique<RedisPositionSetter>();
     redis_->set_account(account);
     redis_->Clear();
   }
 
-  positions_.resize(max_tid + 1);
+  positions_.resize(max_ticker_id + 1);
   uint32_t ticker_id = 0;
   for (auto& pos : positions_) pos.ticker_id = ticker_id++;
 }

@@ -13,7 +13,7 @@ bool LoadContractList(const std::string& file, std::vector<Contract>* contracts)
   std::getline(ifs, line);  // skip header
   while (std::getline(ifs, line)) {
     fields.clear();
-    Split(line, ",", &fields);
+    StringSplit(line, ",", &fields);
     if (fields.empty() || fields[0].front() == '\n') continue;
 
     if (fields.size() != 14) return false;

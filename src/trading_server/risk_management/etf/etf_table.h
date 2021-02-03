@@ -34,7 +34,7 @@ class EtfTable {
     std::getline(ifs, line);  // skip head
     while (std::getline(ifs, line)) {
       tokens.clear();
-      Split(line, ",", &tokens);
+      StringSplit(line, ",", &tokens);
 
       auto contract = ContractTable::get_by_ticker(tokens[0]);
       if (!contract) continue;
@@ -62,7 +62,7 @@ class EtfTable {
     std::getline(ifs, line);  // skip head
     while (std::getline(ifs, line)) {
       tokens.clear();
-      Split(line, ",", &tokens);
+      StringSplit(line, ",", &tokens);
 
       auto iter = etf_map_.find(tokens[0]);
       if (iter == etf_map_.end()) continue;

@@ -54,7 +54,7 @@ class GridStrategy : public ft::Strategy {
   int trade_volume_each_ = 20;
   int trade_counts_ = 0;
 
-  std::string ticker_ = "rb2105";
+  std::string ticker_ = "UR101";
 };
 
 EXPORT_STRATEGY(GridStrategy);

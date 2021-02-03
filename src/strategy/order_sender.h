@@ -120,6 +120,15 @@ class OrderSender {
     cmd_pusher_.Push(cmd);
   }
 
+  void SendNotification(uint64_t signal) {
+    TraderCommand cmd{};
+    cmd.magic = kTradingCmdMagic;
+    cmd.type = CMD_NOTIFY;
+    cmd.notification.signal = signal;
+
+    cmd_pusher_.Push(cmd);
+  }
+
  private:
   StrategyIdType strategy_id_;
   RedisTraderCmdPusher cmd_pusher_;

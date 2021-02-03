@@ -11,7 +11,7 @@
 
 #include "trading_server/datastruct/account.h"
 #include "trading_server/datastruct/constants.h"
-#include "trading_server/order_management/portfolio.h"
+#include "utils/portfolio.h"
 
 namespace ft {
 
