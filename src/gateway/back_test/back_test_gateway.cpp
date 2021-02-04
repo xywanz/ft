@@ -218,6 +218,10 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
                               order.volume, tick.ask[0]);
 
   Trade rsp{};
+  rsp.ticker_id = order.contract->ticker_id;
+  rsp.amount = price * order.volume;
+  rsp.direction = order.direction;
+  rsp.offset = order.offset;
   rsp.order_id = order.order_id;
   rsp.volume = order.volume;
   rsp.price = price;
