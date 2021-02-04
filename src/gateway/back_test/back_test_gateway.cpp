@@ -84,13 +84,12 @@ bool BackTestGateway::SendOrder(const OrderRequest& order, uint64_t* privdata_pt
   msg_queue_.push(OrderAcceptance{order.order_id});
 
   auto& tick = get_current_tick(order.contract->ticker_id);
-  if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
-      (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-    UpdateTraded(order, tick);
-  } else if (order.type == OrderType::kLimit) {
-    ctx_.pending_orders[order.contract->ticker_id].emplace_back(order);
-  } else {
-    UpdateCanceled(order);
+  if (!MatchOrder(order, tick)) {
+    if (order.type == OrderType::kLimit) {
+      ctx_.pending_orders[order.contract->ticker_id].emplace_back(order);
+    } else {
+      UpdateCanceled(order);
+    }
   }
 
   *privdata_ptr = order.contract->ticker_id;
@@ -186,13 +185,20 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
   return true;
 }
 
-void BackTestGateway::UpdateContextWithNewTick(const TickData& tick) {
+bool BackTestGateway::MatchOrder(const OrderRequest& order, const TickData& tick) {
+  if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
+      (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
+    UpdateTraded(order, tick);
+    return true;
+  }
+  return false;
+}
+
+void BackTestGateway::MatchOrders(const TickData& tick) {
   auto& pending_list = ctx_.pending_orders[tick.ticker_id];
   for (auto iter = pending_list.begin(); iter != pending_list.end();) {
     auto& order = *iter;
-    if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
-        (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-      UpdateTraded(order, tick);
+    if (MatchOrder(order, tick)) {
       iter = pending_list.erase(iter);
     } else {
       ++iter;

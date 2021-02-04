@@ -44,7 +44,7 @@ class BackTestGateway : public Gateway {
   }
   void operator()(TickData& tick) {
     current_ticks_[tick.ticker_id] = tick;
-    UpdateContextWithNewTick(tick);
+    MatchOrders(tick);
     oms_->OnTick(&tick);
   }
 
@@ -52,7 +52,8 @@ class BackTestGateway : public Gateway {
   bool CheckOrder(const OrderRequest& order) const;
   bool CheckAndUpdateContext(const OrderRequest& order);
 
-  void UpdateContextWithNewTick(const TickData& tick);
+  bool MatchOrder(const OrderRequest& order, const TickData& tick);
+  void MatchOrders(const TickData& tick);
 
   void UpdateTraded(const OrderRequest& order, const TickData& tick);
   void UpdateCanceled(const OrderRequest& order);
