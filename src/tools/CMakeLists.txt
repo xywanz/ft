@@ -1,12 +1,12 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-set(XTP_LIB_PATH ${CMAKE_SOURCE_DIR}/third_party/XTP_API_1.1.19.2_20190627/bin)
+set(XTP_LIB_PATH ${CMAKE_SOURCE_DIR}/third_party/xtp)
 include_directories(${XTP_LIB_PATH}/include)
-link_directories(${XTP_LIB_PATH}/linux_centos7)
+link_directories(${XTP_LIB_PATH}/lib/linux_centos7)
 
-set(CTP_LIB_PATH ${CMAKE_SOURCE_DIR}/third_party/v6.3.15_20190220_api_tradeapi_se_linux64)
-include_directories(${CTP_LIB_PATH})
-link_directories(${CTP_LIB_PATH})
+set(CTP_LIB_PATH ${CMAKE_SOURCE_DIR}/third_party/ctp)
+include_directories(${CTP_LIB_PATH}/include)
+link_directories(${CTP_LIB_PATH}/lib)
 
 add_executable(contract-collector contract_collector.cpp)
 target_link_libraries(contract-collector thosttraderapi_se utils dl)
