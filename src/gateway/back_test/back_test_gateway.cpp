@@ -132,7 +132,7 @@ bool BackTestGateway::QueryAccount(Account* result) {
 
 bool BackTestGateway::QueryTradeList(std::vector<Trade>* result) { return true; }
 
-void BackTestGateway::Notify(uint64_t signal) {
+void BackTestGateway::OnNotify(uint64_t signal) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (current_tick_pos_ >= history_data_.size()) {
     spdlog::info("backtest finished");

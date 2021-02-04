@@ -33,7 +33,7 @@ class BackTestGateway : public Gateway {
   bool QueryAccount(Account* result) override;
   bool QueryTradeList(std::vector<Trade>* result) override;
 
-  void Notify(uint64_t signal) override;
+  void OnNotify(uint64_t signal) override;
 
   void operator()(OrderAcceptance& acceptance) { oms_->OnOrderAccepted(&acceptance); }
   void operator()(OrderRejection& rejection) { oms_->OnOrderRejected(&rejection); }

@@ -277,7 +277,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
     }
     case CMD_NOTIFY: {
       spdlog::debug("notify");
-      gateway_->Notify(cmd.notification.signal);
+      gateway_->OnNotify(cmd.notification.signal);
       break;
     }
     default: {
