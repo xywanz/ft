@@ -13,27 +13,44 @@ class GridStrategy : public ft::Strategy {
   }
 
   void OnTick(const ft::TickData& tick) override {
-    if (last_grid_price_ < 1e-6) last_grid_price_ = tick.last_price;
+    if (tick.last_price < 1e-6) {
+      return;
+    }
+
+    if (last_grid_price_ < 1e-6) {
+      last_grid_price_ = tick.last_price;
+    }
 
     const auto pos = get_position(ticker_);
     const auto& lp = pos.long_pos;
     const auto& sp = pos.short_pos;
 
-    // buy_open(ticker_, trade_volume_each_, tick.ask[0]);
-
     spdlog::info(
-        "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, "
-        "short: {}, trades: {}",
+        "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
         tick.last_price, last_grid_price_, lp.holdings, sp.holdings, trade_counts_);
 
-    if (tick.last_price - last_grid_price_ > grid_height_ - 1e-6) {
-      SellOpen(ticker_, trade_volume_each_, tick.bid[0]);
+    if (tick.last_price - last_grid_price_ > grid_height_) {
+      int vol_to_close = std::min(lp.holdings, trade_volume_each_);
+      int vol_to_open = std::max(0, trade_volume_each_ - vol_to_close);
+      if (vol_to_close > 0) {
+        SellClose(ticker_, vol_to_close, tick.bid[0]);
+      }
+      if (vol_to_open > 0) {
+        SellOpen(ticker_, vol_to_open, tick.bid[0]);
+      }
       spdlog::info("[GRID] SELL VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    trade_volume_each_, tick.bid[0], tick.last_price, last_grid_price_);
       last_grid_price_ = tick.last_price;
       ++trade_counts_;
-    } else if (tick.last_price - last_grid_price_ < -grid_height_ + 1e-6) {
-      BuyOpen(ticker_, trade_volume_each_, tick.ask[0]);
+    } else if (tick.last_price - last_grid_price_ < -grid_height_) {
+      int vol_to_close = std::min(sp.holdings, trade_volume_each_);
+      int vol_to_open = std::max(0, trade_volume_each_ - vol_to_close);
+      if (vol_to_close > 0) {
+        BuyClose(ticker_, vol_to_close, tick.ask[0]);
+      }
+      if (vol_to_open > 0) {
+        BuyOpen(ticker_, vol_to_open, tick.ask[0]);
+      }
       spdlog::info("[GRID] BUY VOLUME: {}, PRICE: {:.2f}, LAST:{:.2f}, PREV: {:.2f}",
                    trade_volume_each_, tick.ask[0], tick.last_price, last_grid_price_);
       last_grid_price_ = tick.last_price;
