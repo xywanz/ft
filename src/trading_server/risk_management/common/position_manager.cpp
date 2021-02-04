@@ -20,19 +20,19 @@ int PositionManager::CheckOrderRequest(const Order* order) {
   auto* req = &order->req;
   if (IsOffsetClose(req->offset)) {
     int available = 0;
-    auto pos = const_cast<const Portfolio*>(portfolio_)->get_position(req->contract->ticker_id);
+    auto pos = portfolio_->get_position(req->contract->ticker_id);
 
     if (pos) {
-      auto& detail =
-          (OppositeDirection(req->direction) == Direction::kBuy ? pos->long_pos : pos->short_pos);
+      auto& detail = (req->direction == Direction::kBuy ? pos->short_pos : pos->long_pos);
       available = detail.holdings - detail.close_pending;
     }
 
     if (available < req->volume) {
       spdlog::error(
           "[PositionManager::CheckOrderRequest] Not enough volume to Close. "
-          "Available: {}, OrderVolume: {}",
-          available, req->volume);
+          "Available: {}, OrderVolume: {}, OrderType: {}, {}{}",
+          available, req->volume, OrderTypeToStr(req->type), DirectionToStr(req->direction),
+          OffsetToStr(req->offset));
       return ERR_POSITION_NOT_ENOUGH;
     }
   }
