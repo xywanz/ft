@@ -19,9 +19,8 @@ enum class MarketDataSource : uint8_t {
 struct TickData {
   MarketDataSource source;
   uint32_t ticker_id;
-  uint64_t date;
-  uint64_t time_sec;
-  uint64_t time_ms;
+  char date[12];     // YYYYmmdd，以\0结尾的字符串
+  uint64_t time_us;  // 从当日0点开始计算的微秒数
 
   double last_price = 0;
   double open_price = 0;

@@ -4,6 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <fstream>
 
 namespace ft {
@@ -42,11 +43,17 @@ bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config
       spdlog::error("BackTestGateway: invalid tick file {}");
       exit(1);
     }
-    history_data_.emplace_back();
+    history_data_.emplace_back(TickData{});
+
     auto& tick = history_data_.back();
-    // tick.time_sec = xxx;
-    // tick.time_ms = xxx;
-    // tick.date = xxx;
+    struct tm _tm;
+    strptime(tokens[0].data() + 11, "%H:%M:%S", &_tm);
+    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600) * 1000000 +
+                   std::stoul(tokens[0].data() + 20) * 1000;
+    std::copy(tokens[0].data(), tokens[0].data() + 4, tick.date);
+    std::copy(tokens[0].data() + 5, tokens[0].data() + 7, tick.date + 4);
+    std::copy(tokens[0].data() + 8, tokens[0].data() + 10, tick.date + 6);
+
     tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
     tick.level = 1;
     tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
