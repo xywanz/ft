@@ -21,10 +21,10 @@ bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config
   oms_ = oms;
 
   ctx_.account.account_id = std::stoul(config.investor_id);
-  ctx_.account.cash = 10000000;
+  ctx_.account.cash = 10000000.0;
   ctx_.account.total_asset = ctx_.account.cash;
-  ctx_.account.frozen = 0;
-  ctx_.account.margin = 0;
+  ctx_.account.frozen = 0.0;
+  ctx_.account.margin = 0.0;
 
   ctx_.portfolio.Init(ContractTable::size(), false);
 
@@ -125,6 +125,8 @@ bool BackTestGateway::QueryPosition(const std::string& ticker, Position* result)
 bool BackTestGateway::QueryPositionList(std::vector<Position>* result) { return true; }
 
 bool BackTestGateway::QueryAccount(Account* result) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  UpdateAccount();
   *result = ctx_.account;
   return true;
 }
@@ -165,17 +167,24 @@ bool BackTestGateway::CheckOrder(const OrderRequest& order) const {
 }
 
 bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
-  if (order.offset == Offset::kOpen) {
-    double fund_needed = order.price * order.volume;
+  if (IsOffsetOpen(order.offset)) {
+    double fund_needed = order.contract->size * order.volume * order.price;
     if (ctx_.account.cash < fund_needed) {
+      spdlog::error("BackTestGateway::CheckAndUpdateContext: 资金不足");
       return false;
     }
     ctx_.account.cash -= fund_needed;
     ctx_.account.frozen += fund_needed;
   } else {
+    int available = 0;
     const auto* pos = ctx_.portfolio.get_position(order.contract->ticker_id);
-    const auto& detail = order.direction == Direction::kSell ? pos->long_pos : pos->short_pos;
-    if (detail.holdings - detail.close_pending < order.volume) {
+    if (pos) {
+      const auto& detail = order.direction == Direction::kSell ? pos->long_pos : pos->short_pos;
+      available = detail.holdings - detail.close_pending;
+    }
+
+    if (available < order.volume) {
+      spdlog::error("BackTestGateway::CheckAndUpdateContext: 仓位不足");
       return false;
     }
   }
@@ -183,6 +192,75 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
   ctx_.portfolio.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
                                order.volume);
   return true;
+}
+
+void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& tick) {
+  double price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
+
+  if (IsOffsetOpen(order.offset)) {
+    double fund_returned = order.contract->size * order.volume * order.price;
+    double cost = order.contract->size * order.volume * price;
+    ctx_.account.frozen -= fund_returned;
+    ctx_.account.cash += fund_returned;
+    ctx_.account.margin += cost;
+    ctx_.account.cash -= cost;
+  } else {
+    UpdateAccount(tick);
+    auto* pos = ctx_.portfolio.get_position(order.contract->ticker_id);
+    if (!pos) {
+      abort();
+    }
+
+    auto& pos_detail = order.direction == Direction::kSell ? pos->long_pos : pos->short_pos;
+    double fund_returned =
+        pos_detail.float_pnl + pos_detail.holdings * pos_detail.cost_price * order.contract->size;
+
+    fund_returned *= (static_cast<double>(order.volume) / pos_detail.holdings);
+    ctx_.account.margin -= fund_returned;
+    ctx_.account.cash += fund_returned;
+  }
+
+  ctx_.portfolio.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
+                              order.volume, price);
+
+  Trade rsp{};
+  rsp.ticker_id = order.contract->ticker_id;
+  rsp.amount = price * order.volume * order.contract->size;
+  rsp.direction = order.direction;
+  rsp.offset = order.offset;
+  rsp.order_id = order.order_id;
+  rsp.volume = order.volume;
+  rsp.price = price;
+  rsp.trade_type = TradeType::kSecondaryMarket;
+  msg_queue_.push(rsp);
+}
+
+void BackTestGateway::UpdateCanceled(const OrderRequest& order) {
+  if (IsOffsetOpen(order.offset)) {
+    double fund_returned = order.contract->size * order.volume * order.price;
+    ctx_.account.frozen -= fund_returned;
+    ctx_.account.cash += fund_returned;
+  }
+  ctx_.portfolio.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
+                               -order.volume);
+  msg_queue_.push(OrderCancellation{order.order_id, order.volume});
+}
+
+void BackTestGateway::UpdatePnl(const TickData& tick) {
+  ctx_.portfolio.UpdateFloatPnl(tick.ticker_id, tick.bid[0], tick.ask[0]);
+}
+
+void BackTestGateway::UpdateAccount(const TickData& tick) {
+  UpdatePnl(tick);
+  ctx_.account.margin = ctx_.portfolio.total_assets();
+  ctx_.account.total_asset = ctx_.account.cash + ctx_.account.margin + ctx_.account.frozen;
+}
+
+void BackTestGateway::UpdateAccount() {
+  for (const auto& [ticker_id, tick] : current_ticks_) {
+    UNUSED(ticker_id);
+    UpdateAccount(tick);
+  }
 }
 
 bool BackTestGateway::MatchOrder(const OrderRequest& order, const TickData& tick) {
@@ -204,46 +282,6 @@ void BackTestGateway::MatchOrders(const TickData& tick) {
       ++iter;
     }
   }
-}
-
-void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& tick) {
-  double price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
-  if (order.offset == Offset::kOpen) {
-    double fund_returned = order.volume * order.price;
-    double cost = order.volume * price;
-    ctx_.account.frozen -= fund_returned;
-    ctx_.account.cash += fund_returned;
-    ctx_.account.margin += cost;  // TODO(Kevin): margin计算不正确，需要根据tick数据实时更新
-    ctx_.account.cash -= cost;
-  } else {
-    double fund_returned = order.volume * price;
-    ctx_.account.margin -= fund_returned;
-    ctx_.account.cash += fund_returned;
-  }
-  ctx_.portfolio.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
-                              order.volume, tick.ask[0]);
-
-  Trade rsp{};
-  rsp.ticker_id = order.contract->ticker_id;
-  rsp.amount = price * order.volume;
-  rsp.direction = order.direction;
-  rsp.offset = order.offset;
-  rsp.order_id = order.order_id;
-  rsp.volume = order.volume;
-  rsp.price = price;
-  rsp.trade_type = TradeType::kSecondaryMarket;
-  msg_queue_.push(rsp);
-}
-
-void BackTestGateway::UpdateCanceled(const OrderRequest& order) {
-  if (order.offset == Offset::kOpen) {
-    double fund_returned = order.volume * order.price;
-    ctx_.account.frozen -= fund_returned;
-    ctx_.account.cash += fund_returned;
-  }
-  ctx_.portfolio.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
-                               -order.volume);
-  msg_queue_.push(OrderCancellation{order.order_id, order.volume});
 }
 
 void BackTestGateway::BackgroudTask() {

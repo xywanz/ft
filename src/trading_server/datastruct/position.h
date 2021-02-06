@@ -25,8 +25,8 @@ struct PositionDetail {
 
 struct Position {
   uint32_t ticker_id = 0;
-  PositionDetail long_pos;
-  PositionDetail short_pos;
+  PositionDetail long_pos{};
+  PositionDetail short_pos{};
 };
 
 inline std::string DumpPosition(const Position& pos) {

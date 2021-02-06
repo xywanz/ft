@@ -52,11 +52,14 @@ class BackTestGateway : public Gateway {
   bool CheckOrder(const OrderRequest& order) const;
   bool CheckAndUpdateContext(const OrderRequest& order);
 
-  bool MatchOrder(const OrderRequest& order, const TickData& tick);
-  void MatchOrders(const TickData& tick);
-
   void UpdateTraded(const OrderRequest& order, const TickData& tick);
   void UpdateCanceled(const OrderRequest& order);
+  void UpdatePnl(const TickData& tick);
+  void UpdateAccount(const TickData& tick);
+  void UpdateAccount();
+
+  bool MatchOrder(const OrderRequest& order, const TickData& tick);
+  void MatchOrders(const TickData& tick);
 
   void BackgroudTask();
 

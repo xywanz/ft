@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "trading_server/datastruct/position.h"
@@ -30,15 +31,20 @@ class Portfolio {
 
   void UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire);
 
-  void UpdateFloatPnl(uint32_t ticker_id, double last_price);
+  void UpdateFloatPnl(uint32_t ticker_id, double bid, double ask);
 
   void UpdateOnQueryTrade(uint32_t ticker_id, Direction direction, Offset offset,
                           int closed_volume);
 
   const Position* get_position(uint32_t ticker_id) const {
-    if (ticker_id == 0 || ticker_id >= positions_.size()) return nullptr;
-    return &positions_[ticker_id];
+    auto iter = positions_.find(ticker_id);
+    if (iter == positions_.end()) {
+      return nullptr;
+    }
+    return &iter->second;
   }
+
+  double total_assets() const;
 
  private:
   void UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, Offset offset, int changed);
@@ -51,7 +57,7 @@ class Portfolio {
   void UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded);
 
  private:
-  std::vector<Position> positions_;
+  std::unordered_map<uint32_t, Position> positions_;
   std::unique_ptr<RedisPositionSetter> redis_;
 };
 

@@ -19,10 +19,6 @@ void Portfolio::Init(uint32_t max_ticker_id, bool sync_to_redis, uint64_t accoun
     redis_->set_account(account);
     redis_->Clear();
   }
-
-  positions_.resize(max_ticker_id + 1);
-  uint32_t ticker_id = 0;
-  for (auto& pos : positions_) pos.ticker_id = ticker_id++;
 }
 
 void Portfolio::set_position(const Position& pos) {
@@ -51,6 +47,7 @@ void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, 
   if (is_close) direction = OppositeDirection(direction);
 
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   auto& pos_detail = direction == Direction::kBuy ? pos.long_pos : pos.short_pos;
   if (is_close)
     pos_detail.close_pending += changed;
@@ -79,6 +76,7 @@ void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, 
 void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction,
                                               int changed) {
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
 
   if (direction == Direction::kPurchase) {
@@ -123,6 +121,7 @@ void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset 
   if (is_close) direction = OppositeDirection(direction);
 
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   auto& pos_detail = direction == Direction::kBuy ? pos.long_pos : pos.short_pos;
 
   if (is_close) {
@@ -173,7 +172,8 @@ void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset 
   }
 
   if (pos_detail.holdings == 0) {
-    pos_detail.cost_price = 0;
+    pos_detail.cost_price = 0.0;
+    pos_detail.float_pnl = 0.0;
   }
 
   if (redis_) redis_->set(contract->ticker, pos);
@@ -181,6 +181,7 @@ void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset 
 
 void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded) {
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
 
   if (direction == Direction::kPurchase) {
@@ -212,6 +213,7 @@ void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, 
 
 void Portfolio::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire) {
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
 
   if (acquire) {
@@ -233,18 +235,25 @@ void Portfolio::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquir
   }
 }
 
-void Portfolio::UpdateFloatPnl(uint32_t ticker_id, double last_price) {
+void Portfolio::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
   auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
   if (pos.long_pos.holdings > 0 || pos.short_pos.holdings > 0) {
     const auto* contract = ContractTable::get_by_index(ticker_id);
-    if (!contract || contract->size <= 0) return;
+    if (!contract || contract->size <= 0) {
+      return;
+    }
 
     auto& lp = pos.long_pos;
     auto& sp = pos.short_pos;
 
-    if (lp.holdings > 0) lp.float_pnl = lp.holdings * contract->size * (last_price - lp.cost_price);
+    if (lp.holdings > 0 && ask > 0.0) {
+      lp.float_pnl = lp.holdings * contract->size * (ask - lp.cost_price);
+    }
 
-    if (sp.holdings > 0) sp.float_pnl = sp.holdings * contract->size * (sp.cost_price - last_price);
+    if (sp.holdings > 0 && bid > 0.0) {
+      sp.float_pnl = sp.holdings * contract->size * (sp.cost_price - bid);
+    }
 
     if (redis_) {
       if (lp.holdings > 0 || sp.holdings > 0) {
@@ -263,6 +272,32 @@ void Portfolio::UpdateOnQueryTrade(uint32_t ticker_id, Direction direction, Offs
   // if (!contract) return;
 
   // redis_.set(proto_.pos_key(contract->ticker), pos, sizeof(*pos));
+}
+
+double Portfolio::total_assets() const {
+  double value = 0.0;
+
+  for (auto& [ticker_id, pos] : positions_) {
+    const auto* contract = ContractTable::get_by_index(ticker_id);
+    if (!contract || contract->size <= 0) {
+      spdlog::error("Portfolio::total_assets: contract not found. {}", ticker_id);
+      return 0.0;
+    }
+
+    UNUSED(ticker_id);
+    auto& lp = pos.long_pos;
+    auto& sp = pos.short_pos;
+
+    if (lp.holdings > 0) {
+      value += lp.holdings * contract->size * lp.cost_price + lp.float_pnl;
+    }
+
+    if (sp.holdings > 0) {
+      value += sp.holdings * contract->size * sp.cost_price + sp.float_pnl;
+    }
+  }
+
+  return value;
 }
 
 }  // namespace ft
