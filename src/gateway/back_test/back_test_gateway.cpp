@@ -29,49 +29,9 @@ bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config
 
   ctx_.portfolio.Init(ContractTable::size(), false);
 
-  std::ifstream tick_ifs(config.arg0);
-  if (!tick_ifs) {
-    spdlog::error("BackTestGateway: tick file not found {}", config.arg0);
+  if (!LoadHistoryData(config.arg0)) {
+    spdlog::error("failed to load history data");
     return false;
-  }
-  std::string line;
-  std::vector<std::string> tokens;
-  std::getline(tick_ifs, line);
-  while (std::getline(tick_ifs, line)) {
-    StringSplit(line, ",", &tokens, false);
-    if (tokens.size() != 15) {
-      spdlog::error("BackTestGateway: invalid tick file {}");
-      exit(1);
-    }
-    history_data_.emplace_back(TickData{});
-
-    auto& tick = history_data_.back();
-    struct tm _tm;
-    strptime(tokens[0].data() + 11, "%H:%M:%S", &_tm);
-    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600) * 1000000 +
-                   std::stoul(tokens[0].data() + 20) * 1000;
-    std::copy(tokens[0].data(), tokens[0].data() + 4, tick.date);
-    std::copy(tokens[0].data() + 5, tokens[0].data() + 7, tick.date + 4);
-    std::copy(tokens[0].data() + 8, tokens[0].data() + 10, tick.date + 6);
-
-    tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
-    tick.level = 1;
-    tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
-    tick.ask_volume[0] = tokens[4].empty() ? 0 : std::stoi(tokens[4]);
-    tick.bid[0] = tokens[5].empty() ? 0.0 : std::stoi(tokens[5]);
-    tick.bid_volume[0] = tokens[6].empty() ? 0 : std::stoi(tokens[6]);
-    tick.highest_price = tokens[7].empty() ? 0.0 : std::stod(tokens[7]);
-    tick.lowest_price = tokens[8].empty() ? 0.0 : std::stod(tokens[8]);
-    tick.volume = tokens[9].empty() ? 0 : std::stoul(tokens[9]);
-    tick.open_interest = tokens[11].empty() ? 0 : std::stoul(tokens[11]);
-    auto* contract = ContractTable::get_by_ticker(tokens[13]);
-    if (!contract) {
-      spdlog::error("BackTestGateway: ticker {} not found", tokens[13]);
-      exit(1);
-    }
-    tick.ticker_id = contract->ticker_id;
-
-    tokens.clear();
   }
 
   std::thread([this] { BackgroudTask(); }).detach();
@@ -148,6 +108,55 @@ void BackTestGateway::OnNotify(uint64_t signal) {
   }
   msg_queue_.push(history_data_[current_tick_pos_++]);
   cv_.notify_one();
+}
+
+bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
+  std::ifstream tick_ifs(history_data_file);
+  if (!tick_ifs) {
+    spdlog::error("BackTestGateway: tick file not found {}", history_data_file);
+    return false;
+  }
+  std::string line;
+  std::vector<std::string> tokens;
+  std::getline(tick_ifs, line);
+  while (std::getline(tick_ifs, line)) {
+    StringSplit(line, ",", &tokens, false);
+    if (tokens.size() != 15) {
+      spdlog::error("BackTestGateway: invalid tick file {}");
+      exit(1);
+    }
+    history_data_.emplace_back(TickData{});
+
+    auto& tick = history_data_.back();
+    struct tm _tm;
+    strptime(tokens[0].data() + 11, "%H:%M:%S", &_tm);
+    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600) * 1000000 +
+                   std::stoul(tokens[0].data() + 20) * 1000;
+    std::copy(tokens[0].data(), tokens[0].data() + 4, tick.date);
+    std::copy(tokens[0].data() + 5, tokens[0].data() + 7, tick.date + 4);
+    std::copy(tokens[0].data() + 8, tokens[0].data() + 10, tick.date + 6);
+
+    tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
+    tick.level = 1;
+    tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
+    tick.ask_volume[0] = tokens[4].empty() ? 0 : std::stoi(tokens[4]);
+    tick.bid[0] = tokens[5].empty() ? 0.0 : std::stoi(tokens[5]);
+    tick.bid_volume[0] = tokens[6].empty() ? 0 : std::stoi(tokens[6]);
+    tick.highest_price = tokens[7].empty() ? 0.0 : std::stod(tokens[7]);
+    tick.lowest_price = tokens[8].empty() ? 0.0 : std::stod(tokens[8]);
+    tick.volume = tokens[9].empty() ? 0 : std::stoul(tokens[9]);
+    tick.open_interest = tokens[11].empty() ? 0 : std::stoul(tokens[11]);
+    auto* contract = ContractTable::get_by_ticker(tokens[13]);
+    if (!contract) {
+      spdlog::error("BackTestGateway: ticker {} not found", tokens[13]);
+      exit(1);
+    }
+    tick.ticker_id = contract->ticker_id;
+
+    tokens.clear();
+  }
+
+  return true;
 }
 
 bool BackTestGateway::CheckOrder(const OrderRequest& order) const {

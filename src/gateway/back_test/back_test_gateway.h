@@ -49,6 +49,8 @@ class BackTestGateway : public Gateway {
   }
 
  private:
+  bool LoadHistoryData(const std::string& history_data_file);
+
   bool CheckOrder(const OrderRequest& order) const;
   bool CheckAndUpdateContext(const OrderRequest& order);
 
