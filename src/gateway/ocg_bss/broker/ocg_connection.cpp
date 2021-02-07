@@ -189,7 +189,8 @@ void OcgConnection::recv_and_parse_data() {
 
     if (pfd[1].revents != 0) {
       uint64_t tmp;
-      read(pfd[1].fd, &tmp, 8);
+      auto nread = read(pfd[1].fd, &tmp, 8);
+      (void)nread;
       if (!session_->periodically_check()) {
         return;
       }
