@@ -5,6 +5,8 @@
 #include <ThostFtdcTraderApi.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
+
 #include "utils/misc.h"
 
 namespace ft {
@@ -363,10 +365,14 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   assert(contract);
 
   Trade rsp{};
+  rsp.ticker_id = contract->ticker_id;
   rsp.order_id = get_order_id(std::stoul(trade->OrderRef));
   rsp.volume = trade->Volume;
   rsp.price = trade->Price;
+  rsp.direction = direction(trade->Direction);
+  rsp.offset = offset(trade->OffsetFlag);
   rsp.trade_type = TradeType::kSecondaryMarket;
+  rsp.trade_time = GetCtpTradeTime(trade);
   oms_->OnOrderTraded(&rsp);
 }
 

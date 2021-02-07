@@ -39,6 +39,8 @@ struct Trade {
   int volume;
   double price;
   double amount;
+
+  uint64_t trade_time;  // YYYYmmddHHMMSSsss
 };
 
 }  // namespace ft

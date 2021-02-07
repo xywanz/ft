@@ -211,6 +211,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
   rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;
+  rsp.trade_time = trade_info->trade_time;
   oms_->OnOrderTraded(&rsp);
 }
 
