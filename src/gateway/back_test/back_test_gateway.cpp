@@ -2,12 +2,38 @@
 
 #include "gateway/back_test/back_test_gateway.h"
 
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <fstream>
 
 namespace ft {
+
+namespace {
+
+uint64_t GetTradeTime(const TickData& tick) {
+  uint64_t trade_time = 0;
+  trade_time += (tick.date[0] - '0') * 10000000000000000UL;
+  trade_time += (tick.date[1] - '0') * 1000000000000000UL;
+  trade_time += (tick.date[2] - '0') * 100000000000000UL;
+  trade_time += (tick.date[3] - '0') * 10000000000000UL;
+  trade_time += (tick.date[4] - '0') * 1000000000000UL;
+  trade_time += (tick.date[5] - '0') * 100000000000UL;
+  trade_time += (tick.date[6] - '0') * 10000000000UL;
+  trade_time += (tick.date[7] - '0') * 1000000000UL;
+
+  trade_time += ((tick.time_us) / 1000) % 1000;
+
+  uint64_t current_sec = tick.time_us / 1000000;
+  trade_time += (current_sec % 60) * 1000;
+  trade_time += ((current_sec % 3600) / 60) * 100000;
+  trade_time += (current_sec / 3600) * 10000000;
+
+  return trade_time;
+}
+
+}  // namespace
 
 bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
   if (!ContractTable::is_inited()) {
@@ -130,8 +156,8 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
     auto& tick = history_data_.back();
     struct tm _tm;
     strptime(tokens[0].data() + 11, "%H:%M:%S", &_tm);
-    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600) * 1000000 +
-                   std::stoul(tokens[0].data() + 20) * 1000;
+    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60UL + _tm.tm_hour * 3600UL) * 1000000UL +
+                   std::stoul(tokens[0].data() + 20) * 1000UL;
     std::copy(tokens[0].data(), tokens[0].data() + 4, tick.date);
     std::copy(tokens[0].data() + 5, tokens[0].data() + 7, tick.date + 4);
     std::copy(tokens[0].data() + 8, tokens[0].data() + 10, tick.date + 6);
@@ -239,16 +265,17 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
   ctx_.portfolio.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
                               order.volume, price);
 
-  Trade rsp{};
-  rsp.ticker_id = order.contract->ticker_id;
-  rsp.amount = price * order.volume * order.contract->size;
-  rsp.direction = order.direction;
-  rsp.offset = order.offset;
-  rsp.order_id = order.order_id;
-  rsp.volume = order.volume;
-  rsp.price = price;
-  rsp.trade_type = TradeType::kSecondaryMarket;
-  msg_queue_.push(rsp);
+  Trade trade{};
+  trade.ticker_id = order.contract->ticker_id;
+  trade.amount = price * order.volume * order.contract->size;
+  trade.direction = order.direction;
+  trade.offset = order.offset;
+  trade.order_id = order.order_id;
+  trade.volume = order.volume;
+  trade.price = price;
+  trade.trade_type = TradeType::kSecondaryMarket;
+  trade.trade_time = GetTradeTime(tick);
+  msg_queue_.push(trade);
 }
 
 void BackTestGateway::UpdateCanceled(const OrderRequest& order) {

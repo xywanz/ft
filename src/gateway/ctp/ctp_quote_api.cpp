@@ -181,8 +181,8 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
 
   struct tm _tm;
   strptime(md->UpdateTime, "%H:%M:%S", &_tm);
-  tick.time_us =
-      (_tm.tm_sec + _tm.tm_min * 60 + _tm.tm_hour * 3600) * 1000000 + md->UpdateMillisec * 1000;
+  tick.time_us = (_tm.tm_sec + _tm.tm_min * 60UL + _tm.tm_hour * 3600UL) * 1000000UL +
+                 md->UpdateMillisec * 1000UL;
   time_t local_time;
   strftime(tick.date, sizeof(tick.date), "%Y%m%d", localtime(&local_time));
 
