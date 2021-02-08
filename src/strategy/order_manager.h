@@ -5,7 +5,7 @@
 
 #include <unordered_map>
 
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
 #include "utils/misc.h"
 
 namespace ft {

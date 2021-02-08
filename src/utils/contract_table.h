@@ -11,8 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include "trading_server/datastruct/constants.h"
-#include "trading_server/datastruct/contract.h"
+#include "protocol/data_types.h"
 #include "utils/string_utils.h"
 
 namespace ft {

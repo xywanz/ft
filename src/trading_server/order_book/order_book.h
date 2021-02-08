@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "trading_server/datastruct/tick_data.h"
+#include "protocol/data_types.h"
 #include "trading_server/order_book/limit_order.h"
 #include "trading_server/order_book/price_level.h"
 

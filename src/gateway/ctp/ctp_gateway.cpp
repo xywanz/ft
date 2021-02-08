@@ -6,7 +6,7 @@
 #include <ThostFtdcTraderApi.h>
 #include <spdlog/spdlog.h>
 
-#include "trading_server/datastruct/constants.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 
 namespace ft {

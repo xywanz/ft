@@ -6,14 +6,15 @@
 #include <map>
 #include <string>
 
-#include "trading_server/datastruct/account.h"
-#include "trading_server/datastruct/config.h"
-#include "trading_server/datastruct/error_code.h"
-#include "trading_server/datastruct/md_snapshot.h"
-#include "trading_server/datastruct/order.h"
+#include "protocol/data_types.h"
+#include "protocol/error_code.h"
+#include "trading_server/common/config.h"
+#include "trading_server/common/md_snapshot.h"
+#include "trading_server/common/order.h"
 #include "trading_server/order_management/base_oms.h"
 #include "trading_server/risk_management/types.h"
 #include "utils/portfolio.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 

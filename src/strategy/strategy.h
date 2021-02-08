@@ -7,12 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "protocol/data_types.h"
 #include "strategy/order_sender.h"
-#include "trading_server/datastruct/constants.h"
-#include "trading_server/datastruct/contract.h"
-#include "trading_server/datastruct/position.h"
-#include "trading_server/datastruct/protocol.h"
-#include "trading_server/datastruct/tick_data.h"
 #include "utils/contract_table.h"
 #include "utils/redis.h"
 #include "utils/redis_md_helper.h"

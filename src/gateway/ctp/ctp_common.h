@@ -13,10 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/account.h"
-#include "trading_server/datastruct/constants.h"
-#include "trading_server/datastruct/contract.h"
-#include "trading_server/datastruct/position.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 
 namespace ft {

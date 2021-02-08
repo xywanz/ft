@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/tick_data.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 #include "utils/redis.h"
 

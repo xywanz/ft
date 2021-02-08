@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 
 #include "utils/contract_table.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 
@@ -31,8 +32,8 @@ int PositionManager::CheckOrderRequest(const Order* order) {
       spdlog::error(
           "[PositionManager::CheckOrderRequest] Not enough volume to Close. "
           "Available: {}, OrderVolume: {}, OrderType: {}, {}{}",
-          available, req->volume, OrderTypeToStr(req->type), DirectionToStr(req->direction),
-          OffsetToStr(req->offset));
+          available, req->volume, ToString(req->type), ToString(req->direction),
+          ToString(req->offset));
       return ERR_POSITION_NOT_ENOUGH;
     }
   }

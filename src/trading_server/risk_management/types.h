@@ -5,7 +5,7 @@
 
 #include <unordered_map>
 
-#include "trading_server/datastruct/order.h"
+#include "trading_server/common/order.h"
 
 namespace ft {
 

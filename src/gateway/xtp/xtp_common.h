@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "trading_server/datastruct/constants.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 
@@ -29,17 +29,17 @@ inline bool is_error_rsp(XTPRI* error_info) { return error_info && error_info->e
 
 inline std::string ft_exchange_type(XTP_EXCHANGE_TYPE exchange) {
   if (exchange == XTP_EXCHANGE_SH)
-    return SSE;
+    return exchange::kSSE;
   else if (exchange == XTP_EXCHANGE_SZ)
-    return SZE;
+    return exchange::kSZE;
   else
     return "UNKNOWN";
 }
 
 inline XTP_MARKET_TYPE xtp_market_type(const std::string& type) {
-  if (type == SSE)
+  if (type == exchange::kSSE)
     return XTP_MKT_SH_A;
-  else if (type == SZE)
+  else if (type == exchange::kSZE)
     return XTP_MKT_SZ_A;
   else
     return XTP_MKT_UNKNOWN;

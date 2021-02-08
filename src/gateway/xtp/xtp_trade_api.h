@@ -12,14 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "gateway/gateway.h"
 #include "gateway/xtp/xtp_common.h"
-#include "trading_server/datastruct/account.h"
-#include "trading_server/datastruct/config.h"
-#include "trading_server/datastruct/order.h"
-#include "trading_server/datastruct/position.h"
-#include "trading_server/datastruct/protocol.h"
-#include "trading_server/datastruct/response.h"
-#include "trading_server/order_management/base_oms.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 

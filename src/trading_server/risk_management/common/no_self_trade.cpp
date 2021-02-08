@@ -4,6 +4,7 @@
 
 #include "utils/contract_table.h"
 #include "utils/misc.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 
@@ -34,9 +35,8 @@ int NoSelfTradeRule::CheckOrderRequest(const Order* order) {
           "[RiskMgr] Self trade! Ticker: {}. This Order: "
           "[Direction: {}, Type: {}, Price: {:.2f}]. "
           "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
-          contract->ticker, DirectionToStr(req->direction), OrderTypeToStr(req->type), req->price,
-          DirectionToStr(pending_order->direction), OrderTypeToStr(pending_order->type),
-          pending_order->price);
+          contract->ticker, ToString(req->direction), ToString(req->type), req->price,
+          ToString(pending_order->direction), ToString(pending_order->type), pending_order->price);
       return ERR_SELF_TRADE;
     }
   }

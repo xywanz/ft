@@ -77,9 +77,9 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   for (auto& ticker : subscribed_list_) {
     auto contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
-    if (contract->exchange == SSE)
+    if (contract->exchange == exchange::kSSE)
       sub_list_sh.emplace_back(const_cast<char*>(ticker.c_str()));
-    else if (contract->exchange == SZE)
+    else if (contract->exchange == exchange::kSZE)
       sub_list_sz.emplace_back(const_cast<char*>(ticker.c_str()));
   }
 

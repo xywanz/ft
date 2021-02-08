@@ -4,6 +4,7 @@
 
 #include "strategy/order_sender.h"
 #include "trading_server/risk_management/etf/etf_table.h"
+#include "utils/protocol_utils.h"
 #include "utils/redis.h"
 
 using namespace ft;
@@ -18,8 +19,8 @@ int wait_for_receipt(RedisSession* redis, int volume) {
         auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         auto contract = ContractTable::get_by_index(rsp->ticker_id);
         spdlog::info("rsp: {} {} {}{} {}/{} traded:{}, price:{:.3f} completed:{}",
-                     rsp->client_order_id, contract->ticker, DirectionToStr(rsp->direction),
-                     OffsetToStr(rsp->offset), rsp->traded_volume, rsp->original_volume,
+                     rsp->client_order_id, contract->ticker, ToString(rsp->direction),
+                     ToString(rsp->offset), rsp->traded_volume, rsp->original_volume,
                      rsp->this_traded, rsp->this_traded_price, rsp->completed);
         if (rsp->completed) return volume - rsp->traded_volume;
       }

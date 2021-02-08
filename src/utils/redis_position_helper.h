@@ -6,7 +6,7 @@
 #include <string>
 
 #include "fmt/format.h"
-#include "trading_server/datastruct/position.h"
+#include "protocol/data_types.h"
 #include "utils/redis.h"
 
 namespace ft {

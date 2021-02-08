@@ -1,15 +1,14 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_ORDER_MANAGEMENT_PORTFOLIO_H_
-#define FT_SRC_TRADING_SERVER_ORDER_MANAGEMENT_PORTFOLIO_H_
+#ifndef FT_SRC_TRADING_SERVER_UTILS_PORTFOLIO_H_
+#define FT_SRC_TRADING_SERVER_UTILS_PORTFOLIO_H_
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "trading_server/datastruct/position.h"
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
 #include "utils/redis_position_helper.h"
 
 namespace ft {
@@ -63,4 +62,4 @@ class Portfolio {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADING_SERVER_ORDER_MANAGEMENT_PORTFOLIO_H_
+#endif  // FT_SRC_TRADING_SERVER_UTILS_PORTFOLIO_H_

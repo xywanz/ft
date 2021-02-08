@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 #include "utils/redis.h"
 

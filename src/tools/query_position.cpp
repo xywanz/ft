@@ -2,6 +2,7 @@
 
 #include <getopt.hpp>
 
+#include "utils/protocol_utils.h"
 #include "utils/redis_position_helper.h"
 
 static void Usage() {

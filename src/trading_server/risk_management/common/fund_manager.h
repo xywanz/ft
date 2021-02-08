@@ -5,8 +5,8 @@
 
 #include <map>
 
-#include "trading_server/datastruct/account.h"
-#include "trading_server/datastruct/order.h"
+#include "protocol/data_types.h"
+#include "trading_server/common/order.h"
 #include "trading_server/risk_management/risk_rule.h"
 
 namespace ft {

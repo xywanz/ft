@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "trading_server/datastruct/all.h"
+#include "protocol/data_types.h"
 #include "trading_server/order_management/base_oms.h"
 #include "trading_server/risk_management/risk_rule.h"
 #include "trading_server/risk_management/types.h"

@@ -8,8 +8,8 @@
 
 #include "broker/session_config.h"
 #include "gateway/gateway.h"
+#include "protocol/data_types.h"
 #include "protocol/protocol.h"
-#include "trading_server/datastruct/account.h"
 
 namespace ft {
 

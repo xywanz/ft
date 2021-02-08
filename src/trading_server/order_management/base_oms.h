@@ -5,8 +5,7 @@
 
 #include <string>
 
-#include "trading_server/datastruct/response.h"
-#include "trading_server/datastruct/tick_data.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 

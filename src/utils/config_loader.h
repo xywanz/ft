@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/config.h"
+#include "trading_server/common/config.h"
 #include "utils/string_utils.h"
 
 namespace ft {

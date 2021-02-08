@@ -1,13 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_DATASTRUCT_MD_SNAPSHOT_H_
-#define FT_SRC_TRADING_SERVER_DATASTRUCT_MD_SNAPSHOT_H_
+#ifndef FT_SRC_TRADING_SERVER_COMMON_MD_SNAPSHOT_H_
+#define FT_SRC_TRADING_SERVER_COMMON_MD_SNAPSHOT_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/tick_data.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 
 namespace ft {
@@ -55,4 +55,4 @@ class MarketDataSnashot {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADING_SERVER_DATASTRUCT_MD_SNAPSHOT_H_
+#endif  // FT_SRC_TRADING_SERVER_COMMON_MD_SNAPSHOT_H_

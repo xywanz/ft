@@ -6,8 +6,9 @@
 
 #include <algorithm>
 
-#include "trading_server/datastruct/constants.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 

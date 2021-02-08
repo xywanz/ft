@@ -11,9 +11,8 @@
 #include <vector>
 
 #include "gateway/ctp/ctp_common.h"
-#include "trading_server/datastruct/config.h"
-#include "trading_server/datastruct/tick_data.h"
-#include "trading_server/order_management/base_oms.h"
+#include "gateway/gateway.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 

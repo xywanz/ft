@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "trading_server/datastruct/contract.h"
+#include "protocol/data_types.h"
 #include "trading_server/risk_management/etf/etf.h"
 #include "utils/contract_table.h"
 #include "utils/string_utils.h"

@@ -8,12 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "trading_server/datastruct/account.h"
-#include "trading_server/datastruct/config.h"
-#include "trading_server/datastruct/contract.h"
-#include "trading_server/datastruct/order.h"
-#include "trading_server/datastruct/position.h"
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
+#include "trading_server/common/config.h"
 #include "trading_server/order_management/base_oms.h"
 
 namespace ft {

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_DATASTRUCT_CONFIG_H_
-#define FT_SRC_TRADING_SERVER_DATASTRUCT_CONFIG_H_
+#ifndef FT_SRC_TRADING_SERVER_COMMON_CONFIG_H_
+#define FT_SRC_TRADING_SERVER_COMMON_CONFIG_H_
 
 #include <string>
 #include <vector>
@@ -43,4 +43,4 @@ struct Config {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADING_SERVER_DATASTRUCT_CONFIG_H_
+#endif  // FT_SRC_TRADING_SERVER_COMMON_CONFIG_H_

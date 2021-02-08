@@ -7,8 +7,8 @@
 
 #include <utility>
 
-#include "trading_server/datastruct/error_code.h"
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
+#include "protocol/error_code.h"
 #include "trading_server/risk_management/common/fund_manager.h"
 #include "trading_server/risk_management/common/no_self_trade.h"
 #include "trading_server/risk_management/common/position_manager.h"
@@ -19,6 +19,7 @@
 #include "utils/contract_table.h"
 #include "utils/lockfree-queue/queue.h"
 #include "utils/misc.h"
+#include "utils/protocol_utils.h"
 #include "utils/redis_trader_cmd_helper.h"
 
 namespace ft {
@@ -329,8 +330,8 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
     spdlog::error(
         "[OrderManagementSystem::SendOrder] Failed to SendOrder. {}, {}{}, {}, "
         "Volume:{}, Price:{:.3f}",
-        contract->ticker, DirectionToStr(req.direction), OffsetToStr(req.offset),
-        OrderTypeToStr(req.type), static_cast<int>(req.volume), static_cast<double>(req.price));
+        contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
+        static_cast<int>(req.volume), static_cast<double>(req.price));
 
     rms_->OnOrderRejected(&order, ERR_SEND_FAILED);
     return false;
@@ -342,8 +343,8 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   spdlog::debug(
       "[OrderManagementSystem::SendOrder] Success. {}, {}{}, {}, OrderID:{}, "
       "Volume:{}, Price: {:.3f}",
-      contract->ticker, DirectionToStr(req.direction), OffsetToStr(req.offset),
-      OrderTypeToStr(req.type), static_cast<uint64_t>(req.order_id), static_cast<int>(req.volume),
+      contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
+      static_cast<uint64_t>(req.order_id), static_cast<int>(req.volume),
       static_cast<double>(req.price));
   return true;
 }
@@ -377,14 +378,20 @@ void OrderManagementSystem::HandleAccount(Account* account) {
   account_ = *account;
   lock.unlock();
 
-  spdlog::info("[OrderManagementSystem::on_query_account] {}", DumpAccount(*account));
+  spdlog::info(
+      "[OrderManagementSystem::on_query_account] account_id:{} total_asset:{} cash:{} margin:{} "
+      "frozen:{}",
+      static_cast<uint64_t>(account->account_id), static_cast<double>(account->total_asset),
+      static_cast<double>(account->cash), static_cast<double>(account->margin),
+      static_cast<double>(account->frozen));
 }
 
 void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
     auto contract = ContractTable::get_by_index(position.ticker_id);
     if (!contract) {
-      spdlog::error("Cannot find contract with ticker_id={}", position.ticker_id);
+      spdlog::error("Cannot find contract with ticker_id={}",
+                    static_cast<uint32_t>(position.ticker_id));
       exit(-1);
     }
 
@@ -394,8 +401,11 @@ void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
         "[OrderManagementSystem::on_query_position] {}, LongVol:{}, LongYdVol:{}, "
         "LongPrice:{:.2f}, LongFrozen:{}, LongPNL:{}, ShortVol:{}, "
         "ShortYdVol:{}, ShortPrice:{:.2f}, ShortFrozen:{}, ShortPNL:{}",
-        contract->ticker, lp.holdings, lp.yd_holdings, lp.cost_price, lp.frozen, lp.float_pnl,
-        sp.holdings, sp.yd_holdings, sp.cost_price, sp.frozen, sp.float_pnl);
+        contract->ticker, static_cast<int>(lp.holdings), static_cast<int>(lp.yd_holdings),
+        static_cast<double>(lp.cost_price), static_cast<double>(lp.frozen),
+        static_cast<double>(lp.float_pnl), static_cast<int>(sp.holdings),
+        static_cast<int>(sp.yd_holdings), static_cast<double>(sp.cost_price),
+        static_cast<double>(sp.frozen), static_cast<double>(sp.float_pnl));
 
     if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0) return;
 
@@ -452,9 +462,9 @@ void OrderManagementSystem::OnOrderAccepted(OrderAcceptance* rsp) {
   spdlog::info(
       "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
       "Volume:{}, Price:{:.2f}, OrderType:{}",
-      rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
-      OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
-      static_cast<double>(order.req.price), OrderTypeToStr(order.req.type));
+      rsp->order_id, order.req.contract->ticker, ToString(order.req.direction),
+      ToString(order.req.offset), static_cast<int>(order.req.volume),
+      static_cast<double>(order.req.price), ToString(order.req.type));
 }
 
 void OrderManagementSystem::OnOrderRejected(OrderRejection* rsp) {
@@ -472,8 +482,8 @@ void OrderManagementSystem::OnOrderRejected(OrderRejection* rsp) {
   spdlog::error(
       "[OrderManagementSystem::OnOrderRejected] 报单被拒：{}. {}, {}{}, Volume:{}, "
       "Price:{:.3f}",
-      rsp->reason, order.req.contract->ticker, DirectionToStr(order.req.direction),
-      OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
+      rsp->reason, order.req.contract->ticker, ToString(order.req.direction),
+      ToString(order.req.offset), static_cast<int>(order.req.volume),
       static_cast<double>(order.req.price));
 
   order_map_.erase(iter);
@@ -505,7 +515,7 @@ void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
     spdlog::info(
         "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. {}, {}, "
         "OrderID:{}, Volume:{}",
-        order.req.contract->ticker, DirectionToStr(order.req.direction),
+        order.req.contract->ticker, ToString(order.req.direction),
         static_cast<uint32_t>(rsp->order_id), static_cast<int>(order.req.volume));
   }
 
@@ -520,7 +530,7 @@ void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
     rms_->OnOrderTraded(&order, rsp);
     // risk_mgr_->OnOrderCompleted(&order);
     spdlog::info("[OrderManagementSystem::OnPrimaryMarketTraded] done. {}, {}, Volume:{}",
-                 order.req.contract->ticker, DirectionToStr(order.req.direction),
+                 order.req.contract->ticker, ToString(order.req.direction),
                  static_cast<int>(order.req.volume));
     order_map_.erase(iter);
   }
@@ -545,9 +555,9 @@ void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
     spdlog::info(
         "[OrderManagementSystem::OnOrderAccepted] 报单委托成功. OrderID: {}, {}, {}{}, "
         "Volume:{}, Price:{:.2f}, OrderType:{}",
-        rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
-        OffsetToStr(order.req.offset), static_cast<int>(order.req.volume),
-        static_cast<double>(order.req.price), OrderTypeToStr(order.req.type));
+        rsp->order_id, order.req.contract->ticker, ToString(order.req.direction),
+        ToString(order.req.offset), static_cast<int>(order.req.volume),
+        static_cast<double>(order.req.price), ToString(order.req.type));
   }
 
   order.traded_volume += rsp->volume;
@@ -555,8 +565,8 @@ void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
   spdlog::info(
       "[OrderManagementSystem::OnOrderTraded] 报单成交. OrderID: {}, {}, {}{}, Traded:{}, "
       "Price:{:.3f}, TotalTraded/Original:{}/{}",
-      rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
-      OffsetToStr(order.req.offset), static_cast<int>(rsp->volume), static_cast<double>(rsp->price),
+      rsp->order_id, order.req.contract->ticker, ToString(order.req.direction),
+      ToString(order.req.offset), static_cast<int>(rsp->volume), static_cast<double>(rsp->price),
       static_cast<int>(order.traded_volume), static_cast<int>(order.req.volume));
 
   rms_->OnOrderTraded(&order, rsp);
@@ -565,8 +575,8 @@ void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
     spdlog::info(
         "[OrderManagementSystem::OnOrderTraded] 报单完成. OrderID:{}, {}, {}{}, "
         "Traded/Original: {}/{}",
-        rsp->order_id, order.req.contract->ticker, DirectionToStr(order.req.direction),
-        OffsetToStr(order.req.offset), static_cast<int>(order.traded_volume),
+        rsp->order_id, order.req.contract->ticker, ToString(order.req.direction),
+        ToString(order.req.offset), static_cast<int>(order.traded_volume),
         static_cast<int>(order.req.volume));
 
     // 订单结束，通知风控模块
@@ -590,8 +600,8 @@ void OrderManagementSystem::OnOrderCanceled(OrderCancellation* rsp) {
   spdlog::info(
       "[OrderManagementSystem::OnOrderCanceled] 报单已撤. {}, {}{}, OrderID:{}, "
       "Canceled:{}",
-      order.req.contract->ticker, DirectionToStr(order.req.direction),
-      OffsetToStr(order.req.offset), rsp->order_id, rsp->canceled_volume);
+      order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
+      rsp->order_id, rsp->canceled_volume);
 
   rms_->OnOrderCanceled(&order, rsp->canceled_volume);
 
@@ -599,9 +609,9 @@ void OrderManagementSystem::OnOrderCanceled(OrderCancellation* rsp) {
     spdlog::info(
         "[OrderManagementSystem::OnOrderCanceled] 报单完成. {}, {}{}, OrderID:{}, "
         "Traded/Original:{}/{}",
-        order.req.contract->ticker, DirectionToStr(order.req.direction),
-        OffsetToStr(order.req.offset), static_cast<uint64_t>(rsp->order_id),
-        static_cast<int>(order.traded_volume), static_cast<int>(order.req.volume));
+        order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
+        static_cast<uint64_t>(rsp->order_id), static_cast<int>(order.traded_volume),
+        static_cast<int>(order.req.volume));
 
     rms_->OnOrderCompleted(&order);
     order_map_.erase(iter);

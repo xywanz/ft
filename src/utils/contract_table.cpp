@@ -1,5 +1,7 @@
 #include "utils/contract_table.h"
 
+#include "utils/protocol_utils.h"
+
 namespace ft {
 
 bool LoadContractList(const std::string& file, std::vector<Contract>* contracts) {
@@ -22,7 +24,7 @@ bool LoadContractList(const std::string& file, std::vector<Contract>* contracts)
     contract.ticker = std::move(fields[index++]);
     contract.exchange = std::move(fields[index++]);
     contract.name = std::move(fields[index++]);
-    contract.product_type = string2product(fields[index++]);
+    contract.product_type = StringToProductType(fields[index++]);
     contract.size = std::stoi(fields[index++]);
     contract.price_tick = std::stod(fields[index++]);
     contract.long_margin_rate = std::stod(fields[index++]);

@@ -9,6 +9,7 @@
 
 #include "utils/contract_table.h"
 #include "utils/misc.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 

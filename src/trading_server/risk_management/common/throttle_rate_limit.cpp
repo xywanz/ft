@@ -2,7 +2,8 @@
 
 #include "trading_server/risk_management/common/throttle_rate_limit.h"
 
-#include "trading_server/datastruct/error_code.h"
+#include "protocol/error_code.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 

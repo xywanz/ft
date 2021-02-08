@@ -10,7 +10,7 @@
 #include "broker/cmd_processor.h"
 #include "broker/connection_manager.h"
 #include "broker/session.h"
-#include "trading_server/datastruct/contract.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 
 namespace ft {

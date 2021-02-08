@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "utils/misc.h"
+#include "utils/protocol_utils.h"
 
 namespace ft {
 
@@ -271,8 +272,8 @@ bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
   spdlog::debug(
       "[CtpTradeApi::SendOrder] 订单发送成功. OrderID: {}, {}, {}, {}{}"
       "Volume:{}, Price:{:.3f}",
-      order.order_id, order_ref, contract->ticker, DirectionToStr(order.direction),
-      OffsetToStr(order.offset), order.volume, order.price);
+      order.order_id, order_ref, contract->ticker, ToString(order.direction),
+      ToString(order.offset), order.volume, order.price);
   *privdata_ptr = static_cast<uint64_t>(order.contract->ticker_id);
   return true;
 }
@@ -515,8 +516,9 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
     spdlog::debug(
         "[CtpTradeApi::OnRspQryInvestorPosition] {}, long:{}, ydlong:{}, "
         "short:{}, ydshort:{}",
-        contract->ticker, pos.long_pos.holdings, pos.long_pos.yd_holdings, pos.short_pos.holdings,
-        pos.short_pos.yd_holdings);
+        contract->ticker, static_cast<int>(pos.long_pos.holdings),
+        static_cast<int>(pos.long_pos.yd_holdings), static_cast<int>(pos.short_pos.holdings),
+        static_cast<int>(pos.short_pos.yd_holdings));
   }
 
 check_last:

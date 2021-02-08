@@ -1,12 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_CEP_COMMON_ORDER_SENDER_H_
-#define FT_SRC_CEP_COMMON_ORDER_SENDER_H_
+#ifndef FT_SRC_STRATEGY_ORDER_SENDER_H_
+#define FT_SRC_STRATEGY_ORDER_SENDER_H_
 
 #include <string>
 
-#include "trading_server/datastruct/constants.h"
-#include "trading_server/datastruct/protocol.h"
+#include "protocol/data_types.h"
 #include "utils/contract_table.h"
 #include "utils/redis_trader_cmd_helper.h"
 
@@ -137,4 +136,4 @@ class OrderSender {
 
 }  // namespace ft
 
-#endif  // FT_SRC_CEP_COMMON_ORDER_SENDER_H_
+#endif  // FT_SRC_STRATEGY_ORDER_SENDER_H_

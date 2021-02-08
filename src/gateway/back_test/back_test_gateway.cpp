@@ -8,6 +8,9 @@
 #include <algorithm>
 #include <fstream>
 
+#include "utils/contract_table.h"
+#include "utils/protocol_utils.h"
+
 namespace ft {
 
 namespace {
@@ -192,8 +195,7 @@ bool BackTestGateway::CheckOrder(const OrderRequest& order) const {
   }
   if (order.type != OrderType::kLimit && order.type != OrderType::kMarket &&
       order.type != OrderType::kFak && order.type != OrderType::kFok) {
-    spdlog::error("BackTestGateway::CheckOrder: unsupported order type {}",
-                  OrderTypeToStr(order.type));
+    spdlog::error("BackTestGateway::CheckOrder: unsupported order type {}", ToString(order.type));
     return false;
   }
   if (order.price <= 0.0) {
@@ -202,7 +204,7 @@ bool BackTestGateway::CheckOrder(const OrderRequest& order) const {
   }
   if (order.direction != Direction::kBuy && order.direction != Direction::kSell) {
     spdlog::error("BackTestGateway::CheckOrder: unsupported direction {}",
-                  DirectionToStr(order.direction));
+                  ToString(order.direction));
     return false;
   }
   return true;

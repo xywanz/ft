@@ -5,7 +5,7 @@
 
 #include <unordered_map>
 
-#include "trading_server/datastruct/contract.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 

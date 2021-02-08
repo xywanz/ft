@@ -13,10 +13,7 @@
 
 #include "gateway/ctp/ctp_common.h"
 #include "gateway/gateway.h"
-#include "trading_server/datastruct/config.h"
-#include "trading_server/datastruct/constants.h"
-#include "trading_server/datastruct/order.h"
-#include "trading_server/order_management/base_oms.h"
+#include "protocol/data_types.h"
 
 namespace ft {
 
