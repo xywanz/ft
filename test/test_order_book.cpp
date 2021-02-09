@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "cep/order_book/order_book.h"
+#include "trading_server/order_book/order_book.h"
 
 using namespace ft::orderbook;
 
