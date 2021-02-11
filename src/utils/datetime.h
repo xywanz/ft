@@ -245,6 +245,25 @@ class Datetime {
   Time time_;
 };
 
+// 将格式化的字符串转化为Datetime，支持微秒级别的精度
+// 格式化符号:
+//     %Y 四位数表示的年份 (0001-9999)
+//     %m 两位数表示的月份 (01-12)
+//     %d 两位数表示的月份中的一天 (01-31)
+//     %H 两位数表示的小时数 (00-23)
+//     %M 两位数表示的分钟数 (00-59)
+//     %S 两位数表示的秒钟数 (00-59)
+//     %s 三位数表示的毫秒数 (000-999)
+//     %u 三位数表示的微秒数 (000-999)
+//     %% 百分号
+//
+// 示例
+// auto dt = strptime("2021/02/11 15:30:55.865302", "%Y/%m/%d %H:%M:%S.%s%u");
+// std::cout << dt.ToString() << std::endl;  // Datetime(2021, 2, 11, 15, 30, 55, 865302)
+//
+// 转换失败将会抛出错误
+Datetime strptime(const std::string& str, const std::string& fmt);
+
 }  // namespace ft::datetime
 
 #endif  // FT_SRC_UTILS_DATETIME_H_

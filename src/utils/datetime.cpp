@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include <cctype>
 #include <stdexcept>
 
 namespace ft::datetime {
@@ -310,6 +311,149 @@ std::string Datetime::ToString() const {
   return fmt::format("ft::datetime::Datetime({}, {}, {}, {}, {}, {}, {})", date_.year(),
                      date_.month(), date_.day(), time_.hour(), time_.minute(), time_.second(),
                      time_.microsecond());
+}
+
+Datetime strptime(const std::string& str, const std::string& fmt) {
+  const char* pfmt = fmt.c_str();
+  const char* pstr = str.c_str();
+
+  bool find_year = false;
+  bool find_month = false;
+  bool find_day = false;
+  bool find_hour = false;
+  bool find_minute = false;
+  bool find_second = false;
+  bool find_millisecond = false;
+  bool find_microsecond = false;
+
+  int year = 0;
+  int month = 0;
+  int day = 0;
+  int hour = 0;
+  int minute = 0;
+  int second = 0;
+  int millisecond = 0;
+  int microsecond = 0;
+
+  while (*pfmt && *pstr) {
+    if (*pfmt != '%') {
+      if (*pfmt != *pstr) {
+        goto error;
+      }
+      ++pfmt;
+      ++pstr;
+      continue;
+    }
+
+    ++pfmt;
+    switch (*pfmt) {
+      case 'Y': {
+        if (find_year || pstr[0] == 0 || pstr[1] == 0 || pstr[2] == 0 || pstr[3] == 0 ||
+            !isdigit(pstr[0]) || !isdigit(pstr[1]) || !isdigit(pstr[2]) || !isdigit(pstr[3])) {
+          goto error;
+        }
+        year = static_cast<int>(pstr[0] - '0') * 1000 + static_cast<int>(pstr[1] - '0') * 100 +
+               static_cast<int>(pstr[2] - '0') * 10 + static_cast<int>(pstr[3] - '0');
+        pstr += 4;
+        ++pfmt;
+        find_year = true;
+        break;
+      }
+      case 'm': {
+        if (find_month || pstr[0] == 0 || pstr[1] == 0 || !isdigit(pstr[0]) || !isdigit(pstr[1])) {
+          goto error;
+        }
+        month = static_cast<int>(pstr[0] - '0') * 10 + static_cast<int>(pstr[1] - '0');
+        pstr += 2;
+        ++pfmt;
+        find_month = true;
+        break;
+      }
+      case 'd': {
+        if (find_day || pstr[0] == 0 || pstr[1] == 0 || !isdigit(pstr[0]) || !isdigit(pstr[1])) {
+          goto error;
+        }
+        day = static_cast<int>(pstr[0] - '0') * 10 + static_cast<int>(pstr[1] - '0');
+        pstr += 2;
+        ++pfmt;
+        find_day = true;
+        break;
+      }
+      case 'H': {
+        if (find_hour || pstr[0] == 0 || pstr[1] == 0 || !isdigit(pstr[0]) || !isdigit(pstr[1])) {
+          goto error;
+        }
+        hour = static_cast<int>(pstr[0] - '0') * 10 + static_cast<int>(pstr[1] - '0');
+        pstr += 2;
+        ++pfmt;
+        find_hour = true;
+        break;
+      }
+      case 'M': {
+        if (find_minute || pstr[0] == 0 || pstr[1] == 0 || !isdigit(pstr[0]) || !isdigit(pstr[1])) {
+          goto error;
+        }
+        minute = static_cast<int>(pstr[0] - '0') * 10 + static_cast<int>(pstr[1] - '0');
+        pstr += 2;
+        ++pfmt;
+        find_minute = true;
+        break;
+      }
+      case 'S': {
+        if (find_second || pstr[0] == 0 || pstr[1] == 0 || !isdigit(pstr[0]) || !isdigit(pstr[1])) {
+          goto error;
+        }
+        second = static_cast<int>(pstr[0] - '0') * 10 + static_cast<int>(pstr[1] - '0');
+        pstr += 2;
+        ++pfmt;
+        find_second = true;
+        break;
+      }
+      case 's': {
+        if (find_millisecond || pstr[0] == 0 || pstr[1] == 0 || pstr[2] == 0 || !isdigit(pstr[0]) ||
+            !isdigit(pstr[1]) || !isdigit(pstr[2])) {
+          goto error;
+        }
+        millisecond = static_cast<int>(pstr[0] - '0') * 100 + static_cast<int>(pstr[1] - '0') * 10 +
+                      static_cast<int>(pstr[2] - '0');
+        pstr += 3;
+        ++pfmt;
+        find_millisecond = true;
+        break;
+      }
+      case 'u': {
+        if (find_microsecond || pstr[0] == 0 || pstr[1] == 0 || pstr[2] == 0 || !isdigit(pstr[0]) ||
+            !isdigit(pstr[1]) || !isdigit(pstr[2])) {
+          goto error;
+        }
+        microsecond = static_cast<int>(pstr[0] - '0') * 100 + static_cast<int>(pstr[1] - '0') * 10 +
+                      static_cast<int>(pstr[2] - '0');
+        pstr += 3;
+        ++pfmt;
+        find_microsecond = true;
+        break;
+      }
+      case '%': {
+        if (*pstr == 0 || *pstr != '%') {
+          goto error;
+        }
+        ++pstr;
+        ++pfmt;
+        break;
+      }
+      default: {
+        assert(false);
+      }
+    }
+  }
+
+  if (*pfmt != 0) {
+    goto error;
+  }
+  return Datetime(year, month, day, hour, minute, second, 1000 * millisecond + microsecond);
+
+error:
+  throw std::runtime_error("ft::datetime::strptime: invalid format");
 }
 
 }  // namespace ft::datetime

@@ -7,9 +7,12 @@
 
 #include "utils/datetime.h"
 
-using namespace ft::datetime;
+using ft::datetime::Date;
+using ft::datetime::Datetime;
+using ft::datetime::Time;
+using ft::datetime::Timedelta;
 
-TEST(Utils, Datetime) {
+TEST(Util, Datetime) {
   Timedelta timedelta(0, 1, 0, 0, 0, 0);
   ASSERT_EQ(timedelta.days(), 0);
   ASSERT_EQ(timedelta.seconds(), 3600);
@@ -159,4 +162,8 @@ TEST(Utils, Datetime) {
 
   ASSERT_EQ(Datetime(2018, 10, 13, 4, 15, 45, 112988) - dt,
             Timedelta(-852, 0, 0, 34007, 0, 112888));
+
+  auto date_from_fmt =
+      ft::datetime::strptime("2021/02/11 15:30:55.865302", "%Y/%m/%d %H:%M:%S.%s%u");
+  ASSERT_EQ(date_from_fmt, Datetime(2021, 2, 11, 15, 30, 55, 865302));
 }
