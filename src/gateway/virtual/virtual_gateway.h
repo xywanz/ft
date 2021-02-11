@@ -10,13 +10,13 @@
 #include <string>
 #include <vector>
 
+#include "component/contract_table/contract_table.h"
 #include "gateway/gateway.h"
 #include "gateway/virtual/virtual_api.h"
 #include "trading_server/datastruct/account.h"
 #include "trading_server/datastruct/constants.h"
 #include "trading_server/datastruct/contract.h"
 #include "trading_server/datastruct/position.h"
-#include "utils/contract_table.h"
 
 namespace ft {
 

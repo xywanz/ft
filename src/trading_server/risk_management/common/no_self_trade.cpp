@@ -2,7 +2,7 @@
 
 #include "trading_server/risk_management/common/no_self_trade.h"
 
-#include "utils/contract_table.h"
+#include "component/contract_table/contract_table.h"
 #include "utils/misc.h"
 #include "utils/protocol_utils.h"
 

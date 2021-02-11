@@ -4,7 +4,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include "utils/contract_table.h"
+#include "component/contract_table/contract_table.h"
 
 namespace ft {
 

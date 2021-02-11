@@ -2,9 +2,10 @@
 
 #include <gtest/gtest.h>
 
-#include "trading_server/order_book/order_book.h"
+#include "component/order_book/order_book.h"
 
-using namespace ft::orderbook;
+using ft::orderbook::LimitOrder;
+using ft::orderbook::OrderBook;
 
 TEST(OrderBook, Case_0) {
   OrderBook order_book(1);

@@ -4,9 +4,9 @@
 
 #include <getopt.hpp>
 
+#include "component/contract_table/contract_table.h"
 #include "trading_server/order_management/order_management.h"
 #include "utils/config_loader.h"
-#include "utils/contract_table.h"
 
 static void Usage(const char* pname) {
   printf("Usage: %s [--config=<file>] [-h -? --help] [--loglevel=level]\n", pname);

@@ -19,4 +19,4 @@ add_executable(trading_server main.cpp
                               ${ORDER_BOOK_SRC}
                               ${ORDER_MANAGEMENT_SRC}
                               ${RISK_MANAGEMENT_SRC})
-target_link_libraries(trading_server ${COMMON_LIB} utils dl pthread)
+target_link_libraries(trading_server utils dl pthread)

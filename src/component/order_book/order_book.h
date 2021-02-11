@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_ORDER_BOOK_ORDER_BOOK_H_
-#define FT_SRC_TRADING_SERVER_ORDER_BOOK_ORDER_BOOK_H_
+#ifndef FT_SRC_COMPONENT_ORDER_BOOK_ORDER_BOOK_H_
+#define FT_SRC_COMPONENT_ORDER_BOOK_ORDER_BOOK_H_
 
 #include <cassert>
 #include <functional>
@@ -9,9 +9,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "component/order_book/limit_order.h"
+#include "component/order_book/price_level.h"
 #include "protocol/data_types.h"
-#include "trading_server/order_book/limit_order.h"
-#include "trading_server/order_book/price_level.h"
 
 namespace ft::orderbook {
 
@@ -76,4 +76,4 @@ class OrderBook {
 
 }  // namespace ft::orderbook
 
-#endif  // FT_SRC_TRADING_SERVER_ORDER_BOOK_ORDER_BOOK_H_
+#endif  // FT_SRC_COMPONENT_ORDER_BOOK_ORDER_BOOK_H_

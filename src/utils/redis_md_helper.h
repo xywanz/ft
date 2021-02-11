@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "component/contract_table/contract_table.h"
 #include "protocol/data_types.h"
-#include "utils/contract_table.h"
 #include "utils/redis.h"
 
 namespace ft {

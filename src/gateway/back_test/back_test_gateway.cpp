@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <fstream>
 
-#include "utils/contract_table.h"
+#include "component/contract_table/contract_table.h"
 #include "utils/protocol_utils.h"
 
 namespace ft {

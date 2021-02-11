@@ -1,17 +1,18 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_ORDER_BOOK_PRICE_LEVEL_H_
-#define FT_SRC_TRADING_SERVER_ORDER_BOOK_PRICE_LEVEL_H_
+#ifndef FT_SRC_COMPONENT_ORDER_BOOK_PRICE_LEVEL_H_
+#define FT_SRC_COMPONENT_ORDER_BOOK_PRICE_LEVEL_H_
 
 #include <list>
 
-#include "trading_server/order_book/limit_order.h"
+#include "component/order_book/limit_order.h"
 
 namespace ft::orderbook {
 
 class PriceLevel {
  public:
-  explicit PriceLevel(double price) : price_(price), decimal_price_(Double2DecimalPrice(price)) {}
+  explicit PriceLevel(double price)
+      : price_(price), decimal_price_(price_double_to_decimal(price)) {}
 
   void AddOrder(LimitOrder* order);
   void ModifyOrder(LimitOrder* order);
@@ -30,4 +31,4 @@ class PriceLevel {
 
 }  // namespace ft::orderbook
 
-#endif  // FT_SRC_TRADING_SERVER_ORDER_BOOK_PRICE_LEVEL_H_
+#endif  // FT_SRC_COMPONENT_ORDER_BOOK_PRICE_LEVEL_H_

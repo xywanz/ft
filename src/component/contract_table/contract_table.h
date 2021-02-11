@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_UTILS_CONTRACT_TABLE_H_
-#define FT_SRC_UTILS_CONTRACT_TABLE_H_
+#ifndef FT_SRC_COMPONENT_CONTRACT_TABLE_H_
+#define FT_SRC_COMPONENT_CONTRACT_TABLE_H_
 
 #include <fmt/format.h>
 
@@ -54,4 +54,4 @@ class ContractTable {
 
 }  // namespace ft
 
-#endif  // FT_SRC_UTILS_CONTRACT_TABLE_H_
+#endif  // FT_SRC_COMPONENT_CONTRACT_TABLE_H_

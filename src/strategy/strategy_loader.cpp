@@ -6,8 +6,8 @@
 #include <fstream>
 #include <getopt.hpp>
 
+#include "component/contract_table/contract_table.h"
 #include "strategy/strategy.h"
-#include "utils/contract_table.h"
 
 static void Usage() {
   printf("Usage: ./strategy-loader [--account=<account>]\n");

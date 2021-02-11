@@ -1,18 +1,18 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADING_SERVER_ORDER_BOOK_LIMIT_ORDER_H_
-#define FT_SRC_TRADING_SERVER_ORDER_BOOK_LIMIT_ORDER_H_
+#ifndef FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
+#define FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
 
 #include <map>
 #include <string>
 
 namespace ft::orderbook {
 
-inline uint64_t Double2DecimalPrice(double p) {
+inline uint64_t price_double_to_decimal(double p) {
   return (static_cast<uint64_t>(p * 100000000UL) + 50UL) / 10000UL;
 }
 
-inline double Deciaml2DoublePrice(uint64_t p) { return static_cast<double>(p) / 10000; }
+inline double price_decimal_to_double(uint64_t p) { return static_cast<double>(p) / 10000; }
 
 class PriceLevel;
 
@@ -23,7 +23,7 @@ class LimitOrder {
         is_buy_(_is_buy),
         volume_(_volume),
         price_(_price),
-        decimal_price_(Double2DecimalPrice(_price)) {}
+        decimal_price_(price_double_to_decimal(_price)) {}
 
   void set_id(uint64_t i) { id_ = i; }
   uint64_t id() const { return id_; }
@@ -36,7 +36,7 @@ class LimitOrder {
 
   void set_price(double p) {
     price_ = p;
-    decimal_price_ = Double2DecimalPrice(p);
+    decimal_price_ = price_double_to_decimal(p);
   }
   double price() const { return price_; }
   uint64_t decimal_price() const { return decimal_price_; }
@@ -55,4 +55,4 @@ class LimitOrder {
 
 }  // namespace ft::orderbook
 
-#endif  // FT_SRC_TRADING_SERVER_ORDER_BOOK_LIMIT_ORDER_H_
+#endif  // FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_

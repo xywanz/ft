@@ -7,6 +7,7 @@
 
 #include <utility>
 
+#include "component/contract_table/contract_table.h"
 #include "protocol/data_types.h"
 #include "protocol/error_code.h"
 #include "trading_server/risk_management/common/fund_manager.h"
@@ -16,7 +17,6 @@
 #include "trading_server/risk_management/common/throttle_rate_limit.h"
 #include "trading_server/risk_management/etf/arbitrage_manager.h"
 #include "utils/config_loader.h"
-#include "utils/contract_table.h"
 #include "utils/lockfree-queue/queue.h"
 #include "utils/misc.h"
 #include "utils/protocol_utils.h"

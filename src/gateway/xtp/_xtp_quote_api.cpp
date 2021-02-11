@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include "utils/contract_table.h"
+#include "component/contract_table/contract_table.h"
 #include "utils/misc.h"
 
 namespace ft {
