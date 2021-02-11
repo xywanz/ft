@@ -96,7 +96,7 @@ Date::Date(int year, int month, int day)
 
   if (year > kMaxYear || year < kMinYear || month <= 0 || month > 12 || day <= 0 ||
       day > day_range_table[month]) {
-    throw std::runtime_error(fmt::format("date out of range: {}/{}/{}", year, month, day));
+    throw std::out_of_range(fmt::format("date out of range: {}/{}/{}", year, month, day));
   }
 
   integer_date_ = (year_ << 9) | (month_ << 4) | day_;
@@ -243,7 +243,7 @@ Time::Time(int hour, int minute, int second, int microsecond)
     : hour_(hour), minute_(minute), second_(second), microsecond_(microsecond) {
   if (hour_ < 0 || hour_ > 23 || minute_ < 0 || minute_ > 59 || second_ < 0 || second_ > 59 ||
       microsecond_ < 0 || microsecond_ > 999999) {
-    throw std::runtime_error(
+    throw std::out_of_range(
         fmt::format("time out of range: {}:{}:{}.{}", hour_, minute_, second_, microsecond_));
   }
 

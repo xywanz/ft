@@ -19,7 +19,7 @@ TEST(Util, Datetime) {
   ASSERT_EQ(timedelta.microseconds(), 0);
 
   ASSERT_NO_THROW(Date(100, 2, 28));
-  ASSERT_THROW(Date(100, 2, 29), std::runtime_error);
+  ASSERT_THROW(Date(100, 2, 29), std::out_of_range);
 
   ASSERT_NO_THROW(Date(2019, 1, 31));
   ASSERT_NO_THROW(Date(2019, 2, 28));
@@ -47,31 +47,31 @@ TEST(Util, Datetime) {
   ASSERT_NO_THROW(Date(2020, 11, 30));
   ASSERT_NO_THROW(Date(2020, 12, 31));
 
-  ASSERT_THROW(Date(2019, 1, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 2, 29), std::runtime_error);
-  ASSERT_THROW(Date(2019, 3, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 4, 31), std::runtime_error);
-  ASSERT_THROW(Date(2019, 5, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 6, 31), std::runtime_error);
-  ASSERT_THROW(Date(2019, 7, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 8, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 9, 31), std::runtime_error);
-  ASSERT_THROW(Date(2019, 10, 32), std::runtime_error);
-  ASSERT_THROW(Date(2019, 11, 31), std::runtime_error);
-  ASSERT_THROW(Date(2019, 12, 32), std::runtime_error);
+  ASSERT_THROW(Date(2019, 1, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 2, 29), std::out_of_range);
+  ASSERT_THROW(Date(2019, 3, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 4, 31), std::out_of_range);
+  ASSERT_THROW(Date(2019, 5, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 6, 31), std::out_of_range);
+  ASSERT_THROW(Date(2019, 7, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 8, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 9, 31), std::out_of_range);
+  ASSERT_THROW(Date(2019, 10, 32), std::out_of_range);
+  ASSERT_THROW(Date(2019, 11, 31), std::out_of_range);
+  ASSERT_THROW(Date(2019, 12, 32), std::out_of_range);
 
-  ASSERT_THROW(Date(2020, 1, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 2, 30), std::runtime_error);
-  ASSERT_THROW(Date(2020, 3, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 4, 31), std::runtime_error);
-  ASSERT_THROW(Date(2020, 5, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 6, 31), std::runtime_error);
-  ASSERT_THROW(Date(2020, 7, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 8, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 9, 31), std::runtime_error);
-  ASSERT_THROW(Date(2020, 10, 32), std::runtime_error);
-  ASSERT_THROW(Date(2020, 11, 31), std::runtime_error);
-  ASSERT_THROW(Date(2020, 12, 32), std::runtime_error);
+  ASSERT_THROW(Date(2020, 1, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 2, 30), std::out_of_range);
+  ASSERT_THROW(Date(2020, 3, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 4, 31), std::out_of_range);
+  ASSERT_THROW(Date(2020, 5, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 6, 31), std::out_of_range);
+  ASSERT_THROW(Date(2020, 7, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 8, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 9, 31), std::out_of_range);
+  ASSERT_THROW(Date(2020, 10, 32), std::out_of_range);
+  ASSERT_THROW(Date(2020, 11, 31), std::out_of_range);
+  ASSERT_THROW(Date(2020, 12, 32), std::out_of_range);
 
   auto today = Date::today();
   std::time_t time = std::time(nullptr);
