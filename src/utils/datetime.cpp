@@ -20,12 +20,12 @@ constexpr int kAccumulatedDayOfNonLeapYear[] = {0,   0,   31,  59,  90,  120, 15
 namespace {
 void FastUnixSecondToDate(std::time_t unix_sec, std::tm* tm) {
   static constexpr int kTimeZone = 8;
-  static const int kHoursInDay = 24;
-  static const int kMinutesInHour = 60;
-  static const int kDaysFromUnixTime = 2472632;
-  static const int kDaysFromYear = 153;
-  static const int kMagicUnkonwnFirst = 146097;
-  static const int kMagicUnkonwnSec = 1461;
+  static constexpr int kHoursInDay = 24;
+  static constexpr int kMinutesInHour = 60;
+  static constexpr int kDaysFromUnixTime = 2472632;
+  static constexpr int kDaysFromYear = 153;
+  static constexpr int kMagicUnkonwnFirst = 146097;
+  static constexpr int kMagicUnkonwnSec = 1461;
 
   tm->tm_sec = unix_sec % kMinutesInHour;
   int i = (unix_sec / kMinutesInHour);
@@ -99,7 +99,7 @@ Date::Date(int year, int month, int day)
     throw std::runtime_error(fmt::format("date out of range: {}/{}/{}", year, month, day));
   }
 
-  hash_ = (year_ << 9) | (month_ << 4) | day_;
+  integer_date_ = (year_ << 9) | (month_ << 4) | day_;
 }
 
 Date Date::operator+(const Timedelta& timedelta) const {

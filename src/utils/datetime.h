@@ -118,14 +118,12 @@ class Date {
   int day() const { return day_; }
   bool is_leap_year() const { return is_leap_year_; }
 
-  int hash() const { return hash_; }
-
-  bool operator==(const Date& rhs) const { return hash_ == rhs.hash_; }
-  bool operator!=(const Date& rhs) const { return hash_ != rhs.hash_; }
-  bool operator>=(const Date& rhs) const { return hash_ >= rhs.hash_; }
-  bool operator>(const Date& rhs) const { return hash_ > rhs.hash_; }
-  bool operator<=(const Date& rhs) const { return hash_ <= rhs.hash_; }
-  bool operator<(const Date& rhs) const { return hash_ < rhs.hash_; }
+  bool operator==(const Date& rhs) const { return integer_date_ == rhs.integer_date_; }
+  bool operator!=(const Date& rhs) const { return integer_date_ != rhs.integer_date_; }
+  bool operator>=(const Date& rhs) const { return integer_date_ >= rhs.integer_date_; }
+  bool operator>(const Date& rhs) const { return integer_date_ > rhs.integer_date_; }
+  bool operator<=(const Date& rhs) const { return integer_date_ <= rhs.integer_date_; }
+  bool operator<(const Date& rhs) const { return integer_date_ < rhs.integer_date_; }
 
   Date operator+(const Timedelta& timedelta) const;
   Date operator-(const Timedelta& timedelta) const;
@@ -156,7 +154,7 @@ class Date {
   int day_;
 
   bool is_leap_year_;
-  int hash_;
+  int integer_date_;  // YYYYmmdd
 };
 
 class Time {
