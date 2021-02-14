@@ -26,8 +26,9 @@ class GridStrategy : public ft::Strategy {
     const auto& sp = pos.short_pos;
 
     spdlog::info(
-        "[GridStrategy::on_tick] last_price: {:.2f}, grid: {:.2f}, long: {}, short: {}, trades: {}",
-        tick.last_price, last_grid_price_, lp.holdings, sp.holdings, trade_counts_);
+        "GridStrategy::on_tick {} last_price:{:.2f}, grid:{:.2f}, long:{}, short:{}, trades:{}",
+        tick.datetime.ToString(), tick.last_price, last_grid_price_, lp.holdings, sp.holdings,
+        trade_counts_);
 
     if (tick.last_price - last_grid_price_ > grid_height_) {
       int vol_to_close = std::min(lp.holdings, trade_volume_each_);

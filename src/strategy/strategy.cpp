@@ -2,6 +2,8 @@
 
 #include "strategy/strategy.h"
 
+#include <spdlog/spdlog.h>
+
 namespace ft {
 
 void Strategy::Run() {
@@ -15,8 +17,12 @@ void Strategy::Run() {
         auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         OnOrderResponse(*rsp);
       } else {
-        auto tick = reinterpret_cast<TickData*>(reply->element[2]->str);
-        OnTick(*tick);
+        TickData tick;
+        if (!tick.ParseFromString(reply->element[2]->str, reply->element[2]->len)) {
+          spdlog::error("Strategy::Run: failed to parse tick data");
+          continue;
+        }
+        OnTick(tick);
       }
     }
   }
@@ -34,8 +40,12 @@ void Strategy::RunBackTest() {
         auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
         OnOrderResponse(*rsp);
       } else {
-        auto tick = reinterpret_cast<TickData*>(reply->element[2]->str);
-        OnTick(*tick);
+        TickData tick;
+        if (!tick.ParseFromString(reply->element[2]->str, reply->element[2]->len)) {
+          spdlog::error("Strategy::Run: failed to parse tick data");
+          abort();  // bug
+        }
+        OnTick(tick);
         SendNotification(0);  // 通知gateway数据已消费完
       }
     }

@@ -103,25 +103,6 @@ inline char product_type(ProductType type) {
   return type == ProductType::kFutures ? THOST_FTDC_PC_Futures : THOST_FTDC_PC_Options;
 }
 
-inline uint64_t GetCtpTradeTime(const CThostFtdcTradeField* trade) {
-  uint64_t trade_time = 0;
-  trade_time += (trade->TradeDate[0] - '0') * 10000000000000000UL;
-  trade_time += (trade->TradeDate[1] - '0') * 1000000000000000UL;
-  trade_time += (trade->TradeDate[2] - '0') * 100000000000000UL;
-  trade_time += (trade->TradeDate[3] - '0') * 10000000000000UL;
-  trade_time += (trade->TradeDate[4] - '0') * 1000000000000UL;
-  trade_time += (trade->TradeDate[5] - '0') * 100000000000UL;
-  trade_time += (trade->TradeDate[6] - '0') * 10000000000UL;
-  trade_time += (trade->TradeDate[7] - '0') * 1000000000UL;
-  trade_time += (trade->TradeTime[0] - '0') * 100000000UL;
-  trade_time += (trade->TradeTime[1] - '0') * 10000000UL;
-  trade_time += (trade->TradeTime[3] - '0') * 1000000UL;
-  trade_time += (trade->TradeTime[4] - '0') * 100000UL;
-  trade_time += (trade->TradeTime[6] - '0') * 10000UL;
-  trade_time += (trade->TradeTime[7] - '0') * 1000UL;
-  return trade_time;
-}
-
 }  // namespace ft
 
 #endif  // FT_SRC_GATEWAY_CTP_CTP_COMMON_H_

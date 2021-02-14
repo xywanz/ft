@@ -8,6 +8,9 @@
 #include <cstdint>
 #include <string>
 
+#include "component/pubsub/serializable.h"
+#include "utils/datetime.h"
+
 namespace ft {
 
 // 交易所的英文简称
@@ -291,7 +294,7 @@ struct Trade {
   double price;
   double amount;
 
-  uint64_t trade_time;  // YYYYmmddHHMMSSsss
+  datetime::Datetime trade_time;
 };
 
 constexpr std::size_t kMaxMarketLevel = 10;
@@ -301,12 +304,11 @@ enum class MarketDataSource : uint8_t {
   kXTP = 2,
 };
 
-struct TickData {
+struct TickData : public pubsub::Serializable<TickData> {
   MarketDataSource source;
-  uint32_t ticker_id;
-  char date[12];     // YYYYmmdd，以\0结尾的字符串
-  uint64_t time_us;  // 从当日0点开始计算的微秒数
+  datetime::Datetime datetime;
 
+  uint32_t ticker_id;
   double last_price = 0;
   double open_price = 0;
   double highest_price = 0;
@@ -327,6 +329,10 @@ struct TickData {
   struct {
     double iopv;
   } etf;
+
+  SERIALIZABLE_FIELDS(source, datetime, ticker_id, last_price, open_price, highest_price,
+                      lowest_price, pre_close_price, upper_limit_price, lower_limit_price, volume,
+                      turnover, open_interest, level, ask, bid, ask_volume, bid_volume, etf.iopv);
 };
 
 }  // namespace ft

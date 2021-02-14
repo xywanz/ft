@@ -4,4 +4,4 @@ link_directories(${XTP_LIB_PATH}/lib/linux_centos7)
 
 aux_source_directory(. XTP_GATEWAY_SRC)
 add_library(xtp-gateway SHARED ${XTP_GATEWAY_SRC})
-target_link_libraries(xtp-gateway xtptraderapi xtpquoteapi)
+target_link_libraries(xtp-gateway utils xtptraderapi xtpquoteapi)

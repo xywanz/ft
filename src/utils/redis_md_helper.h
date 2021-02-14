@@ -4,6 +4,7 @@
 #define FT_SRC_UTILS_REDIS_MD_HELPER_H_
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
 #include <string>
 #include <vector>
@@ -19,7 +20,12 @@ class RedisMdPusher {
   RedisMdPusher() {}
 
   void Push(const std::string& ticker, const TickData& tick) {
-    redis_.publish(fmt::format("quote-{}", ticker), &tick, sizeof(tick));
+    std::string binary;
+    if (!tick.SerializeToString(&binary)) {
+      spdlog::error("RedisMdPusher::Push: failed to serialize tick data");
+      abort();  // bug
+    }
+    redis_.publish(fmt::format("quote-{}", ticker), binary.data(), binary.size());
   }
 
  private:

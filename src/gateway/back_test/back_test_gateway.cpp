@@ -13,31 +13,6 @@
 
 namespace ft {
 
-namespace {
-
-uint64_t GetTradeTime(const TickData& tick) {
-  uint64_t trade_time = 0;
-  trade_time += (tick.date[0] - '0') * 10000000000000000UL;
-  trade_time += (tick.date[1] - '0') * 1000000000000000UL;
-  trade_time += (tick.date[2] - '0') * 100000000000000UL;
-  trade_time += (tick.date[3] - '0') * 10000000000000UL;
-  trade_time += (tick.date[4] - '0') * 1000000000000UL;
-  trade_time += (tick.date[5] - '0') * 100000000000UL;
-  trade_time += (tick.date[6] - '0') * 10000000000UL;
-  trade_time += (tick.date[7] - '0') * 1000000000UL;
-
-  trade_time += ((tick.time_us) / 1000) % 1000;
-
-  uint64_t current_sec = tick.time_us / 1000000;
-  trade_time += (current_sec % 60) * 1000;
-  trade_time += ((current_sec % 3600) / 60) * 100000;
-  trade_time += (current_sec / 3600) * 10000000;
-
-  return trade_time;
-}
-
-}  // namespace
-
 bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
   if (!ContractTable::is_inited()) {
     spdlog::error("BackTestGateway: ContractTable is not inited");
@@ -157,14 +132,7 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
     history_data_.emplace_back(TickData{});
 
     auto& tick = history_data_.back();
-    struct tm _tm;
-    strptime(tokens[0].data() + 11, "%H:%M:%S", &_tm);
-    tick.time_us = (_tm.tm_sec + _tm.tm_min * 60UL + _tm.tm_hour * 3600UL) * 1000000UL +
-                   std::stoul(tokens[0].data() + 20) * 1000UL;
-    std::copy(tokens[0].data(), tokens[0].data() + 4, tick.date);
-    std::copy(tokens[0].data() + 5, tokens[0].data() + 7, tick.date + 4);
-    std::copy(tokens[0].data() + 8, tokens[0].data() + 10, tick.date + 6);
-
+    tick.datetime = datetime::strptime(tokens[0], "%Y-%m-%d %H:%M:%S.%s");
     tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
     tick.level = 1;
     tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
@@ -276,7 +244,7 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
   trade.volume = order.volume;
   trade.price = price;
   trade.trade_type = TradeType::kSecondaryMarket;
-  trade.trade_time = GetTradeTime(tick);
+  trade.trade_time = tick.datetime;
   msg_queue_.push(trade);
 }
 

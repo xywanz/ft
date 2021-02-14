@@ -4,4 +4,4 @@ link_directories(${CTP_LIB_PATH}/lib)
 
 aux_source_directory(. CTP_GATEWAY_SRC)
 add_library(ctp-gateway SHARED ${CTP_GATEWAY_SRC})
-target_link_libraries(ctp-gateway thostmduserapi_se thosttraderapi_se)
+target_link_libraries(ctp-gateway utils thostmduserapi_se thosttraderapi_se)
