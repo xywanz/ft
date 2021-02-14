@@ -16,6 +16,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fmt/include
     ${CMAKE_SOURCE_DIR}/third_party/getopt
     ${CMAKE_SOURCE_DIR}/third_party/hiredis
+    ${CMAKE_SOURCE_DIR}/third_party/cereal/include
 )
 
 link_directories(
