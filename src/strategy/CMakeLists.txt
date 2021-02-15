@@ -3,5 +3,5 @@
 add_executable(strategy-loader strategy_loader.cpp)
 target_link_libraries(strategy-loader strategy dl)
 
-add_library(strategy STATIC strategy.cpp order_manager.cpp)
+add_library(strategy STATIC strategy.cpp)
 target_link_libraries(strategy utils)
