@@ -69,46 +69,51 @@ bool OrderManagementSystem::Login(const Config& config) {
   // 如果有配置contracts file的路径，则尝试从文件加载
   if (!config.contracts_file.empty()) {
     if (!ContractTable::Init(config.contracts_file))
-      spdlog::warn("[OrderManagementSystem::OrderManagementSystem] Failed to Init contract table");
+      spdlog::warn("从文件初始化ContractTable失败，尝试从Gateway查询。加载路径：{}",
+                   config.contracts_file);
   }
 
   cmd_queue_key_ = config.key_of_cmd_queue;
 
   void* gateway_dl_handle_ = dlopen(config.api.c_str(), RTLD_LAZY);
   if (!gateway_dl_handle_) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to load api: {}", config.api);
+    spdlog::error("Gateway动态库加载失败。加载路径: {}", config.api);
     return false;
   }
   auto gateway_ctor =
       reinterpret_cast<GatewayCreateFunc>(dlsym(gateway_dl_handle_, "CreateGateway"));
   if (!gateway_ctor) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to load api. CreateGateway not found: {}",
-                  config.api);
+    spdlog::error(
+        "CreateGateway函数未找到，Gateway初始化失败，请检查在Gateway实现中是否调用了REGISTER_"
+        "GATEWAY进行注册。加载路径：{}",
+        config.api);
     return false;
   }
   auto gateway_dtor_ =
       reinterpret_cast<GatewayDestroyFunc>(dlsym(gateway_dl_handle_, "DestroyGateway"));
   if (!gateway_dtor_) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to load api. DestroyGateway not found: {}",
-                  config.api);
+    spdlog::error(
+        "DestroyGateway函数未找到，Gateway初始化失败，请检查在Gateway实现中是否调用了REGISTER_"
+        "GATEWAY进行注册。加载路径：{}",
+        config.api);
     return false;
   }
   gateway_ = gateway_ctor();
   if (!gateway_) {
-    spdlog::error("[OrderManagementSystem::Login] Failed. Unknown gateway");
+    spdlog::error("Gateway创建失败");
     return false;
   }
 
   if (!gateway_->Login(this, config)) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to Login");
+    spdlog::error("Gateway登录失败");
     return false;
   }
-  spdlog::info("[OrderManagementSystem::Login] Success. Login as {}", config.investor_id);
+  spdlog::info("Gateway登录成功，当前账户为：{}", config.investor_id);
 
   if (!ContractTable::is_inited()) {
     std::vector<Contract> contracts;
     if (!gateway_->QueryContractList(&contracts)) {
-      spdlog::error("[OrderManagementSystem::Login] Failed to initialize contract table");
+      spdlog::error("查询合约失败，初始化ContractTable失败");
       return false;
     }
     ContractTable::Init(std::move(contracts));
@@ -116,13 +121,13 @@ bool OrderManagementSystem::Login(const Config& config) {
   }
 
   if (!gateway_->Subscribe(config.subscription_list)) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to Subscribe market data");
+    spdlog::error("行情订阅失败，请检查订阅列表是否合法，以及订阅列表在ContractTable中");
     return false;
   }
 
   Account init_acct{};
   if (!gateway_->QueryAccount(&init_acct)) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to query account");
+    spdlog::error("账户查询失败");
     return false;
   }
   HandleAccount(&init_acct);
@@ -131,7 +136,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   std::vector<Position> init_positions;
   portfolio_.Init(ContractTable::size(), true, account_.account_id);
   if (!gateway_->QueryPositionList(&init_positions)) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to query positions");
+    spdlog::error("仓位查询失败");
     return false;
   }
   HandlePositions(&init_positions);
@@ -139,7 +144,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   // query trades to update position
   std::vector<Trade> init_trades;
   if (!gateway_->QueryTradeList(&init_trades)) {
-    spdlog::error("[OrderManagementSystem::Login] Failed to query trades");
+    spdlog::error("历史成交查询失败");
     return false;
   }
   HandleTrades(&init_trades);
@@ -157,7 +162,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   if (config.api == "xtp") rms_->AddRule(std::make_shared<ArbitrageManager>());
   if (!config.no_receipt_mode) rms_->AddRule(std::make_shared<StrategyNotifier>());
   if (!rms_->Init(&risk_params)) {
-    spdlog::error("[OrderManagementSystem::Login] 风险管理对象初始化失败");
+    spdlog::error("风控对象初始化失败");
     return false;
   }
 
@@ -165,7 +170,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   timer_thread_ =
       std::make_unique<std::thread>(std::mem_fn(&OrderManagementSystem::HandleTimer), this);
 
-  spdlog::info("[OrderManagementSystem::Login] Init done");
+  spdlog::info("trading_server初始化成功");
 
   is_logon_ = true;
   return true;
@@ -181,8 +186,7 @@ void OrderManagementSystem::ProcessCmd() {
 void OrderManagementSystem::ProcessRedisCmd() {
   RedisTraderCmdPuller cmd_puller;
   cmd_puller.set_account(account_.account_id);
-  spdlog::info("[OrderManagementSystem::run] Start to recv cmd from topic: {}",
-               cmd_puller.get_topic());
+  spdlog::info("trading_server开始从Redis(topic={})接收请求", cmd_puller.get_topic());
 
   for (;;) {
     auto reply = cmd_puller.Pull();
@@ -206,18 +210,20 @@ void OrderManagementSystem::ProcessQueueCmd() {
   if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
     int res = LFQueue_create(cmd_queue_key_, te_user_id, sizeof(TraderCommand), 4096 * 4, false);
     if (res != 0) {
-      spdlog::info("OrderManagementSystem::run_with_queue] Failed to create cmd queue");
+      spdlog::info("订单请求队列创建失败，请检查共享内存key是否被其他程序占用：{:#x}",
+                   cmd_queue_key_);
       abort();
     }
 
     if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
-      spdlog::info("OrderManagementSystem::run_with_queue] Failed to open cmd queue");
+      spdlog::info("订单请求队列无法打开，请检查共享内存key是否被其他程序占用：{:#x}",
+                   cmd_queue_key_);
       abort();
     }
   }
 
   LFQueue_reset(cmd_queue);
-  spdlog::info("[OrderManagementSystem::run] Start to recv cmd from queue: {:#x}", cmd_queue_key_);
+  spdlog::info("开始从共享内存队列接收请求，队列的key为：{:#x}", cmd_queue_key_);
 
   TraderCommand cmd{};
   int res;
@@ -249,38 +255,38 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
 #endif
 
   if (cmd.magic != kTradingCmdMagic) {
-    spdlog::error("[OrderManagementSystem::run] Recv unknown cmd: error magic num");
+    spdlog::error("收到未知的指令：非法的magic");
     return;
   }
 
   switch (cmd.type) {
     case CMD_NEW_ORDER: {
-      spdlog::debug("new order");
+      spdlog::debug("收到新的订单请求");
       SendOrder(cmd);
       break;
     }
     case CMD_CANCEL_ORDER: {
-      spdlog::debug("cancel order");
+      spdlog::debug("收到撤单请求");
       CancelOrder(cmd.cancel_req.order_id);
       break;
     }
     case CMD_CANCEL_TICKER: {
-      spdlog::debug("cancel all for ticker");
+      spdlog::debug("收到ticker撤单请求");
       CancelForTicker(cmd.cancel_ticker_req.ticker_id);
       break;
     }
     case CMD_CANCEL_ALL: {
-      spdlog::debug("cancel all");
+      spdlog::debug("收到全撤请求");
       CancelAll();
       break;
     }
     case CMD_NOTIFY: {
-      spdlog::debug("notify");
+      spdlog::debug("收到notify消息。signal={}", cmd.notification.signal);
       gateway_->OnNotify(cmd.notification.signal);
       break;
     }
     default: {
-      spdlog::error("[StrategyEngine::run] Unknown cmd");
+      spdlog::error("未知的请求类型");
       break;
     }
   }
