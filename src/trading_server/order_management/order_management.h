@@ -17,7 +17,6 @@
 #include "trading_server/common/order.h"
 #include "trading_server/order_management/base_oms.h"
 #include "trading_server/risk_management/risk_management.h"
-#include "trading_server/risk_management/types.h"
 #include "utils/portfolio.h"
 #include "utils/redis_md_helper.h"
 
@@ -78,7 +77,6 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   RedisMdPusher md_pusher_;
-  MarketDataSnashot md_snapshot_;
   std::mutex mutex_;
   std::unique_ptr<std::thread> timer_thread_;
 

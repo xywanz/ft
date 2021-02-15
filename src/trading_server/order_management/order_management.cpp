@@ -115,7 +115,6 @@ bool OrderManagementSystem::Login(const Config& config) {
     ContractTable::Store("./contracts.csv");
   }
 
-  md_snapshot_.Init();
   if (!gateway_->Subscribe(config.subscription_list)) {
     spdlog::error("[OrderManagementSystem::Login] Failed to Subscribe market data");
     return false;
@@ -151,7 +150,6 @@ bool OrderManagementSystem::Login(const Config& config) {
   risk_params.account = &account_;
   risk_params.portfolio = &portfolio_;
   risk_params.order_map = &order_map_;
-  risk_params.md_snapshot = &md_snapshot_;
   rms_->AddRule(std::make_shared<FundManager>());
   rms_->AddRule(std::make_shared<PositionManager>());
   rms_->AddRule(std::make_shared<NoSelfTradeRule>());
@@ -420,7 +418,6 @@ void OrderManagementSystem::OnTick(TickData* tick) {
   assert(contract);
   md_pusher_.Push(contract->ticker, *tick);
 
-  md_snapshot_.UpdateSnapshot(*tick);
   spdlog::trace("[OrderManagementSystem::process_tick] {}  ask:{:.3f}  bid:{:.3f}",
                 contract->ticker, tick->ask[0], tick->bid[0]);
 }

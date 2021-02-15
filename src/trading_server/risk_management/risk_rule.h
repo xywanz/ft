@@ -5,22 +5,22 @@
 
 #include <map>
 #include <string>
+#include <unordered_map>
 
 #include "protocol/data_types.h"
 #include "protocol/error_code.h"
 #include "trading_server/common/config.h"
-#include "trading_server/common/md_snapshot.h"
 #include "trading_server/common/order.h"
 #include "trading_server/order_management/base_oms.h"
-#include "trading_server/risk_management/types.h"
 #include "utils/portfolio.h"
 #include "utils/protocol_utils.h"
 
 namespace ft {
 
+using OrderMap = std::unordered_map<uint64_t, Order>;
+
 struct RiskRuleParams {
   const Config* config;
-  const MarketDataSnashot* md_snapshot;
   Account* account;
   Portfolio* portfolio;
   OrderMap* order_map;

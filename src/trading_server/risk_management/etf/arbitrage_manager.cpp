@@ -12,7 +12,6 @@ bool ArbitrageManager::Init(RiskRuleParams* params) {
   account_ = params->account;
   portfolio_ = params->portfolio;
   order_map_ = params->order_map;
-  md_snapshot_ = params->md_snapshot;
 
   return EtfTable::Init(params->config->arg0, params->config->arg1);
 }
