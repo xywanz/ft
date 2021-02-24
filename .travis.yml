@@ -18,6 +18,5 @@ script:
   - export CC=gcc-7
   - export CXX=g++-7
   - gcc -v && g++ -v && cmake --version
-  - rm -rf build
-  - cmake -S . -B build
-  - cmake --build build
+  - rm -rf build && mkdir build && cd build
+  - cmake .. && make -j
