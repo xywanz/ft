@@ -1,4 +1,11 @@
-aux_source_directory(lockfree-queue LFQ_SRC)
-aux_source_directory(. UTILS_SRC)
-add_library(utils STATIC ${LFQ_SRC} ${UTILS_SRC})
-target_link_libraries(utils ft_component yaml-cpp hiredis)
+
+add_library(utils STATIC
+    lockfree-queue/queue.c
+    config_loader.cpp
+    datetime.cpp
+    portfolio.cpp
+    redis.cpp)
+add_library(ft::utils ALIAS utils)
+
+target_include_directories(utils PUBLIC "${PROJECT_SOURCE_DIR}/src")
+target_link_libraries(utils PUBLIC ft::component yaml-cpp hiredis spdlog fmt getopt)

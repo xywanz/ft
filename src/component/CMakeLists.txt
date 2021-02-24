@@ -1,4 +1,9 @@
-aux_source_directory(contract_table CONTRACT_TABLE_SRC)
-aux_source_directory(order_book ORDER_BOOK_SRC)
 
-add_library(ft_component STATIC ${CONTRACT_TABLE_SRC} ${ORDER_BOOK_SRC})
+add_library(component STATIC
+    contract_table/contract_table.cpp
+    order_book/order_book.cpp
+    order_book/price_level.cpp)
+add_library(ft::component ALIAS component)
+
+target_include_directories(component PUBLIC "${PROJECT_SOURCE_DIR}/src")
+target_link_libraries(component PUBLIC fmt cereal)

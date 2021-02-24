@@ -10,10 +10,8 @@ mark_as_advanced(
 
 add_library(ft_test
     ../src/trading_server/risk_management/common/no_self_trade.cpp)
-target_include_directories(ft_test PUBLIC
-    ../src
-    ../third_party/cereal/include)
-target_link_libraries(ft_test PUBLIC utils)
+target_include_directories(ft_test PUBLIC ../src)
+target_link_libraries(ft_test PUBLIC utils cereal)
 
 set_target_properties(gtest PROPERTIES FOLDER third_party)
 set_target_properties(gtest_main PROPERTIES FOLDER third_party)

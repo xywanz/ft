@@ -4,3 +4,18 @@
 [submodule "third_party/cereal"]
 	path = third_party/cereal
 	url = https://github.com/USCiLab/cereal.git
+[submodule "third_party/getopt"]
+	path = third_party/getopt
+	url = https://github.com/r-lyeh-archived/getopt.git
+[submodule "third_party/yaml-cpp"]
+	path = third_party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "third_party/hiredis"]
+	path = third_party/hiredis
+	url = https://github.com/redis/hiredis.git
+[submodule "third_party/fmt"]
+	path = third_party/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = https://github.com/gabime/spdlog.git

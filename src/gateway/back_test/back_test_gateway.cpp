@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <thread>
 
 #include "component/contract_table/contract_table.h"
 #include "utils/protocol_utils.h"

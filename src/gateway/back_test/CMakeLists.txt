@@ -1,3 +1,4 @@
-aux_source_directory(. BACKTEST_GATEWAY_SRC)
-add_library(backtest-gateway SHARED ${BACKTEST_GATEWAY_SRC})
-target_link_libraries(backtest-gateway utils pthread)
+
+add_library(backtest_gateway SHARED back_test_gateway.cpp)
+add_library(ft::backtest_gateway ALIAS backtest_gateway)
+target_link_libraries(backtest_gateway PRIVATE ft::utils pthread)

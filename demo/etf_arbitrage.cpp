@@ -1,6 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <fmt/format.h>
+#include <unistd.h>
 
 #include "strategy/order_sender.h"
 #include "trading_server/risk_management/etf/etf_table.h"

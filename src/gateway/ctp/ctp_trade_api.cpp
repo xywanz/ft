@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <thread>
 
 #include "utils/misc.h"
 #include "utils/protocol_utils.h"

@@ -1,7 +1,10 @@
-set(XTP_LIB_PATH ${CMAKE_SOURCE_DIR}/third_party/xtp)
-include_directories(${XTP_LIB_PATH}/include)
-link_directories(${XTP_LIB_PATH}/lib/linux_centos7)
 
-aux_source_directory(. XTP_GATEWAY_SRC)
-add_library(xtp-gateway SHARED ${XTP_GATEWAY_SRC})
-target_link_libraries(xtp-gateway utils xtptraderapi xtpquoteapi)
+add_library(xtp_gateway SHARED
+    xtp_gateway.cpp
+    _xtp_quote_api.cpp
+    xtp_trade_api.cpp)
+add_library(ft::xtp_gateway ALIAS xtp_gateway)
+
+target_include_directories(xtp_gateway PRIVATE "${PROJECT_SOURCE_DIR}/third_party/xtp/include")
+target_link_directories(xtp_gateway PRIVATE "${PROJECT_SOURCE_DIR}/third_party/xtp/lib/linux_centos7")
+target_link_libraries(xtp_gateway PRIVATE ft::utils xtptraderapi xtpquoteapi)

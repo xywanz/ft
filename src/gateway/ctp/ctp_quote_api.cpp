@@ -139,8 +139,7 @@ void CtpQuoteApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrume
   if (!contract) {
     spdlog::error(
         "[CtpQuoteApi::OnRspSubMarketData] ExchangeID not found in contract "
-        "list. "
-        "Maybe you should update the contract list. Ticker: {}",
+        "list. Maybe you should update the contract list. Ticker: {}",
         instrument->InstrumentID);
     return;
   }
