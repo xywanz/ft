@@ -4,6 +4,7 @@
 #define FT_SRC_GATEWAY_CTP_CTP_TRADE_API_H_
 
 #include <ThostFtdcTraderApi.h>
+#include <ft/trader/gateway.h>
 
 #include <atomic>
 #include <map>
@@ -12,8 +13,6 @@
 #include <vector>
 
 #include "gateway/ctp/ctp_common.h"
-#include "gateway/gateway.h"
-#include "protocol/data_types.h"
 
 namespace ft {
 

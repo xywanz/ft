@@ -1,12 +1,10 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
+#include <ft/component/pubsub/serializable.h>
 #include <gtest/gtest.h>
 
 #include <chrono>
 #include <string>
-
-#include "component/pubsub/serializable.h"
-#include "protocol/data_types.h"
 
 struct MyData : public ft::pubsub::Serializable<MyData> {
   int a;

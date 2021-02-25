@@ -195,7 +195,6 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   tick.upper_limit_price = adjust_price(md->UpperLimitPrice);
   tick.lower_limit_price = adjust_price(md->LowerLimitPrice);
 
-  tick.level = 5;
   tick.ask[0] = adjust_price(md->AskPrice1);
   tick.ask[1] = adjust_price(md->AskPrice2);
   tick.ask[2] = adjust_price(md->AskPrice3);

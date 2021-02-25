@@ -3,6 +3,9 @@
 #ifndef FT_SRC_GATEWAY_BACK_TEST_BACK_TEST_GATEWAY_H_
 #define FT_SRC_GATEWAY_BACK_TEST_BACK_TEST_GATEWAY_H_
 
+#include <ft/trader/gateway.h>
+#include <ft/utils/portfolio.h>
+
 #include <condition_variable>
 #include <list>
 #include <memory>
@@ -12,9 +15,6 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
-
-#include "gateway/gateway.h"
-#include "utils/portfolio.h"
 
 namespace ft {
 

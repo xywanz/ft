@@ -2,6 +2,7 @@
 
 #include "gateway/xtp/xtp_gateway.h"
 
+#include <ft/base/contract_table.h>
 #include <spdlog/spdlog.h>
 
 namespace ft {
@@ -11,6 +12,11 @@ XtpGateway::XtpGateway() {}
 bool XtpGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
   if (config.trade_server_address.empty() && config.quote_server_address.empty()) {
     spdlog::error("[XtpGateway::Login] 交易柜台和行情服务器地址都未设置");
+    return false;
+  }
+
+  if (!ContractTable::Init(config.contracts_file)) {
+    spdlog::error("初始化合约列表失败");
     return false;
   }
 

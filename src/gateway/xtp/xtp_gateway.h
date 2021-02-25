@@ -3,6 +3,7 @@
 #ifndef FT_SRC_GATEWAY_XTP_XTP_GATEWAY_H_
 #define FT_SRC_GATEWAY_XTP_XTP_GATEWAY_H_
 
+#include <ft/trader/gateway.h>
 #include <xtp_quote_api.h>
 #include <xtp_trader_api.h>
 
@@ -10,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "gateway/gateway.h"
 #include "gateway/xtp/_xtp_quote_api.h"
 #include "gateway/xtp/xtp_common.h"
 #include "gateway/xtp/xtp_trade_api.h"

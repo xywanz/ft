@@ -1,8 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
+#include <ft/strategy/strategy.h>
 #include <spdlog/spdlog.h>
-
-#include "strategy/strategy.h"
 
 class GridStrategy : public ft::Strategy {
  public:

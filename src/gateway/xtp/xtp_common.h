@@ -3,12 +3,11 @@
 #ifndef FT_SRC_GATEWAY_XTP_XTP_COMMON_H_
 #define FT_SRC_GATEWAY_XTP_XTP_COMMON_H_
 
+#include <ft/base/trade_msg.h>
 #include <xtp_trader_api.h>
 
 #include <memory>
 #include <string>
-
-#include "protocol/data_types.h"
 
 namespace ft {
 

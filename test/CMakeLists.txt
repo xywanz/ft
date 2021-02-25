@@ -8,10 +8,9 @@ mark_as_advanced(
     gtest_disable_pthreads gtest_force_shared_crt gtest_hide_internal_symbols
 )
 
-add_library(ft_test
-    ../src/trading_server/risk_management/common/no_self_trade.cpp)
+add_library(ft_test ../src/trader/risk_management/common/no_self_trade.cpp)
 target_include_directories(ft_test PUBLIC ../src)
-target_link_libraries(ft_test PUBLIC utils cereal)
+target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils ft::ft_third_party)
 
 set_target_properties(gtest PROPERTIES FOLDER third_party)
 set_target_properties(gtest_main PROPERTIES FOLDER third_party)

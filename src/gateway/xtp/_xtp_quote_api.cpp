@@ -2,12 +2,11 @@
 
 #include "gateway/xtp/_xtp_quote_api.h"
 
+#include <ft/base/contract_table.h>
+#include <ft/utils/misc.h>
 #include <spdlog/spdlog.h>
 
 #include <vector>
-
-#include "component/contract_table/contract_table.h"
-#include "utils/misc.h"
 
 namespace ft {
 
@@ -193,7 +192,6 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   tick.lower_limit_price = market_data->lower_limit_price;
   tick.etf.iopv = market_data->stk.iopv;  // 只对于ETF有效
 
-  tick.level = 10;
   tick.ask[0] = market_data->ask[0];
   tick.ask[1] = market_data->ask[1];
   tick.ask[2] = market_data->ask[2];

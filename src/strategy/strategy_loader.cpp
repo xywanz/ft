@@ -1,13 +1,12 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <dlfcn.h>
+#include <ft/base/contract_table.h>
+#include <ft/strategy/strategy.h>
 #include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <getopt.hpp>
-
-#include "component/contract_table/contract_table.h"
-#include "strategy/strategy.h"
 
 static void Usage() {
   printf("Usage: ./strategy-loader [--account=<account>]\n");

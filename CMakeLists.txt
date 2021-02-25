@@ -35,8 +35,17 @@ add_subdirectory("third_party/hiredis" "third_party/hiredis")
 add_subdirectory("third_party/spdlog" "third_party/spdlog")
 add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
 
+add_library(ft_third_party INTERFACE)
+add_library(ft::ft_third_party ALIAS ft_third_party)
+target_link_libraries(ft_third_party INTERFACE fmt cereal spdlog getopt hiredis yaml-cpp)
+
+add_library(ft_header INTERFACE)
+add_library(ft::ft_header ALIAS ft_header)
+target_include_directories(ft_header INTERFACE "include")
+
 add_subdirectory(src)
 add_subdirectory(demo)
+add_subdirectory(tools)
 
 option(BUILD_TESTS "Build the tests" ON)
 if(BUILD_TESTS)

@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "component/order_book/order_book.h"
+#include <ft/component/order_book/order_book.h>
 
 using ft::orderbook::LimitOrder;
 using ft::orderbook::OrderBook;

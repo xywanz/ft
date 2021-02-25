@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "trading_server/risk_management/common/no_self_trade.h"
+#include "trader/risk_management/common/no_self_trade.h"
 
 static uint64_t order_id = 1;
 

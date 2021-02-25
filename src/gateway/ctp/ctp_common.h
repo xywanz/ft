@@ -4,6 +4,8 @@
 #define FT_SRC_GATEWAY_CTP_CTP_COMMON_H_
 
 #include <ThostFtdcUserApiDataType.h>
+#include <ft/base/contract_table.h>
+#include <ft/base/trade_msg.h>
 
 #include <codecvt>
 #include <limits>
@@ -12,9 +14,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-#include "component/contract_table/contract_table.h"
-#include "protocol/data_types.h"
 
 namespace ft {
 

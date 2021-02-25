@@ -5,6 +5,7 @@
 
 #include <ThostFtdcMdApi.h>
 #include <ThostFtdcTraderApi.h>
+#include <ft/trader/gateway.h>
 
 #include <memory>
 #include <string>
@@ -13,7 +14,6 @@
 #include "gateway/ctp/ctp_common.h"
 #include "gateway/ctp/ctp_quote_api.h"
 #include "gateway/ctp/ctp_trade_api.h"
-#include "gateway/gateway.h"
 
 namespace ft {
 

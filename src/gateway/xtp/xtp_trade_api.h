@@ -3,6 +3,7 @@
 #ifndef FT_SRC_GATEWAY_XTP_XTP_TRADE_API_H_
 #define FT_SRC_GATEWAY_XTP_XTP_TRADE_API_H_
 
+#include <ft/trader/gateway.h>
 #include <xtp_trader_api.h>
 
 #include <atomic>
@@ -12,9 +13,7 @@
 #include <string>
 #include <vector>
 
-#include "gateway/gateway.h"
 #include "gateway/xtp/xtp_common.h"
-#include "protocol/data_types.h"
 
 namespace ft {
 

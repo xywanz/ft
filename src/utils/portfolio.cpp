@@ -1,14 +1,12 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "utils/portfolio.h"
-
+#include <ft/base/contract_table.h>
+#include <ft/base/trade_msg.h>
+#include <ft/utils/portfolio.h>
+#include <ft/utils/protocol_utils.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
-
-#include "component/contract_table/contract_table.h"
-#include "protocol/data_types.h"
-#include "utils/protocol_utils.h"
 
 namespace ft {
 

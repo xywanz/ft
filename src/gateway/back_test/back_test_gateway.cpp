@@ -3,20 +3,20 @@
 #include "gateway/back_test/back_test_gateway.h"
 
 #include <fmt/format.h>
+#include <ft/base/contract_table.h>
+#include <ft/utils/protocol_utils.h>
+#include <ft/utils/string_utils.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <fstream>
 #include <thread>
 
-#include "component/contract_table/contract_table.h"
-#include "utils/protocol_utils.h"
-
 namespace ft {
 
 bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
-  if (!ContractTable::is_inited()) {
-    spdlog::error("BackTestGateway: ContractTable is not inited");
+  if (!ContractTable::Init(config.contracts_file)) {
+    spdlog::error("初始化合约列表失败");
     return false;
   }
 
@@ -135,7 +135,6 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
     auto& tick = history_data_.back();
     tick.datetime = datetime::strptime(tokens[0], "%Y-%m-%d %H:%M:%S.%s");
     tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
-    tick.level = 1;
     tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
     tick.ask_volume[0] = tokens[4].empty() ? 0 : std::stoi(tokens[4]);
     tick.bid[0] = tokens[5].empty() ? 0.0 : std::stoi(tokens[5]);

@@ -1,7 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "strategy/strategy.h"
-
+#include <ft/strategy/strategy.h>
 #include <spdlog/spdlog.h>
 
 namespace ft {
