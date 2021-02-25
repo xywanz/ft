@@ -12,6 +12,20 @@ addons:
       - gcc-7
       - g++-7
 
+before_install:
+  - sudo apt update
+  - sudo apt remove --purge cmake
+  - sudo apt install libboost-all-dev
+
+install:    
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/build_deps"
+  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+  - travis_retry wget --no-check-certificate https://cmake.org/files/v3.19/cmake-3.19.6-Linux-x86_64.tar.gz
+  - tar -xvf cmake-3.19.6-Linux-x86_64.tar.gz > /dev/null
+  - mv cmake-3.19.6-Linux-x86_64 cmake-install
+  - PATH=${DEPS_DIR}/cmake-install:${DEPS_DIR}/cmake-install/bin:$PATH
+  - cd ${TRAVIS_BUILD_DIR}
+
 script:
   - export CODECOV_TOKEN="964ca3de-67f4-4065-a81a-b86c489c1738"
   - bash <(curl -s https://codecov.io/bash)
