@@ -1,4 +1,4 @@
-# FT 算法交易系统
+# Flare Trader 算法交易系统
 | Platform | Build                                                                                                               |
 | -------- | ------------------------------------------------------------------------------------------------------------------- |
 | Linux    | [![Build Status](https://travis-ci.com/DuckDuckDuck0/ft.svg?branch=master)](https://travis-ci.com/DuckDuckDuck0/ft) |
