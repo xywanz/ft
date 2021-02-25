@@ -13,9 +13,7 @@ addons:
       - g++-7
 
 before_install:
-  - sudo apt update
   - sudo apt remove --purge cmake
-  - sudo apt install libboost-all-dev
 
 install:    
   - DEPS_DIR="${TRAVIS_BUILD_DIR}/build_deps"
