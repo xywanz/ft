@@ -19,7 +19,7 @@ class Subscriber {
   explicit Subscriber(const std::string& address);
 
   template <class T>
-  bool Subscribe(const std::string& routing_key, std::function<void(T* data)> callback) {
+  bool Subscribe(const std::string& routing_key, std::function<void(T* data)>& callback) {
     if (!sock_->Subscribe(routing_key)) {
       return false;
     }
