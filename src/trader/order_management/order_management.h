@@ -6,10 +6,10 @@
 #include <ft/base/error_code.h>
 #include <ft/base/market_data.h>
 #include <ft/base/trade_msg.h>
+#include <ft/component/pubsub/publisher.h>
 #include <ft/trader/base_oms.h>
 #include <ft/trader/gateway.h>
 #include <ft/utils/portfolio.h>
-#include <ft/utils/redis_md_helper.h>
 
 #include <list>
 #include <map>
@@ -78,7 +78,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   Portfolio portfolio_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
-  RedisMdPusher md_pusher_;
+  pubsub::Publisher md_pusher_;
   std::mutex mutex_;
   std::unique_ptr<std::thread> timer_thread_;
 

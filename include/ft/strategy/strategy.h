@@ -5,6 +5,7 @@
 
 #include <ft/base/market_data.h>
 #include <ft/base/trade_msg.h>
+#include <ft/component/pubsub/subscriber.h>
 #include <ft/strategy/order_sender.h>
 #include <ft/utils/redis.h>
 #include <ft/utils/redis_md_helper.h>
@@ -17,7 +18,7 @@ namespace ft {
 
 class Strategy {
  public:
-  Strategy() {}
+  Strategy();
 
   virtual ~Strategy() {}
 
@@ -32,8 +33,6 @@ class Strategy {
   // 仅供加载器调用，内部不可使用
   void Run();
 
-  void RunBackTest();
-
   // 策略启动后请勿更改id
   void set_id(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
@@ -44,6 +43,8 @@ class Strategy {
     sender_.set_account(account_id);
     pos_getter_.set_account(account_id);
   }
+
+  void set_backtest_mode(bool backtest_mode = true) { backtest_mode_ = backtest_mode; }
 
  protected:
   void Subscribe(const std::vector<std::string>& sub_list);
@@ -95,7 +96,9 @@ class Strategy {
   StrategyIdType strategy_id_;
   OrderSender sender_;
   RedisPositionGetter pos_getter_;
-  RedisTERspPuller puller_;
+  pubsub::Subscriber md_sub_;
+  pubsub::Subscriber trade_msg_sub_;
+  bool backtest_mode_ = false;
 };
 
 #define EXPORT_STRATEGY(type) \

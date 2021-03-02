@@ -247,7 +247,7 @@ struct TraderCommand {
 } __attribute__((packed));
 
 // 订单回报
-struct OrderResponse {
+struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   uint32_t client_order_id;
   uint64_t order_id;
   uint32_t ticker_id;
@@ -260,7 +260,10 @@ struct OrderResponse {
   int error_code;
   uint32_t this_traded;
   double this_traded_price;
-} __attribute__((packed));
+
+  SERIALIZABLE_FIELDS(client_order_id, order_id, ticker_id, direction, offset, original_volume,
+                      traded_volume, completed, error_code, this_traded, this_traded_price);
+};
 
 // 下面是oms和gateway之间的信息传输
 struct OrderAcceptance {

@@ -4,6 +4,8 @@
 
 namespace ft {
 
+StrategyNotifier::StrategyNotifier() : pub_("ipc://trade_msg.ft_trader.ipc") {}
+
 void StrategyNotifier::OnOrderAccepted(const Order* order) {
   if (order->strategy_id[0] != 0) {
     OrderResponse rsp{};
@@ -14,7 +16,7 @@ void StrategyNotifier::OnOrderAccepted(const Order* order) {
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
     rsp.error_code = NO_ERROR;
-    rsp_redis_.publish(order->strategy_id, &rsp, sizeof(rsp));
+    pub_.Publish(order->strategy_id, rsp);
   }
 }
 
@@ -32,7 +34,7 @@ void StrategyNotifier::OnOrderTraded(const Order* order, const Trade* trade) {
     rsp.this_traded_price = trade->price;
     rsp.completed = order->canceled_volume + order->traded_volume == order->req.volume;
     rsp.error_code = NO_ERROR;
-    rsp_redis_.publish(order->strategy_id, &rsp, sizeof(rsp));
+    pub_.Publish(order->strategy_id, rsp);
   }
 }
 
@@ -52,7 +54,7 @@ void StrategyNotifier::OnOrderRejected(const Order* order, int error_code) {
     rsp.original_volume = order->req.volume;
     rsp.completed = true;
     rsp.error_code = error_code;
-    rsp_redis_.publish(order->strategy_id, &rsp, sizeof(rsp));
+    pub_.Publish(order->strategy_id, rsp);
   }
 }
 

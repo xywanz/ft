@@ -3,7 +3,7 @@
 #ifndef FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
 #define FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_STRATEGY_NOTIFIER_H_
 
-#include <ft/utils/redis.h>
+#include <ft/component/pubsub/publisher.h>
 
 #include "trader/risk_management/risk_rule.h"
 
@@ -11,6 +11,8 @@ namespace ft {
 
 class StrategyNotifier : public RiskRule {
  public:
+  StrategyNotifier();
+
   void OnOrderAccepted(const Order* order);
 
   void OnOrderTraded(const Order* order, const Trade* trade) override;
@@ -19,7 +21,8 @@ class StrategyNotifier : public RiskRule {
 
   void OnOrderRejected(const Order* order, int error_code) override;
 
-  RedisSession rsp_redis_;
+ private:
+  pubsub::Publisher pub_;
 };
 
 }  // namespace ft

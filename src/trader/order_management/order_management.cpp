@@ -4,6 +4,11 @@
 
 #include <dlfcn.h>
 #include <ft/base/contract_table.h>
+#include <ft/utils/config_loader.h>
+#include <ft/utils/lockfree-queue/queue.h>
+#include <ft/utils/misc.h>
+#include <ft/utils/protocol_utils.h>
+#include <ft/utils/redis_trader_cmd_helper.h>
 #include <spdlog/spdlog.h>
 
 #include <utility>
@@ -14,11 +19,6 @@
 #include "trader/risk_management/common/strategy_notifier.h"
 #include "trader/risk_management/common/throttle_rate_limit.h"
 #include "trader/risk_management/etf/arbitrage_manager.h"
-#include <ft/utils/config_loader.h>
-#include <ft/utils/lockfree-queue/queue.h>
-#include <ft/utils/misc.h>
-#include <ft/utils/protocol_utils.h>
-#include <ft/utils/redis_trader_cmd_helper.h>
 
 namespace ft {
 
@@ -53,7 +53,9 @@ void ShowConfig(const Config& cfg) {
 }
 }  // namespace
 
-OrderManagementSystem::OrderManagementSystem() { rms_ = std::make_unique<RiskManagementSystem>(); }
+OrderManagementSystem::OrderManagementSystem() : md_pusher_("ipc://md.ft_trader.ipc") {
+  rms_ = std::make_unique<RiskManagementSystem>();
+}
 
 OrderManagementSystem::~OrderManagementSystem() { Close(); }
 
@@ -420,7 +422,9 @@ void OrderManagementSystem::OnTick(TickData* tick) {
 
   auto contract = ContractTable::get_by_index(tick->ticker_id);
   assert(contract);
-  md_pusher_.Push(contract->ticker, *tick);
+  if (!md_pusher_.Publish(fmt::format("quote-{}", contract->ticker), *tick)) {
+    spdlog::error("failed to publish tick data. ticker:{}", contract->ticker);
+  }
 
   spdlog::trace("[OrderManagementSystem::process_tick] {}  ask:{:.3f}  bid:{:.3f}",
                 contract->ticker, tick->ask[0], tick->bid[0]);

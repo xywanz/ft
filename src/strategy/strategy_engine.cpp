@@ -2,14 +2,16 @@
 
 #include <dlfcn.h>
 #include <ft/base/contract_table.h>
+#include <ft/component/pubsub/subscriber.h>
 #include <ft/strategy/strategy.h>
 #include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <getopt.hpp>
+#include <thread>
 
 static void Usage() {
-  printf("Usage: ./strategy-loader [--account=<account>]\n");
+  printf("Usage: ./strategy_engine [--account=<account>]\n");
   printf("                         [--contracts=<file>] [-h -? --help]\n");
   printf("                         [--id=<id>] [--loglevel=level]\n");
   printf("                         [--strategy=<so>]\n");
@@ -66,12 +68,8 @@ int main() {
   auto strategy = strategy_ctor();
   strategy->set_id(strategy_id);
   strategy->set_account_id(account_id);
+  strategy->set_backtest_mode(backtest_mode);
 
   spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
-  if (backtest_mode) {
-    spdlog::info("backtest mode");
-    strategy->RunBackTest();
-  } else {
-    strategy->Run();
-  }
+  strategy->Run();
 }

@@ -4,5 +4,5 @@ add_library(strategy STATIC strategy.cpp)
 add_library(ft::strategy ALIAS strategy)
 target_link_libraries(strategy PUBLIC ft::utils)
 
-add_executable(strategy-loader strategy_loader.cpp)
-target_link_libraries(strategy-loader strategy dl)
+add_executable(strategy_engine strategy_engine.cpp)
+target_link_libraries(strategy_engine strategy dl)

@@ -3,56 +3,42 @@
 #include <ft/strategy/strategy.h>
 #include <spdlog/spdlog.h>
 
+#include <thread>
+
 namespace ft {
 
+Strategy::Strategy()
+    : md_sub_("ipc://md.ft_trader.ipc"), trade_msg_sub_("ipc://trade_msg.ft_trader.ipc") {}
+
 void Strategy::Run() {
+  trade_msg_sub_.Subscribe<OrderResponse>(strategy_id_,
+                                          [this](OrderResponse* rsp) { OnOrderResponse(*rsp); });
+
   OnInit();
-  puller_.SubscribeOrderResponse(strategy_id_);
-
-  for (;;) {
-    auto reply = puller_.Pull();
-    if (reply) {
-      if (strcmp(reply->element[1]->str, strategy_id_) == 0) {
-        auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        OnOrderResponse(*rsp);
-      } else {
-        TickData tick;
-        if (!tick.ParseFromString(reply->element[2]->str, reply->element[2]->len)) {
-          spdlog::error("Strategy::Run: failed to parse tick data");
-          continue;
-        }
-        OnTick(tick);
-      }
-    }
+  if (backtest_mode_) {
+    SendNotification(0);
   }
-}
 
-void Strategy::RunBackTest() {
-  OnInit();
-  puller_.SubscribeOrderResponse(strategy_id_);
-  SendNotification(0);  // 通知gateway开始发tick数据
+  std::thread trade_msg_thread([this] { trade_msg_sub_.Start(); });
+  md_sub_.Start();
 
-  for (;;) {
-    auto reply = puller_.Pull();
-    if (reply) {
-      if (strcmp(reply->element[1]->str, strategy_id_) == 0) {
-        auto rsp = reinterpret_cast<const OrderResponse*>(reply->element[2]->str);
-        OnOrderResponse(*rsp);
-      } else {
-        TickData tick;
-        if (!tick.ParseFromString(reply->element[2]->str, reply->element[2]->len)) {
-          spdlog::error("Strategy::Run: failed to parse tick data");
-          abort();  // bug
-        }
-        OnTick(tick);
-        SendNotification(0);  // 通知gateway数据已消费完
-      }
-    }
-  }
+  trade_msg_thread.join();
 }
 
 void Strategy::Subscribe(const std::vector<std::string>& sub_list) {
-  puller_.SubscribeMarketData(sub_list);
+  if (backtest_mode_) {
+    for (const auto& ticker : sub_list) {
+      md_sub_.Subscribe<TickData>(fmt::format("quote-{}", ticker), [this](TickData* tick) {
+        OnTick(*tick);
+        SendNotification(0);
+      });
+    }
+  } else {
+    for (const auto& ticker : sub_list) {
+      md_sub_.Subscribe<TickData>(fmt::format("quote-{}", ticker),
+                                  [this](TickData* tick) { OnTick(*tick); });
+    }
+  }
 }
 
 }  // namespace ft
