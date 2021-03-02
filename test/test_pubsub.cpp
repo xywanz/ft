@@ -16,10 +16,8 @@ TEST(PubSubTest, Case_0) {
   Publisher pub("ipc://test.ipc");
 
   Subscriber sub("ipc://test.ipc");
-  std::function<void(ft::datetime::Datetime*)> cb = [&](ft::datetime::Datetime* data) {
-    ASSERT_EQ(*data, now);
-  };
-  sub.Subscribe("A", cb);
+  sub.Subscribe<ft::datetime::Datetime>(
+      "A", [&](ft::datetime::Datetime* data) { ASSERT_EQ(*data, now); });
   std::thread th([&]() {
     for (int i = 0; i < 100; ++i) {
       sub.GetReply();
