@@ -24,6 +24,11 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
+add_subdirectory("third_party/fmt" "third_party/fmt")
+add_subdirectory("third_party/hiredis" "third_party/hiredis")
+add_subdirectory("third_party/spdlog" "third_party/spdlog")
+add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
+
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE "third_party/cereal/include")
 
@@ -31,19 +36,22 @@ add_library(getopt INTERFACE)
 target_include_directories(getopt INTERFACE "third_party/getopt")
 
 add_library(cppzmq INTERFACE)
-target_include_directories(cppzmq INTERFACE "third_party/cppzmq")
-
-add_subdirectory("third_party/fmt" "third_party/fmt")
-add_subdirectory("third_party/hiredis" "third_party/hiredis")
-add_subdirectory("third_party/spdlog" "third_party/spdlog")
-add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
+target_include_directories(cppzmq INTERFACE "third_party/cppzmq"
+                                            "third_party/libzmq/include")
+target_link_libraries(cppzmq INTERFACE libzmq-static)
 
 set(ZMQ_BUILD_TESTS OFF)
 add_subdirectory("third_party/libzmq" "third_party/libzmq")
 
 add_library(ft_third_party INTERFACE)
 add_library(ft::ft_third_party ALIAS ft_third_party)
-target_link_libraries(ft_third_party INTERFACE fmt cereal spdlog getopt hiredis yaml-cpp zmq cppzmq)
+target_link_libraries(ft_third_party INTERFACE fmt
+                                               cereal
+                                               spdlog
+                                               getopt
+                                               hiredis
+                                               yaml-cpp
+                                               cppzmq)
 
 add_library(ft_header INTERFACE)
 add_library(ft::ft_header ALIAS ft_header)
