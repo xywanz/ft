@@ -28,15 +28,14 @@ void Strategy::Run() {
 void Strategy::Subscribe(const std::vector<std::string>& sub_list) {
   if (backtest_mode_) {
     for (const auto& ticker : sub_list) {
-      md_sub_.Subscribe<TickData>(fmt::format("quote-{}", ticker), [this](TickData* tick) {
+      md_sub_.Subscribe<TickData>(ticker, [this](TickData* tick) {
         OnTick(*tick);
         SendNotification(0);
       });
     }
   } else {
     for (const auto& ticker : sub_list) {
-      md_sub_.Subscribe<TickData>(fmt::format("quote-{}", ticker),
-                                  [this](TickData* tick) { OnTick(*tick); });
+      md_sub_.Subscribe<TickData>(ticker, [this](TickData* tick) { OnTick(*tick); });
     }
   }
 }

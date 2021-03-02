@@ -422,7 +422,7 @@ void OrderManagementSystem::OnTick(TickData* tick) {
 
   auto contract = ContractTable::get_by_index(tick->ticker_id);
   assert(contract);
-  if (!md_pusher_.Publish(fmt::format("quote-{}", contract->ticker), *tick)) {
+  if (!md_pusher_.Publish(contract->ticker, *tick)) {
     spdlog::error("failed to publish tick data. ticker:{}", contract->ticker);
   }
 
