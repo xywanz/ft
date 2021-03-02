@@ -15,11 +15,6 @@ bool XtpGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
     return false;
   }
 
-  if (!ContractTable::Init(config.contracts_file)) {
-    spdlog::error("初始化合约列表失败");
-    return false;
-  }
-
   if (!config.trade_server_address.empty()) {
     trade_api_ = std::make_unique<XtpTradeApi>(oms);
     if (!trade_api_->Login(config)) {

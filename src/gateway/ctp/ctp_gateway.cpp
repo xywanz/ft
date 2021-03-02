@@ -26,11 +26,6 @@ bool CtpGateway::Login(BaseOrderManagementSystem *oms, const Config &config) {
     return false;
   }
 
-  if (!ContractTable::Init(config.contracts_file)) {
-    spdlog::error("初始化合约列表失败");
-    return false;
-  }
-
   if (!config.trade_server_address.empty()) {
     spdlog::debug("[CtpGateway::Login] Login into trading server");
     trade_api_ = std::make_unique<CtpTradeApi>(oms);

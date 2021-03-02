@@ -15,11 +15,6 @@
 namespace ft {
 
 bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
-  if (!ContractTable::Init(config.contracts_file)) {
-    spdlog::error("初始化合约列表失败");
-    return false;
-  }
-
   if (!oms) {
     spdlog::error("BackTestGateway: oms is nullptr");
     return false;
