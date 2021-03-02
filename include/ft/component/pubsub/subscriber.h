@@ -19,17 +19,18 @@ class Subscriber {
   explicit Subscriber(const std::string& address);
 
   template <class T>
-  bool Subscribe(const std::string& routing_key, std::function<void(T* data)>& callback) {
+  bool Subscribe(const std::string& routing_key, std::function<void(T*)> callback) {
     if (!sock_->Subscribe(routing_key)) {
       return false;
     }
 
-    auto cb_handle = [&](const std::string& msg) {
+    auto callback_ptr = std::make_shared<std::function<void(T*)>>(std::move(callback));
+    auto cb_handle = [callback_ptr](const std::string& msg) {
       T data;
       if (!data.ParseFromString(msg)) {
         throw std::runtime_error("cannot deserialize from str");
       }
-      callback(&data);
+      (*callback_ptr)(&data);
     };
     cb_.emplace(routing_key, cb_handle);
 
