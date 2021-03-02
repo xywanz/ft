@@ -11,7 +11,7 @@ addons:
     packages:
       - gcc-7
       - g++-7
-      - libzmq5
+      - pkg-config
 
 before_install:
   - sudo apt remove --purge cmake
