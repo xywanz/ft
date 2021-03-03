@@ -4,11 +4,11 @@
 
 #include <dlfcn.h>
 #include <ft/base/contract_table.h>
+#include <ft/component/pubsub/subscriber.h>
 #include <ft/utils/config_loader.h>
 #include <ft/utils/lockfree-queue/queue.h>
 #include <ft/utils/misc.h>
 #include <ft/utils/protocol_utils.h>
-#include <ft/utils/redis_trader_cmd_helper.h>
 #include <spdlog/spdlog.h>
 
 #include <utility>
@@ -180,21 +180,21 @@ void OrderManagementSystem::ProcessCmd() {
   if (cmd_queue_key_ > 0)
     ProcessQueueCmd();
   else
-    ProcessRedisCmd();
+    ProcessPubSubCmd();
 }
 
-void OrderManagementSystem::ProcessRedisCmd() {
-  RedisTraderCmdPuller cmd_puller;
-  cmd_puller.set_account(account_.account_id);
-  spdlog::info("trading_server开始从Redis(topic={})接收请求", cmd_puller.get_topic());
+void OrderManagementSystem::ProcessPubSubCmd() {
+  pubsub::Subscriber cmd_sub("ipc://trade.ft_trader.ipc");
 
-  for (;;) {
-    auto reply = cmd_puller.Pull();
-    if (!reply || reply->elements != 3) continue;
-
-    auto cmd = reinterpret_cast<const TraderCommand*>(reply->element[2]->str);
-    ExecuteCmd(*cmd);
+  auto ft_cmd_topic = std::string("ft_cmd_") + std::to_string(account_.account_id).substr(0, 4);
+  if (!cmd_sub.Subscribe<TraderCommand>(ft_cmd_topic,
+                                        [this](TraderCommand* cmd) { ExecuteCmd(*cmd); })) {
+    spdlog::error("无法订阅订单请求");
+    exit(EXIT_FAILURE);
   }
+
+  spdlog::info("trading_server开始从ipc://trade.ft_trader.ipc topic={}接收请求", ft_cmd_topic);
+  cmd_sub.Start();
 }
 
 void OrderManagementSystem::ProcessQueueCmd() {

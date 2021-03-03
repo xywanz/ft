@@ -38,7 +38,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   static uint64_t version() { return 202008172355; }
 
  private:
-  void ProcessRedisCmd();
+  void ProcessPubSubCmd();
   void ProcessQueueCmd();
   void ExecuteCmd(const TraderCommand& cmd);
 

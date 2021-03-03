@@ -5,7 +5,7 @@
 
 #include <ft/base/contract_table.h>
 #include <ft/base/trade_msg.h>
-#include <ft/utils/redis_trader_cmd_helper.h>
+#include <ft/component/pubsub/publisher.h>
 
 #include <string>
 
@@ -13,11 +13,15 @@ namespace ft {
 
 class OrderSender {
  public:
+  OrderSender() : cmd_pub_("ipc://trade.ft_trader.ipc") {}
+
   void set_id(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
-  void set_account(uint64_t account_id) { cmd_pusher_.set_account(account_id); }
+  void set_account(uint64_t account_id) {
+    ft_cmd_topic_ = std::string("ft_cmd_") + std::to_string(account_id).substr(0, 4);
+  }
 
   void set_order_flags(OrderFlag flags) { flags_ = flags; }
 
@@ -79,7 +83,7 @@ class OrderSender {
     cmd.order_req.flags = flags_;
     cmd.order_req.without_check = false;
 
-    cmd_pusher_.Push(cmd);
+    cmd_pub_.Publish(ft_cmd_topic_, cmd);
   }
 
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
@@ -97,7 +101,7 @@ class OrderSender {
     cmd.type = CMD_CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
 
-    cmd_pusher_.Push(cmd);
+    cmd_pub_.Publish(ft_cmd_topic_, cmd);
   }
 
   void CancelForTicker(const std::string& ticker) {
@@ -108,7 +112,7 @@ class OrderSender {
     cmd.type = CMD_CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
-    cmd_pusher_.Push(cmd);
+    cmd_pub_.Publish(ft_cmd_topic_, cmd);
   }
 
   void CancelAll() {
@@ -116,7 +120,7 @@ class OrderSender {
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ALL;
 
-    cmd_pusher_.Push(cmd);
+    cmd_pub_.Publish(ft_cmd_topic_, cmd);
   }
 
   void SendNotification(uint64_t signal) {
@@ -125,12 +129,13 @@ class OrderSender {
     cmd.type = CMD_NOTIFY;
     cmd.notification.signal = signal;
 
-    cmd_pusher_.Push(cmd);
+    cmd_pub_.Publish(ft_cmd_topic_, cmd);
   }
 
  private:
   StrategyIdType strategy_id_;
-  RedisTraderCmdPusher cmd_pusher_;
+  pubsub::Publisher cmd_pub_;
+  std::string ft_cmd_topic_;
   OrderFlag flags_{0};
 };
 

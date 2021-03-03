@@ -3,6 +3,7 @@
 #include <ft/strategy/order_sender.h>
 
 #include <getopt.hpp>
+#include <thread>
 
 static void Usage() {
   printf("Usage:\n");
@@ -100,5 +101,6 @@ int main() {
 
   ft::OrderSender sender;
   sender.set_account(account);
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
   sender.SendOrder(ticker, volume, d, o, k, price, 0);
 }

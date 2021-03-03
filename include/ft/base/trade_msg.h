@@ -196,7 +196,7 @@ using StrategyIdType = char[16];
 inline const uint32_t kTradingCmdMagic = 0x1709394;
 
 // 交易指令类型
-enum TraderCmdType {
+enum TraderCmdType : uint32_t {
   CMD_NEW_ORDER = 1,
   CMD_CANCEL_ORDER,
   CMD_CANCEL_TICKER,
@@ -216,25 +216,25 @@ struct TraderOrderReq {
 
   OrderFlag flags;
   bool without_check;
-} __attribute__((packed));
+};
 
 // 撤单请求
 struct TraderCancelReq {
   uint64_t order_id;
-} __attribute__((packed));
+};
 
 // 撤单请求
 struct TraderCancelTickerReq {
   uint32_t ticker_id;
-} __attribute__((packed));
+};
 
 // 通知
 struct TraderNotification {
   uint64_t signal;
-} __attribute__((packed));
+};
 
 // 交易指令
-struct TraderCommand {
+struct TraderCommand : public pubsub::Serializable<TraderCommand> {
   uint32_t magic;
   uint32_t type;
   StrategyIdType strategy_id;
@@ -244,7 +244,39 @@ struct TraderCommand {
     TraderCancelTickerReq cancel_ticker_req;
     TraderNotification notification;
   };
-} __attribute__((packed));
+
+  template <class Archive>
+  void serialize(Archive& ar) {
+    ar(magic, type, strategy_id);
+
+    switch (type) {
+      case CMD_NEW_ORDER: {
+        ar(order_req.client_order_id, order_req.ticker_id, order_req.direction, order_req.offset,
+           order_req.type, order_req.volume, order_req.price, order_req.flags,
+           order_req.without_check);
+        break;
+      }
+      case CMD_CANCEL_ORDER: {
+        ar(cancel_req.order_id);
+        break;
+      }
+      case CMD_CANCEL_TICKER: {
+        ar(cancel_ticker_req.ticker_id);
+        break;
+      }
+      case CMD_CANCEL_ALL: {
+        break;
+      }
+      case CMD_NOTIFY: {
+        ar(notification.signal);
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+};
 
 // 订单回报
 struct OrderResponse : public pubsub::Serializable<OrderResponse> {
