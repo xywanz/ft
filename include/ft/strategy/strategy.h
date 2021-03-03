@@ -7,8 +7,6 @@
 #include <ft/base/trade_msg.h>
 #include <ft/component/pubsub/subscriber.h>
 #include <ft/strategy/order_sender.h>
-#include <ft/utils/redis.h>
-#include <ft/utils/redis_md_helper.h>
 #include <ft/utils/redis_position_helper.h>
 
 #include <string>
