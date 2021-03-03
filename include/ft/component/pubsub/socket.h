@@ -9,6 +9,7 @@ namespace ft::pubsub {
 
 class SocketBase {
  public:
+  virtual ~SocketBase() {}
   virtual bool Connect(const std::string& address) = 0;
   virtual bool Bind(const std::string& address) = 0;
   virtual bool Subscribe(const std::string& topic) = 0;
