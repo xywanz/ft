@@ -32,17 +32,17 @@ class Strategy {
   void Run();
 
   // 策略启动后请勿更改id
-  void set_id(const std::string& name) {
+  void SetStrategyId(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
-    sender_.set_id(name);
+    sender_.SetStrategyId(name);
   }
 
-  void SetAccount_id(uint64_t account_id) {
+  void SetAccountId(uint64_t account_id) {
     sender_.SetAccount(account_id);
     pos_getter_.SetAccount(account_id);
   }
 
-  void set_backtest_mode(bool backtest_mode = true) { backtest_mode_ = backtest_mode; }
+  void SetBacktestMode(bool backtest_mode = true) { backtest_mode_ = backtest_mode; }
 
  protected:
   void Subscribe(const std::vector<std::string>& sub_list);

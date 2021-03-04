@@ -15,7 +15,7 @@ class OrderSender {
  public:
   OrderSender() : cmd_pub_("ipc://trade.ft_trader.ipc") {}
 
-  void set_id(const std::string& name) {
+  void SetStrategyId(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
@@ -23,7 +23,7 @@ class OrderSender {
     ft_cmd_topic_ = std::string("ft_cmd_") + std::to_string(account_id).substr(0, 4);
   }
 
-  void set_order_flags(OrderFlag flags) { flags_ = flags; }
+  void SetOrderFlag(OrderFlag flags) { flags_ = flags; }
 
   void BuyOpen(const std::string& ticker, int volume, double price,
                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {

@@ -66,9 +66,9 @@ int main() {
   }
 
   auto strategy = strategy_ctor();
-  strategy->set_id(strategy_id);
-  strategy->SetAccount_id(account_id);
-  strategy->set_backtest_mode(backtest_mode);
+  strategy->SetStrategyId(strategy_id);
+  strategy->SetAccountId(account_id);
+  strategy->SetBacktestMode(backtest_mode);
 
   spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
   strategy->Run();
