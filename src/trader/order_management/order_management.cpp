@@ -329,7 +329,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   order.status = OrderStatus::SUBMITTING;
   order.strategy_id = cmd.strategy_id;
 
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
   if (!cmd.order_req.without_check) {
     int error_code = rms_->CheckOrderRequest(&order);
@@ -364,7 +364,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
 }
 
 void OrderManagementSystem::CancelOrder(uint64_t order_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(order_id);
   if (iter == order_map_.end()) {
     spdlog::error("[OrderManagementSystem::CancelOrder] Failed. Order not found");
@@ -374,21 +374,21 @@ void OrderManagementSystem::CancelOrder(uint64_t order_id) {
 }
 
 void OrderManagementSystem::CancelForTicker(uint32_t ticker_id) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
     if (ticker_id == order.req.contract->ticker_id) gateway_->CancelOrder(order_id, order.privdata);
   }
 }
 
 void OrderManagementSystem::CancelAll() {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
     gateway_->CancelOrder(order_id, order.privdata);
   }
 }
 
 void OrderManagementSystem::HandleAccount(Account* account) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   account_ = *account;
   lock.unlock();
 
@@ -454,7 +454,7 @@ bool OrderManagementSystem::HandleTimer() {
  * 告知策略order_id，策略可通过此order_id撤单
  */
 void OrderManagementSystem::OnOrderAccepted(OrderAcceptance* rsp) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OrderManagementSystem::OnOrderAccepted] Order not found. OrderID: {}",
@@ -477,7 +477,7 @@ void OrderManagementSystem::OnOrderAccepted(OrderAcceptance* rsp) {
 }
 
 void OrderManagementSystem::OnOrderRejected(OrderRejection* rsp) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OrderManagementSystem::OnOrderRejected] Order not found. OrderID: {}",
@@ -506,7 +506,7 @@ void OrderManagementSystem::OnOrderTraded(Trade* rsp) {
 }
 
 void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
@@ -546,7 +546,7 @@ void OrderManagementSystem::OnPrimaryMarketTraded(Trade* rsp) {
 }
 
 void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn(
@@ -595,7 +595,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(Trade* rsp) {
 }
 
 void OrderManagementSystem::OnOrderCanceled(OrderCancellation* rsp) {
-  std::unique_lock<std::mutex> lock(mutex_);
+  std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp->order_id);
   if (iter == order_map_.end()) {
     spdlog::warn("[OrderManagementSystem::OnOrderCanceled] Order not found. OrderID:{}",

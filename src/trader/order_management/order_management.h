@@ -11,12 +11,12 @@
 #include <ft/trader/base_oms.h>
 #include <ft/trader/gateway.h>
 #include <ft/utils/redis_position_helper.h>
+#include <ft/utils/spinlock.h>
 #include <ft/utils/timer_thread.h>
 
 #include <list>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -76,13 +76,13 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};
 
+  SpinLock spinlock_;
   Account account_;
   PositionCalculator pos_calculator_;
   RedisPositionSetter redis_pos_updater_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   pubsub::Publisher md_pusher_;
-  std::mutex mutex_;
   TimerThread timer_thread_;
 
   int cmd_queue_key_ = 0;
