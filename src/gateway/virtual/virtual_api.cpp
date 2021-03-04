@@ -186,7 +186,7 @@ bool VirtualApi::CheckAndUpdatePosAccount(const VirtualOrderRequest* req) {
     account_.cash -= fund_needed;
     account_.frozen += fund_needed;
   } else {
-    const auto* pos = positions_.get_position(req->ticker_id);
+    const auto* pos = positions_.GetPosition(req->ticker_id);
     const auto& detail = req->direction == Direction::kSell ? pos->long_pos : pos->short_pos;
     if (detail.holdings - detail.close_pending < req->volume) return false;
   }

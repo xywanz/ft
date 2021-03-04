@@ -27,8 +27,6 @@ bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config
   ctx_.account.frozen = 0.0;
   ctx_.account.margin = 0.0;
 
-  ctx_.portfolio.Init(ContractTable::size(), false);
-
   if (!LoadHistoryData(config.arg0)) {
     spdlog::error("failed to load history data");
     return false;
@@ -184,7 +182,7 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
     ctx_.account.frozen += fund_needed;
   } else {
     int available = 0;
-    const auto* pos = ctx_.portfolio.get_position(order.contract->ticker_id);
+    const auto* pos = ctx_.pos_calculator.GetPosition(order.contract->ticker_id);
     if (pos) {
       const auto& detail = order.direction == Direction::kSell ? pos->long_pos : pos->short_pos;
       available = detail.holdings - detail.close_pending;
@@ -196,8 +194,8 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
     }
   }
 
-  ctx_.portfolio.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
-                               order.volume);
+  ctx_.pos_calculator.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
+                                    order.volume);
   return true;
 }
 
@@ -213,7 +211,7 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
     ctx_.account.cash -= cost;
   } else {
     UpdateAccount(tick);
-    auto* pos = ctx_.portfolio.get_position(order.contract->ticker_id);
+    auto* pos = ctx_.pos_calculator.GetPosition(order.contract->ticker_id);
     if (!pos) {
       abort();
     }
@@ -227,8 +225,8 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
     ctx_.account.cash += fund_returned;
   }
 
-  ctx_.portfolio.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
-                              order.volume, price);
+  ctx_.pos_calculator.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
+                                   order.volume, price);
 
   Trade trade{};
   trade.ticker_id = order.contract->ticker_id;
@@ -249,18 +247,18 @@ void BackTestGateway::UpdateCanceled(const OrderRequest& order) {
     ctx_.account.frozen -= fund_returned;
     ctx_.account.cash += fund_returned;
   }
-  ctx_.portfolio.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
-                               -order.volume);
+  ctx_.pos_calculator.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
+                                    -order.volume);
   msg_queue_.push(OrderCancellation{order.order_id, order.volume});
 }
 
 void BackTestGateway::UpdatePnl(const TickData& tick) {
-  ctx_.portfolio.UpdateFloatPnl(tick.ticker_id, tick.bid[0], tick.ask[0]);
+  ctx_.pos_calculator.UpdateFloatPnl(tick.ticker_id, tick.bid[0], tick.ask[0]);
 }
 
 void BackTestGateway::UpdateAccount(const TickData& tick) {
   UpdatePnl(tick);
-  ctx_.account.margin = ctx_.portfolio.total_assets();
+  ctx_.account.margin = ctx_.pos_calculator.TotalAssets();
   ctx_.account.total_asset = ctx_.account.cash + ctx_.account.margin + ctx_.account.frozen;
 }
 

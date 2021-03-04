@@ -15,7 +15,7 @@ class RedisPositionGetter {
  public:
   RedisPositionGetter() {}
 
-  void set_account(uint64_t account) {
+  void SetAccount(uint64_t account) {
     account_abbreviation_ = std::to_string(account).substr(0, 4);
     pos_key_prefix_ = fmt::format("pos-{}-", account_abbreviation_);
   }

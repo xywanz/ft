@@ -11,7 +11,7 @@
 
 #include "trading_server/datastruct/account.h"
 #include "trading_server/datastruct/constants.h"
-#include "utils/portfolio.h"
+#include "utils/pos_calculator.h"
 
 namespace ft {
 
@@ -66,7 +66,7 @@ class VirtualApi {
   std::list<VirtualOrderRequest> pendings_;
   std::unordered_map<uint64_t, std::list<VirtualOrderRequest>> limit_orders_;
   Account account_{};
-  Portfolio positions_;
+  PositionCalculator positions_;
 };
 
 }  // namespace ft

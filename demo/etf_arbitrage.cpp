@@ -39,7 +39,7 @@ int main() {
   RedisSession redis;
   OrderSender sender;
 
-  sender.set_account(5319);
+  sender.SetAccount(5319);
   sender.set_id(strategy_id);
   redis.subscribe({strategy_id});
 

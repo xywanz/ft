@@ -19,7 +19,7 @@ class OrderSender {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
   }
 
-  void set_account(uint64_t account_id) {
+  void SetAccount(uint64_t account_id) {
     ft_cmd_topic_ = std::string("ft_cmd_") + std::to_string(account_id).substr(0, 4);
   }
 

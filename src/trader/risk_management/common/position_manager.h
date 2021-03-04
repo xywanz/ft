@@ -3,7 +3,7 @@
 #ifndef FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_POSITION_MANAGER_H_
 #define FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_POSITION_MANAGER_H_
 
-#include <ft/utils/portfolio.h>
+#include <ft/component/position_calculator.h>
 
 #include <map>
 
@@ -26,7 +26,7 @@ class PositionManager : public RiskRule {
   void OnOrderRejected(const Order* order, int error_code) override;
 
  private:
-  Portfolio* portfolio_;
+  PositionCalculator* pos_calculator_;
 };
 
 };  // namespace ft

@@ -133,8 +133,18 @@ bool OrderManagementSystem::Login(const Config& config) {
   HandleAccount(&init_acct);
 
   // query all positions
+  redis_pos_updater_.SetAccount(account_.account_id);
+  redis_pos_updater_.Clear();
+  pos_calculator_.SetCallback([this](const Position& new_pos) {
+    auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
+    if (!contract) {
+      spdlog::error("更新Redis仓位失败，合约未找到。ticker_id:{}", new_pos.ticker_id);
+      return;
+    }
+    redis_pos_updater_.set(contract->ticker, new_pos);
+  });
+
   std::vector<Position> init_positions;
-  portfolio_.Init(ContractTable::size(), true, account_.account_id);
   if (!gateway_->QueryPositionList(&init_positions)) {
     spdlog::error("仓位查询失败");
     return false;
@@ -153,7 +163,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   RiskRuleParams risk_params{};
   risk_params.config = &config;
   risk_params.account = &account_;
-  risk_params.portfolio = &portfolio_;
+  risk_params.pos_calculator = &pos_calculator_;
   risk_params.order_map = &order_map_;
   rms_->AddRule(std::make_shared<FundManager>());
   rms_->AddRule(std::make_shared<PositionManager>());
@@ -413,7 +423,7 @@ void OrderManagementSystem::HandlePositions(std::vector<Position>* positions) {
 
     if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0) return;
 
-    portfolio_.set_position(position);
+    pos_calculator_.SetPosition(position);
   }
 }
 
@@ -430,11 +440,7 @@ void OrderManagementSystem::OnTick(TickData* tick) {
                 contract->ticker, tick->ask[0], tick->bid[0]);
 }
 
-void OrderManagementSystem::HandleTrades(std::vector<Trade>* trades) {
-  for (auto& trade : *trades) {
-    portfolio_.UpdateOnQueryTrade(trade.ticker_id, trade.direction, trade.offset, trade.volume);
-  }
-}
+void OrderManagementSystem::HandleTrades(std::vector<Trade>* trades) {}
 
 void OrderManagementSystem::HandleTimer() {
   Account tmp{};

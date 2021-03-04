@@ -3,7 +3,6 @@ add_library(utils STATIC
     lockfree-queue/queue.c
     config_loader.cpp
     datetime.cpp
-    portfolio.cpp
     redis.cpp)
 add_library(ft::utils ALIAS utils)
 

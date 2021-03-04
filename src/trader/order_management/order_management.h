@@ -6,10 +6,11 @@
 #include <ft/base/error_code.h>
 #include <ft/base/market_data.h>
 #include <ft/base/trade_msg.h>
+#include <ft/component/position_calculator.h>
 #include <ft/component/pubsub/publisher.h>
 #include <ft/trader/base_oms.h>
 #include <ft/trader/gateway.h>
-#include <ft/utils/portfolio.h>
+#include <ft/utils/redis_position_helper.h>
 
 #include <list>
 #include <map>
@@ -75,7 +76,8 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   uint64_t next_oms_order_id_{1};
 
   Account account_;
-  Portfolio portfolio_;
+  PositionCalculator pos_calculator_;
+  RedisPositionSetter redis_pos_updater_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   pubsub::Publisher md_pusher_;

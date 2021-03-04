@@ -29,7 +29,7 @@ int main() {
   }
 
   ft::OrderSender sender;
-  sender.set_account(account);
+  sender.SetAccount(account);
 
   if (order_id != 0)
     sender.CancelOrder(order_id);

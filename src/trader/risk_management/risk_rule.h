@@ -6,8 +6,8 @@
 #include <ft/base/config.h>
 #include <ft/base/error_code.h>
 #include <ft/base/trade_msg.h>
+#include <ft/component/position_calculator.h>
 #include <ft/trader/base_oms.h>
-#include <ft/utils/portfolio.h>
 #include <ft/utils/protocol_utils.h>
 
 #include <map>
@@ -23,7 +23,7 @@ using OrderMap = std::unordered_map<uint64_t, Order>;
 struct RiskRuleParams {
   const Config* config;
   Account* account;
-  Portfolio* portfolio;
+  PositionCalculator* pos_calculator;
   OrderMap* order_map;
 };
 

@@ -20,7 +20,7 @@ class GridStrategy : public ft::Strategy {
       last_grid_price_ = tick.last_price;
     }
 
-    const auto pos = get_position(ticker_);
+    const auto pos = GetPosition(ticker_);
     const auto& lp = pos.long_pos;
     const auto& sp = pos.short_pos;
 

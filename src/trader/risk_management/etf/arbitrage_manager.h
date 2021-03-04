@@ -29,7 +29,7 @@ class ArbitrageManager : public RiskRule {
 
  private:
   Account* account_;
-  Portfolio* portfolio_;
+  PositionCalculator* pos_calculator_;
   OrderMap* order_map_;
 };
 

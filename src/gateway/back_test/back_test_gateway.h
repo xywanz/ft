@@ -3,8 +3,8 @@
 #ifndef FT_SRC_GATEWAY_BACK_TEST_BACK_TEST_GATEWAY_H_
 #define FT_SRC_GATEWAY_BACK_TEST_BACK_TEST_GATEWAY_H_
 
+#include <ft/component/position_calculator.h>
 #include <ft/trader/gateway.h>
-#include <ft/utils/portfolio.h>
 
 #include <condition_variable>
 #include <list>
@@ -72,7 +72,7 @@ class BackTestGateway : public Gateway {
  private:
   struct BackTestContext {
     Account account{};
-    Portfolio portfolio{};
+    PositionCalculator pos_calculator{};
     std::unordered_map<uint64_t, std::list<OrderRequest>> pending_orders;
   };
 

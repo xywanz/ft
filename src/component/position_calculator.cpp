@@ -2,7 +2,7 @@
 
 #include <ft/base/contract_table.h>
 #include <ft/base/trade_msg.h>
-#include <ft/utils/portfolio.h>
+#include <ft/component/position_calculator.h>
 #include <ft/utils/protocol_utils.h>
 #include <spdlog/spdlog.h>
 
@@ -10,27 +10,22 @@
 
 namespace ft {
 
-Portfolio::Portfolio() {}
+PositionCalculator::PositionCalculator() {}
 
-void Portfolio::Init(uint32_t max_ticker_id, bool sync_to_redis, uint64_t account) {
-  if (sync_to_redis) {
-    redis_ = std::make_unique<RedisPositionSetter>();
-    redis_->set_account(account);
-    redis_->Clear();
-  }
+void PositionCalculator::SetCallback(std::function<void(const Position&)>&& f) {
+  cb_ = std::make_unique<CallbackType>(std::move(f));
 }
 
-void Portfolio::set_position(const Position& pos) {
+void PositionCalculator::SetPosition(const Position& pos) {
   positions_[pos.ticker_id] = pos;
 
-  if (redis_) {
-    auto contract = ContractTable::get_by_index(pos.ticker_id);
-    assert(contract);
-    redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
   }
 }
 
-void Portfolio::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset, int changed) {
+void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset,
+                                       int changed) {
   if (changed == 0) return;
 
   if (direction == Direction::kBuy || direction == Direction::kSell) {
@@ -40,8 +35,8 @@ void Portfolio::UpdatePending(uint32_t ticker_id, Direction direction, Offset of
   }
 }
 
-void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, Offset offset,
-                                       int changed) {
+void PositionCalculator::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction,
+                                                Offset offset, int changed) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) direction = OppositeDirection(direction);
 
@@ -65,15 +60,13 @@ void Portfolio::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, 
     // close_pending");
   }
 
-  if (redis_) {
-    const auto* contract = ContractTable::get_by_index(pos.ticker_id);
-    assert(contract);
-    redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
   }
 }
 
-void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction,
-                                              int changed) {
+void PositionCalculator::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction,
+                                                       int changed) {
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
@@ -96,15 +89,13 @@ void Portfolio::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction dire
     // close_pending");
   }
 
-  if (redis_) {
-    const auto* contract = ContractTable::get_by_index(pos.ticker_id);
-    assert(contract);
-    redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
   }
 }
 
-void Portfolio::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset, int traded,
-                             double traded_price) {
+void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset,
+                                      int traded, double traded_price) {
   if (traded <= 0) return;
 
   if (direction == Direction::kBuy || direction == Direction::kSell) {
@@ -114,8 +105,8 @@ void Portfolio::UpdateTraded(uint32_t ticker_id, Direction direction, Offset off
   }
 }
 
-void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset, int traded,
-                                double traded_price) {
+void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset,
+                                         int traded, double traded_price) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) direction = OppositeDirection(direction);
 
@@ -175,10 +166,13 @@ void Portfolio::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset 
     pos_detail.float_pnl = 0.0;
   }
 
-  if (redis_) redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
+  }
 }
 
-void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded) {
+void PositionCalculator::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction,
+                                                int traded) {
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
@@ -200,17 +194,12 @@ void Portfolio::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, 
     }
   }
 
-  if (redis_) {
-    const auto* contract = ContractTable::get_by_index(ticker_id);
-    if (!contract) {
-      spdlog::error("[Position::UpdatePurchaseOrRedeem] Contract not found");
-      return;
-    }
-    redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
   }
 }
 
-void Portfolio::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire) {
+void PositionCalculator::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire) {
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
   auto& pos_detail = pos.long_pos;
@@ -224,17 +213,12 @@ void Portfolio::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquir
     pos_detail.yd_holdings -= std::max(traded - td_pos, 0);
   }
 
-  if (redis_) {
-    const auto* contract = ContractTable::get_by_index(ticker_id);
-    if (!contract) {
-      spdlog::error("[Position::UpdatePurchaseOrRedeem] Contract not found");
-      return;
-    }
-    redis_->set(contract->ticker, pos);
+  if (cb_) {
+    (*cb_)(pos);
   }
 }
 
-void Portfolio::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
+void PositionCalculator::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
   if (pos.long_pos.holdings > 0 || pos.short_pos.holdings > 0) {
@@ -254,32 +238,19 @@ void Portfolio::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
       sp.float_pnl = sp.holdings * contract->size * (sp.cost_price - bid);
     }
 
-    if (redis_) {
-      if (lp.holdings > 0 || sp.holdings > 0) {
-        redis_->set(contract->ticker, pos);
-      }
+    if (cb_ && (lp.holdings > 0 || sp.holdings > 0)) {
+      (*cb_)(pos);
     }
   }
 }
 
-void Portfolio::UpdateOnQueryTrade(uint32_t ticker_id, Direction direction, Offset offset,
-                                   int closed_volume) {
-  // auto* pos = find(ticker_id);
-  // if (!pos) return;
-
-  // const auto* contract = ContractTable::get_by_index(ticker_id);
-  // if (!contract) return;
-
-  // redis_.set(proto_.pos_key(contract->ticker), pos, sizeof(*pos));
-}
-
-double Portfolio::total_assets() const {
+double PositionCalculator::TotalAssets() const {
   double value = 0.0;
 
   for (auto& [ticker_id, pos] : positions_) {
     const auto* contract = ContractTable::get_by_index(ticker_id);
     if (!contract || contract->size <= 0) {
-      spdlog::error("Portfolio::total_assets: contract not found. {}", ticker_id);
+      spdlog::error("Portfolio::TotalAssets: contract not found. {}", ticker_id);
       return 0.0;
     }
 

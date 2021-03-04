@@ -28,7 +28,7 @@ int main() {
   }
 
   ft::RedisPositionGetter pos_helper;
-  pos_helper.set_account(account);
+  pos_helper.SetAccount(account);
 
   ft::Position pos{};
   pos_helper.get(ticker, &pos);

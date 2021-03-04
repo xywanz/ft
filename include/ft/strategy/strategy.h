@@ -37,9 +37,9 @@ class Strategy {
     sender_.set_id(name);
   }
 
-  void set_account_id(uint64_t account_id) {
-    sender_.set_account(account_id);
-    pos_getter_.set_account(account_id);
+  void SetAccount_id(uint64_t account_id) {
+    sender_.SetAccount(account_id);
+    pos_getter_.SetAccount(account_id);
   }
 
   void set_backtest_mode(bool backtest_mode = true) { backtest_mode_ = backtest_mode; }
@@ -78,7 +78,7 @@ class Strategy {
 
   void SendNotification(uint64_t signal) { sender_.SendNotification(signal); }
 
-  Position get_position(const std::string& ticker) const {
+  Position GetPosition(const std::string& ticker) const {
     Position pos{};
     pos_getter_.get(ticker, &pos);
     return pos;
