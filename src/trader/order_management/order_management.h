@@ -11,6 +11,7 @@
 #include <ft/trader/base_oms.h>
 #include <ft/trader/gateway.h>
 #include <ft/utils/redis_position_helper.h>
+#include <ft/utils/timer_thread.h>
 
 #include <list>
 #include <map>
@@ -60,7 +61,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   void HandleAccount(Account* account);
   void HandlePositions(std::vector<Position>* positions);
   void HandleTrades(std::vector<Trade>* trades);
-  void HandleTimer();
+  bool HandleTimer();
 
   void OnPrimaryMarketTraded(Trade* rsp);    // ETF申赎
   void OnSecondaryMarketTraded(Trade* rsp);  // 二级市场买卖
@@ -82,7 +83,7 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   pubsub::Publisher md_pusher_;
   std::mutex mutex_;
-  std::unique_ptr<std::thread> timer_thread_;
+  TimerThread timer_thread_;
 
   int cmd_queue_key_ = 0;
 };

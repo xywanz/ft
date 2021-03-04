@@ -177,8 +177,8 @@ bool OrderManagementSystem::Login(const Config& config) {
   }
 
   // 启动个线程去定时查询资金账户信息
-  timer_thread_ =
-      std::make_unique<std::thread>(std::mem_fn(&OrderManagementSystem::HandleTimer), this);
+  timer_thread_.AddTask(15 * 1000, std::mem_fn(&OrderManagementSystem::HandleTimer), this);
+  timer_thread_.Start();
 
   spdlog::info("trading_server初始化成功");
 
@@ -442,13 +442,11 @@ void OrderManagementSystem::OnTick(TickData* tick) {
 
 void OrderManagementSystem::HandleTrades(std::vector<Trade>* trades) {}
 
-void OrderManagementSystem::HandleTimer() {
+bool OrderManagementSystem::HandleTimer() {
   Account tmp{};
-  for (;;) {
-    std::this_thread::sleep_for(std::chrono::seconds(15));
-    gateway_->QueryAccount(&tmp);
-    HandleAccount(&tmp);
-  }
+  gateway_->QueryAccount(&tmp);
+  HandleAccount(&tmp);
+  return true;
 }
 
 /*
