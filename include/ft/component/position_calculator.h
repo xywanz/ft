@@ -4,7 +4,6 @@
 #define FT_INCLUDE_FT_COMPONENT_POSITION_CALCULATOR_H_
 
 #include <ft/base/trade_msg.h>
-#include <ft/utils/redis_position_helper.h>
 
 #include <memory>
 #include <string>

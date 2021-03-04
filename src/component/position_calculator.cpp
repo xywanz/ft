@@ -1,8 +1,8 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <ft/base/contract_table.h>
-#include <ft/base/trade_msg.h>
 #include <ft/component/position_calculator.h>
+#include <ft/utils/misc.h>
 #include <ft/utils/protocol_utils.h>
 #include <spdlog/spdlog.h>
 
