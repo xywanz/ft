@@ -3,13 +3,12 @@
 #ifndef FT_SRC_TRADER_RISK_MANAGEMENT_RISK_MANAGEMENT_H_
 #define FT_SRC_TRADER_RISK_MANAGEMENT_RISK_MANAGEMENT_H_
 
-#include <ft/base/trade_msg.h>
-
 #include <list>
 #include <map>
 #include <memory>
 #include <string>
 
+#include "ft/base/trade_msg.h"
 #include "trader/order.h"
 #include "trader/risk_management/risk_rule.h"
 

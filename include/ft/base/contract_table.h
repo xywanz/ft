@@ -3,13 +3,13 @@
 #ifndef FT_INCLUDE_FT_BASE_CONTRACT_TABLE_H_
 #define FT_INCLUDE_FT_BASE_CONTRACT_TABLE_H_
 
-#include <ft/base/trade_msg.h>
-
 #include <fstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "ft/base/trade_msg.h"
 
 namespace ft {
 

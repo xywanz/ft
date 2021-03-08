@@ -1,8 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <ft/strategy/order_sender.h>
-
-#include <getopt.hpp>
+#include "ft/strategy/order_sender.h"
+#include "getopt.hpp"
 
 static void Usage() {
   printf("Usage:\n");

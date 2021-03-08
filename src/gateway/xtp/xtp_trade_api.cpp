@@ -2,13 +2,13 @@
 
 #include "gateway/xtp/xtp_trade_api.h"
 
-#include <ft/base/contract_table.h>
-#include <ft/utils/misc.h>
-#include <ft/utils/protocol_utils.h>
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
 #include <cstdlib>
+
+#include "ft/base/contract_table.h"
+#include "ft/utils/misc.h"
+#include "ft/utils/protocol_utils.h"
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

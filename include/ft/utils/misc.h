@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_UTILS_MISC_H_
-#define FT_SRC_UTILS_MISC_H_
+#ifndef FT_INCLUDE_FT_UTILS_MISC_H_
+#define FT_INCLUDE_FT_UTILS_MISC_H_
 
 #define UNUSED(x) ((void)(x))
 
@@ -15,4 +15,4 @@ bool IsEqual(const RealType& lhs, const RealType& rhs, RealType error = RealType
 
 }  // namespace ft
 
-#endif  // FT_SRC_UTILS_MISC_H_
+#endif  // FT_INCLUDE_FT_UTILS_MISC_H_

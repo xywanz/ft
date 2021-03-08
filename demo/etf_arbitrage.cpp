@@ -1,12 +1,12 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <fmt/format.h>
 #include <unistd.h>
 
-#include "strategy/order_sender.h"
+#include "fmt/format.h"
+#include "ft/strategy/order_sender.h"
+#include "ft/utils/protocol_utils.h"
+#include "ft/utils/redis.h"
 #include "trading_server/risk_management/etf/etf_table.h"
-#include "utils/protocol_utils.h"
-#include "utils/redis.h"
 
 using namespace ft;
 

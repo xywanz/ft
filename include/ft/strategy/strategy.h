@@ -1,19 +1,19 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_STRATEGY_STRATEGY_H_
-#define FT_SRC_STRATEGY_STRATEGY_H_
-
-#include <ft/base/market_data.h>
-#include <ft/base/trade_msg.h>
-#include <ft/component/pubsub/subscriber.h>
-#include <ft/strategy/algo_order/algo_order_engine.h>
-#include <ft/strategy/order_sender.h>
-#include <ft/utils/redis_position_helper.h>
-#include <ft/utils/spinlock.h>
+#ifndef FT_INCLUDE_FT_STRATEGY_STRATEGY_H_
+#define FT_INCLUDE_FT_STRATEGY_STRATEGY_H_
 
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include "ft/base/market_data.h"
+#include "ft/base/trade_msg.h"
+#include "ft/component/pubsub/subscriber.h"
+#include "ft/strategy/algo_order/algo_order_engine.h"
+#include "ft/strategy/order_sender.h"
+#include "ft/utils/redis_position_helper.h"
+#include "ft/utils/spinlock.h"
 
 namespace ft {
 
@@ -142,4 +142,4 @@ class Strategy {
 
 }  // namespace ft
 
-#endif  // FT_SRC_STRATEGY_STRATEGY_H_
+#endif  // FT_INCLUDE_FT_STRATEGY_STRATEGY_H_

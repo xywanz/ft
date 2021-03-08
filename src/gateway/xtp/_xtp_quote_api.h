@@ -3,16 +3,15 @@
 #ifndef FT_SRC_GATEWAY_XTP__XTP_QUOTE_API_H_
 #define FT_SRC_GATEWAY_XTP__XTP_QUOTE_API_H_
 
-#include <ft/trader/gateway.h>
-#include <xtp_quote_api.h>
-
 #include <atomic>
 #include <map>
 #include <mutex>
 #include <string>
 #include <vector>
 
+#include "ft/trader/gateway.h"
 #include "gateway/xtp/xtp_common.h"
+#include "xtp_quote_api.h"
 
 namespace ft {
 

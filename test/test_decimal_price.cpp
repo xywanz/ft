@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <ft/component/order_book/limit_order.h>
+#include "ft/component/order_book/limit_order.h"
 
 using ft::orderbook::price_decimal_to_double;
 using ft::orderbook::price_double_to_decimal;

@@ -2,10 +2,10 @@
 
 #include "gateway/ctp/ctp_gateway.h"
 
-#include <ThostFtdcMdApi.h>
-#include <ThostFtdcTraderApi.h>
-#include <ft/base/contract_table.h>
-#include <spdlog/spdlog.h>
+#include "ThostFtdcMdApi.h"
+#include "ThostFtdcTraderApi.h"
+#include "ft/base/contract_table.h"
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

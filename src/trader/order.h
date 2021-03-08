@@ -3,9 +3,9 @@
 #ifndef FT_SRC_TRADER_ORDER_H_
 #define FT_SRC_TRADER_ORDER_H_
 
-#include <ft/base/trade_msg.h>
-
 #include <string>
+
+#include "ft/base/trade_msg.h"
 
 namespace ft {
 

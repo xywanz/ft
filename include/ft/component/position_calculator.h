@@ -3,12 +3,12 @@
 #ifndef FT_INCLUDE_FT_COMPONENT_POSITION_CALCULATOR_H_
 #define FT_INCLUDE_FT_COMPONENT_POSITION_CALCULATOR_H_
 
-#include <ft/base/trade_msg.h>
-
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "ft/base/trade_msg.h"
 
 namespace ft {
 

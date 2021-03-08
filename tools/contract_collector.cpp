@@ -1,12 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <dlfcn.h>
-#include <ft/base/contract_table.h>
-#include <ft/trader/gateway.h>
-#include <ft/utils/config_loader.h>
-#include <spdlog/spdlog.h>
 
 #include <getopt.hpp>
+
+#include "ft/base/contract_table.h"
+#include "ft/trader/gateway.h"
+#include "ft/utils/config_loader.h"
+#include "spdlog/spdlog.h"
 
 class ContractCollector : public ft::BaseOrderManagementSystem {
  public:

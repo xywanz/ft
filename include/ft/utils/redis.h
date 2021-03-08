@@ -3,13 +3,13 @@
 #ifndef FT_INCLUDE_FT_UTILS_REDIS_H_
 #define FT_INCLUDE_FT_UTILS_REDIS_H_
 
-#include <ft/utils/misc.h>
-#include <hiredis.h>
-
 #include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "ft/utils/misc.h"
+#include "hiredis.h"
 
 namespace ft {
 

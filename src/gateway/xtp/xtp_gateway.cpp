@@ -2,8 +2,8 @@
 
 #include "gateway/xtp/xtp_gateway.h"
 
-#include <ft/base/contract_table.h>
-#include <spdlog/spdlog.h>
+#include "ft/base/contract_table.h"
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

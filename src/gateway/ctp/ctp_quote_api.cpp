@@ -2,9 +2,9 @@
 
 #include "gateway/ctp/ctp_quote_api.h"
 
-#include <spdlog/spdlog.h>
-
 #include <utility>
+
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

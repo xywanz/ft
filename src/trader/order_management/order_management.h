@@ -3,17 +3,6 @@
 #ifndef FT_SRC_TRADER_ORDER_MANAGEMENT_ORDER_MANAGEMENT_H_
 #define FT_SRC_TRADER_ORDER_MANAGEMENT_ORDER_MANAGEMENT_H_
 
-#include <ft/base/error_code.h>
-#include <ft/base/market_data.h>
-#include <ft/base/trade_msg.h>
-#include <ft/component/position_calculator.h>
-#include <ft/component/pubsub/publisher.h>
-#include <ft/trader/base_oms.h>
-#include <ft/trader/gateway.h>
-#include <ft/utils/redis_position_helper.h>
-#include <ft/utils/spinlock.h>
-#include <ft/utils/timer_thread.h>
-
 #include <list>
 #include <map>
 #include <memory>
@@ -21,6 +10,16 @@
 #include <thread>
 #include <vector>
 
+#include "ft/base/error_code.h"
+#include "ft/base/market_data.h"
+#include "ft/base/trade_msg.h"
+#include "ft/component/position_calculator.h"
+#include "ft/component/pubsub/publisher.h"
+#include "ft/trader/base_oms.h"
+#include "ft/trader/gateway.h"
+#include "ft/utils/redis_position_helper.h"
+#include "ft/utils/spinlock.h"
+#include "ft/utils/timer_thread.h"
 #include "trader/order.h"
 #include "trader/risk_management/risk_management.h"
 

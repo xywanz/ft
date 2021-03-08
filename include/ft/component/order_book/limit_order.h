@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
-#define FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
+#ifndef FT_INCLUDE_FT_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
+#define FT_INCLUDE_FT_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
 
 #include <map>
 #include <string>
@@ -55,4 +55,4 @@ class LimitOrder {
 
 }  // namespace ft::orderbook
 
-#endif  // FT_SRC_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_
+#endif  // FT_INCLUDE_FT_COMPONENT_ORDER_BOOK_LIMIT_ORDER_H_

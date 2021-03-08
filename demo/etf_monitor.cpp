@@ -1,12 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <spdlog/spdlog.h>
-
 #include <vector>
 
-#include "strategy/strategy.h"
+#include "ft/strategy/strategy.h"
+#include "ft/utils/misc.h"
+#include "spdlog/spdlog.h"
 #include "trading_server/risk_management/etf/etf_table.h"
-#include "utils/misc.h"
 
 using namespace ft;
 

@@ -1,10 +1,10 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <ft/strategy/algo_order/target_pos_engine.h>
-#include <ft/strategy/strategy.h>
-#include <spdlog/spdlog.h>
-
 #include <memory>
+
+#include "ft/strategy/algo_order/target_pos_engine.h"
+#include "ft/strategy/strategy.h"
+#include "spdlog/spdlog.h"
 
 class TargetPosDemo : public ft::Strategy {
  public:

@@ -2,11 +2,11 @@
 
 #include "gateway/xtp/_xtp_quote_api.h"
 
-#include <ft/base/contract_table.h>
-#include <ft/utils/misc.h>
-#include <spdlog/spdlog.h>
-
 #include <vector>
+
+#include "ft/base/contract_table.h"
+#include "ft/utils/misc.h"
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

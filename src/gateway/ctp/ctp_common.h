@@ -3,10 +3,6 @@
 #ifndef FT_SRC_GATEWAY_CTP_CTP_COMMON_H_
 #define FT_SRC_GATEWAY_CTP_CTP_COMMON_H_
 
-#include <ThostFtdcUserApiDataType.h>
-#include <ft/base/contract_table.h>
-#include <ft/base/trade_msg.h>
-
 #include <codecvt>
 #include <limits>
 #include <locale>
@@ -14,6 +10,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "ThostFtdcUserApiDataType.h"
+#include "ft/base/contract_table.h"
+#include "ft/base/trade_msg.h"
 
 namespace ft {
 

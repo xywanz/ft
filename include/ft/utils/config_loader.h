@@ -3,9 +3,9 @@
 #ifndef FT_INCLUDE_FT_UTILS_CONFIG_LOADER_H_
 #define FT_INCLUDE_FT_UTILS_CONFIG_LOADER_H_
 
-#include <ft/base/config.h>
-
 #include <string>
+
+#include "ft/base/config.h"
 
 namespace ft {
 

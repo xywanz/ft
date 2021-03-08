@@ -1,14 +1,15 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <dlfcn.h>
-#include <ft/base/contract_table.h>
-#include <ft/component/pubsub/subscriber.h>
-#include <ft/strategy/strategy.h>
-#include <spdlog/spdlog.h>
 
 #include <fstream>
 #include <getopt.hpp>
 #include <thread>
+
+#include "ft/base/contract_table.h"
+#include "ft/component/pubsub/subscriber.h"
+#include "ft/strategy/strategy.h"
+#include "spdlog/spdlog.h"
 
 static void Usage() {
   printf("Usage: ./strategy_engine [--account=<account>]\n");

@@ -3,10 +3,9 @@
 #ifndef FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_FUND_MANAGER_H_
 #define FT_SRC_TRADER_RISK_MANAGEMENT_COMMON_FUND_MANAGER_H_
 
-#include <ft/base/trade_msg.h>
-
 #include <map>
 
+#include "ft/base/trade_msg.h"
 #include "trader/risk_management/risk_rule.h"
 
 namespace ft {

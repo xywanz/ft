@@ -2,7 +2,7 @@
 
 #include "trader/risk_management/common/throttle_rate_limit.h"
 
-#include <ft/utils/protocol_utils.h>
+#include "ft/utils/protocol_utils.h"
 
 namespace ft {
 

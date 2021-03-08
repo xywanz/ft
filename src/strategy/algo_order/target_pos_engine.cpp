@@ -1,13 +1,14 @@
 // Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <ft/base/contract_table.h>
-#include <ft/base/error_code.h>
-#include <ft/strategy/algo_order/target_pos_engine.h>
-#include <ft/utils/misc.h>
-#include <ft/utils/protocol_utils.h>
-#include <ft/utils/redis_position_helper.h>
+#include "ft/strategy/algo_order/target_pos_engine.h"
 
 #include <stdexcept>
+
+#include "ft/base/contract_table.h"
+#include "ft/base/error_code.h"
+#include "ft/utils/misc.h"
+#include "ft/utils/protocol_utils.h"
+#include "ft/utils/redis_position_helper.h"
 
 namespace ft {
 

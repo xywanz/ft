@@ -3,14 +3,13 @@
 #ifndef FT_SRC_GATEWAY_CTP_CTP_GATEWAY_H_
 #define FT_SRC_GATEWAY_CTP_CTP_GATEWAY_H_
 
-#include <ThostFtdcMdApi.h>
-#include <ThostFtdcTraderApi.h>
-#include <ft/trader/gateway.h>
-
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "ThostFtdcMdApi.h"
+#include "ThostFtdcTraderApi.h"
+#include "ft/trader/gateway.h"
 #include "gateway/ctp/ctp_common.h"
 #include "gateway/ctp/ctp_quote_api.h"
 #include "gateway/ctp/ctp_trade_api.h"

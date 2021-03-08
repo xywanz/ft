@@ -2,13 +2,13 @@
 
 #include "gateway/ctp/ctp_trade_api.h"
 
-#include <ThostFtdcTraderApi.h>
-#include <ft/utils/misc.h>
-#include <ft/utils/protocol_utils.h>
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
 #include <thread>
+
+#include "ThostFtdcTraderApi.h"
+#include "ft/utils/misc.h"
+#include "ft/utils/protocol_utils.h"
+#include "spdlog/spdlog.h"
 
 namespace ft {
 

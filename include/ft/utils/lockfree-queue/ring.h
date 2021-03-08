@@ -2,7 +2,8 @@
 #define _LOCKFREEQUEUE_RING_H_
 
 #include <stdint.h>
-#include "utils/lockfree-queue/misc.h"
+
+#include "ft/utils/lockfree-queue/misc.h"
 
 #define CACHE_ALIGNED   __attribute__((aligned(64)))
 

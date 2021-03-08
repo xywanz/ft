@@ -7,8 +7,9 @@
 #define _GNU_SOURCE
 #endif
 
-#include <ft/utils/lockfree-queue/ring.h>
 #include <stdbool.h>
+
+#include "ft/utils/lockfree-queue/ring.h"
 
 #ifdef __cplusplus
 extern "C" {

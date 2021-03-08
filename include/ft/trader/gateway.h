@@ -3,13 +3,13 @@
 #ifndef FT_INCLUDE_FT_TRADER_GATEWAY_H_
 #define FT_INCLUDE_FT_TRADER_GATEWAY_H_
 
-#include <ft/base/config.h>
-#include <ft/base/market_data.h>
-#include <ft/base/trade_msg.h>
-#include <ft/trader/base_oms.h>
-
 #include <string>
 #include <vector>
+
+#include "ft/base/config.h"
+#include "ft/base/market_data.h"
+#include "ft/base/trade_msg.h"
+#include "ft/trader/base_oms.h"
 
 namespace ft {
 

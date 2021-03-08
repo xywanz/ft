@@ -1,6 +1,6 @@
 // Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include <ft/component/pubsub/subscriber.h>
+#include "ft/component/pubsub/subscriber.h"
 
 #include "component/pubsub/zmq_socket.h"
 

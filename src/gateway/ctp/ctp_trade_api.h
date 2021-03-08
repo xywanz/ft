@@ -3,15 +3,14 @@
 #ifndef FT_SRC_GATEWAY_CTP_CTP_TRADE_API_H_
 #define FT_SRC_GATEWAY_CTP_CTP_TRADE_API_H_
 
-#include <ThostFtdcTraderApi.h>
-#include <ft/trader/gateway.h>
-
 #include <atomic>
 #include <map>
 #include <mutex>
 #include <string>
 #include <vector>
 
+#include "ThostFtdcTraderApi.h"
+#include "ft/trader/gateway.h"
 #include "gateway/ctp/ctp_common.h"
 
 namespace ft {

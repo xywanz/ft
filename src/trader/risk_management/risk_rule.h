@@ -3,17 +3,16 @@
 #ifndef FT_SRC_TRADER_RISK_MANAGEMENT_RISK_RULE_H_
 #define FT_SRC_TRADER_RISK_MANAGEMENT_RISK_RULE_H_
 
-#include <ft/base/config.h>
-#include <ft/base/error_code.h>
-#include <ft/base/trade_msg.h>
-#include <ft/component/position_calculator.h>
-#include <ft/trader/base_oms.h>
-#include <ft/utils/protocol_utils.h>
-
 #include <map>
 #include <string>
 #include <unordered_map>
 
+#include "ft/base/config.h"
+#include "ft/base/error_code.h"
+#include "ft/base/trade_msg.h"
+#include "ft/component/position_calculator.h"
+#include "ft/trader/base_oms.h"
+#include "ft/utils/protocol_utils.h"
 #include "trader/order.h"
 
 namespace ft {
