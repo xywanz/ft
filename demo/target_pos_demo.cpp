@@ -22,9 +22,6 @@ class TargetPosDemo : public ft::Strategy {
  private:
   std::string ticker_ = "rb2105";
   std::unique_ptr<ft::TargetPosEngine> target_pos_engine_;
-
-  int volume_ = 0;
-  bool buy_ = true;
 };
 
 EXPORT_STRATEGY(TargetPosDemo);
