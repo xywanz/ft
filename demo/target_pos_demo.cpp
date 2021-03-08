@@ -10,8 +10,8 @@ class TargetPosDemo : public ft::Strategy {
  public:
   void OnInit() override {
     Subscribe({ticker_});
-    target_pos_engine_ = std::make_unique<ft::TargetPosEngine>(
-        122899, ft::ContractTable::get_by_ticker(ticker_)->ticker_id);
+    target_pos_engine_ =
+        std::make_unique<ft::TargetPosEngine>(ft::ContractTable::get_by_ticker(ticker_)->ticker_id);
     RegisterAlgoOrderEngine(target_pos_engine_.get());
   }
 

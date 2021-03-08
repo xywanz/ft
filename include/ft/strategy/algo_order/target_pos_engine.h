@@ -16,14 +16,16 @@ namespace ft {
 // 用法:
 //    策略init函数中
 //    void OnInit() {
-//      target_pos_engine_ = std::make_unique<TargetPosEngine>(xxx, xxx);
+//      target_pos_engine_ = std::make_unique<TargetPosEngine>(ticker_id);
 //      RegisterAlgoOrderEngine(target_pos_engine_.get());
 //    }
 //   需要调整仓位的逻辑处
 //      target_pos_engine_->SetTargetPos(xx);
 class TargetPosEngine : public AlgoOrderEngine {
  public:
-  explicit TargetPosEngine(uint64_t account_id, int ticker_id);
+  explicit TargetPosEngine(int ticker_id);
+
+  void Init() override;
 
   // 设置目标仓位，正数表示多，负数表示空
   void SetTargetPos(int volume);

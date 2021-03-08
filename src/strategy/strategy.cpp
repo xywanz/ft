@@ -30,6 +30,8 @@ void Strategy::Run() {
 
 void Strategy::RegisterAlgoOrderEngine(AlgoOrderEngine* engine) {
   engine->SetOrderSender(&sender_);
+  engine->SetPosGetter(&pos_getter_);
+  engine->Init();
   algo_order_engines_.emplace_back(engine);
 }
 

@@ -7,28 +7,24 @@
 #include "ft/base/contract_table.h"
 #include "ft/base/error_code.h"
 #include "ft/utils/misc.h"
-#include "ft/utils/protocol_utils.h"
-#include "ft/utils/redis_position_helper.h"
 
 namespace ft {
 
-TargetPosEngine::TargetPosEngine(uint64_t account_id, int ticker_id) : ticker_id_(ticker_id) {
+TargetPosEngine::TargetPosEngine(int ticker_id) : ticker_id_(ticker_id) {
   auto* contract = ContractTable::get_by_index(ticker_id);
   if (!contract) {
     throw std::runtime_error("contract not found");
   }
   ticker_ = contract->ticker;
 
-  RedisPositionGetter pos_getter;
-  pos_getter.SetAccount(account_id);
+  client_order_id_ = 100000000UL + ticker_id_ * 100000UL;
+}
 
-  Position current_pos{};
-  pos_getter.get(ticker_, &current_pos);
+void TargetPosEngine::Init() {
+  auto current_pos = GetPosition(ticker_);
   long_pos_ = current_pos.long_pos.holdings;
   short_pos_ = current_pos.short_pos.holdings;
   target_pos_ = long_pos_ - short_pos_;
-
-  client_order_id_ = 100000000UL + ticker_id_ * 100000UL;
 }
 
 void TargetPosEngine::SetTargetPos(int volume) { target_pos_ = volume; }
