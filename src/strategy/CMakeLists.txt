@@ -1,6 +1,7 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-add_library(strategy STATIC strategy.cpp)
+add_library(strategy STATIC strategy.cpp
+                            algo_order/target_pos_engine.cpp)
 add_library(ft::strategy ALIAS strategy)
 target_link_libraries(strategy PUBLIC ft::utils)
 

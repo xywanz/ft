@@ -285,6 +285,7 @@ struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   uint32_t ticker_id;
   Direction direction;
   Offset offset;
+  double price;
   int original_volume;
   int traded_volume;
 
@@ -293,7 +294,7 @@ struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   uint32_t this_traded;
   double this_traded_price;
 
-  SERIALIZABLE_FIELDS(client_order_id, order_id, ticker_id, direction, offset, original_volume,
+  SERIALIZABLE_FIELDS(client_order_id, order_id, ticker_id, direction, offset, price, original_volume,
                       traded_volume, completed, error_code, this_traded, this_traded_price);
 };
 

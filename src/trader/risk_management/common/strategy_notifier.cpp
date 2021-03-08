@@ -15,6 +15,7 @@ void StrategyNotifier::OnOrderAccepted(const Order* order) {
     rsp.direction = order->req.direction;
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
+    rsp.price = order->req.price;
     rsp.error_code = NO_ERROR;
     pub_.Publish(order->strategy_id, rsp);
   }
@@ -30,6 +31,7 @@ void StrategyNotifier::OnOrderTraded(const Order* order, const Trade* trade) {
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
     rsp.traded_volume = order->traded_volume;
+    rsp.price = order->req.price;
     rsp.this_traded = trade->volume;
     rsp.this_traded_price = trade->price;
     rsp.completed = order->canceled_volume + order->traded_volume == order->req.volume;
@@ -52,6 +54,7 @@ void StrategyNotifier::OnOrderRejected(const Order* order, int error_code) {
     rsp.direction = order->req.direction;
     rsp.offset = order->req.offset;
     rsp.original_volume = order->req.volume;
+    rsp.price = order->req.price;
     rsp.completed = true;
     rsp.error_code = error_code;
     pub_.Publish(order->strategy_id, rsp);

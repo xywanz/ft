@@ -3,6 +3,9 @@
 add_library(grid_strategy SHARED grid_strategy.cpp)
 target_link_libraries(grid_strategy strategy ft::utils)
 
+add_library(target_pos_demo SHARED target_pos_demo.cpp)
+target_link_libraries(target_pos_demo strategy ft::utils)
+
 # add_executable(etf-arbitrage etf_arbitrage.cpp)
 # target_link_libraries(etf-arbitrage ${COMMON_LIB} utils)
 

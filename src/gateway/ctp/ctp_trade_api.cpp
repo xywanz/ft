@@ -347,7 +347,6 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     assert(contract);
     OrderAcceptance rsp = {order_id};
     oms_->OnOrderAccepted(&rsp);
-    printf("onrtnorder:  orderref:%s\n", order->OrderRef);
   }
 }
 

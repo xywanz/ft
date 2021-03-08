@@ -27,17 +27,22 @@ void Strategy::Run() {
   trade_msg_thread.join();
 }
 
+void Strategy::RegisterAlgoOrderEngine(AlgoOrderEngine* engine) {
+  engine->SetOrderSender(&sender_);
+  algo_order_engines_.emplace_back(engine);
+}
+
 void Strategy::Subscribe(const std::vector<std::string>& sub_list) {
   if (backtest_mode_) {
     for (const auto& ticker : sub_list) {
       md_sub_.Subscribe<TickData>(ticker, [this](TickData* tick) {
-        OnTick(*tick);
+        OnTickMsg(*tick);
         SendNotification(0);
       });
     }
   } else {
     for (const auto& ticker : sub_list) {
-      md_sub_.Subscribe<TickData>(ticker, [this](TickData* tick) { OnTick(*tick); });
+      md_sub_.Subscribe<TickData>(ticker, [this](TickData* tick) { OnTickMsg(*tick); });
     }
   }
 }

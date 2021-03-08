@@ -58,7 +58,7 @@ class GridStrategy : public ft::Strategy {
     }
   }
 
-  void OnOrderResponse(const ft::OrderResponse& order) override {
+  void OnOrder(const ft::OrderResponse& order) override {
     spdlog::info("Order: {}  Traded/Total: {}/{}     Completed: {}", order.order_id,
                  order.traded_volume, order.original_volume, order.completed);
   }
@@ -71,7 +71,7 @@ class GridStrategy : public ft::Strategy {
   int trade_volume_each_ = 20;
   int trade_counts_ = 0;
 
-  std::string ticker_ = "UR101";
+  std::string ticker_ = "rb2105";
 };
 
 EXPORT_STRATEGY(GridStrategy);
