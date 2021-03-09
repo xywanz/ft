@@ -25,7 +25,7 @@ int NoSelfTradeRule::CheckOrderRequest(const Order* order) {
   for (auto& [oms_order_id, o] : *order_map_) {
     UNUSED(oms_order_id);
     pending_order = &o.req;
-    if (pending_order.contract->ticker_id != req.contract->ticker_id) {
+    if (pending_order->contract->ticker_id != req->contract->ticker_id) {
       continue;
     }
     if (pending_order->direction != oppsite_direction) {
