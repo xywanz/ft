@@ -54,6 +54,10 @@ void TargetPosEngine::OnTick(const TickData& tick) {
     }
   }
 
+  if (long_pos_ - short_pos_ == target_pos_) {
+    return;
+  }
+
   int gap = target_pos_ - (long_pos_ + long_pending_ - short_pos_ - short_pending_);
   if (gap > 0) {
     if (ask_ < 1e-6) {
