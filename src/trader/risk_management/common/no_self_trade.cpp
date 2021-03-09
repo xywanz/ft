@@ -25,7 +25,12 @@ int NoSelfTradeRule::CheckOrderRequest(const Order* order) {
   for (auto& [oms_order_id, o] : *order_map_) {
     UNUSED(oms_order_id);
     pending_order = &o.req;
-    if (pending_order->direction != oppsite_direction) continue;
+    if (pending_order.contract->ticker_id != req.contract->ticker_id) {
+      continue;
+    }
+    if (pending_order->direction != oppsite_direction) {
+      continue;
+    }
 
     // 存在市价单直接拒绝
     if (pending_order->price < 1e-5 || pending_order->type == OrderType::kMarket ||
