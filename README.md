@@ -31,7 +31,10 @@ Table of Contents
       * [Maintainers](#maintainers)
 
 ## Backgroud
+为了解决当前众多Python量化交易框架性能低的问题
 
+先上张图快速了解下ft的架构
+![framework](img/framework.png)
 
 ## Install
 使用cmake(>=3.13)及g++(>=7)进行编译
