@@ -27,6 +27,15 @@ void TargetPosEngine::Init() {
   target_pos_ = long_pos_ - short_pos_;
 }
 
+void TargetPosEngine::SetPriceLimit(double price_limit) {
+  auto contract = ContractTable::get_by_index(ticker_id_);
+  assert(contract);
+
+  double v = price_limit / contract->price_tick;
+  int64_t price_tick_num = std::floor(v);
+  price_limit_ = price_tick_num * contract->price_tick;
+}
+
 void TargetPosEngine::SetTargetPos(int volume) { target_pos_ = volume; }
 
 void TargetPosEngine::OnTick(const TickData& tick) {
@@ -47,7 +56,7 @@ void TargetPosEngine::OnTick(const TickData& tick) {
 
   int gap = target_pos_ - (long_pos_ + long_pending_ - short_pos_ - short_pending_);
   if (gap > 0) {
-    if (bid_ < 1e-6) {
+    if (ask_ < 1e-6) {
       return;
     }
 
@@ -70,15 +79,15 @@ void TargetPosEngine::OnTick(const TickData& tick) {
       long_pending_ += buy_close_vol + buy_open_vol;
 
       if (buy_close_vol > 0) {
-        SendOrder(Direction::kBuy, Offset::kCloseToday, buy_close_vol, bid_);
+        SendOrder(Direction::kBuy, Offset::kCloseToday, buy_close_vol, ask_ + price_limit_);
       }
 
       if (buy_open_vol > 0) {
-        SendOrder(Direction::kBuy, Offset::kOpen, buy_open_vol, bid_);
+        SendOrder(Direction::kBuy, Offset::kOpen, buy_open_vol, ask_ + price_limit_);
       }
     }
   } else if (gap < 0) {
-    if (ask_ < 1e-6) {
+    if (bid_ < 1e-6) {
       return;
     }
 
@@ -102,11 +111,11 @@ void TargetPosEngine::OnTick(const TickData& tick) {
       short_pending_ += sell_close_vol + sell_open_vol;
 
       if (sell_close_vol > 0) {
-        SendOrder(Direction::kSell, Offset::kCloseToday, sell_close_vol, ask_);
+        SendOrder(Direction::kSell, Offset::kCloseToday, sell_close_vol, bid_ - price_limit_);
       }
 
       if (sell_open_vol > 0) {
-        SendOrder(Direction::kSell, Offset::kOpen, sell_open_vol, ask_);
+        SendOrder(Direction::kSell, Offset::kOpen, sell_open_vol, bid_ - price_limit_);
       }
     }
   }

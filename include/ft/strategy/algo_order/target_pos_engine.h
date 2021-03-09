@@ -27,6 +27,11 @@ class TargetPosEngine : public AlgoOrderEngine {
 
   void Init() override;
 
+  // 调整下单价格幅度，不设置时默认为0
+  // 多：ask_1 + price_scope
+  // 空：bid_1 - price_scope
+  void SetPriceLimit(double price_limit);
+
   // 设置目标仓位，正数表示多，负数表示空
   void SetTargetPos(int volume);
 
@@ -64,6 +69,8 @@ class TargetPosEngine : public AlgoOrderEngine {
   int short_pos_ = 0;
   int long_pending_ = 0;
   int short_pending_ = 0;
+
+  double price_limit_ = 0.0;
 
   double bid_ = 0.0;
   double ask_ = 0.0;
