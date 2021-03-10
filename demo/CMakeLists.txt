@@ -9,6 +9,9 @@ target_link_libraries(target_pos_demo strategy ft::utils)
 add_library(spread_arb SHARED spread_arb.cpp)
 target_link_libraries(spread_arb strategy ft::utils)
 
+add_library(bar_demo SHARED bar_demo.cpp)
+target_link_libraries(bar_demo strategy ft::utils)
+
 # add_executable(etf-arbitrage etf_arbitrage.cpp)
 # target_link_libraries(etf-arbitrage ${COMMON_LIB} utils)
 
