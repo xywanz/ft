@@ -33,11 +33,7 @@ void ShowConfig(const Config& cfg) {
   spdlog::info("  password: ******");
   spdlog::info("  auth_code: {}", cfg.auth_code);
   spdlog::info("  app_id: {}", cfg.app_id);
-  std::string subs_list = "";
-  for (const auto& ticker : cfg.subscription_list) {
-    subs_list += ticker + ",";
-  }
-  spdlog::info("  subscription_list: {}", subs_list);
+  spdlog::info("  subcription_list: {}", fmt::join(cfg.subscription_list, ","));
   spdlog::info("  contracts_file: {}", cfg.contracts_file.c_str());
   spdlog::info("  cancel_outstanding_orders_on_startup: {}",
                cfg.cancel_outstanding_orders_on_startup);
