@@ -54,16 +54,16 @@ class Strategy {
   void OnOrderResponse(const OrderResponse& order_rsp) {
     std::unique_lock<SpinLock> lock(spinlock_);
 
+    OnOrder(order_rsp);
+    for (auto algo_order_engine : algo_order_engines_) {
+      algo_order_engine->OnOrder(order_rsp);
+    }
+
     if (order_rsp.this_traded > 0) {
       OnTrade(order_rsp);
       for (auto algo_order_engine : algo_order_engines_) {
         algo_order_engine->OnTrade(order_rsp);
       }
-    }
-
-    OnOrder(order_rsp);
-    for (auto algo_order_engine : algo_order_engines_) {
-      algo_order_engine->OnOrder(order_rsp);
     }
   }
 
