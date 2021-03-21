@@ -327,13 +327,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     OrderCancelRejection rsp = {order_id, gb2312_to_utf8(order->StatusMsg)};
     oms_->OnOrderCancelRejected(&rsp);
     return;
-  } else if ((order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted && 
-             order->OrderStatus != THOST_FTDC_OST_Canceled) ||
+  } else if ((order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted &&
+              order->OrderStatus != THOST_FTDC_OST_Canceled) ||
              order->OrderSubmitStatus == THOST_FTDC_OSS_CancelSubmitted) {
     return;
   }
 
-  // 如果只是被CTP接收，则直接返回，只能撤被交易所接受的单
   if (order->OrderStatus == THOST_FTDC_OST_Unknown ||
       order->OrderStatus == THOST_FTDC_OST_NoTradeNotQueueing)
     return;
