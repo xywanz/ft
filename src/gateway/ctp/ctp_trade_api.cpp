@@ -328,7 +328,7 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     oms_->OnOrderCancelRejected(&rsp);
     return;
   } else if ((order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted &&
-              order->OrderStatus == THOST_FTDC_OST_Canceled) ||
+              order->OrderStatus != THOST_FTDC_OST_Canceled) ||
              order->OrderSubmitStatus == THOST_FTDC_OSS_CancelSubmitted) {
     return;
   }
