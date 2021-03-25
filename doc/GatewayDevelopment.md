@@ -235,3 +235,7 @@ target_link_libraries(my_gateway PRIVATE
 ```cmake
 add_subdirectory(my_gateway)
 ```
+
+## 5. Q&A
+Q: SendOrder中的order_id如何与回报中的order_id对应上  
+A: 参考CTP的实现，通过在order_ref和order_id之间建立某种映射关系，例如order_ref = order_id + order_ref_base，从而可以从order_ref反推出order_id。而每个回报中都带有order_ref信息，所以也就知道了order_id
