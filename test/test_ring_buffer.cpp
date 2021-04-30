@@ -15,14 +15,14 @@ TEST(RingBufferTest, Case_0) {
   std::thread rd_thread([&]() {
     for (int i = 0; i < n; ++i) {
       int res;
-      rb.Dequeue(&res);
+      rb.GetWithBlocking(&res);
       ASSERT_EQ(res, i);
     }
   });
 
   std::thread wr_thread([&]() {
     for (int i = 0; i < n; ++i) {
-      rb.Enqueue(i);
+      rb.PutWithBlocking(i);
     }
   });
 
