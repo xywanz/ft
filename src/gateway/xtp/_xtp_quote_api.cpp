@@ -101,7 +101,7 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   return true;
 }
 
-bool XtpQuoteApi::QueryContractList(std::vector<Contract>* result) {
+bool XtpQuoteApi::QueryContracts(std::vector<Contract>* result) {
   if (!is_logon_) {
     spdlog::error("[XtpQuoteApi::QueryContractList] 未登录到quote服务器");
     return false;

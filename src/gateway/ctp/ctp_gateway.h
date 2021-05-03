@@ -29,11 +29,10 @@ class CtpGateway : public Gateway {
 
   bool Subscribe(const std::vector<std::string> &sub_list) override;
 
-  bool QueryContractList(std::vector<Contract> *result) override;
-  bool QueryPositionList(std::vector<Position> *result) override;
+  bool QueryContracts(std::vector<Contract> *result) override;
+  bool QueryPositions(std::vector<Position> *result) override;
   bool QueryAccount(Account *result) override;
-  bool QueryTradeList(std::vector<Trade> *result) override;
-  bool QueryMarginRate(const std::string &ticker) override;
+  bool QueryTrades(std::vector<Trade> *result) override;
 
  private:
   std::unique_ptr<CtpTradeApi> trade_api_;

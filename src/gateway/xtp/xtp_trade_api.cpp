@@ -61,7 +61,7 @@ bool XtpTradeApi::Login(const Config& config) {
 
   if (config.cancel_outstanding_orders_on_startup) {
     spdlog::debug("[XtpTradeApi::Login] Cancel outstanding orders on startup");
-    if (!QueryOrderList()) {
+    if (!QueryOrders()) {
       spdlog::error(
           "[XtpTradeApi::Login] Failed to query orders and cancel outstanding "
           "orders");
@@ -240,7 +240,7 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info, XTPRI* err
                 error_info->error_msg);
 }
 
-bool XtpTradeApi::QueryPositionList(std::vector<Position>* result) {
+bool XtpTradeApi::QueryPositions(std::vector<Position>* result) {
   position_results_ = result;
   int res = trade_api_->QueryPosition("", session_id_, next_req_id());
   if (res != 0) {
@@ -350,7 +350,7 @@ void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int r
   if (is_last) done();
 }
 
-bool XtpTradeApi::QueryOrderList() {
+bool XtpTradeApi::QueryOrders() {
   XTPQueryOrderReq req{};
 
   if (trade_api_->QueryOrders(&req, session_id_, next_req_id()) != 0) {
@@ -383,7 +383,7 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, 
   if (is_last) done();
 }
 
-bool XtpTradeApi::QueryTradeList(std::vector<Trade>* result) {
+bool XtpTradeApi::QueryTrades(std::vector<Trade>* result) {
   trade_results_ = result;
 
   XTPQueryTraderReq req{};

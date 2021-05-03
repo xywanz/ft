@@ -24,7 +24,7 @@ class ContractCollector : public ft::BaseOrderManagementSystem {
   }
 
   bool Dump(const std::string& file = "./contracts.csv") {
-    if (!gateway_->QueryContractList(&contracts_)) return false;
+    if (!gateway_->QueryContracts(&contracts_)) return false;
     ft::StoreContractList(file, contracts_);
     return true;
   }

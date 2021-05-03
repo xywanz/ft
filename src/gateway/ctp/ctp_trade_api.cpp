@@ -412,7 +412,7 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
                 gb2312_to_utf8(rsp_info->ErrorMsg));
 }
 
-bool CtpTradeApi::QueryContractList(std::vector<Contract> *result) {
+bool CtpTradeApi::QueryContracts(std::vector<Contract> *result) {
   contract_results_ = result;
   CThostFtdcQryInstrumentField req{};
   if (trade_api_->ReqQryInstrument(&req, next_req_id()) != 0) {
@@ -463,7 +463,7 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   if (is_last) done();
 }
 
-bool CtpTradeApi::QueryPositionList(std::vector<Position> *result) {
+bool CtpTradeApi::QueryPositions(std::vector<Position> *result) {
   position_results_ = result;
   CThostFtdcQryInvestorPositionField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -608,7 +608,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoFi
   if (is_last) done();
 }
 
-bool CtpTradeApi::QueryTradeList(std::vector<Trade> *result) {
+bool CtpTradeApi::QueryTrades(std::vector<Trade> *result) {
   trade_results_ = result;
   CThostFtdcQryTradeField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
@@ -646,62 +646,6 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoFi
     td.offset = offset(trade->OffsetFlag);
 
     if (trade_results_) trade_results_->emplace_back(td);
-  }
-
-  if (is_last) done();
-}
-
-bool CtpTradeApi::QueryMarginRate(const std::string &ticker) {
-  CThostFtdcQryInstrumentMarginRateField req{};
-
-  if (!ticker.empty()) {
-    auto contract = ContractTable::get_by_ticker(ticker);
-    if (!contract) {
-      spdlog::error("[CtpTradeApi::QueryMarginRate] Contract not found. Ticker: {}", ticker);
-      return false;
-    }
-    strncpy(req.InstrumentID, contract->ticker.c_str(), sizeof(req.InstrumentID));
-    strncpy(req.ExchangeID, contract->exchange.c_str(), sizeof(req.ExchangeID));
-  }
-
-  req.HedgeFlag = THOST_FTDC_HF_Speculation;
-  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-  strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-
-  if (trade_api_->ReqQryInstrumentMarginRate(&req, next_req_id()) != 0) {
-    spdlog::error(
-        "[CtpTradeApi::QueryMarginRate] Failed. "
-        "Failed to call ReqQryInstrumentMarginRate");
-    return false;
-  }
-
-  return wait_sync();
-}
-
-void CtpTradeApi::OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField *margin_rate,
-                                               CThostFtdcRspInfoField *rsp_info, int req_id,
-                                               bool is_last) {
-  if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryInstrumentMarginRate] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
-    return;
-  }
-
-  if (margin_rate) {
-    // TODO(kevin)
-    auto __c = ContractTable::get_by_ticker(margin_rate->InstrumentID);
-    if (!__c) {
-      spdlog::error("[CtpTradeApi::OnRspQryInstrumentMarginRate] Contract not found: {}",
-                    margin_rate->InstrumentID);
-    }
-
-    spdlog::info("Margin Rate. {}, {}, {}", margin_rate->InstrumentID,
-                 margin_rate->LongMarginRatioByMoney, margin_rate->ShortMarginRatioByMoney);
-
-    auto contract = const_cast<Contract *>(__c);
-    contract->long_margin_rate = margin_rate->LongMarginRatioByMoney;
-    contract->short_margin_rate = margin_rate->ShortMarginRatioByMoney;
   }
 
   if (is_last) done();

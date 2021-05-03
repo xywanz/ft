@@ -63,26 +63,15 @@ class Gateway {
 
   virtual bool CancelOrder(uint64_t order_id, uint64_t privdata) { return false; }
 
-  virtual bool Subscribe(const std::vector<std::string>& sub_list) { return true; }
+  virtual bool Subscribe(const std::vector<std::string>& sub_list) { return false; }
 
-  virtual bool QueryContract(const std::string& ticker, const std::string& exchange,
-                             Contract* result) {
-    return true;
-  }
+  virtual bool QueryContracts(std::vector<Contract>* result) { return false; }
 
-  virtual bool QueryContractList(std::vector<Contract>* result) { return true; }
+  virtual bool QueryPositions(std::vector<Position>* result) { return false; }
 
-  virtual bool QueryPosition(const std::string& ticker, Position* result) { return true; }
+  virtual bool QueryAccount(Account* result) { return false; }
 
-  virtual bool QueryPositionList(std::vector<Position>* result) { return true; }
-
-  virtual bool QueryAccount(Account* result) { return true; }
-
-  virtual bool QueryTradeList(std::vector<Trade>* result) { return true; }
-
-  virtual bool QueryMarginRate(const std::string& ticker) { return true; }
-
-  virtual bool QueryCommisionRate(const std::string& ticker) { return true; }
+  virtual bool QueryTrades(std::vector<Trade>* result) { return false; }
 
   // 扩展接口，用于向Gateway发送自定义消息
   virtual void OnNotify(uint64_t signal) {}

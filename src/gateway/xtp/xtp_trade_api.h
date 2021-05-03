@@ -27,10 +27,10 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr);
   bool CancelOrder(uint64_t xtp_order_id);
 
-  bool QueryPositionList(std::vector<Position>* result);
+  bool QueryPositions(std::vector<Position>* result);
   bool QueryAccount(Account* result);
-  bool QueryTradeList(std::vector<Trade>* result);
-  bool QueryOrderList();
+  bool QueryTrades(std::vector<Trade>* result);
+  bool QueryOrders();
 
   void OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint64_t session_id) override;
 

@@ -24,7 +24,7 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
   void Logout();
   bool Subscribe(const std::vector<std::string>& sub_list);
 
-  bool QueryContractList(std::vector<Contract>* result);
+  bool QueryContracts(std::vector<Contract>* result);
 
   void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) override;
 

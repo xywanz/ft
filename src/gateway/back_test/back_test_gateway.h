@@ -28,10 +28,9 @@ class BackTestGateway : public Gateway {
 
   bool Subscribe(const std::vector<std::string>& sub_list) override;
 
-  bool QueryPosition(const std::string& ticker, Position* result) override;
-  bool QueryPositionList(std::vector<Position>* result) override;
+  bool QueryPositions(std::vector<Position>* result) override;
   bool QueryAccount(Account* result) override;
-  bool QueryTradeList(std::vector<Trade>* result) override;
+  bool QueryTrades(std::vector<Trade>* result) override;
 
   void OnNotify(uint64_t signal) override;
 

@@ -54,7 +54,6 @@ OrderManagementSystem::OrderManagementSystem() : md_pusher_("ipc://md.ft_trader.
 
 bool OrderManagementSystem::Login(const Config& config) {
   spdlog::info("***************OrderManagementSystem****************");
-  spdlog::info("* version: {}", version());
   spdlog::info("* compiling time: {} {}", __TIME__, __DATE__);
   spdlog::info("****************************************************");
   ShowConfig(config);
@@ -105,7 +104,7 @@ bool OrderManagementSystem::Login(const Config& config) {
 
   if (!ContractTable::is_inited()) {
     std::vector<Contract> contracts;
-    if (!gateway_->QueryContractList(&contracts)) {
+    if (!gateway_->QueryContracts(&contracts)) {
       spdlog::error("查询合约失败，初始化ContractTable失败");
       return false;
     }
@@ -138,7 +137,7 @@ bool OrderManagementSystem::Login(const Config& config) {
   });
 
   std::vector<Position> init_positions;
-  if (!gateway_->QueryPositionList(&init_positions)) {
+  if (!gateway_->QueryPositions(&init_positions)) {
     spdlog::error("仓位查询失败");
     return false;
   }
@@ -146,7 +145,7 @@ bool OrderManagementSystem::Login(const Config& config) {
 
   // query trades to update position
   std::vector<Trade> init_trades;
-  if (!gateway_->QueryTradeList(&init_trades)) {
+  if (!gateway_->QueryTrades(&init_trades)) {
     spdlog::error("历史成交查询失败");
     return false;
   }
@@ -207,7 +206,7 @@ void OrderManagementSystem::ProcessQueueCmd() {
   // TODO(kevin): 在LFQueue_create和LFQueue_open的时候加上检验信息。 Done!
 
   // user_id用于验证是否是trading engine创建的queue
-  uint32_t te_user_id = static_cast<uint32_t>(version());
+  uint32_t te_user_id = 88888;
   LFQueue* cmd_queue;
   if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
     int res = LFQueue_create(cmd_queue_key_, te_user_id, sizeof(TraderCommand), 4096 * 4, false);

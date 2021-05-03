@@ -86,9 +86,7 @@ bool BackTestGateway::CancelOrder(uint64_t order_id, uint64_t privdata) {
 
 bool BackTestGateway::Subscribe(const std::vector<std::string>& sub_list) { return true; }
 
-bool BackTestGateway::QueryPosition(const std::string& ticker, Position* result) { return true; }
-
-bool BackTestGateway::QueryPositionList(std::vector<Position>* result) { return true; }
+bool BackTestGateway::QueryPositions(std::vector<Position>* result) { return true; }
 
 bool BackTestGateway::QueryAccount(Account* result) {
   std::unique_lock<std::mutex> lock(mutex_);
@@ -97,7 +95,7 @@ bool BackTestGateway::QueryAccount(Account* result) {
   return true;
 }
 
-bool BackTestGateway::QueryTradeList(std::vector<Trade>* result) { return true; }
+bool BackTestGateway::QueryTrades(std::vector<Trade>* result) { return true; }
 
 void BackTestGateway::OnNotify(uint64_t signal) {
   std::unique_lock<std::mutex> lock(mutex_);

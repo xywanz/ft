@@ -52,21 +52,17 @@ bool XtpGateway::Subscribe(const std::vector<std::string>& sub_list) {
   return quote_api_->Subscribe(sub_list);
 }
 
-bool XtpGateway::QueryContractList(std::vector<Contract>* result) {
-  return quote_api_->QueryContractList(result);
+bool XtpGateway::QueryContracts(std::vector<Contract>* result) {
+  return quote_api_->QueryContracts(result);
 }
 
 bool XtpGateway::QueryAccount(Account* result) { return trade_api_->QueryAccount(result); }
 
-bool XtpGateway::QueryPositionList(std::vector<Position>* result) {
-  return trade_api_->QueryPositionList(result);
+bool XtpGateway::QueryPositions(std::vector<Position>* result) {
+  return trade_api_->QueryPositions(result);
 }
 
-bool XtpGateway::QueryTradeList(std::vector<Trade>* result) {
-  return trade_api_->QueryTradeList(result);
-}
-
-bool XtpGateway::QueryOrderList() { return trade_api_->QueryOrderList(); }
+bool XtpGateway::QueryTrades(std::vector<Trade>* result) { return trade_api_->QueryTrades(result); }
 
 REGISTER_GATEWAY(::ft::XtpGateway);
 

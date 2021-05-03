@@ -64,23 +64,17 @@ bool CtpGateway::Subscribe(const std::vector<std::string> &sub_list) {
   return quote_api_->Subscribe(sub_list);
 }
 
-bool CtpGateway::QueryContractList(std::vector<Contract> *result) {
-  return trade_api_->QueryContractList(result);
+bool CtpGateway::QueryContracts(std::vector<Contract> *result) {
+  return trade_api_->QueryContracts(result);
 }
 
-bool CtpGateway::QueryPositionList(std::vector<Position> *result) {
-  return trade_api_->QueryPositionList(result);
+bool CtpGateway::QueryPositions(std::vector<Position> *result) {
+  return trade_api_->QueryPositions(result);
 }
 
 bool CtpGateway::QueryAccount(Account *result) { return trade_api_->QueryAccount(result); }
 
-bool CtpGateway::QueryTradeList(std::vector<Trade> *result) {
-  return trade_api_->QueryTradeList(result);
-}
-
-bool CtpGateway::QueryMarginRate(const std::string &ticker) {
-  return trade_api_->QueryMarginRate(ticker);
-}
+bool CtpGateway::QueryTrades(std::vector<Trade> *result) { return trade_api_->QueryTrades(result); }
 
 REGISTER_GATEWAY(::ft::CtpGateway);
 

@@ -28,11 +28,10 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr);
   bool CancelOrder(uint64_t order_id, uint64_t ticker_id);
 
-  bool QueryContractList(std::vector<Contract> *result);
-  bool QueryPositionList(std::vector<Position> *result);
+  bool QueryContracts(std::vector<Contract> *result);
+  bool QueryPositions(std::vector<Position> *result);
   bool QueryAccount(Account *result);
-  bool QueryTradeList(std::vector<Trade> *result);
-  bool QueryMarginRate(const std::string &ticker);
+  bool QueryTrades(std::vector<Trade> *result);
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -96,10 +95,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   void OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoField *rsp_info, int req_id,
                      bool is_last) override;
-
-  void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField *margin_rate,
-                                    CThostFtdcRspInfoField *rsp_info, int req_id,
-                                    bool is_last) override;
 
  private:
   int next_req_id() { return next_req_id_++; }

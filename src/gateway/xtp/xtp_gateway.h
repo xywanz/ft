@@ -27,11 +27,10 @@ class XtpGateway : public Gateway {
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
   bool CancelOrder(uint64_t order_id, uint64_t privdata) override;
 
-  bool QueryContractList(std::vector<Contract>* result) override;
+  bool QueryContracts(std::vector<Contract>* result) override;
   bool QueryAccount(Account* result) override;
-  bool QueryPositionList(std::vector<Position>* result) override;
-  bool QueryTradeList(std::vector<Trade>* result) override;
-  bool QueryOrderList();
+  bool QueryPositions(std::vector<Position>* result) override;
+  bool QueryTrades(std::vector<Trade>* result) override;
 
  private:
   std::unique_ptr<XtpTradeApi> trade_api_;
