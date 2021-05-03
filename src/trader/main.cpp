@@ -4,7 +4,7 @@
 #include "ft/utils/config_loader.h"
 #include "getopt.hpp"
 #include "spdlog/spdlog.h"
-#include "trader/order_management/order_management.h"
+#include "trader/oms.h"
 
 static void Usage(const char* pname) {
   printf("Usage: %s [--config=<file>] [-h -? --help] [--loglevel=level]\n", pname);

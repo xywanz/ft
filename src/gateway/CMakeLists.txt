@@ -2,5 +2,4 @@
 
 add_subdirectory(ctp)
 add_subdirectory(xtp)
-#add_subdirectory(ocg_bss)
 add_subdirectory(back_test)
