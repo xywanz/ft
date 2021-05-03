@@ -25,18 +25,14 @@
 
 namespace ft {
 
+// 当前不支持销毁
 class OrderManagementSystem : public BaseOrderManagementSystem {
  public:
   OrderManagementSystem();
-  ~OrderManagementSystem();
 
   bool Login(const Config& config);
 
   void ProcessCmd();
-
-  void Close();
-
-  static uint64_t version() { return 202008172355; }
 
  private:
   void ProcessPubSubCmd();
@@ -69,8 +65,6 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
 
  private:
   Gateway* gateway_{nullptr};
-  GatewayDestroyFunc gateway_dtor_{nullptr};
-  void* gateway_dl_handle_{nullptr};
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};

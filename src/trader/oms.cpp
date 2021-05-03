@@ -52,8 +52,6 @@ OrderManagementSystem::OrderManagementSystem() : md_pusher_("ipc://md.ft_trader.
   rms_ = std::make_unique<RiskManagementSystem>();
 }
 
-OrderManagementSystem::~OrderManagementSystem() { Close(); }
-
 bool OrderManagementSystem::Login(const Config& config) {
   spdlog::info("***************OrderManagementSystem****************");
   spdlog::info("* version: {}", version());
@@ -237,19 +235,6 @@ void OrderManagementSystem::ProcessQueueCmd() {
     if (res != 0) continue;
 
     ExecuteCmd(cmd);
-  }
-}
-
-void OrderManagementSystem::Close() {
-  if (gateway_) {
-    gateway_->Logout();
-    gateway_ = nullptr;
-
-    gateway_dtor_(gateway_);
-    gateway_dtor_ = nullptr;
-
-    dlclose(gateway_dl_handle_);
-    gateway_dl_handle_ = nullptr;
   }
 }
 
