@@ -4,43 +4,29 @@
 #define FT_INCLUDE_FT_UTILS_RING_BUFFER_H_
 
 #include <atomic>
+#include <utility>
 
 namespace ft {
 
 template <typename T, uint64_t capacity>
 class RingBuffer {
  public:
-  bool Put(T&& data) {
+  template <typename U>
+  bool Put(U&& data) {
     uint64_t cur_head = head_.load(std::memory_order::memory_order_relaxed);
     if (cur_head - tail_.load(std::memory_order::memory_order_acquire) == capacity) {
       return false;
     }
-    buffer_[kIndexMask_ & kIndexMask_] = std::move(data);
+    buffer_[kIndexMask_ & kIndexMask_] = std::forward<U>(data);
     head_.store(cur_head + 1, std::memory_order::memory_order_release);
     return true;
   }
 
-  bool Put(const T& data) {
-    uint64_t cur_head = head_.load(std::memory_order::memory_order_relaxed);
-    if (cur_head - tail_.load(std::memory_order::memory_order_acquire) == capacity) {
-      return false;
-    }
-    buffer_[cur_head & kIndexMask_] = data;
-    head_.store(cur_head + 1, std::memory_order::memory_order_release);
-    return true;
-  }
-
-  void PutWithBlocking(T&& data) {
+  template <class U>
+  void PutWithBlocking(U&& data) {
     bool status;
     do {
-      status = Put(std::move(data));
-    } while (!status);
-  }
-
-  void PutWithBlocking(const T& data) {
-    bool status;
-    do {
-      status = Put(data);
+      status = Put(std::forward<U>(data));
     } while (!status);
   }
 
