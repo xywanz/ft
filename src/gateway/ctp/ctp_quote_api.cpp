@@ -4,11 +4,12 @@
 
 #include <utility>
 
+#include "gateway/ctp/ctp_gateway.h"
 #include "spdlog/spdlog.h"
 
 namespace ft {
 
-CtpQuoteApi::CtpQuoteApi(BaseOrderManagementSystem *oms) : oms_(oms) {}
+CtpQuoteApi::CtpQuoteApi(CtpGateway *gateway) : gateway_(gateway) {}
 
 CtpQuoteApi::~CtpQuoteApi() {
   is_error_ = true;
@@ -222,7 +223,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
       contract->ticker, md->ActionDay, tick.datetime.ToString(), tick.last_price, tick.volume,
       tick.turnover, tick.open_interest);
 
-  oms_->OnTick(&tick);
+  gateway_->OnTick(tick);
 }
 
 void CtpQuoteApi::OnRtnForQuoteRsp(CThostFtdcForQuoteRspField *for_quote_rsp) {}

@@ -14,9 +14,11 @@
 
 namespace ft {
 
+class CtpGateway;
+
 class CtpQuoteApi : public CThostFtdcMdSpi {
  public:
-  explicit CtpQuoteApi(BaseOrderManagementSystem *oms);
+  explicit CtpQuoteApi(CtpGateway *gateway);
   ~CtpQuoteApi();
 
   bool Login(const Config &config);
@@ -57,7 +59,7 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   int next_req_id() { return next_req_id_++; }
 
  private:
-  BaseOrderManagementSystem *oms_;
+  CtpGateway *gateway_;
   CtpUniquePtr<CThostFtdcMdApi> quote_api_;
 
   std::string server_addr_;

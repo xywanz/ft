@@ -20,7 +20,7 @@ namespace ft {
 
 class BackTestGateway : public Gateway {
  public:
-  bool Login(BaseOrderManagementSystem* oms, const Config& config) override;
+  bool Init(const Config& config) override;
   void Logout() override;
 
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
@@ -28,23 +28,23 @@ class BackTestGateway : public Gateway {
 
   bool Subscribe(const std::vector<std::string>& sub_list) override;
 
-  bool QueryPositions(std::vector<Position>* result) override;
-  bool QueryAccount(Account* result) override;
-  bool QueryTrades(std::vector<Trade>* result) override;
+  bool QueryPositions() override;
+  bool QueryAccount() override;
+  bool QueryTrades() override;
 
   void OnNotify(uint64_t signal) override;
 
-  void operator()(OrderAcceptance& acceptance) { oms_->OnOrderAccepted(&acceptance); }
-  void operator()(OrderRejection& rejection) { oms_->OnOrderRejected(&rejection); }
-  void operator()(Trade& trade) { oms_->OnOrderTraded(&trade); }
-  void operator()(OrderCancellation& cancellation) { oms_->OnOrderCanceled(&cancellation); }
-  void operator()(OrderCancelRejection& cxl_rejection) {
-    oms_->OnOrderCancelRejected(&cxl_rejection);
+  void operator()(const OrderAcceptance& acceptance) { OnOrderAccepted(acceptance); }
+  void operator()(const OrderRejection& rejection) { OnOrderRejected(rejection); }
+  void operator()(const Trade& trade) { OnOrderTraded(trade); }
+  void operator()(const OrderCancellation& cancellation) { OnOrderCanceled(cancellation); }
+  void operator()(const OrderCancelRejection& cxl_rejection) {
+    OnOrderCancelRejected(cxl_rejection);
   }
-  void operator()(TickData& tick) {
+  void operator()(const TickData& tick) {
     current_ticks_[tick.ticker_id] = tick;
     MatchOrders(tick);
-    oms_->OnTick(&tick);
+    OnTick(tick);
   }
 
  private:
@@ -79,7 +79,6 @@ class BackTestGateway : public Gateway {
                                OrderCancelRejection, TickData>;
 
  private:
-  BaseOrderManagementSystem* oms_ = nullptr;
   BackTestContext ctx_;
   std::unordered_map<uint32_t, TickData> current_ticks_;
   std::queue<Message> msg_queue_;

@@ -27,15 +27,14 @@ int main(int argc, char** argv) {
 
   ft::Config config;
   if (!ft::LoadConfig(config_file, &config)) {
-    spdlog::error("FAILED to load config from {}", config_file);
+    spdlog::error("failed to load config from {}", config_file);
   }
 
   auto oms = std::make_unique<ft::OrderManagementSystem>();
-  if (!oms->Login(config)) {
-    spdlog::error("FAILED to login");
+  if (!oms->Init(config)) {
+    spdlog::error("failed to init oms");
     exit(-1);
   }
 
-  spdlog::info("Successfully login. Ready to process commands");
   oms->ProcessCmd();
 }

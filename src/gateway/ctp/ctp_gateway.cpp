@@ -13,7 +13,7 @@ CtpGateway::CtpGateway() {}
 
 CtpGateway::~CtpGateway() {}
 
-bool CtpGateway::Login(BaseOrderManagementSystem *oms, const Config &config) {
+bool CtpGateway::Init(const Config &config) {
   if (config.broker_id.size() > sizeof(TThostFtdcBrokerIDType) || config.broker_id.empty() ||
       config.investor_id.size() > sizeof(TThostFtdcUserIDType) || config.investor_id.empty() ||
       config.password.size() > sizeof(TThostFtdcPasswordType) || config.password.empty()) {
@@ -28,7 +28,7 @@ bool CtpGateway::Login(BaseOrderManagementSystem *oms, const Config &config) {
 
   if (!config.trade_server_address.empty()) {
     spdlog::debug("[CtpGateway::Login] Login into trading server");
-    trade_api_ = std::make_unique<CtpTradeApi>(oms);
+    trade_api_ = std::make_unique<CtpTradeApi>(this);
     if (!trade_api_->Login(config)) {
       spdlog::error("[CtpGateway::Login] Failed to Login into the counter");
       return false;
@@ -37,7 +37,7 @@ bool CtpGateway::Login(BaseOrderManagementSystem *oms, const Config &config) {
 
   if (!config.quote_server_address.empty()) {
     spdlog::debug("[CtpGateway::Login] Login into market data server");
-    quote_api_ = std::make_unique<CtpQuoteApi>(oms);
+    quote_api_ = std::make_unique<CtpQuoteApi>(this);
     if (!quote_api_->Login(config)) {
       spdlog::error("[CtpGateway::Login] Failed to Login into the md server");
       return false;
@@ -64,17 +64,13 @@ bool CtpGateway::Subscribe(const std::vector<std::string> &sub_list) {
   return quote_api_->Subscribe(sub_list);
 }
 
-bool CtpGateway::QueryContracts(std::vector<Contract> *result) {
-  return trade_api_->QueryContracts(result);
-}
+bool CtpGateway::QueryContracts() { return trade_api_->QueryContracts(); }
 
-bool CtpGateway::QueryPositions(std::vector<Position> *result) {
-  return trade_api_->QueryPositions(result);
-}
+bool CtpGateway::QueryPositions() { return trade_api_->QueryPositions(); }
 
-bool CtpGateway::QueryAccount(Account *result) { return trade_api_->QueryAccount(result); }
+bool CtpGateway::QueryAccount() { return trade_api_->QueryAccount(); }
 
-bool CtpGateway::QueryTrades(std::vector<Trade> *result) { return trade_api_->QueryTrades(result); }
+bool CtpGateway::QueryTrades() { return trade_api_->QueryTrades(); }
 
 REGISTER_GATEWAY(::ft::CtpGateway);
 

@@ -16,9 +16,11 @@
 
 namespace ft {
 
+class XtpGateway;
+
 class XtpTradeApi : public XTP::API::TraderSpi {
  public:
-  explicit XtpTradeApi(BaseOrderManagementSystem* oms);
+  explicit XtpTradeApi(XtpGateway* gateway);
   ~XtpTradeApi();
 
   bool Login(const Config& config);
@@ -27,9 +29,9 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr);
   bool CancelOrder(uint64_t xtp_order_id);
 
-  bool QueryPositions(std::vector<Position>* result);
-  bool QueryAccount(Account* result);
-  bool QueryTrades(std::vector<Trade>* result);
+  bool QueryPositions();
+  bool QueryAccount();
+  bool QueryTrades();
   bool QueryOrders();
 
   void OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint64_t session_id) override;
@@ -66,7 +68,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   }
 
  private:
-  BaseOrderManagementSystem* oms_;
+  XtpGateway* gateway_;
   XtpUniquePtr<XTP::API::TraderApi> trade_api_;
 
   std::string investor_id_;
@@ -76,9 +78,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   volatile bool is_done_ = false;
   volatile bool is_error_ = false;
 
-  Account* account_result_;
-  std::vector<Position>* position_results_;
-  std::vector<Trade>* trade_results_;
   std::map<uint64_t, Position> pos_cache_;
 };
 

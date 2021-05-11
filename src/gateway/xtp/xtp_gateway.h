@@ -20,19 +20,22 @@ class XtpGateway : public Gateway {
  public:
   XtpGateway();
 
-  bool Login(BaseOrderManagementSystem* oms, const Config& config) override;
+  bool Init(const Config& config) override;
   void Logout() override;
   bool Subscribe(const std::vector<std::string>& sub_list) override;
 
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
   bool CancelOrder(uint64_t order_id, uint64_t privdata) override;
 
-  bool QueryContracts(std::vector<Contract>* result) override;
-  bool QueryAccount(Account* result) override;
-  bool QueryPositions(std::vector<Position>* result) override;
-  bool QueryTrades(std::vector<Trade>* result) override;
+  bool QueryContracts() override;
+  bool QueryAccount() override;
+  bool QueryPositions() override;
+  bool QueryTrades() override;
 
  private:
+  friend XtpTradeApi;
+  friend XtpQuoteApi;
+
   std::unique_ptr<XtpTradeApi> trade_api_;
   std::unique_ptr<XtpQuoteApi> quote_api_;
 };

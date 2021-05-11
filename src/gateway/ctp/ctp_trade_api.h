@@ -19,7 +19,7 @@ class CtpGateway;
 
 class CtpTradeApi : public CThostFtdcTraderSpi {
  public:
-  explicit CtpTradeApi(BaseOrderManagementSystem *oms);
+  explicit CtpTradeApi(CtpGateway *gateway);
   ~CtpTradeApi();
 
   bool Login(const Config &config);
@@ -28,10 +28,10 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr);
   bool CancelOrder(uint64_t order_id, uint64_t ticker_id);
 
-  bool QueryContracts(std::vector<Contract> *result);
-  bool QueryPositions(std::vector<Position> *result);
-  bool QueryAccount(Account *result);
-  bool QueryTrades(std::vector<Trade> *result);
+  bool QueryContracts();
+  bool QueryPositions();
+  bool QueryAccount();
+  bool QueryTrades();
 
   // 当客户端与交易后台建立起通信连接时（还未登录前），该方法被调用。
   void OnFrontConnected() override;
@@ -113,7 +113,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   uint64_t get_order_ref(uint64_t order_id) const { return order_id + order_ref_base_; }
 
  private:
-  BaseOrderManagementSystem *oms_;
+  CtpGateway *gateway_;
   CtpUniquePtr<CThostFtdcTraderApi> trade_api_;
 
   std::string front_addr_;
@@ -129,11 +129,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   volatile bool is_connected_ = false;
   volatile bool is_done_ = false;
   volatile bool is_logon_ = false;
-
-  Account *account_result_;
-  std::vector<Trade> *trade_results_;
-  std::vector<Contract> *contract_results_;
-  std::vector<Position> *position_results_;
 
   std::map<uint32_t, Position> pos_cache_;
 };

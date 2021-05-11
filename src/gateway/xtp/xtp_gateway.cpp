@@ -9,14 +9,14 @@ namespace ft {
 
 XtpGateway::XtpGateway() {}
 
-bool XtpGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
+bool XtpGateway::Init(const Config& config) {
   if (config.trade_server_address.empty() && config.quote_server_address.empty()) {
     spdlog::error("[XtpGateway::Login] 交易柜台和行情服务器地址都未设置");
     return false;
   }
 
   if (!config.trade_server_address.empty()) {
-    trade_api_ = std::make_unique<XtpTradeApi>(oms);
+    trade_api_ = std::make_unique<XtpTradeApi>(this);
     if (!trade_api_->Login(config)) {
       spdlog::error("[XtpGateway::Login] Failed to Login into the counter");
       return false;
@@ -24,7 +24,7 @@ bool XtpGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
   }
 
   if (!config.quote_server_address.empty()) {
-    quote_api_ = std::make_unique<XtpQuoteApi>(oms);
+    quote_api_ = std::make_unique<XtpQuoteApi>(this);
     if (!quote_api_->Login(config)) {
       spdlog::error("[XtpGateway::Login] Failed to Login into the md server");
       return false;
@@ -52,17 +52,13 @@ bool XtpGateway::Subscribe(const std::vector<std::string>& sub_list) {
   return quote_api_->Subscribe(sub_list);
 }
 
-bool XtpGateway::QueryContracts(std::vector<Contract>* result) {
-  return quote_api_->QueryContracts(result);
-}
+bool XtpGateway::QueryContracts() { return quote_api_->QueryContracts(); }
 
-bool XtpGateway::QueryAccount(Account* result) { return trade_api_->QueryAccount(result); }
+bool XtpGateway::QueryAccount() { return trade_api_->QueryAccount(); }
 
-bool XtpGateway::QueryPositions(std::vector<Position>* result) {
-  return trade_api_->QueryPositions(result);
-}
+bool XtpGateway::QueryPositions() { return trade_api_->QueryPositions(); }
 
-bool XtpGateway::QueryTrades(std::vector<Trade>* result) { return trade_api_->QueryTrades(result); }
+bool XtpGateway::QueryTrades() { return trade_api_->QueryTrades(); }
 
 REGISTER_GATEWAY(::ft::XtpGateway);
 

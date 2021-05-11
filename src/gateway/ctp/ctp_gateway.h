@@ -21,7 +21,7 @@ class CtpGateway : public Gateway {
   CtpGateway();
   ~CtpGateway();
 
-  bool Login(BaseOrderManagementSystem *oms, const Config &config) override;
+  bool Init(const Config &config) override;
   void Logout() override;
 
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) override;
@@ -29,12 +29,15 @@ class CtpGateway : public Gateway {
 
   bool Subscribe(const std::vector<std::string> &sub_list) override;
 
-  bool QueryContracts(std::vector<Contract> *result) override;
-  bool QueryPositions(std::vector<Position> *result) override;
-  bool QueryAccount(Account *result) override;
-  bool QueryTrades(std::vector<Trade> *result) override;
+  bool QueryContracts() override;
+  bool QueryPositions() override;
+  bool QueryAccount() override;
+  bool QueryTrades() override;
 
  private:
+  friend CtpTradeApi;
+  friend CtpQuoteApi;
+
   std::unique_ptr<CtpTradeApi> trade_api_;
   std::unique_ptr<CtpQuoteApi> quote_api_;
 

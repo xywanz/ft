@@ -15,7 +15,6 @@
 #include "ft/base/trade_msg.h"
 #include "ft/component/position_calculator.h"
 #include "ft/component/pubsub/publisher.h"
-#include "ft/trader/base_oms.h"
 #include "ft/trader/gateway.h"
 #include "ft/utils/redis_position_helper.h"
 #include "ft/utils/spinlock.h"
@@ -26,13 +25,19 @@
 namespace ft {
 
 // 当前不支持销毁
-class OrderManagementSystem : public BaseOrderManagementSystem {
+class OrderManagementSystem {
  public:
   OrderManagementSystem();
 
-  bool Login(const Config& config);
+  bool Init(const Config& config);
 
   void ProcessCmd();
+
+  void operator()(const OrderAcceptance& rsp);
+  void operator()(const OrderRejection& rsp);
+  void operator()(const Trade& rsp);
+  void operator()(const OrderCancellation& rsp);
+  void operator()(const OrderCancelRejection& rsp);
 
  private:
   void ProcessPubSubCmd();
@@ -44,24 +49,19 @@ class OrderManagementSystem : public BaseOrderManagementSystem {
   void CancelForTicker(uint32_t ticker_id);
   void CancelAll();
 
-  void OnTick(TickData* tick) override;
+  void OnTick(const TickData& tick);
 
-  void OnOrderAccepted(OrderAcceptance* rsp) override;
-  void OnOrderRejected(OrderRejection* rsp) override;
-  void OnOrderTraded(Trade* rsp) override;
-  void OnOrderCanceled(OrderCancellation* rsp) override;
-  void OnOrderCancelRejected(OrderCancelRejection* rsp) override;
+  void OnAccount(const Account& account);
+  void OnPositions(std::vector<Position>* positions);
+  void OnTrades(std::vector<Trade>* trades);
+  bool OnTimer();
 
- private:
-  void HandleAccount(Account* account);
-  void HandlePositions(std::vector<Position>* positions);
-  void HandleTrades(std::vector<Trade>* trades);
-  bool HandleTimer();
-
-  void OnPrimaryMarketTraded(Trade* rsp);    // ETF申赎
-  void OnSecondaryMarketTraded(Trade* rsp);  // 二级市场买卖
+  void OnPrimaryMarketTraded(const Trade& rsp);    // ETF申赎
+  void OnSecondaryMarketTraded(const Trade& rsp);  // 二级市场买卖
 
   uint64_t next_order_id() { return next_oms_order_id_++; }
+
+  static Gateway* LoadGateway(const std::string& gtw_lib_file);
 
  private:
   Gateway* gateway_{nullptr};

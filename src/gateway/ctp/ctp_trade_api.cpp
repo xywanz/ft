@@ -8,12 +8,13 @@
 #include "ThostFtdcTraderApi.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
+#include "gateway/ctp/ctp_gateway.h"
 #include "spdlog/spdlog.h"
 
 namespace ft {
 
-CtpTradeApi::CtpTradeApi(BaseOrderManagementSystem *oms)
-    : oms_(oms), trade_api_(CThostFtdcTraderApi::CreateFtdcTraderApi()) {
+CtpTradeApi::CtpTradeApi(CtpGateway *gateway)
+    : gateway_(gateway), trade_api_(CThostFtdcTraderApi::CreateFtdcTraderApi()) {
   if (!trade_api_) {
     spdlog::error("[CtpTradeApi::CtpTradeApi] Failed to CreateFtdcTraderApi");
     exit(-1);
@@ -301,7 +302,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
   }
 
   OrderRejection rsp{get_order_id(order_ref), gb2312_to_utf8(rsp_info->ErrorMsg)};
-  oms_->OnOrderRejected(&rsp);
+  gateway_->OnOrderRejected(rsp);
 }
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
@@ -321,11 +322,11 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
     OrderRejection rsp{order_id, gb2312_to_utf8(order->StatusMsg)};
-    oms_->OnOrderRejected(&rsp);
+    gateway_->OnOrderRejected(rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
     OrderCancelRejection rsp = {order_id, gb2312_to_utf8(order->StatusMsg)};
-    oms_->OnOrderCancelRejected(&rsp);
+    gateway_->OnOrderCancelRejected(rsp);
     return;
   } else if ((order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted &&
               order->OrderStatus != THOST_FTDC_OST_Canceled) ||
@@ -341,12 +342,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
     OrderCancellation rsp = {order_id, order->VolumeTotalOriginal - order->VolumeTraded};
-    oms_->OnOrderCanceled(&rsp);
+    gateway_->OnOrderCanceled(rsp);
   } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
     auto contract = ContractTable::get_by_ticker(order->InstrumentID);
     assert(contract);
     OrderAcceptance rsp = {order_id};
-    oms_->OnOrderAccepted(&rsp);
+    gateway_->OnOrderAccepted(rsp);
   }
 }
 
@@ -374,7 +375,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   rsp.trade_type = TradeType::kSecondaryMarket;
   rsp.trade_time = datetime::strptime(fmt::format("{} {}", trade->TradeDate, trade->TradeTime),
                                       "%Y%m%d %H:%M:%S");
-  oms_->OnOrderTraded(&rsp);
+  gateway_->OnOrderTraded(rsp);
 }
 
 bool CtpTradeApi::CancelOrder(uint64_t order_id, uint64_t ticker_id) {
@@ -412,15 +413,14 @@ void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
                 gb2312_to_utf8(rsp_info->ErrorMsg));
 }
 
-bool CtpTradeApi::QueryContracts(std::vector<Contract> *result) {
-  contract_results_ = result;
+bool CtpTradeApi::QueryContracts() {
   CThostFtdcQryInstrumentField req{};
   if (trade_api_->ReqQryInstrument(&req, next_req_id()) != 0) {
     spdlog::error("[CtpTradeApi::QueryContract] Failed to ReqQryInstrument");
     return false;
   }
 
-  return wait_sync();
+  return true;
 }
 
 void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
@@ -428,43 +428,40 @@ void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspQryInstrument] Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    gateway_->OnQueryContractEnd();
     return;
   }
 
-  if (!instrument) {
-    spdlog::error("[CtpTradeApi::OnRspQryInstrument] Instrument is nullptr");
-    error();
-    return;
+  if (instrument) {
+    spdlog::debug("[CtpTradeApi::OnRspQryInstrument] Instrument: {}, Exchange: {}, {}",
+                  instrument->InstrumentID, instrument->ExchangeID, instrument->LongMarginRatio);
+
+    Contract contract;
+    contract.product_type = product_type(instrument->ProductClass);
+    contract.ticker = instrument->InstrumentID;
+    contract.exchange = instrument->ExchangeID;
+    contract.name = gb2312_to_utf8(instrument->InstrumentName);
+    contract.product_type = product_type(instrument->ProductClass);
+    contract.size = instrument->VolumeMultiple;
+    contract.price_tick = instrument->PriceTick;
+    contract.long_margin_rate = instrument->LongMarginRatio;
+    contract.short_margin_rate = instrument->ShortMarginRatio;
+    contract.max_market_order_volume = instrument->MaxMarketOrderVolume;
+    contract.min_market_order_volume = instrument->MinMarketOrderVolume;
+    contract.max_limit_order_volume = instrument->MaxLimitOrderVolume;
+    contract.min_limit_order_volume = instrument->MinLimitOrderVolume;
+    contract.delivery_year = instrument->DeliveryYear;
+    contract.delivery_month = instrument->DeliveryMonth;
+
+    gateway_->OnQueryContract(contract);
   }
 
-  spdlog::debug("[CtpTradeApi::OnRspQryInstrument] Instrument: {}, Exchange: {}, {}",
-                instrument->InstrumentID, instrument->ExchangeID, instrument->LongMarginRatio);
-
-  Contract contract;
-  contract.product_type = product_type(instrument->ProductClass);
-  contract.ticker = instrument->InstrumentID;
-  contract.exchange = instrument->ExchangeID;
-  contract.name = gb2312_to_utf8(instrument->InstrumentName);
-  contract.product_type = product_type(instrument->ProductClass);
-  contract.size = instrument->VolumeMultiple;
-  contract.price_tick = instrument->PriceTick;
-  contract.long_margin_rate = instrument->LongMarginRatio;
-  contract.short_margin_rate = instrument->ShortMarginRatio;
-  contract.max_market_order_volume = instrument->MaxMarketOrderVolume;
-  contract.min_market_order_volume = instrument->MinMarketOrderVolume;
-  contract.max_limit_order_volume = instrument->MaxLimitOrderVolume;
-  contract.min_limit_order_volume = instrument->MinLimitOrderVolume;
-  contract.delivery_year = instrument->DeliveryYear;
-  contract.delivery_month = instrument->DeliveryMonth;
-
-  contract_results_->emplace_back(contract);
-
-  if (is_last) done();
+  if (is_last) {
+    gateway_->OnQueryContractEnd();
+  }
 }
 
-bool CtpTradeApi::QueryPositions(std::vector<Position> *result) {
-  position_results_ = result;
+bool CtpTradeApi::QueryPositions() {
   CThostFtdcQryInvestorPositionField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
@@ -474,7 +471,7 @@ bool CtpTradeApi::QueryPositions(std::vector<Position> *result) {
     return false;
   }
 
-  return wait_sync();
+  return true;
 }
 
 void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *position,
@@ -484,7 +481,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
     spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
     pos_cache_.clear();
-    error();
+    gateway_->OnQueryContractEnd();
     return;
   }
 
@@ -524,16 +521,14 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
 check_last:
   if (is_last) {
     for (auto &[ticker_id, pos] : pos_cache_) {
-      UNUSED(ticker_id);
-      if (position_results_) position_results_->emplace_back(pos);
+      gateway_->OnQueryPosition(pos);
     }
+    gateway_->OnQueryPositionEnd();
     pos_cache_.clear();
-    done();
   }
 }
 
-bool CtpTradeApi::QueryAccount(Account *account) {
-  account_result_ = account;
+bool CtpTradeApi::QueryAccount() {
   CThostFtdcQryTradingAccountField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
@@ -543,7 +538,7 @@ bool CtpTradeApi::QueryAccount(Account *account) {
     return false;
   }
 
-  return wait_sync();
+  return true;
 }
 
 void CtpTradeApi::OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_account,
@@ -554,7 +549,7 @@ void CtpTradeApi::OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspQryTradingAccount] ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    gateway_->OnQueryAccountEnd();
     return;
   }
 
@@ -572,14 +567,12 @@ void CtpTradeApi::OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_
                    trading_account->FrozenCommission;
   account.cash = account.total_asset - account.margin - account.frozen;
 
-  if (account_result_) *account_result_ = account;
-  done();
+  gateway_->OnQueryAccount(account);
+  gateway_->OnQueryAccountEnd();
 }
 
 void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoField *rsp_info,
                                 int req_id, bool is_last) {
-  // TODO(kevin)
-
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspQryOrder] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
     error();
@@ -608,8 +601,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoFi
   if (is_last) done();
 }
 
-bool CtpTradeApi::QueryTrades(std::vector<Trade> *result) {
-  trade_results_ = result;
+bool CtpTradeApi::QueryTrades() {
   CThostFtdcQryTradeField req{};
   strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
@@ -619,18 +611,15 @@ bool CtpTradeApi::QueryTrades(std::vector<Trade> *result) {
     return false;
   }
 
-  return wait_sync();
+  return true;
 }
 
 void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoField *rsp_info,
                                 int req_id, bool is_last) {
-  // TODO(kevin)
-  if (!is_last) return;
-
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspQryTrade] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    gateway_->OnQueryContractEnd();
     return;
   }
 
@@ -645,10 +634,12 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoFi
     td.direction = direction(trade->Direction);
     td.offset = offset(trade->OffsetFlag);
 
-    if (trade_results_) trade_results_->emplace_back(td);
+    gateway_->OnQueryTrade(td);
   }
 
-  if (is_last) done();
+  if (is_last) {
+    gateway_->OnQueryTradeEnd();
+  }
 }
 
 }  // namespace ft

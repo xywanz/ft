@@ -175,18 +175,6 @@ struct Position {
   PositionDetail short_pos{};
 } __attribute__((__aligned__(8)));
 
-// 向gateway发送的订单请求
-struct OrderRequest {
-  const Contract* contract;
-  uint64_t order_id;
-  OrderType type;
-  Direction direction;
-  Offset offset;
-  int volume;
-  double price;
-  OrderFlag flags;
-};
-
 // 策略的名称类型，用于订阅回报消息
 using StrategyIdType = char[16];
 
@@ -297,39 +285,6 @@ struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   SERIALIZABLE_FIELDS(client_order_id, order_id, ticker_id, direction, offset, price,
                       original_volume, traded_volume, completed, error_code, this_traded,
                       this_traded_price);
-};
-
-// 下面是oms和gateway之间的信息传输
-struct OrderAcceptance {
-  uint64_t order_id;
-};
-
-struct OrderRejection {
-  uint64_t order_id;
-  std::string reason;
-};
-
-struct OrderCancellation {
-  uint64_t order_id;
-  int canceled_volume;
-};
-
-struct OrderCancelRejection {
-  uint64_t order_id;
-  std::string reason;
-};
-
-struct Trade {
-  uint64_t order_id;
-  uint32_t ticker_id;
-  Direction direction;
-  Offset offset;
-  TradeType trade_type;
-  int volume;
-  double price;
-  double amount;
-
-  datetime::Datetime trade_time;
 };
 
 }  // namespace ft

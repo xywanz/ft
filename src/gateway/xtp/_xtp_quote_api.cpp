@@ -6,11 +6,12 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/utils/misc.h"
+#include "gateway/xtp/xtp_gateway.h"
 #include "spdlog/spdlog.h"
 
 namespace ft {
 
-XtpQuoteApi::XtpQuoteApi(BaseOrderManagementSystem* oms) : oms_(oms) {}
+XtpQuoteApi::XtpQuoteApi(XtpGateway* gateway) : gateway_(gateway) {}
 
 XtpQuoteApi::~XtpQuoteApi() {
   error();
@@ -101,13 +102,12 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   return true;
 }
 
-bool XtpQuoteApi::QueryContracts(std::vector<Contract>* result) {
+bool XtpQuoteApi::QueryContracts() {
   if (!is_logon_) {
     spdlog::error("[XtpQuoteApi::QueryContractList] 未登录到quote服务器");
     return false;
   }
 
-  contract_results_ = result;
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SH) != 0) {
     spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
     return false;
@@ -121,10 +121,6 @@ bool XtpQuoteApi::QueryContracts(std::vector<Contract>* result) {
     spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
     return false;
   }
-  if (!wait_sync()) {
-    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
-    return false;
-  }
 
   return true;
 }
@@ -132,7 +128,7 @@ bool XtpQuoteApi::QueryContracts(std::vector<Contract>* result) {
 void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) {
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpQuoteApi::OnQueryAllTickers] {}", error_info->error_msg);
-    error();
+    gateway_->OnQueryContractEnd();
     return;
   }
 
@@ -153,10 +149,12 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool
       contract.product_type = ProductType::kFund;
     contract.size = 1;
 
-    if (contract_results_) contract_results_->emplace_back(contract);
+    gateway_->OnQueryContract(contract);
   }
 
-  if (is_last) done();
+  if (is_last) {
+    gateway_->OnQueryContractEnd();
+  }
 }
 
 void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int32_t bid1_count,
@@ -239,7 +237,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
       market_data->ticker, tick.datetime.ToString(), tick.last_price, tick.volume, tick.turnover,
       tick.open_interest);
 
-  oms_->OnTick(&tick);
+  gateway_->OnTick(tick);
 }
 
 }  // namespace ft

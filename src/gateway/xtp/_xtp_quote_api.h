@@ -15,16 +15,18 @@
 
 namespace ft {
 
+class XtpGateway;
+
 class XtpQuoteApi : public XTP::API::QuoteSpi {
  public:
-  explicit XtpQuoteApi(BaseOrderManagementSystem* oms);
+  explicit XtpQuoteApi(XtpGateway* gateway);
   ~XtpQuoteApi();
 
   bool Login(const Config& config);
   void Logout();
   bool Subscribe(const std::vector<std::string>& sub_list);
 
-  bool QueryContracts(std::vector<Contract>* result);
+  bool QueryContracts();
 
   void OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) override;
 
@@ -45,11 +47,10 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
   }
 
  private:
-  BaseOrderManagementSystem* oms_;
+  XtpGateway* gateway_;
   XtpUniquePtr<XTP::API::QuoteApi> quote_api_;
 
   std::vector<std::string> subscribed_list_;
-  std::vector<Contract>* contract_results_;
 
   volatile bool is_logon_ = false;
   volatile bool is_error_ = false;

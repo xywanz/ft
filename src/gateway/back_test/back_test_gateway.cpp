@@ -15,13 +15,7 @@
 
 namespace ft {
 
-bool BackTestGateway::Login(BaseOrderManagementSystem* oms, const Config& config) {
-  if (!oms) {
-    spdlog::error("BackTestGateway: oms is nullptr");
-    return false;
-  }
-  oms_ = oms;
-
+bool BackTestGateway::Init(const Config& config) {
   ctx_.account.account_id = std::stoul(config.investor_id);
   ctx_.account.cash = 10000000.0;
   ctx_.account.total_asset = ctx_.account.cash;
@@ -86,16 +80,22 @@ bool BackTestGateway::CancelOrder(uint64_t order_id, uint64_t privdata) {
 
 bool BackTestGateway::Subscribe(const std::vector<std::string>& sub_list) { return true; }
 
-bool BackTestGateway::QueryPositions(std::vector<Position>* result) { return true; }
-
-bool BackTestGateway::QueryAccount(Account* result) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  UpdateAccount();
-  *result = ctx_.account;
+bool BackTestGateway::QueryPositions() {
+  OnQueryPositionEnd();
   return true;
 }
 
-bool BackTestGateway::QueryTrades(std::vector<Trade>* result) { return true; }
+bool BackTestGateway::QueryAccount() {
+  std::unique_lock<std::mutex> lock(mutex_);
+  UpdateAccount();
+  OnQueryAccount(ctx_.account);
+  return true;
+}
+
+bool BackTestGateway::QueryTrades() {
+  OnQueryTradeEnd();
+  return true;
+}
 
 void BackTestGateway::OnNotify(uint64_t signal) {
   std::unique_lock<std::mutex> lock(mutex_);

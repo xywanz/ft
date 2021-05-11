@@ -8,17 +8,17 @@
 #include "ft/base/contract_table.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
+#include "gateway/xtp/xtp_gateway.h"
 #include "spdlog/spdlog.h"
 
 namespace ft {
 
-XtpTradeApi::XtpTradeApi(BaseOrderManagementSystem* oms) : oms_(oms) {
+XtpTradeApi::XtpTradeApi(XtpGateway* gateway) : gateway_(gateway) {
   uint32_t seed = time(nullptr);
   uint8_t client_id = rand_r(&seed) & 0xff;
   trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
   if (!trade_api_) {
-    spdlog::error("[XtpTradeApi::XtpTradeApi] Failed to CreateTraderApi");
-    exit(-1);
+    throw std::runtime_error("failed to create xtp trader api");
   }
 }
 
@@ -140,13 +140,13 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint
 
   if (is_error_rsp(error_info)) {
     OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
-    oms_->OnOrderRejected(&rsp);
+    gateway_->OnOrderRejected(rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
     OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
-    oms_->OnOrderRejected(&rsp);
+    gateway_->OnOrderRejected(rsp);
     return;
   }
 
@@ -154,14 +154,14 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint
 
   if (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING) {
     OrderAcceptance rsp = {order_info->order_client_id};
-    oms_->OnOrderAccepted(&rsp);
+    gateway_->OnOrderAccepted(rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_CANCELED ||
       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
     OrderCancellation rsp = {order_info->order_client_id, static_cast<int>(order_info->qty_left)};
-    oms_->OnOrderCanceled(&rsp);
+    gateway_->OnOrderCanceled(rsp);
   }
 }
 
@@ -213,7 +213,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
   rsp.price = trade_info->price;
   rsp.trade_time =
       datetime::strptime(fmt::format("{:017}", trade_info->trade_time), "%Y%m%d%H%M%S%s");
-  oms_->OnOrderTraded(&rsp);
+  gateway_->OnOrderTraded(rsp);
 }
 
 bool XtpTradeApi::CancelOrder(uint64_t xtp_order_id) {
@@ -240,14 +240,13 @@ void XtpTradeApi::OnCancelOrderError(XTPOrderCancelInfo* cancel_info, XTPRI* err
                 error_info->error_msg);
 }
 
-bool XtpTradeApi::QueryPositions(std::vector<Position>* result) {
-  position_results_ = result;
+bool XtpTradeApi::QueryPositions() {
   int res = trade_api_->QueryPosition("", session_id_, next_req_id());
   if (res != 0) {
     spdlog::error("[XtpTradeApi::QueryPosition] Failed to call QueryPosition");
     return false;
   }
-  return wait_sync();
+  return true;
 }
 
 void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error_info,
@@ -256,7 +255,7 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error
     spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Failed. Error Msg: {}",
                   error_info->error_msg);
     pos_cache_.clear();
-    error();
+    gateway_->OnQueryPositionEnd();
     return;
   }
 
@@ -288,66 +287,61 @@ void XtpTradeApi::OnQueryPosition(XTPQueryStkPositionRsp* position, XTPRI* error
 check_last:
   if (is_last) {
     for (auto& [ticker_id, pos] : pos_cache_) {
-      UNUSED(ticker_id);
-      if (position_results_) position_results_->emplace_back(pos);
+      gateway_->OnQueryPosition(pos);
     }
+    gateway_->OnQueryPositionEnd();
     pos_cache_.clear();
     done();
   }
 }
 
-bool XtpTradeApi::QueryAccount(Account* result) {
-  account_result_ = result;
+bool XtpTradeApi::QueryAccount() {
   if (trade_api_->QueryAsset(session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::QueryAccount] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
-
-  return wait_sync();
+  return true;
 }
 
 void XtpTradeApi::OnQueryAsset(XTPQueryAssetRsp* asset, XTPRI* error_info, int request_id,
                                bool is_last, uint64_t session_id) {
-  UNUSED(request_id);
-
   if (session_id_ != session_id) return;
 
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryAsset] {}", error_info->error_msg);
-    error();
+    gateway_->OnQueryAccountEnd();
     return;
   }
 
-  if (!asset) {
-    spdlog::error("[[XtpTradeApi::OnQueryAsset] nullptr");
-    error();
-    return;
+  if (asset) {
+    spdlog::debug(
+        "[XtpTradeApi::OnQueryAsset] total_asset:{}, buying_power:{}, "
+        "security_asset:{}, fund_buy_amount:{}, fund_buy_fee:{}, "
+        "fund_sell_amount:{}, fund_sell_fee:{}, withholding_amount:{}, "
+        "account_type:{}, frozen_margin:{}, frozen_exec_cash:{}, "
+        "frozen_exec_fee:{}, pay_later:{}, preadva_pay:{}, orig_banlance:{}, "
+        "banlance:{}, deposit_withdraw:{}, trade_netting:{}, captial_asset:{}, "
+        "force_freeze_amount:{}, preferred_amount:{}, "
+        "repay_stock_aval_banlance:{}",
+        asset->total_asset, asset->buying_power, asset->security_asset, asset->fund_buy_amount,
+        asset->fund_buy_fee, asset->fund_sell_amount, asset->fund_sell_fee,
+        asset->withholding_amount, asset->account_type, asset->frozen_margin,
+        asset->frozen_exec_cash, asset->frozen_exec_fee, asset->pay_later, asset->preadva_pay,
+        asset->orig_banlance, asset->banlance, asset->deposit_withdraw, asset->trade_netting,
+        asset->captial_asset, asset->force_freeze_amount, asset->preferred_amount,
+        asset->repay_stock_aval_banlance);
+    Account account{};
+    account.account_id = std::stoull(investor_id_);
+    account.total_asset = asset->total_asset;
+    account.cash = asset->buying_power;
+    account.margin = 0;
+    account.frozen = asset->withholding_amount;
+    gateway_->OnQueryAccount(account);
   }
 
-  spdlog::debug(
-      "[XtpTradeApi::OnQueryAsset] total_asset:{}, buying_power:{}, "
-      "security_asset:{}, fund_buy_amount:{}, fund_buy_fee:{}, "
-      "fund_sell_amount:{}, fund_sell_fee:{}, withholding_amount:{}, "
-      "account_type:{}, frozen_margin:{}, frozen_exec_cash:{}, "
-      "frozen_exec_fee:{}, pay_later:{}, preadva_pay:{}, orig_banlance:{}, "
-      "banlance:{}, deposit_withdraw:{}, trade_netting:{}, captial_asset:{}, "
-      "force_freeze_amount:{}, preferred_amount:{}, "
-      "repay_stock_aval_banlance:{}",
-      asset->total_asset, asset->buying_power, asset->security_asset, asset->fund_buy_amount,
-      asset->fund_buy_fee, asset->fund_sell_amount, asset->fund_sell_fee, asset->withholding_amount,
-      asset->account_type, asset->frozen_margin, asset->frozen_exec_cash, asset->frozen_exec_fee,
-      asset->pay_later, asset->preadva_pay, asset->orig_banlance, asset->banlance,
-      asset->deposit_withdraw, asset->trade_netting, asset->captial_asset,
-      asset->force_freeze_amount, asset->preferred_amount, asset->repay_stock_aval_banlance);
-  Account account{};
-  account.account_id = std::stoull(investor_id_);
-  account.total_asset = asset->total_asset;
-  account.cash = asset->buying_power;
-  account.margin = 0;
-  account.frozen = asset->withholding_amount;
-
-  if (account_result_) *account_result_ = account;
-  if (is_last) done();
+  if (is_last) {
+    gateway_->OnQueryAccountEnd();
+  }
 }
 
 bool XtpTradeApi::QueryOrders() {
@@ -383,16 +377,13 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, 
   if (is_last) done();
 }
 
-bool XtpTradeApi::QueryTrades(std::vector<Trade>* result) {
-  trade_results_ = result;
-
+bool XtpTradeApi::QueryTrades() {
   XTPQueryTraderReq req{};
   if (trade_api_->QueryTrades(&req, session_id_, next_req_id()) != 0) {
     spdlog::error("[XtpTradeApi::QueryTradeList] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
-
-  return wait_sync();
+  return true;
 }
 
 void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, int request_id,
@@ -403,7 +394,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
 
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryTrade] {}", error_info->error_msg);
-    done();
+    gateway_->OnQueryTradeEnd();
     return;
   }
 
@@ -423,10 +414,12 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
       trade.offset = Offset::kCloseYesterday;
     }
 
-    if (trade_results_) trade_results_->emplace_back(trade);
+    gateway_->OnQueryTrade(trade);
   }
 
-  if (is_last) done();
+  if (is_last) {
+    gateway_->OnQueryTradeEnd();
+  }
 }
 
 }  // namespace ft
