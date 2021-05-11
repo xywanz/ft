@@ -156,7 +156,7 @@ struct Account {
   double cash;          // 可用资金
   double margin;        // 保证金
   double frozen;        // 冻结金额
-} __attribute__((packed));
+} __attribute__((__aligned__(8)));
 
 struct PositionDetail {
   int yd_holdings = 0;
@@ -167,13 +167,13 @@ struct PositionDetail {
 
   double cost_price = 0;
   double float_pnl = 0;
-} __attribute__((packed));
+} __attribute__((__aligned__(8)));
 
 struct Position {
   uint32_t ticker_id = 0;
   PositionDetail long_pos{};
   PositionDetail short_pos{};
-} __attribute__((packed));
+} __attribute__((__aligned__(8)));
 
 // 向gateway发送的订单请求
 struct OrderRequest {

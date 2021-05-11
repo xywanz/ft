@@ -2,12 +2,8 @@
 
 #include "ft/component/position_calculator.h"
 
-#include <algorithm>
-
 #include "ft/base/contract_table.h"
-#include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "spdlog/spdlog.h"
 
 namespace ft {
 
@@ -27,7 +23,9 @@ void PositionCalculator::SetPosition(const Position& pos) {
 
 void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset,
                                        int changed) {
-  if (changed == 0) return;
+  if (changed == 0) {
+    return;
+  }
 
   if (direction == Direction::kBuy || direction == Direction::kSell) {
     UpdateBuyOrSellPending(ticker_id, direction, offset, changed);
@@ -39,7 +37,9 @@ void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, 
 void PositionCalculator::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction,
                                                 Offset offset, int changed) {
   bool is_close = IsOffsetClose(offset);
-  if (is_close) direction = OppositeDirection(direction);
+  if (is_close) {
+    direction = OppositeDirection(direction);
+  }
 
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
@@ -49,17 +49,8 @@ void PositionCalculator::UpdateBuyOrSellPending(uint32_t ticker_id, Direction di
   else
     pos_detail.open_pending += changed;
 
-  if (pos_detail.open_pending < 0) {
-    pos_detail.open_pending = 0;
-    // spdlog::warn("[Portfolio::UpdateBuyOrSellPending] correct
-    // open_pending");
-  }
-
-  if (pos_detail.close_pending < 0) {
-    pos_detail.close_pending = 0;
-    // spdlog::warn("[Portfolio::UpdateBuyOrSellPending] correct
-    // close_pending");
-  }
+  assert(pos_detail.open_pending >= 0);
+  assert(pos_detail.close_pending >= 0);
 
   if (cb_) {
     (*cb_)(pos);
@@ -78,17 +69,8 @@ void PositionCalculator::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direc
     pos_detail.close_pending += changed;
   }
 
-  if (pos_detail.open_pending < 0) {
-    pos_detail.open_pending = 0;
-    // spdlog::warn("[Portfolio::UpdatePurchaseOrRedeemPending] correct
-    // open_pending");
-  }
-
-  if (pos_detail.close_pending < 0) {
-    pos_detail.close_pending = 0;
-    // spdlog::warn("[Portfolio::UpdatePurchaseOrRedeemPending] correct
-    // close_pending");
-  }
+  assert(pos_detail.open_pending >= 0);
+  assert(pos_detail.close_pending >= 0);
 
   if (cb_) {
     (*cb_)(pos);
@@ -97,7 +79,9 @@ void PositionCalculator::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direc
 
 void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset,
                                       int traded, double traded_price) {
-  if (traded <= 0) return;
+  if (traded <= 0) {
+    return;
+  }
 
   if (direction == Direction::kBuy || direction == Direction::kSell) {
     UpdateBuyOrSell(ticker_id, direction, offset, traded, traded_price);
@@ -109,7 +93,9 @@ void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, O
 void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset,
                                          int traded, double traded_price) {
   bool is_close = IsOffsetClose(offset);
-  if (is_close) direction = OppositeDirection(direction);
+  if (is_close) {
+    direction = OppositeDirection(direction);
+  }
 
   auto& pos = positions_[ticker_id];
   pos.ticker_id = ticker_id;
@@ -118,13 +104,11 @@ void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction
   if (is_close) {
     pos_detail.close_pending -= traded;
     pos_detail.holdings -= traded;
-    // 这里close_yesterday也执行这个操作是为了防止有些交易所不区分昨今仓，
-    // 但用户平仓的时候却使用了close_yesterday
+    // 为了防止有些交易所不区分昨今仓，但用户平仓的时候却使用了close_yesterday
     if (offset == Offset::kCloseYesterday || offset == Offset::kClose)
       pos_detail.yd_holdings -= std::min(pos_detail.yd_holdings, traded);
 
     if (pos_detail.holdings < pos_detail.yd_holdings) {
-      spdlog::warn("yd pos fixed");
       pos_detail.yd_holdings = pos_detail.holdings;
     }
   } else {
@@ -132,26 +116,13 @@ void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction
     pos_detail.holdings += traded;
   }
 
-  // TODO(kevin): 这里可能出问题
-  // 如果abort可能是trade在position之前到达，正常使用不可能出现
-  // 如果close_pending小于0，也有可能是之前启动时的挂单成交了，
-  // 这次重启时未重启获取挂单数量导致的
   assert(pos_detail.holdings >= 0);
-
-  if (pos_detail.open_pending < 0) {
-    pos_detail.open_pending = 0;
-    // spdlog::warn("[Portfolio::UpdateTraded] correct open_pending");
-  }
-
-  if (pos_detail.close_pending < 0) {
-    pos_detail.close_pending = 0;
-    // spdlog::warn("[Portfolio::UpdateTraded] correct close_pending");
-  }
+  assert(pos_detail.open_pending >= 0);
+  assert(pos_detail.close_pending >= 0);
 
   const auto* contract = ContractTable::get_by_index(ticker_id);
   if (!contract) {
-    spdlog::error("[Position::UpdateBuyOrSell] Contract not found");
-    return;
+    throw std::runtime_error("contract not found");
   }
   assert(contract->size > 0);
 
@@ -251,11 +222,9 @@ double PositionCalculator::TotalAssets() const {
   for (auto& [ticker_id, pos] : positions_) {
     const auto* contract = ContractTable::get_by_index(ticker_id);
     if (!contract || contract->size <= 0) {
-      spdlog::error("Portfolio::TotalAssets: contract not found. {}", ticker_id);
-      return 0.0;
+      throw std::runtime_error("contract not found");
     }
 
-    UNUSED(ticker_id);
     auto& lp = pos.long_pos;
     auto& sp = pos.short_pos;
 
