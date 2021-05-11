@@ -8,6 +8,7 @@
 
 #include "xtp_api_data_type.h"
 #include "stddef.h"
+#include "xtp_api_struct_common.h"
 
 #pragma pack(8)
 
@@ -32,6 +33,7 @@ struct XTPOrderInsertInfo
     ///报单价格
     XTP_PRICE_TYPE          price_type;
     union{
+		///32位字段，用来兼容老版本api，用户无需关心
         uint32_t            u32;
         struct {
             ///买卖方向
@@ -81,11 +83,12 @@ struct XTPOrderInfo
 	///报单价格条件
 	XTP_PRICE_TYPE          price_type;
     union{
+		///32位字段，用来兼容老版本api，用户无需关心
         uint32_t            u32;
         struct {
             ///买卖方向
             XTP_SIDE_TYPE               side;
-            ///开平标志
+            ///开平标志，期权用户关注字段，其余用户填0即可
             XTP_POSITION_EFFECT_TYPE    position_effect;
 			///预留字段1
 			uint8_t                     reserved1;
@@ -111,7 +114,7 @@ struct XTPOrderInfo
 	char                    order_local_id[XTP_LOCAL_ORDER_LEN];
 	///报单状态，订单响应中没有部分成交状态的推送，在查询订单结果中，会有部分成交状态
 	XTP_ORDER_STATUS_TYPE   order_status;
-	///报单提交状态，OMS内部使用，用户无需关心
+	///报单提交状态，OMS内部使用，用户可用此字段来区分撤单和报单
 	XTP_ORDER_SUBMIT_STATUS_TYPE   order_submit_status;
 	///报单类型
 	TXTPOrderTypeType       order_type;
@@ -142,13 +145,14 @@ struct XTPTradeReport
     int64_t                  trade_time;
     ///成交金额，此次成交的总金额 = price*quantity
     double                   trade_amount;
-    ///成交序号 --回报记录号，每个交易所唯一,report_index+market字段可以组成唯一标识表示成交回报
+    ///成交序号 --回报记录号，对于单个账户来说，深交所每个平台（不同交易品种）唯一，上交所唯一，对于多账户来说，不唯一
     uint64_t                 report_index;
     ///报单编号 --交易所单号，上交所为空，深交所有此字段
     char                     order_exch_id[XTP_ORDER_EXCH_LEN];
     ///成交类型  --成交回报中的执行类型
     TXTPTradeTypeType        trade_type;
     union{
+		///32位字段，用来兼容老版本api，用户无需关心
         uint32_t            u32;
         struct {
             ///买卖方向
@@ -239,62 +243,77 @@ struct XTPQueryTraderByPageReq
 //////////////////////////////////////////////////////////////////////////
 struct XTPQueryAssetRsp
 {
-    ///总资产(=可用资金 + 证券资产（目前为0）+ 预扣的资金)
+    ///总资产（现货账户/期权账户参考公式：总资产 = 可用资金 + 证券资产（目前为0）+ 预扣的资金），（信用账户参考公式：总资产 = 可用资金 + 融券卖出所得资金余额 + 证券资产+ 预扣的资金）
     double total_asset;
     ///可用资金
     double buying_power;
     ///证券资产（保留字段，目前为0）
     double security_asset;
-    ///累计买入成交证券占用资金
+    ///累计买入成交证券占用资金（仅限现货账户/期权账户，信用账户暂不可用）
     double fund_buy_amount;
-    ///累计买入成交交易费用
+    ///累计买入成交交易费用（仅限现货账户/期权账户，信用账户暂不可用）
     double fund_buy_fee;
-    ///累计卖出成交证券所得资金
+    ///累计卖出成交证券所得资金（仅限现货账户/期权账户，信用账户暂不可用）
     double fund_sell_amount;
-    ///累计卖出成交交易费用
+    ///累计卖出成交交易费用（仅限现货账户/期权账户，信用账户暂不可用）
     double fund_sell_fee;
-    ///XTP系统预扣的资金（包括购买卖股票时预扣的交易资金+预扣手续费）
+    ///XTP系统预扣的资金（包括买卖股票时预扣的交易资金+预扣手续费）
     double withholding_amount;
     ///账户类型
     XTP_ACCOUNT_TYPE account_type;
 
-    ///冻结的保证金
+    ///冻结的保证金（仅限期权账户）
     double frozen_margin;
-    ///行权冻结资金
+    ///行权冻结资金（仅限期权账户）
     double frozen_exec_cash;
-    ///行权费用
+    ///行权费用（仅限期权账户）
     double frozen_exec_fee;
-    ///垫付资金
+    ///垫付资金（仅限期权账户）
     double pay_later;
-    ///预垫付资金
+    ///预垫付资金（仅限期权账户）
     double preadva_pay;
-    ///昨日余额
+    ///昨日余额（仅限期权账户）
     double orig_banlance;
-    ///当前余额
+    ///当前余额（仅限期权账户）
     double banlance;
-    ///当天出入金
+    ///当天出入金（仅限期权账户）
     double deposit_withdraw;
-    ///当日交易资金轧差
+    ///当日交易资金轧差（仅限期权账户）
     double trade_netting;
-    ///资金资产
+    ///资金资产（仅限期权账户）
     double captial_asset;
 
-    ///强锁资金
+    ///强锁资金（仅限期权账户）
     double force_freeze_amount;
-    ///可取资金
+    ///可取资金（仅限期权账户）
     double preferred_amount;
 
     // 信用业务新增字段开始（数量1）
-    // 融券卖出所得资金余额（只能用于买券还券）
+    ///融券卖出所得资金余额（仅限信用账户，只能用于买券还券）
     double repay_stock_aval_banlance;
 
     // 信用业务新增字段结束（数量1）
 
+    ///累计订单流量费
+    double fund_order_data_charges;
+    ///累计撤单流量费
+    double fund_cancel_data_charges;
+    //流量费统计新增字段结束（数量2）
+
     ///(保留字段)
-    uint64_t unknown[43 - 12 - 1];
+    uint64_t unknown[43 - 12 - 1 - 2];
 };
 
-
+//////////////////////////////////////////////////////////////////////////
+///查询股票持仓情况请求结构体
+//////////////////////////////////////////////////////////////////////////
+struct XTPQueryStkPositionReq
+{
+    ///证券代码
+    char                ticker[XTP_TICKER_LEN];
+    ///交易市场
+    XTP_MARKET_TYPE     market;
+};
 
 //////////////////////////////////////////////////////////////////////////
 ///查询股票持仓情况
@@ -320,6 +339,7 @@ struct XTPQueryStkPositionRsp
     ///今日申购赎回数量（申购和赎回数量不可能同时存在，因此可以共用一个字段）
     int64_t				purchase_redeemable_qty;
 
+	//以下为期权用户关心字段
     /// 持仓方向
 	XTP_POSITION_DIRECTION_TYPE      position_direction;
 	///保留字段1
@@ -335,11 +355,28 @@ struct XTPQueryStkPositionRsp
     /// 可用已锁定标的
     int64_t             usable_locked_position;
 
+	//以下为现货用户关心字段
+    ///盈亏成本价
+    double             profit_price;
+    ///买入成本
+    double             buy_cost;
+    ///盈亏成本
+    double             profit_cost;
 
     ///(保留字段)
-    uint64_t unknown[50 - 6];
+    uint64_t unknown[50 - 9];
 };
 
+/////////////////////////////////////////////////////////////////////////
+///用户展期请求的通知
+/////////////////////////////////////////////////////////////////////////
+struct XTPCreditDebtExtendNotice
+{
+	uint64_t	xtpid;								///<XTP系统订单ID，无需用户填写，在XTP系统中唯一
+	char		debt_id[XTP_CREDIT_DEBT_ID_LEN];	///<负债合约编号
+	XTP_DEBT_EXTEND_OPER_STATUS		oper_status;	///<展期请求操作状态
+	uint64_t	oper_time;							///<操作时间
+};
 
 /////////////////////////////////////////////////////////////////////////
 ///资金内转流水通知
@@ -427,7 +464,7 @@ typedef struct XTPQueryETFBaseRsp
     int32_t             subscribe_status;                   ///<是否允许申购,1-允许,0-禁止
     int32_t             redemption_status;                  ///<是否允许赎回,1-允许,0-禁止
     double              max_cash_ratio;                     ///<最大现金替代比例,小于1的数值   TODO 是否采用double
-    double              estimate_amount;                    ///<T日预估金额
+    double              estimate_amount;                    ///<T日预估金额差额
     double              cash_component;                     ///<T-X日现金差额
     double              net_value;                          ///<基金单位净值
     double              total_amount;                       ///<最小申赎单位净值总金额=net_value*unit
@@ -448,9 +485,9 @@ typedef struct XTPQueryETFComponentReq
 
 
 //////////////////////////////////////////////////////////////////////////
-///查询股票ETF合约成分股信息--响应结构体
+///查询股票ETF成分股信息--响应结构体，旧版本。
 //////////////////////////////////////////////////////////////////////////
-struct XTPQueryETFComponentRsp
+struct XTPQueryETFComponentRspV1
 {
     ///交易市场
     XTP_MARKET_TYPE     market;
@@ -474,6 +511,40 @@ struct XTPQueryETFComponentRsp
 };
 
 //////////////////////////////////////////////////////////////////////////
+///查询股票ETF成分股信息--响应结构体
+//////////////////////////////////////////////////////////////////////////
+struct XTPQueryETFComponentRsp
+{
+    ///交易市场
+    XTP_MARKET_TYPE     market;
+    ///ETF代码
+    char                ticker[XTP_TICKER_LEN];
+    ///成份股代码
+    char                component_ticker[XTP_TICKER_LEN];
+    ///成份股名称
+    char                component_name[XTP_TICKER_NAME_LEN];
+    ///成份股数量
+    int64_t             quantity;
+    ///成份股交易市场
+    XTP_MARKET_TYPE     component_market;
+    ///成份股替代标识
+    ETF_REPLACE_TYPE    replace_type;
+    ///溢价比例
+    double              premium_ratio;
+    ///成分股替代标识为必须现金替代时候的总金额
+    double              amount;
+    ///申购溢价比例
+    double              creation_premium_ratio;
+    ///赎回溢价比例
+    double              redemption_discount_ratio;
+    ///申购时，成分股替代标识为必须现金替代时候的总金额
+    double              creation_amount;
+    ///赎回时，成分股替代标识为必须现金替代时候的总金额
+    double              redemption_amount;
+
+};
+
+//////////////////////////////////////////////////////////////////////////
 ///查询当日可申购新股信息
 //////////////////////////////////////////////////////////////////////////
 struct XTPQueryIPOTickerRsp {
@@ -483,7 +554,7 @@ struct XTPQueryIPOTickerRsp {
     char                ticker[XTP_TICKER_LEN];
     ///申购股票名称
     char                ticker_name[XTP_TICKER_NAME_LEN]; 
-    // 证券类别
+    /// 证券类别
     XTP_TICKER_TYPE     ticker_type;
     ///申购价格
     double              price;
@@ -514,13 +585,26 @@ struct XTPQueryIPOQuotaRsp {
     XTP_MARKET_TYPE     market;
     ///可申购额度
     int32_t             quantity;
-    // 上海科创板额度
+    /// 上海科创板额度
     int32_t             tech_quantity;
-    // 保留
+    /// 保留
     int32_t             unused;
 };
 
-
+//////////////////////////////////////////////////////////////////////////
+///申报用户的ip和mac等信息，仅限授权用户使用
+//////////////////////////////////////////////////////////////////////////
+struct XTPUserTerminalInfoReq {
+	char  local_ip[XTP_INET_ADDRESS_STR_LEN];			///<本地IP地址
+	char  mac_addr[XTP_MAC_ADDRESS_LEN];				///<MAC地址
+	char  hd[XTP_HARDDISK_SN_LEN];						///<硬盘序列号
+	XTPTerminalType term_type;							///<终端类型
+	char  internet_ip[XTP_INET_ADDRESS_STR_LEN];		///<公网IP地址
+	int32_t internet_port;								///<公网端口号
+	XTPVersionType  client_version;						///<客户端版本号
+	char  macos_sno[XTP_MACOS_SNO_LEN];					///<MacOS系统的序列号，仅为MacOS系统需要填写
+	char  unused[27];									///<预留
+};
 
 //////////////////////////////////////////////////////////////////////////
 ///查询期权竞价交易业务参考信息--请求结构体,请求参数为:交易市场+8位期权代码
@@ -583,6 +667,150 @@ struct XTPQueryOptionAuctionInfoRsp {
     uint64_t            unknown[20];                        ///<（保留字段）
 };
 
+/// 期权组合策略撤单错误响应结构体
+typedef struct XTPOrderCancelInfo XTPOptCombOrderCancelInfo;
+
+/// 期权组合策略的成分合约信息
+struct XTPCombLegStrategy {
+    XTP_OPT_CALL_OR_PUT_TYPE    call_or_put;        ///< 合约类型，认沽或认购
+    XTP_POSITION_DIRECTION_TYPE position_side;      ///< 权利仓或者义务仓或备兑义务仓
+    TXTPExerciseSeqType         exercise_price_seq; ///< 行权价顺序
+    int32_t                     expire_date_seq;    ///< 到期日顺序
+    int64_t                     leg_qty;            ///< 单份组合策略中包含的此合约张数
+};
+
+/*/// 期权组合策略查询请求结构体
+typedef struct XTPQueryOptCombineReq
+{
+	char            strategy_id[XTP_STRATEGY_ID_LEN];	///< 组合策略代码
+	XTP_MARKET_TYPE market;							    ///< 市场
+}XTPQueryOptCombineReq;
+*/
+/// 查询期权组合策略信息的响应
+struct XTPQueryCombineStrategyInfoRsp {
+    char                    strategy_id[XTP_STRATEGY_ID_LEN];        ///< 组合策略代码，CNSJC、PXSJC、PNSJC、CXSJC、KS、KKS
+    char                    strategy_name[XTP_STRATEGY_NAME_LEN];    ///< 组合策略名称，认购牛市价差策略、认沽熊市价差策略、认沽牛市价差策略、认购熊市价差策略、跨式空头、宽跨式空头
+	XTP_MARKET_TYPE         market;                                  ///< 交易市场
+
+    int32_t                 leg_num;                                 ///< 成分合约个数，1-4个，即下面数组的实际大小
+    XTPCombLegStrategy      leg_strategy[XTP_STRATEGE_LEG_NUM];      ///< 成分合约信息，最多四条腿
+
+    XTP_EXPIRE_DATE_TYPE    expire_date_type;                        ///< 到期日要求。枚举值为：同到期日，不同到期日，无到期日要求
+    XTP_UNDERLYING_TYPE     underlying_type;                         ///< 标的要求。枚举值为：相同标的，不同标的，无标的要求
+    XTP_AUTO_SPLIT_TYPE     auto_sep_type;                           ///< 自动解除类型。枚举值为：-1：不适用；0：到期日自动解除；1：E-1日自动解除，依次类推
+
+    uint64_t                reserved[10];                            ///< 预留的字段
+};
+
+/// 组合策略腿合约信息结构体
+typedef struct XTPOptCombLegInfo {
+    char                            leg_security_id[XTP_TICKER_LEN]; ///< 成分合约代码
+    XTP_OPT_CALL_OR_PUT_TYPE        leg_cntr_type;                   ///< 合约类型，认沽或认购。
+    XTP_POSITION_DIRECTION_TYPE     leg_side;                        ///< 持仓方向，权利方或义务方。
+    XTP_OPT_COVERED_OR_UNCOVERED    leg_covered;                     ///< 备兑标签
+    int32_t                         leg_qty;                         ///< 成分合约数量（张）
+}XTPOptCombLegInfo;
+
+///期权组合策略报单附加信息结构体
+typedef struct XTPOptCombPlugin {
+    char                                strategy_id[XTP_STRATEGY_ID_LEN];               ///< 组合策略代码，比如CNSJC认购牛市价差策略等。
+    char                                comb_num[XTP_SECONDARY_ORDER_ID_LEN];           ///< 组合编码，组合申报时，该字段为空；拆分申报时，填写拟拆分组合的组合编码。
+    int32_t                             num_legs;                                       ///< 成分合约数
+    XTPOptCombLegInfo                   leg_detail[XTP_STRATEGE_LEG_NUM];               ///< 成分合约数组，最多四条腿。
+}XTPOptCombPlugin;
+
+//////////////////////////////////////////////////////////////////////////
+///查询期权组合策略持仓情况请求结构体
+//////////////////////////////////////////////////////////////////////////
+struct XTPQueryOptCombPositionReq
+{
+    ///组合编码
+    char comb_num[XTP_SECONDARY_ORDER_ID_LEN];
+    ///交易市场
+    XTP_MARKET_TYPE     market;
+};
+
+
+/// 查询期权组合策略持仓信息的响应
+struct XTPQueryOptCombPositionRsp {
+    char                    strategy_id[XTP_STRATEGY_ID_LEN];           ///< 组合策略代码
+    char                    strategy_name[XTP_STRATEGY_NAME_LEN];       ///< 组合策略名称
+    
+    XTP_MARKET_TYPE         market;                                     ///< 交易市场
+    int64_t                 total_qty;                                  ///< 总持仓
+    int64_t                 available_qty;                              ///< 可拆分持仓
+    int64_t                 yesterday_position;                         ///< 昨日持仓
+
+    XTPOptCombPlugin        opt_comb_info;                              ///< 期权组合策略信息
+
+    uint64_t                reserved[50];                               ///< 保留字段
+};
+
+/// 查询期权合约行权信息的响应
+struct XTPQueryOptExecInfoRsp {
+    XTP_MARKET_TYPE         market;                          ///< 市场
+    char                    cntrt_code[XTP_TICKER_LEN];      ///< 合约代码
+
+    int64_t                 own_qty_long;                    ///< 权利仓数量
+    int64_t                 own_qty_short;                   ///< 义务仓数量
+    int64_t                 own_qty_short_cover;             ///< 备兑义务仓数量
+    int64_t                 net_qty;                         ///< 净头寸
+
+    int64_t                 combed_qty_long;                 ///< 权利仓已组合数量
+    int64_t                 combed_qty_short;                ///< 义务仓已组合数量
+    int64_t                 combed_qty_short_cover;          ///< 备兑义务仓已组合数量
+
+    int64_t                 total_execute_gene_order_qty;    ///< 累计普通行权委托数量
+    int64_t                 total_execute_gene_confirm_qty;  ///< 累计普通行权确认数量
+    int64_t                 total_execute_comb_order_qty;    ///< 累计行权合并委托数量
+    int64_t                 total_execute_comb_confirm_qty;  ///< 累计行权合并确认数量
+
+    uint64_t                reserved[50];                    ///< 保留字段
+};
+
+//////////////////////////////////////////////////////////////////////////
+///查询期权行权合并头寸请求结构体
+//////////////////////////////////////////////////////////////////////////
+struct XTPQueryOptCombExecPosReq
+{
+    ///市场
+    XTP_MARKET_TYPE market;
+    ///成分合约1代码
+    char cntrt_code_1[XTP_TICKER_LEN];
+    ///成分合约2代码
+    char cntrt_code_2[XTP_TICKER_LEN];
+
+};
+
+/// 查询期权行权合并头寸的响应
+struct XTPQueryOptCombExecPosRsp {
+
+    XTP_MARKET_TYPE                 market;                             ///< 市场
+    char                            cntrt_code_1[XTP_TICKER_LEN];       ///< 成分合约1代码
+    char                            cntrt_name_1[XTP_TICKER_NAME_LEN];  ///< 成分合约1名称
+    XTP_POSITION_DIRECTION_TYPE     position_side_1;                    ///< 成分合约1持仓方向
+    XTP_OPT_CALL_OR_PUT_TYPE        call_or_put_1;                      ///< 成分合约1类型
+    int64_t                         avl_qty_1;                          ///< 成分合约1可用持仓数量
+    int64_t                         orig_own_qty_1;                     ///< 成分合约1昨日持仓数量
+    int64_t                         own_qty_1;                          ///< 成分合约1当前持仓数量
+
+    char                            cntrt_code_2[XTP_TICKER_LEN];       ///< 成分合约2代码
+    char                            cntrt_name_2[XTP_TICKER_NAME_LEN];  ///< 成分合约2名称
+    XTP_POSITION_DIRECTION_TYPE     position_side_2;                    ///< 成分合约2持仓方向
+    XTP_OPT_CALL_OR_PUT_TYPE        call_or_put_2;                      ///< 成分合约2类型
+    int64_t                         avl_qty_2;                          ///< 成分合约2可用持仓数量
+    int64_t                         orig_own_qty_2;                     ///< 成分合约2昨日持仓数量
+    int64_t                         own_qty_2;                          ///< 成分合约2当前持仓数量
+
+    int64_t                         net_qty;                            ///< 权利仓净头寸
+
+    int64_t                         order_qty;                          ///< 行权合并委托数量，不含已拒单已撤单。
+    int64_t                         confirm_qty;                        ///< 行权合并已确认数量
+    int64_t                         avl_qty;                            ///< 可行权合并数量
+
+    uint64_t                        reserved[49];                       ///< 保留字段
+};
+
 
 //////////////////////////////////////////////////////////////////////////
 ///融资融券直接还款响应信息
@@ -595,6 +823,18 @@ struct XTPCrdCashRepayRsp
 };
 
 //////////////////////////////////////////////////////////////////////////
+///融资融券现金还息费响应信息
+//////////////////////////////////////////////////////////////////////////
+struct XTPCrdCashRepayDebtInterestFeeRsp
+{
+	int64_t xtp_id;             ///< 直接还款操作的XTPID
+	double  request_amount;     ///< 直接还款的申请金额
+	double  cash_repay_amount;  ///< 实际还款使用金额
+	char	debt_compact_id[XTP_CREDIT_DEBT_ID_LEN]; ///< 指定的负债合约编号
+	char	unknow[32];			///< 保留字段
+};
+
+//////////////////////////////////////////////////////////////////////////
 ///单条融资融券直接还款记录信息
 //////////////////////////////////////////////////////////////////////////
 struct XTPCrdCashRepayInfo
@@ -604,6 +844,7 @@ struct XTPCrdCashRepayInfo
     double                      request_amount;     ///< 直接还款的申请金额
     double                      cash_repay_amount;  ///< 实际还款使用金额
     XTP_POSITION_EFFECT_TYPE    position_effect;    ///< 强平标志
+	XTPRI						error_info;			///< 直接还款发生错误时的错误信息
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -611,20 +852,22 @@ struct XTPCrdCashRepayInfo
 //////////////////////////////////////////////////////////////////////////
 typedef struct XTPCrdDebtInfo
 {
-    int32_t             debt_type;              ///< 负债合约类型
+    int32_t             debt_type;              ///< 负债合约类型：0为融资，1为融券，2未知
     char                debt_id[33];            ///< 负债合约编号
     int64_t             position_id;            ///< 负债对应两融头寸编号
     uint64_t            order_xtp_id;           ///< 生成负债的订单编号，非当日负债无此项
-    int32_t             debt_status;            ///< 负债合约状态
+    int32_t             debt_status;            ///< 负债合约状态：0为未偿还或部分偿还，1为已偿还，2为过期未平仓，3未知
     XTP_MARKET_TYPE     market;                 ///< 市场
     char                ticker[XTP_TICKER_LEN]; ///< 证券代码
     uint64_t            order_date;             ///< 委托日期
     uint64_t            end_date;               ///< 负债截止日期
     uint64_t            orig_end_date;          ///< 负债原始截止日期
-    bool                is_extended;            ///< 当日是否接收到展期请求
+    bool                is_extended;            ///< 当日是否接收到展期请求：false为没收到，true为收到
     double              remain_amt;             ///< 未偿还金额
-    int64_t             remain_qty;             ///< 未偿还数量
+    int64_t             remain_qty;             ///< 未偿还融券数量
     double              remain_principal;       ///< 未偿还本金金额
+	int64_t				due_right_qty;			///< 应偿还权益数量
+	int64_t				unknown[2];				///< 保留字段
 }XTPCrdDebtInfo;
 
 //////////////////////////////////////////////////////////////////////////
@@ -633,13 +876,15 @@ typedef struct XTPCrdDebtInfo
 typedef struct XTPCrdFundInfo
 {
     double maintenance_ratio;       ///< 维持担保品比例
+    double all_asset;               ///< 总资产
+    double all_debt;                ///< 总负债
     double line_of_credit;          ///< 两融授信额度
     double guaranty;                ///< 两融保证金可用数
-    double position_amount;         ///< 融资头寸可用金额，内部接口，正式版本需要删除
+    double reserved;                ///< 保留字段
 }XTPCrdFundInfo;
 
 //////////////////////////////////////////////////////////////////////////
-///融资融券指定证券上的负债未还数量
+///融资融券指定证券上的负债未还数量请求结构体
 //////////////////////////////////////////////////////////////////////////
 typedef struct XTPClientQueryCrdDebtStockReq
 {
@@ -647,16 +892,19 @@ typedef struct XTPClientQueryCrdDebtStockReq
     char            ticker[XTP_TICKER_LEN]; ///< 证券代码
 }XTPClientQueryCrdDebtStockReq;
 
+//////////////////////////////////////////////////////////////////////////
+///融资融券指定证券的融券负债相关信息
+//////////////////////////////////////////////////////////////////////////
 typedef struct XTPCrdDebtStockInfo
 {
     XTP_MARKET_TYPE market;                     ///< 市场
     char            ticker[XTP_TICKER_LEN];     ///< 证券代码
-    int64_t         remain_quantity;            ///< 负债未还数量
-    int64_t         order_withhold_quantity;    ///< 挂单未成还券数量
+    int64_t         stock_repay_quantity;       ///< 融券负债可还券数量
+    int64_t         stock_total_quantity;       ///< 融券负债未还总数量
 }XTPCrdDebtStockInfo;
 
 //////////////////////////////////////////////////////////////////////////
-///融券头寸证券查询
+///融券头寸证券查询请求结构体
 //////////////////////////////////////////////////////////////////////////
 typedef struct XTPClientQueryCrdPositionStockReq
 {
@@ -664,8 +912,11 @@ typedef struct XTPClientQueryCrdPositionStockReq
     char            ticker[XTP_TICKER_LEN]; ///< 证券代码
 }XTPClientQueryCrdPositionStockReq;
 
-typedef struct XTPClientQueryCrdPositionStkInfo {
-
+//////////////////////////////////////////////////////////////////////////
+///融券头寸证券信息
+//////////////////////////////////////////////////////////////////////////
+typedef struct XTPClientQueryCrdPositionStkInfo 
+{
     XTP_MARKET_TYPE market;                 ///< 证券市场
     char            ticker[XTP_TICKER_LEN]; ///< 证券代码
     int64_t         limit_qty;              ///< 融券限量
@@ -673,6 +924,242 @@ typedef struct XTPClientQueryCrdPositionStkInfo {
     int64_t         left_qty;               ///< 剩余可融券数量
     int64_t         frozen_qty;             ///< 冻结融券数量
 }XTPClientQueryCrdPositionStkInfo;
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 信用业务余券查询请求结构体
+//////////////////////////////////////////////////////////////////////////
+typedef struct XTPClientQueryCrdSurplusStkReqInfo
+{
+    XTP_MARKET_TYPE market;                 ///< 证券市场
+    char            ticker[XTP_TICKER_LEN]; ///< 证券代码
+}XTPClientQueryCrdSurplusStkReqInfo;
+
+//////////////////////////////////////////////////////////////////////////
+///信用业务余券信息
+//////////////////////////////////////////////////////////////////////////
+typedef struct XTPClientQueryCrdSurplusStkRspInfo
+{
+    XTP_MARKET_TYPE market;                 ///< 证券市场
+    char            ticker[XTP_TICKER_LEN]; ///< 证券代码
+    int64_t         transferable_quantity;  ///< 可划转数量
+    int64_t         transferred_quantity;   ///< 已划转数量
+}XTPClientQueryCrdSurplusStkRspInfo;
+
+///用户资金账户的密码字符串长度
+#define XTP_ACCOUNT_PASSWORD_LEN 64  
+
+/////////////////////////////////////////////////////////////////////////
+///用户展期请求
+/////////////////////////////////////////////////////////////////////////
+struct XTPCreditDebtExtendReq
+{
+	uint64_t	xtpid;								///<xtpid
+	char		debt_id[XTP_CREDIT_DEBT_ID_LEN];	///<负债合约编号
+	uint32_t	defer_days;							///<展期天数
+	char        fund_account[XTP_ACCOUNT_NAME_LEN];	///<资金账号
+	char	    password[XTP_ACCOUNT_PASSWORD_LEN];	///<资金账号密码
+};
+
+/////////////////////////////////////////////////////////////////////////
+///用户展期请求的响应结构
+/////////////////////////////////////////////////////////////////////////
+typedef struct XTPCreditDebtExtendNotice XTPCreditDebtExtendAck;
+
+
+//////////////////////////////////////////////////////////////////////////
+/// 融资融券帐户附加信息
+//////////////////////////////////////////////////////////////////////////
+typedef struct XTPCrdFundExtraInfo
+{
+    double    mf_rs_avl_used;  ///<当前资金账户购买货币基金使用的融券卖出所得资金占用
+    char      reserve[64];     ///<预留空间
+}XTPCrdFundExtraInfo;
+
+//////////////////////////////////////////////////////////////////////////
+///融资融券帐户持仓附加信息
+//////////////////////////////////////////////////////////////////////////
+typedef struct XTPCrdPositionExtraInfo
+{
+    XTP_MARKET_TYPE market;                 ///<证券市场
+    char            ticker[XTP_TICKER_LEN]; ///<证券代码
+    double          mf_rs_avl_used;         ///<购买货币基金使用的融券卖出所得资金占用
+    char            reserve[64];            ///<预留空间
+}XTPCrdPositionExtraInfo;
+
+///期权组合策略新订单请求
+struct XTPOptCombOrderInsertInfo
+{
+    ///XTP系统订单ID，无需用户填写，在XTP系统中唯一
+    uint64_t                order_xtp_id;
+    ///报单引用，由客户自定义
+    uint32_t	            order_client_id;
+    ///交易市场
+    XTP_MARKET_TYPE         market;
+    ///数量(单位为份)
+    int64_t                 quantity;
+
+    ///组合方向
+    XTP_SIDE_TYPE           side;
+
+    ///业务类型
+    XTP_BUSINESS_TYPE       business_type;
+
+    ///期权组合策略信息
+    XTPOptCombPlugin        opt_comb_info;
+};
+
+///期权组合策略报单响应结构体
+struct XTPOptCombOrderInfo
+{
+    ///XTP系统订单ID，在XTP系统中唯一
+    uint64_t                order_xtp_id;
+    ///报单引用，用户自定义
+    uint32_t	            order_client_id;
+    ///报单操作引用，用户自定义（暂未使用）
+    uint32_t                order_cancel_client_id;
+    ///撤单在XTP系统中的id，在XTP系统中唯一
+    uint64_t                order_cancel_xtp_id;
+    ///证券代码
+    ///char                    ticker[XTP_TICKER_LEN];
+    ///交易市场
+    XTP_MARKET_TYPE         market;
+    ///数量，此订单的报单数量
+    int64_t                 quantity;
+    
+    ///组合方向
+    XTP_SIDE_TYPE               side;
+           
+    ///业务类型
+    XTP_BUSINESS_TYPE       business_type;
+    ///今成交数量，为此订单累计成交数量
+    int64_t                 qty_traded;
+    ///剩余数量，当撤单成功时，表示撤单数量
+    int64_t                 qty_left;
+    ///委托时间，格式为YYYYMMDDHHMMSSsss
+    int64_t                 insert_time;
+    ///最后修改时间，格式为YYYYMMDDHHMMSSsss
+    int64_t                 update_time;
+    ///撤销时间，格式为YYYYMMDDHHMMSSsss
+    int64_t                 cancel_time;
+    ///成交金额，组合拆分涉及的保证金(保留字段)
+    double                  trade_amount;
+    ///本地报单编号 OMS生成的单号，不等同于order_xtp_id，为服务器传到报盘的单号
+    char                    order_local_id[XTP_LOCAL_ORDER_LEN];
+    ///报单状态，订单响应中没有部分成交状态的推送，在查询订单结果中，会有部分成交状态
+    XTP_ORDER_STATUS_TYPE   order_status;
+    ///报单提交状态，用户可用此字段来区分撤单和报单
+    XTP_ORDER_SUBMIT_STATUS_TYPE   order_submit_status;
+    ///报单类型
+    TXTPOrderTypeType       order_type;
+
+    ///期权组合策略信息
+    XTPOptCombPlugin        opt_comb_info;
+};
+
+
+///期权组合策略报单成交结构体
+struct XTPOptCombTradeReport
+{
+    ///XTP系统订单ID，此成交回报相关的订单ID，在XTP系统中唯一
+    uint64_t                 order_xtp_id;
+    ///报单引用
+    uint32_t                 order_client_id;
+    ///交易市场
+    XTP_MARKET_TYPE          market;
+    ///订单号，引入XTPID后，该字段实际和order_xtp_id重复。接口中暂时保留。
+    uint64_t                 local_order_id;
+    ///成交编号，深交所唯一，上交所每笔交易唯一，当发现2笔成交回报拥有相同的exec_id，则可以认为此笔交易自成交
+    char                     exec_id[XTP_EXEC_ID_LEN];
+    ///数量，此次成交的数量，不是累计数量
+    int64_t                  quantity;
+    ///成交时间，格式为YYYYMMDDHHMMSSsss
+    int64_t                  trade_time;
+    ///成交金额，组合拆分涉及的保证金
+    double                   trade_amount;
+    ///成交序号 --回报记录号，每个交易所唯一,report_index+market字段可以组成唯一标识表示成交回报
+    uint64_t                 report_index;
+    ///报单编号 --交易所单号(保留字段)
+    char                     order_exch_id[XTP_ORDER_EXCH_LEN];
+    ///成交类型  --成交回报中的执行类型
+    TXTPTradeTypeType        trade_type;
+    ///组合方向
+    XTP_SIDE_TYPE            side;
+    ///业务类型
+    XTP_BUSINESS_TYPE        business_type;
+    ///交易所交易员代码 
+    char                     branch_pbu[XTP_BRANCH_PBU_LEN];
+
+    ///期权组合策略信息
+    XTPOptCombPlugin         opt_comb_info;
+};
+
+
+//////////////////////////////////////////////////////////////////////////
+///期权组合策略报单查询
+//////////////////////////////////////////////////////////////////////////
+///期权组合策略报单查询请求-条件查询
+struct XTPQueryOptCombOrderReq
+{
+    ///组合编码（流水号），可以为空，如果为空，则默认查询时间段内的所有成交回报
+    char      comb_num[XTP_SECONDARY_ORDER_ID_LEN];
+    ///格式为YYYYMMDDHHMMSSsss，为0则默认当前交易日0点
+    int64_t   begin_time;
+    ///格式为YYYYMMDDHHMMSSsss，为0则默认当前时间
+    int64_t   end_time;
+};
+
+///期权组合策略报单查询响应结构体
+typedef struct XTPOptCombOrderInfo XTPQueryOptCombOrderRsp;
+
+///查询期权组合策略订单请求-分页查询
+struct XTPQueryOptCombOrderByPageReq
+{
+    ///需要查询的订单条数
+    int64_t         req_count;
+    ///上一次收到的查询订单结果中带回来的索引，如果是从头查询，请置0
+    int64_t         reference;
+    ///保留字段
+    int64_t         reserved;
+};
+
+//////////////////////////////////////////////////////////////////////////
+///期权组合策略成交回报查询
+//////////////////////////////////////////////////////////////////////////
+///查询期权组合策略成交报告请求-根据执行编号查询（保留字段）
+struct XTPQueryOptCombReportByExecIdReq
+{
+    ///XTP订单系统ID
+    uint64_t  order_xtp_id;
+    ///成交执行编号
+    char  exec_id[XTP_EXEC_ID_LEN];
+};
+
+///查询期权组合策略成交回报请求-查询条件
+struct XTPQueryOptCombTraderReq
+{
+    ///组合编码（流水号），可以为空，如果为空，则默认查询时间段内的所有成交回报
+    char      comb_num[XTP_SECONDARY_ORDER_ID_LEN];
+    ///开始时间，格式为YYYYMMDDHHMMSSsss，为0则默认当前交易日0点
+    int64_t   begin_time;
+    ///结束时间，格式为YYYYMMDDHHMMSSsss，为0则默认当前时间
+    int64_t   end_time;
+};
+
+///成交回报查询响应结构体
+typedef struct XTPOptCombTradeReport  XTPQueryOptCombTradeRsp;
+
+///查询期权组合策略成交回报请求-分页查询
+struct XTPQueryOptCombTraderByPageReq
+{
+    ///需要查询的成交回报条数
+    int64_t         req_count;
+    ///上一次收到的查询成交回报结果中带回来的索引，如果是从头查询，请置0
+    int64_t         reference;
+    ///保留字段
+    int64_t         reserved;
+};
+
 
 
 #pragma pack()

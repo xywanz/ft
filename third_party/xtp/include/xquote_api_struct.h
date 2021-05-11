@@ -89,7 +89,7 @@ struct XTPMarketDataStockExData {
     int64_t r2;
 };
 
-// 期权额外数据
+/// 期权额外数据
 struct XTPMarketDataOptionExData {
     ///波段性中断参考价(SH)
     double  auction_price;
@@ -99,6 +99,9 @@ struct XTPMarketDataOptionExData {
     int64_t last_enquiry_time;
 };
 
+/////////////////////////////////////////////////////////////////////////
+///@brief XTP_MARKETDATA_TYPE是行情快照数据类型
+/////////////////////////////////////////////////////////////////////////
 enum XTP_MARKETDATA_TYPE {
     XTP_MARKETDATA_ACTUAL = 0, // 现货(股票/基金/债券等)
     XTP_MARKETDATA_OPTION = 1, // 期权
@@ -171,7 +174,7 @@ typedef struct XTPMarketDataStruct
     // 额外数据
     ///成交笔数
     int64_t trades_count;
-    ///当前交易状态说明
+    ///当前交易状态说明，参阅《XTP API常见问题.doc》文档
     char ticker_status[8];
     ///数据
     union {
@@ -308,6 +311,37 @@ typedef struct XTPTickerPriceInfo {
     ///最新价
     double last_price;
 } XTPTPI;
+
+///股票行情全量静态信息
+typedef struct XTPQuoteFullInfo {
+	XTP_EXCHANGE_TYPE  exchange_id;							///<交易所代码
+	char               ticker[XTP_TICKER_LEN];				///<证券代码
+	char               ticker_name[XTP_TICKER_NAME_LEN];	///<证券名称
+	XTP_SECURITY_TYPE      security_type;					///<合约详细类型
+	XTP_QUALIFICATION_TYPE ticker_qualification_class;		///<合约适当性类别
+	bool is_registration;									///<是否注册制(仅适用创业板股票，创新企业股票及存托凭证)
+	bool is_VIE;											///<是否具有协议控制架构(仅适用创业板股票，创新企业股票及存托凭证)
+	bool is_noprofit;										///<是否尚未盈利(仅适用创业板股票，创新企业股票及存托凭证)
+	bool is_weighted_voting_rights;							///<是否存在投票权差异(仅适用创业板股票，创新企业股票及存托凭证)
+	bool is_have_price_limit;								///<是否有涨跌幅限制(注：不提供具体幅度，可通过涨跌停价和昨收价来计算幅度)
+	double upper_limit_price;								///<涨停价（仅在有涨跌幅限制时有效）
+	double lower_limit_price;								///<跌停价（仅在有涨跌幅限制时有效）
+	double pre_close_price;									///<昨收价
+	double price_tick;										///<价格最小变动价位
+	int32_t bid_qty_upper_limit;							///<限价买委托数量上限
+	int32_t bid_qty_lower_limit;							///<限价买委托数量下限
+	int32_t bid_qty_unit;									///<限价买数量单位
+	int32_t ask_qty_upper_limit;							///<限价卖委托数量上限
+	int32_t ask_qty_lower_limit;							///<限价卖委托数量下限
+	int32_t ask_qty_unit;									///<限价卖数量单位
+	int32_t market_bid_qty_upper_limit;						///<市价买委托数量上限
+	int32_t market_bid_qty_lower_limit;						///<市价买委托数量下限
+	int32_t market_bid_qty_unit;							///<市价买数量单位
+	int32_t market_ask_qty_upper_limit;						///<市价卖委托数量上限
+	int32_t market_ask_qty_lower_limit;						///<市价卖委托数量上限
+	int32_t market_ask_qty_unit;							///<市价卖数量单位
+	uint64_t unknown[4];									///<保留字段
+}XTPQFI;
 
 #pragma pack()
 
