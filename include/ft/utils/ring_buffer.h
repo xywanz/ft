@@ -17,7 +17,7 @@ class RingBuffer {
     if (cur_head - tail_.load(std::memory_order::memory_order_acquire) == capacity) {
       return false;
     }
-    buffer_[kIndexMask_ & kIndexMask_] = std::forward<U>(data);
+    buffer_[cur_head & kIndexMask_] = std::forward<U>(data);
     head_.store(cur_head + 1, std::memory_order::memory_order_release);
     return true;
   }
