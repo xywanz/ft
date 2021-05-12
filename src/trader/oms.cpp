@@ -108,7 +108,7 @@ bool OrderManagementSystem::Init(const Config& config) {
   }
   qry_res_rb->GetWithBlocking(&qry_res);
   if (qry_res.msg_type != GatewayMsgType::kAccount) {
-    spdlog::error("failed to query account");
+    spdlog::error("error occurred when querying account: {}", qry_res.msg_type);
     return false;
   }
   OnAccount(std::get<Account>(qry_res.data));

@@ -89,6 +89,7 @@ bool BackTestGateway::QueryAccount() {
   std::unique_lock<std::mutex> lock(mutex_);
   UpdateAccount();
   OnQueryAccount(ctx_.account);
+  OnQueryAccountEnd();
   return true;
 }
 
