@@ -9,31 +9,6 @@
 #include "ft/utils/config_loader.h"
 #include "spdlog/spdlog.h"
 
-class ContractCollector : public ft::BaseOrderManagementSystem {
- public:
-  bool Login(const ft::Config& config) {
-    void* handle = dlopen(config.api.c_str(), RTLD_LAZY);
-    auto gateway_ctor = reinterpret_cast<ft::GatewayCreateFunc>(dlsym(handle, "CreateGateway"));
-    if (!gateway_ctor) {
-      return false;
-    }
-    gateway_.reset(gateway_ctor());
-    if (!gateway_) return false;
-
-    return gateway_->Login(this, config);
-  }
-
-  bool Dump(const std::string& file = "./contracts.csv") {
-    if (!gateway_->QueryContracts(&contracts_)) return false;
-    ft::StoreContractList(file, contracts_);
-    return true;
-  }
-
- private:
-  std::unique_ptr<ft::Gateway> gateway_;
-  std::vector<ft::Contract> contracts_;
-};
-
 static void Usage() {
   printf("Usage:\n");
   printf("    --config            登录的配置文件\n");
@@ -54,18 +29,47 @@ int main() {
 
   spdlog::set_level(spdlog::level::from_str(loglevel));
 
-  ContractCollector collector;
   ft::Config config;
   ft::LoadConfig(login_yml, &config);
-  if (!collector.Login(config)) {
-    printf("failed to Login\n");
-    exit(-1);
+
+  void* handle = dlopen(config.api.c_str(), RTLD_LAZY);
+  auto gateway_ctor = reinterpret_cast<ft::GatewayCreateFunc>(dlsym(handle, "CreateGateway"));
+  if (!gateway_ctor) {
+    spdlog::error("symbol CreateGateway not found");
+    exit(EXIT_FAILURE);
+  }
+  auto* gateway = gateway_ctor();
+  if (!gateway) {
+    spdlog::error("failed to create gateway");
+    exit(EXIT_FAILURE);
+  }
+  if (!gateway->Init(config)) {
+    spdlog::error("failed to init gateway");
+    exit(EXIT_FAILURE);
   }
 
-  if (!collector.Dump(output)) {
-    printf("failed to dump\n");
+  if (!gateway->QueryContracts()) {
+    spdlog::error("failed to query contracts");
+    exit(EXIT_FAILURE);
   }
 
-  printf("successfully dump to %s\n", output.c_str());
-  exit(0);
+  auto* rb = gateway->GetQryResultRB();
+  ft::GatewayQueryResult res;
+
+  std::vector<ft::Contract> contracts;
+  for (;;) {
+    rb->GetWithBlocking(&res);
+    if (res.msg_type == ft::GatewayMsgType::kContractEnd) {
+      break;
+    }
+    if (res.msg_type != ft::GatewayMsgType::kContract) {
+      abort();
+    }
+    contracts.emplace_back(std::get<ft::Contract>(res.data));
+  }
+
+  ft::StoreContractList(output, contracts);
+
+  spdlog::info("successfully dump to {}", output);
+  exit(EXIT_SUCCESS);
 }
