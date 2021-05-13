@@ -12,16 +12,13 @@ namespace ft {
 CtpQuoteApi::CtpQuoteApi(CtpGateway *gateway) : gateway_(gateway) {}
 
 CtpQuoteApi::~CtpQuoteApi() {
-  is_error_ = true;
-  Logout();
+  if (quote_api_) {
+    Logout();
+    quote_api_->Join();
+  }
 }
 
 bool CtpQuoteApi::Login(const Config &config) {
-  if (is_logon_) {
-    spdlog::error("[CtpQuoteApi::Login] Don't Login twice");
-    return true;
-  }
-
   quote_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!quote_api_) {
     spdlog::error("[CtpQuoteApi::Login] Failed to create CTP MD API");
@@ -37,36 +34,17 @@ bool CtpQuoteApi::Login(const Config &config) {
   quote_api_->RegisterFront(const_cast<char *>(server_addr_.c_str()));
   quote_api_->Init();
 
-  for (;;) {
-    if (is_error_) return false;
-    if (is_connected_) break;
+  while (status_.load(std::memory_order::memory_order_relaxed) == 0) {
+    continue;
   }
-
-  CThostFtdcReqUserLoginField login_req{};
-  strncpy(login_req.BrokerID, broker_id_.c_str(), sizeof(login_req.BrokerID));
-  strncpy(login_req.UserID, investor_id_.c_str(), sizeof(login_req.UserID));
-  strncpy(login_req.Password, passwd_.c_str(), sizeof(login_req.Password));
-  if (quote_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CtpQuoteApi::Login] Invalid user-Login field");
-    return false;
-  }
-
-  for (;;) {
-    if (is_error_) return false;
-    if (is_logon_) break;
-  }
-  return true;
+  return status_.load(std::memory_order::memory_order_acquire) == 1;
 }
 
 void CtpQuoteApi::Logout() {
-  if (is_logon_) {
-    CThostFtdcUserLogoutField req{};
-    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-    strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
-    if (quote_api_->ReqUserLogout(&req, next_req_id()) != 0) return;
-
-    while (is_logon_) continue;
-  }
+  CThostFtdcUserLogoutField req{};
+  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+  strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
+  quote_api_->ReqUserLogout(&req, next_req_id());
 }
 
 bool CtpQuoteApi::Subscribe(const std::vector<std::string> &_sub_list) {
@@ -85,14 +63,21 @@ bool CtpQuoteApi::Subscribe(const std::vector<std::string> &_sub_list) {
 }
 
 void CtpQuoteApi::OnFrontConnected() {
-  is_connected_ = true;
   spdlog::debug("[CtpQuoteApi::OnFrontConnectedMD] Connected");
+
+  CThostFtdcReqUserLoginField login_req{};
+  strncpy(login_req.BrokerID, broker_id_.c_str(), sizeof(login_req.BrokerID));
+  strncpy(login_req.UserID, investor_id_.c_str(), sizeof(login_req.UserID));
+  strncpy(login_req.Password, passwd_.c_str(), sizeof(login_req.Password));
+  if (quote_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
+    spdlog::error("[CtpQuoteApi::Login] Invalid user-Login field");
+    status_.store(-1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpQuoteApi::OnFrontDisconnected(int reason) {
-  is_error_ = true;
-  is_connected_ = false;
   spdlog::error("[CtpQuoteApi::OnFrontDisconnectedMD] Disconnected");
+  status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnHeartBeatWarning(int time_lapse) {
@@ -108,24 +93,24 @@ void CtpQuoteApi::OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpQuoteApi::OnRspUserLogin] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    is_error_ = true;
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
   spdlog::debug("[CtpQuoteApi::OnRspUserLogin] Success. Login as {}", investor_id_);
-  is_logon_ = true;
+  status_.store(1, std::memory_order::memory_order_release);
 }
 
 void CtpQuoteApi::OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
                                   CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   spdlog::debug("[CtpQuoteApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
                 logout_rsp->BrokerID, logout_rsp->UserID);
-  is_logon_ = false;
+  status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   spdlog::debug("[CtpQuoteApi::OnRspError] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
-  is_logon_ = false;
+  status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,

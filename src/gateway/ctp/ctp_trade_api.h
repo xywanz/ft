@@ -98,15 +98,6 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
  private:
   int next_req_id() { return next_req_id_++; }
-  void done() { is_done_ = true; }
-  void error() { is_error_ = true; }
-  bool wait_sync() {
-    while (!is_done_)
-      if (is_error_) return false;
-
-    is_done_ = false;
-    return true;
-  }
 
   uint64_t get_order_id(uint64_t order_ref) const { return order_ref - order_ref_base_; }
 
@@ -115,6 +106,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
  private:
   CtpGateway *gateway_;
   CtpUniquePtr<CThostFtdcTraderApi> trade_api_;
+  const Config *config_;
 
   std::string front_addr_;
   std::string broker_id_;
@@ -125,10 +117,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
 
   std::atomic<int> next_req_id_ = 0;
 
-  volatile bool is_error_ = false;
-  volatile bool is_connected_ = false;
-  volatile bool is_done_ = false;
-  volatile bool is_logon_ = false;
+  // 登录状态，0:正在登录，1:登录成功，-1:登录失败
+  std::atomic<int> status_ = 0;
 
   std::map<uint32_t, Position> pos_cache_;
 };

@@ -22,11 +22,14 @@ CtpTradeApi::CtpTradeApi(CtpGateway *gateway)
 }
 
 CtpTradeApi::~CtpTradeApi() {
-  error();
-  Logout();
+  if (trade_api_) {
+    Logout();
+    trade_api_->Join();
+  }
 }
 
 bool CtpTradeApi::Login(const Config &config) {
+  config_ = &config;
   front_addr_ = config.trade_server_address;
   broker_id_ = config.broker_id;
   investor_id_ = config.investor_id;
@@ -35,113 +38,42 @@ bool CtpTradeApi::Login(const Config &config) {
   trade_api_->RegisterSpi(this);
   trade_api_->RegisterFront(const_cast<char *>(config.trade_server_address.c_str()));
   trade_api_->Init();
-  while (!is_connected_) {
-    if (is_error_) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Cannot connect to {}", front_addr_);
-      return false;
-    }
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  while (status_.load(std::memory_order::memory_order_relaxed) == 0) {
+    continue;
   }
-
-  if (!config.auth_code.empty()) {
-    CThostFtdcReqAuthenticateField auth_req{};
-    strncpy(auth_req.BrokerID, config.broker_id.c_str(), sizeof(auth_req.BrokerID));
-    strncpy(auth_req.UserID, config.investor_id.c_str(), sizeof(auth_req.UserID));
-    strncpy(auth_req.AuthCode, config.auth_code.c_str(), sizeof(auth_req.AuthCode));
-    strncpy(auth_req.AppID, config.app_id.c_str(), sizeof(auth_req.AppID));
-
-    if (trade_api_->ReqAuthenticate(&auth_req, next_req_id()) != 0) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqAuthenticate");
-      return false;
-    }
-    if (!wait_sync()) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Failed to authenticate");
-      return false;
-    }
-  }
-
-  CThostFtdcReqUserLoginField login_req{};
-  strncpy(login_req.BrokerID, config.broker_id.c_str(), sizeof(login_req.BrokerID));
-  strncpy(login_req.UserID, config.investor_id.c_str(), sizeof(login_req.UserID));
-  strncpy(login_req.Password, config.password.c_str(), sizeof(login_req.Password));
-
-  if (trade_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqUserLogin");
-    return false;
-  }
-  if (!wait_sync()) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to Login");
-    return false;
-  }
-
-  CThostFtdcQrySettlementInfoField settlement_req{};
-  strncpy(settlement_req.BrokerID, broker_id_.c_str(), sizeof(settlement_req.BrokerID));
-  strncpy(settlement_req.InvestorID, investor_id_.c_str(), sizeof(settlement_req.InvestorID));
-
-  if (trade_api_->ReqQrySettlementInfo(&settlement_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQrySettlementInfo");
-    return false;
-  }
-  if (!wait_sync()) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to query settlement");
-    return false;
-  }
-
-  CThostFtdcSettlementInfoConfirmField confirm_req{};
-  strncpy(confirm_req.BrokerID, broker_id_.c_str(), sizeof(confirm_req.BrokerID));
-  strncpy(confirm_req.InvestorID, investor_id_.c_str(), sizeof(confirm_req.InvestorID));
-
-  if (trade_api_->ReqSettlementInfoConfirm(&confirm_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqSettlementInfoConfirm");
-    return false;
-  }
-  if (!wait_sync()) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to confirm settlement info");
-    return false;
-  }
-
-  if (config.cancel_outstanding_orders_on_startup) {
-    spdlog::debug("[CtpTradeApi::Login] Cancel outstanding orders on startup");
-
-    CThostFtdcQryOrderField req{};
-    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-
-    if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
-      return false;
-    }
-    if (!wait_sync()) {
-      spdlog::error("[CtpTradeApi::Login] Failed to query orders");
-      return false;
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
-
-  is_logon_ = true;
-  return true;
+  return status_.load(std::memory_order::memory_order_acquire) == 1;
 }
 
 void CtpTradeApi::Logout() {
-  if (is_logon_) {
-    CThostFtdcUserLogoutField req{};
-    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-    strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
-    if (trade_api_->ReqUserLogout(&req, next_req_id()) != 0) return;
-
-    while (is_logon_) continue;
+  CThostFtdcUserLogoutField req{};
+  strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+  strncpy(req.UserID, investor_id_.c_str(), sizeof(req.UserID));
+  if (trade_api_->ReqUserLogout(&req, next_req_id()) != 0) {
+    return;
   }
 }
 
 void CtpTradeApi::OnFrontConnected() {
   spdlog::debug("[CtpTradeApi::OnFrontConnected] Success. Connected to {}", front_addr_);
-  is_error_ = false;
-  is_connected_ = true;
+
+  CThostFtdcReqAuthenticateField auth_req{};
+  strncpy(auth_req.BrokerID, config_->broker_id.c_str(), sizeof(auth_req.BrokerID));
+  strncpy(auth_req.UserID, config_->investor_id.c_str(), sizeof(auth_req.UserID));
+  strncpy(auth_req.AuthCode, config_->auth_code.c_str(), sizeof(auth_req.AuthCode));
+  strncpy(auth_req.AppID, config_->app_id.c_str(), sizeof(auth_req.AppID));
+
+  if (trade_api_->ReqAuthenticate(&auth_req, next_req_id()) != 0) {
+    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqAuthenticate");
+    status_.store(-1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpTradeApi::OnFrontDisconnected(int reason) {
   spdlog::error("[CtpTradeApi::OnFrontDisconnected] . Disconnected from {}", front_addr_);
-  exit(-1);
+  status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpTradeApi::OnHeartBeatWarning(int time_lapse) {
@@ -150,27 +82,40 @@ void CtpTradeApi::OnHeartBeatWarning(int time_lapse) {
 
 void CtpTradeApi::OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenticate_field,
                                     CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  if (!is_last) return;
+  if (!is_last) {
+    return;
+  }
 
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspAuthenticate] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
   spdlog::debug("[CTP::OnRspAuthenticate] Success. Investor ID: {}", investor_id_);
-  done();
+
+  CThostFtdcReqUserLoginField login_req{};
+  strncpy(login_req.BrokerID, config_->broker_id.c_str(), sizeof(login_req.BrokerID));
+  strncpy(login_req.UserID, config_->investor_id.c_str(), sizeof(login_req.UserID));
+  strncpy(login_req.Password, config_->password.c_str(), sizeof(login_req.Password));
+
+  if (trade_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
+    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqUserLogin");
+    status_.store(-1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
                                  CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  if (!is_last) return;
+  if (!is_last) {
+    return;
+  }
 
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspUserLogin] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
@@ -183,23 +128,41 @@ void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
       "[CtpTradeApi::OnRspUserLogin] Success. Login as {}. "
       "Front ID: {}, Session ID: {}, Max OrderRef: {}",
       investor_id_, front_id_, session_id_, max_order_ref);
-  done();
+
+  CThostFtdcQrySettlementInfoField settlement_req{};
+  strncpy(settlement_req.BrokerID, broker_id_.c_str(), sizeof(settlement_req.BrokerID));
+  strncpy(settlement_req.InvestorID, investor_id_.c_str(), sizeof(settlement_req.InvestorID));
+
+  if (trade_api_->ReqQrySettlementInfo(&settlement_req, next_req_id()) != 0) {
+    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQrySettlementInfo");
+    status_.store(-1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpTradeApi::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settlement_info,
                                          CThostFtdcRspInfoField *rsp_info, int req_id,
                                          bool is_last) {
-  if (!is_last) return;
+  if (!is_last) {
+    return;
+  }
 
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CTP::OnRspQrySettlementInfo] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
   spdlog::debug("[CTP::OnRspQrySettlementInfo] Success");
-  done();
+
+  CThostFtdcSettlementInfoConfirmField confirm_req{};
+  strncpy(confirm_req.BrokerID, broker_id_.c_str(), sizeof(confirm_req.BrokerID));
+  strncpy(confirm_req.InvestorID, investor_id_.c_str(), sizeof(confirm_req.InvestorID));
+
+  if (trade_api_->ReqSettlementInfoConfirm(&confirm_req, next_req_id()) != 0) {
+    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqSettlementInfoConfirm");
+    status_.store(-1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpTradeApi::OnRspSettlementInfoConfirm(
@@ -210,21 +173,35 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
   if (is_error_rsp(rsp_info)) {
     spdlog::debug("[CtpTradeApi::OnRspSettlementInfoConfirm] Failed. ErrorMsg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
   spdlog::debug(
       "[CtpTradeApi::OnRspSettlementInfoConfirm] Success. Settlement "
       "confirmed");
-  done();
+
+  if (config_->cancel_outstanding_orders_on_startup) {
+    spdlog::debug("[CtpTradeApi::Login] Cancel outstanding orders on startup");
+
+    CThostFtdcQryOrderField req{};
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+
+    if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
+      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
+      status_.store(-1, std::memory_order::memory_order_release);
+    }
+  } else {
+    status_.store(1, std::memory_order::memory_order_release);
+  }
 }
 
 void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
                                   CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   spdlog::debug("[CtpTradeApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
                 user_logout->BrokerID, user_logout->UserID);
-  is_logon_ = false;
+  status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
@@ -575,7 +552,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoFi
                                 int req_id, bool is_last) {
   if (is_error_rsp(rsp_info)) {
     spdlog::error("[CtpTradeApi::OnRspQryOrder] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
-    error();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
@@ -598,7 +575,9 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoFi
       spdlog::error("[CtpTradeApi::OnRspQryOrder] Failed to call ReqOrderAction");
   }
 
-  if (is_last) done();
+  if (is_last) {
+    status_.store(1, std::memory_order::memory_order_release);
+  }
 }
 
 bool CtpTradeApi::QueryTrades() {

@@ -22,7 +22,9 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   ~CtpQuoteApi();
 
   bool Login(const Config &config);
+
   void Logout();
+
   bool Subscribe(const std::vector<std::string> &sub_list);
 
   void OnFrontConnected() override;
@@ -68,10 +70,7 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   std::string passwd_;
 
   std::atomic<int> next_req_id_ = 0;
-
-  std::atomic<bool> is_error_ = false;
-  std::atomic<bool> is_connected_ = false;
-  std::atomic<bool> is_logon_ = false;
+  std::atomic<int> status_ = 0;
 
   std::vector<std::string> sub_list_;
 };
