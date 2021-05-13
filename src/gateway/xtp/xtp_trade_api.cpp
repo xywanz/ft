@@ -15,17 +15,14 @@ namespace ft {
 
 XtpTradeApi::XtpTradeApi(XtpGateway* gateway) : gateway_(gateway) {
   uint32_t seed = time(nullptr);
-  uint8_t client_id = rand_r(&seed) & 0xff;
+  uint8_t client_id = rand_r(&seed) % 99 + 1;
   trade_api_.reset(XTP::API::TraderApi::CreateTraderApi(client_id, "."));
   if (!trade_api_) {
     throw std::runtime_error("failed to create xtp trader api");
   }
 }
 
-XtpTradeApi::~XtpTradeApi() {
-  error();
-  Logout();
-}
+XtpTradeApi::~XtpTradeApi() { Logout(); }
 
 bool XtpTradeApi::Login(const Config& config) {
   investor_id_ = config.investor_id;
@@ -67,6 +64,11 @@ bool XtpTradeApi::Login(const Config& config) {
           "orders");
       return false;
     }
+
+    while (status_.load(std::memory_order::memory_order_relaxed) == 0) {
+      continue;
+    }
+    return status_.load(std::memory_order::memory_order_acquire) == 1;
   }
 
   return true;
@@ -291,7 +293,6 @@ check_last:
     }
     gateway_->OnQueryPositionEnd();
     pos_cache_.clear();
-    done();
   }
 }
 
@@ -351,8 +352,7 @@ bool XtpTradeApi::QueryOrders() {
     spdlog::error("[XtpTradeApi::QueryOrderList] {}", trade_api_->GetApiLastError()->error_msg);
     return false;
   }
-
-  return wait_sync();
+  return true;
 }
 
 void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, int request_id,
@@ -363,7 +363,7 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, 
 
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryOrder] {}", error_info->error_msg);
-    done();
+    status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
@@ -374,7 +374,9 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, 
                     trade_api_->GetApiLastError()->error_msg);
   }
 
-  if (is_last) done();
+  if (is_last) {
+    status_.store(1, std::memory_order::memory_order_release);
+  }
 }
 
 bool XtpTradeApi::QueryTrades() {

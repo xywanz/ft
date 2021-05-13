@@ -56,17 +56,6 @@ class XtpTradeApi : public XTP::API::TraderSpi {
  private:
   int next_req_id() { return next_req_id_++; }
 
-  void done() { is_done_ = true; }
-  void error() { is_error_ = true; }
-
-  bool wait_sync() {
-    while (!is_done_)
-      if (is_error_) return false;
-
-    is_done_ = false;
-    return true;
-  }
-
  private:
   XtpGateway* gateway_;
   XtpUniquePtr<XTP::API::TraderApi> trade_api_;
@@ -74,9 +63,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   std::string investor_id_;
   uint64_t session_id_ = 0;
   std::atomic<uint32_t> next_req_id_ = 1;
-
-  volatile bool is_done_ = false;
-  volatile bool is_error_ = false;
+  std::atomic<int> status_ = 0;
 
   std::map<uint64_t, Position> pos_cache_;
 };
