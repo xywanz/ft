@@ -393,13 +393,7 @@ Gateway* OrderManagementSystem::LoadGateway(const std::string& gtw_lib_file) {
     spdlog::error("failed to init gateway: symbol CreateGateway not found，register your gateway");
     return nullptr;
   }
-  auto* gateway = gateway_ctor();
-  if (!gateway) {
-    spdlog::error("failed to create gateway");
-    return nullptr;
-  }
-
-  return gateway;
+  return gateway_ctor();
 }
 
 void OrderManagementSystem::OnAccount(const Account& account) {

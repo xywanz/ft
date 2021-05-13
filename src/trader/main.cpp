@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 
   if (help) {
     Usage(argv[0]);
-    exit(0);
+    exit(EXIT_SUCCESS);
   }
 
   spdlog::set_level(spdlog::level::from_str(log_level));
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
   auto oms = std::make_unique<ft::OrderManagementSystem>();
   if (!oms->Init(config)) {
     spdlog::error("failed to init oms");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   oms->ProcessCmd();
