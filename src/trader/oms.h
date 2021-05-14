@@ -49,6 +49,13 @@ class OrderManagementSystem {
   void CancelForTicker(uint32_t ticker_id);
   void CancelAll();
 
+  bool InitGateway();
+  bool InitContractTable();
+  bool InitAccount();
+  bool InitPositions();
+  bool InitTradeInfo();
+  bool InitRMS();
+
   void OnTick(const TickData& tick);
 
   void OnAccount(const Account& account);
@@ -65,6 +72,7 @@ class OrderManagementSystem {
 
  private:
   Gateway* gateway_{nullptr};
+  const Config* config_;
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};
@@ -77,8 +85,6 @@ class OrderManagementSystem {
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   pubsub::Publisher md_pusher_;
   TimerThread timer_thread_;
-
-  int cmd_queue_key_ = 0;
 };
 
 }  // namespace ft

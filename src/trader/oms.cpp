@@ -56,122 +56,34 @@ bool OrderManagementSystem::Init(const Config& config) {
   spdlog::info("compiling time: {} {}", __TIME__, __DATE__);
   ShowConfig(config);
 
-  // 如果有配置contracts file的路径，则尝试从文件加载
-  if (!config.contracts_file.empty()) {
-    if (!ContractTable::Init(config.contracts_file))
-      spdlog::warn("failed to load contract table from file {}，try to query from gateway later",
-                   config.contracts_file);
-  }
+  config_ = &config;
 
-  cmd_queue_key_ = config.key_of_cmd_queue;
-
-  gateway_ = LoadGateway(config.api);
-  if (!gateway_) {
+  if (!InitGateway()) {
     return false;
   }
 
-  if (!gateway_->Init(config)) {
-    spdlog::error("failed to init gateway");
+  if (!InitContractTable()) {
     return false;
   }
-  spdlog::info("gateway inited. account: {}", config.investor_id);
 
-  auto qry_res_rb = gateway_->GetQryResultRB();
-  GatewayQueryResult qry_res;
+  if (!InitAccount()) {
+    return false;
+  }
 
-  if (!ContractTable::is_inited()) {
-    std::vector<Contract> contracts;
-    if (!gateway_->QueryContracts()) {
-      spdlog::error("failed to query contracts.");
-      return false;
-    }
-    for (;;) {
-      qry_res_rb->GetWithBlocking(&qry_res);
-      if (qry_res.msg_type == GatewayMsgType::kContractEnd) {
-        break;
-      }
-      assert(qry_res.msg_type == GatewayMsgType::kContract);
-      contracts.emplace_back(std::get<Contract>(qry_res.data));
-    }
-    ContractTable::Init(std::move(contracts));
-    ContractTable::Store("./contracts.csv");
+  if (!InitPositions()) {
+    return false;
+  }
+
+  if (!InitTradeInfo()) {
+    return false;
+  }
+
+  if (!InitRMS()) {
+    return false;
   }
 
   if (!gateway_->Subscribe(config.subscription_list)) {
     spdlog::error("failed to subscribe market data");
-    return false;
-  }
-
-  if (!gateway_->QueryAccount()) {
-    spdlog::error("failed to query account");
-    return false;
-  }
-  qry_res_rb->GetWithBlocking(&qry_res);
-  if (qry_res.msg_type != GatewayMsgType::kAccount) {
-    spdlog::error("error occurred when querying account: {}", qry_res.msg_type);
-    return false;
-  }
-  OnAccount(std::get<Account>(qry_res.data));
-  qry_res_rb->GetWithBlocking(&qry_res);
-  assert(qry_res.msg_type == GatewayMsgType::kAccountEnd);
-
-  // query all positions
-  redis_pos_updater_.SetAccount(account_.account_id);
-  redis_pos_updater_.Clear();
-  pos_calculator_.SetCallback([this](const Position& new_pos) {
-    auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
-    if (!contract) {
-      spdlog::error("contract not found. failed to update positions in redis. ticker_id:{}",
-                    new_pos.ticker_id);
-      return;
-    }
-    redis_pos_updater_.set(contract->ticker, new_pos);
-  });
-
-  std::vector<Position> init_positions;
-  if (!gateway_->QueryPositions()) {
-    spdlog::error("failed to query positions");
-    return false;
-  }
-  for (;;) {
-    qry_res_rb->GetWithBlocking(&qry_res);
-    if (qry_res.msg_type == GatewayMsgType::kPositionEnd) {
-      break;
-    }
-    assert(qry_res.msg_type == GatewayMsgType::kPosition);
-    init_positions.emplace_back(std::get<Position>(qry_res.data));
-  }
-  OnPositions(&init_positions);
-
-  // query trades to update position
-  std::vector<Trade> init_trades;
-  if (!gateway_->QueryTrades()) {
-    spdlog::error("failed to query trades");
-    return false;
-  }
-  for (;;) {
-    qry_res_rb->GetWithBlocking(&qry_res);
-    if (qry_res.msg_type == GatewayMsgType::kTradeEnd) {
-      break;
-    }
-    assert(qry_res.msg_type == GatewayMsgType::kTrade);
-    init_trades.emplace_back(std::get<Trade>(qry_res.data));
-  }
-  OnTrades(&init_trades);
-
-  // Init risk manager
-  RiskRuleParams risk_params{};
-  risk_params.config = &config;
-  risk_params.account = &account_;
-  risk_params.pos_calculator = &pos_calculator_;
-  risk_params.order_map = &order_map_;
-  rms_->AddRule(std::make_shared<FundManager>());
-  rms_->AddRule(std::make_shared<PositionManager>());
-  rms_->AddRule(std::make_shared<NoSelfTradeRule>());
-  rms_->AddRule(std::make_shared<ThrottleRateLimit>());
-  if (!config.no_receipt_mode) rms_->AddRule(std::make_shared<StrategyNotifier>());
-  if (!rms_->Init(&risk_params)) {
-    spdlog::error("failed to init rms");
     return false;
   }
 
@@ -204,7 +116,7 @@ bool OrderManagementSystem::Init(const Config& config) {
 }
 
 void OrderManagementSystem::ProcessCmd() {
-  if (cmd_queue_key_ > 0)
+  if (config_->key_of_cmd_queue > 0)
     ProcessQueueCmd();
   else
     ProcessPubSubCmd();
@@ -235,23 +147,24 @@ void OrderManagementSystem::ProcessQueueCmd() {
   // user_id用于验证是否是trading engine创建的queue
   uint32_t te_user_id = 88888;
   LFQueue* cmd_queue;
-  if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
-    int res = LFQueue_create(cmd_queue_key_, te_user_id, sizeof(TraderCommand), 4096 * 4, false);
+  if ((cmd_queue = LFQueue_open(config_->key_of_cmd_queue, te_user_id)) == nullptr) {
+    int res = LFQueue_create(config_->key_of_cmd_queue, te_user_id, sizeof(TraderCommand), 4096 * 4,
+                             false);
     if (res != 0) {
       spdlog::info("failed to create order queue. please ensure the shm key is free: {:#x}",
-                   cmd_queue_key_);
+                   config_->key_of_cmd_queue);
       abort();
     }
 
-    if ((cmd_queue = LFQueue_open(cmd_queue_key_, te_user_id)) == nullptr) {
+    if ((cmd_queue = LFQueue_open(config_->key_of_cmd_queue, te_user_id)) == nullptr) {
       spdlog::info("failed to open the order queue. please ensure the shm key is free: {:#x}",
-                   cmd_queue_key_);
+                   config_->key_of_cmd_queue);
       abort();
     }
   }
 
   LFQueue_reset(cmd_queue);
-  spdlog::info("start to retrieve orders from order queue. key: {:#x}", cmd_queue_key_);
+  spdlog::info("start to retrieve orders from order queue. key: {:#x}", config_->key_of_cmd_queue);
 
   TraderCommand cmd{};
   int res;
@@ -380,6 +293,147 @@ void OrderManagementSystem::CancelAll() {
   for (const auto& [order_id, order] : order_map_) {
     gateway_->CancelOrder(order_id, order.privdata);
   }
+}
+
+bool OrderManagementSystem::InitGateway() {
+  gateway_ = LoadGateway(config_->api);
+  if (!gateway_) {
+    return false;
+  }
+
+  if (!gateway_->Init(*config_)) {
+    spdlog::error("failed to init gateway");
+    return false;
+  }
+  spdlog::info("gateway inited. account: {}", config_->investor_id);
+  return true;
+}
+
+bool OrderManagementSystem::InitContractTable() {
+  if (!config_->contracts_file.empty()) {
+    if (ContractTable::Init(config_->contracts_file)) {
+      return true;
+    }
+    spdlog::warn("failed to load contract table from file {}，try to query from gateway later",
+                 config_->contracts_file);
+  }
+
+  auto qry_res_rb = gateway_->GetQryResultRB();
+  GatewayQueryResult qry_res;
+
+  if (!ContractTable::is_inited()) {
+    std::vector<Contract> contracts;
+    if (!gateway_->QueryContracts()) {
+      spdlog::error("failed to query contracts.");
+      return false;
+    }
+    for (;;) {
+      qry_res_rb->GetWithBlocking(&qry_res);
+      if (qry_res.msg_type == GatewayMsgType::kContractEnd) {
+        break;
+      }
+      assert(qry_res.msg_type == GatewayMsgType::kContract);
+      contracts.emplace_back(std::get<Contract>(qry_res.data));
+    }
+    ContractTable::Init(std::move(contracts));
+    ContractTable::Store("./contracts.csv");
+  }
+  return true;
+}
+
+bool OrderManagementSystem::InitAccount() {
+  auto qry_res_rb = gateway_->GetQryResultRB();
+  GatewayQueryResult qry_res;
+
+  if (!gateway_->QueryAccount()) {
+    spdlog::error("failed to query account");
+    return false;
+  }
+  qry_res_rb->GetWithBlocking(&qry_res);
+  if (qry_res.msg_type != GatewayMsgType::kAccount) {
+    spdlog::error("error occurred when querying account: {}", qry_res.msg_type);
+    return false;
+  }
+  OnAccount(std::get<Account>(qry_res.data));
+  qry_res_rb->GetWithBlocking(&qry_res);
+  assert(qry_res.msg_type == GatewayMsgType::kAccountEnd);
+  return true;
+}
+
+bool OrderManagementSystem::InitPositions() {
+  auto qry_res_rb = gateway_->GetQryResultRB();
+  GatewayQueryResult qry_res;
+
+  // query all positions
+  redis_pos_updater_.SetAccount(account_.account_id);
+  redis_pos_updater_.Clear();
+  pos_calculator_.SetCallback([this](const Position& new_pos) {
+    auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
+    if (!contract) {
+      spdlog::error("contract not found. failed to update positions in redis. ticker_id:{}",
+                    new_pos.ticker_id);
+      return;
+    }
+    redis_pos_updater_.set(contract->ticker, new_pos);
+  });
+
+  std::vector<Position> init_positions;
+  if (!gateway_->QueryPositions()) {
+    spdlog::error("failed to query positions");
+    return false;
+  }
+  for (;;) {
+    qry_res_rb->GetWithBlocking(&qry_res);
+    if (qry_res.msg_type == GatewayMsgType::kPositionEnd) {
+      break;
+    }
+    assert(qry_res.msg_type == GatewayMsgType::kPosition);
+    init_positions.emplace_back(std::get<Position>(qry_res.data));
+  }
+  OnPositions(&init_positions);
+  return true;
+}
+
+bool OrderManagementSystem::InitTradeInfo() {
+  auto qry_res_rb = gateway_->GetQryResultRB();
+  GatewayQueryResult qry_res;
+
+  // query trades to update position
+  std::vector<Trade> init_trades;
+  if (!gateway_->QueryTrades()) {
+    spdlog::error("failed to query trades");
+    return false;
+  }
+  for (;;) {
+    qry_res_rb->GetWithBlocking(&qry_res);
+    if (qry_res.msg_type == GatewayMsgType::kTradeEnd) {
+      break;
+    }
+    assert(qry_res.msg_type == GatewayMsgType::kTrade);
+    init_trades.emplace_back(std::get<Trade>(qry_res.data));
+  }
+  OnTrades(&init_trades);
+  return true;
+}
+
+bool OrderManagementSystem::InitRMS() {
+  RiskRuleParams risk_params{};
+  risk_params.config = config_;
+  risk_params.account = &account_;
+  risk_params.pos_calculator = &pos_calculator_;
+  risk_params.order_map = &order_map_;
+  rms_->AddRule(std::make_shared<FundManager>());
+  rms_->AddRule(std::make_shared<PositionManager>());
+  rms_->AddRule(std::make_shared<NoSelfTradeRule>());
+  rms_->AddRule(std::make_shared<ThrottleRateLimit>());
+  if (!config_->no_receipt_mode) {
+    rms_->AddRule(std::make_shared<StrategyNotifier>());
+  }
+  if (!rms_->Init(&risk_params)) {
+    spdlog::error("failed to init rms");
+    return false;
+  }
+  return true;
 }
 
 Gateway* OrderManagementSystem::LoadGateway(const std::string& gtw_lib_file) {
