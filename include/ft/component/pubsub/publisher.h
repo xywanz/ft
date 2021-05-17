@@ -18,14 +18,8 @@ class Publisher {
   template <class T>
   bool Publish(const std::string& routing_key, const Serializable<T>& data) {
     std::string msg;
-    if (!data.SerializeToString(&msg)) {
-      return false;
-    }
-    if (!sock_->SendMsg(routing_key, msg)) {
-      return false;
-    }
-
-    return true;
+    data.SerializeToString(&msg);
+    return sock_->SendMsg(routing_key, msg);
   }
 
  private:

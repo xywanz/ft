@@ -122,29 +122,17 @@ class Serializable {
  public:
   Serializable() {}
 
-  bool SerializeToString(std::string* output) const {
-    try {
-      cereal::BinaryStringOutputArchive serializer(output);
-      serializer(*static_cast<const Derived*>(this));
-      return true;
-    } catch (...) {
-      return false;
-    }
+  void SerializeToString(std::string* output) const {
+    cereal::BinaryStringOutputArchive serializer(output);
+    serializer(*static_cast<const Derived*>(this));
   }
 
-  bool ParseFromString(const char* data, std::size_t size) {
-    try {
-      cereal::BinaryStringInputArchive deserializer(data, size);
-      deserializer(*static_cast<Derived*>(this));
-      return true;
-    } catch (...) {
-      return false;
-    }
+  void ParseFromString(const char* data, std::size_t size) {
+    cereal::BinaryStringInputArchive deserializer(data, size);
+    deserializer(*static_cast<Derived*>(this));
   }
 
-  bool ParseFromString(const std::string& data) {
-    return ParseFromString(data.data(), data.size());
-  }
+  void ParseFromString(const std::string& data) { ParseFromString(data.data(), data.size()); }
 };
 
 #define SERIALIZABLE_FIELDS(...) \

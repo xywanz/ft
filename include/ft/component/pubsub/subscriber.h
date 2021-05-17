@@ -28,9 +28,7 @@ class Subscriber {
     auto callback_ptr = std::make_shared<std::function<void(T*)>>(std::move(callback));
     auto cb_handle = [callback_ptr](const std::string& msg) {
       T data;
-      if (!data.ParseFromString(msg)) {
-        throw std::runtime_error("cannot deserialize from str");
-      }
+      data.ParseFromString(msg);
       (*callback_ptr)(&data);
     };
     cb_.emplace(routing_key, cb_handle);
