@@ -28,8 +28,8 @@ install:
 script:
   - export CODECOV_TOKEN="964ca3de-67f4-4065-a81a-b86c489c1738"
   - bash <(curl -s https://codecov.io/bash)
-  - export CC=gcc-7
-  - export CXX=g++-7
+  - export CC=gcc-9
+  - export CXX=g++-9
   - gcc -v && g++ -v && cmake --version
   - rm -rf build && mkdir build && cd build
   - cmake .. && make
