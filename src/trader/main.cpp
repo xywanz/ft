@@ -1,7 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include "ft/base/contract_table.h"
-#include "ft/utils/config_loader.h"
 #include "getopt.hpp"
 #include "spdlog/spdlog.h"
 #include "trader/oms.h"
@@ -25,9 +24,10 @@ int main(int argc, char** argv) {
 
   spdlog::set_level(spdlog::level::from_str(log_level));
 
-  ft::Config config;
-  if (!ft::LoadConfig(config_file, &config)) {
+  ft::FlareTraderConfig config;
+  if (!config.Load(config_file)) {
     spdlog::error("failed to load config from {}", config_file);
+    exit(EXIT_FAILURE);
   }
 
   auto oms = std::make_unique<ft::OrderManagementSystem>();

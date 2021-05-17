@@ -22,7 +22,7 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
   explicit XtpQuoteApi(XtpGateway* gateway);
   ~XtpQuoteApi();
 
-  bool Login(const Config& config);
+  bool Login(const GatewayConfig& config);
   void Logout();
   bool Subscribe(const std::vector<std::string>& sub_list);
 

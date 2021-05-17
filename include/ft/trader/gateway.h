@@ -49,7 +49,7 @@ class Gateway {
   //
   // login最好实现成可被多次调用，即和logout配合使用，可反复地主动
   // 登录登出
-  virtual bool Init(const Config& config) { return false; }
+  virtual bool Init(const GatewayConfig& config) { return false; }
 
   // 登出函数。从服务器登出，以达到禁止交易或中断行情的目的。外部
   // 可通过logout来暂停交易。

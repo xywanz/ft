@@ -28,7 +28,7 @@ CtpTradeApi::~CtpTradeApi() {
   }
 }
 
-bool CtpTradeApi::Login(const Config &config) {
+bool CtpTradeApi::Login(const GatewayConfig &config) {
   config_ = &config;
   front_addr_ = config.trade_server_address;
   broker_id_ = config.broker_id;

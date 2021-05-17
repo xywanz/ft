@@ -18,7 +18,7 @@ XtpQuoteApi::~XtpQuoteApi() {
   Logout();
 }
 
-bool XtpQuoteApi::Login(const Config& config) {
+bool XtpQuoteApi::Login(const GatewayConfig& config) {
   if (is_logon_) {
     spdlog::error("[XtpQuoteApi::Login] Don't Login twice");
     return false;

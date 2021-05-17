@@ -15,7 +15,7 @@
 
 namespace ft {
 
-bool BackTestGateway::Init(const Config& config) {
+bool BackTestGateway::Init(const GatewayConfig& config) {
   ctx_.account.account_id = std::stoul(config.investor_id);
   ctx_.account.cash = 10000000.0;
   ctx_.account.total_asset = ctx_.account.cash;

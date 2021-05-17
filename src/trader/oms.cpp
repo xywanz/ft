@@ -8,7 +8,6 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/component/pubsub/subscriber.h"
-#include "ft/utils/config_loader.h"
 #include "ft/utils/lockfree-queue/queue.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
@@ -21,40 +20,12 @@
 
 namespace ft {
 
-namespace {
-void ShowConfig(const Config& cfg) {
-  spdlog::info("Config:");
-  spdlog::info("  api: {}", cfg.api);
-  spdlog::info("  trade_server_address: {}", cfg.trade_server_address);
-  spdlog::info("  quote_server_address: {}", cfg.quote_server_address);
-  spdlog::info("  broker_id: {}", cfg.broker_id);
-  spdlog::info("  investor_id: {}", cfg.investor_id);
-  spdlog::info("  password: ******");
-  spdlog::info("  auth_code: {}", cfg.auth_code);
-  spdlog::info("  app_id: {}", cfg.app_id);
-  spdlog::info("  subcription_list: {}", fmt::join(cfg.subscription_list, ","));
-  spdlog::info("  contracts_file: {}", cfg.contracts_file.c_str());
-  spdlog::info("  cancel_outstanding_orders_on_startup: {}",
-               cfg.cancel_outstanding_orders_on_startup);
-  if (!cfg.arg0.empty()) spdlog::info("  arg0: {}", cfg.arg0);
-  if (!cfg.arg1.empty()) spdlog::info("  arg1: {}", cfg.arg1);
-  if (!cfg.arg2.empty()) spdlog::info("  arg2: {}", cfg.arg2);
-  if (!cfg.arg3.empty()) spdlog::info("  arg3: {}", cfg.arg3);
-  if (!cfg.arg4.empty()) spdlog::info("  arg4: {}", cfg.arg4);
-  if (!cfg.arg5.empty()) spdlog::info("  arg5: {}", cfg.arg5);
-  if (!cfg.arg6.empty()) spdlog::info("  arg6: {}", cfg.arg6);
-  if (!cfg.arg7.empty()) spdlog::info("  arg7: {}", cfg.arg7);
-  if (!cfg.arg8.empty()) spdlog::info("  arg8: {}", cfg.arg8);
-}
-}  // namespace
-
 OrderManagementSystem::OrderManagementSystem() : md_pusher_("ipc://md.ft_trader.ipc") {
   rms_ = std::make_unique<RiskManagementSystem>();
 }
 
-bool OrderManagementSystem::Init(const Config& config) {
+bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
   spdlog::info("compiling time: {} {}", __TIME__, __DATE__);
-  ShowConfig(config);
 
   config_ = &config;
 
@@ -82,7 +53,7 @@ bool OrderManagementSystem::Init(const Config& config) {
     return false;
   }
 
-  if (!gateway_->Subscribe(config.subscription_list)) {
+  if (!gateway_->Subscribe(config.gateway_config.subscription_list)) {
     spdlog::error("failed to subscribe market data");
     return false;
   }
@@ -116,13 +87,6 @@ bool OrderManagementSystem::Init(const Config& config) {
 }
 
 void OrderManagementSystem::ProcessCmd() {
-  if (config_->key_of_cmd_queue > 0)
-    ProcessQueueCmd();
-  else
-    ProcessPubSubCmd();
-}
-
-void OrderManagementSystem::ProcessPubSubCmd() {
   pubsub::Subscriber cmd_sub("ipc://trade.ft_trader.ipc");
 
   auto ft_cmd_topic = std::string("ft_cmd_") + std::to_string(account_.account_id).substr(0, 4);
@@ -135,46 +99,6 @@ void OrderManagementSystem::ProcessPubSubCmd() {
   spdlog::info("ft_trader start to retrieve orders from ipc://trade.ft_trader.ipc, topic:{}",
                ft_cmd_topic);
   cmd_sub.Start();
-}
-
-void OrderManagementSystem::ProcessQueueCmd() {
-  // 创建Queue的时候存在隐患，如果该key之前被其他应用创建且没有释放，
-  // OMS还是会依附在这个key的共享内存上，大概率导致内存访问越界。
-  // 如果都是同版本的OMS创建的则没有问题，可以重复使用。
-  // 释放队列暂时需要手动释放，请使用ipcrm。
-  // TODO(kevin): 在LFQueue_create和LFQueue_open的时候加上检验信息。 Done!
-
-  // user_id用于验证是否是trading engine创建的queue
-  uint32_t te_user_id = 88888;
-  LFQueue* cmd_queue;
-  if ((cmd_queue = LFQueue_open(config_->key_of_cmd_queue, te_user_id)) == nullptr) {
-    int res = LFQueue_create(config_->key_of_cmd_queue, te_user_id, sizeof(TraderCommand), 4096 * 4,
-                             false);
-    if (res != 0) {
-      spdlog::info("failed to create order queue. please ensure the shm key is free: {:#x}",
-                   config_->key_of_cmd_queue);
-      abort();
-    }
-
-    if ((cmd_queue = LFQueue_open(config_->key_of_cmd_queue, te_user_id)) == nullptr) {
-      spdlog::info("failed to open the order queue. please ensure the shm key is free: {:#x}",
-                   config_->key_of_cmd_queue);
-      abort();
-    }
-  }
-
-  LFQueue_reset(cmd_queue);
-  spdlog::info("start to retrieve orders from order queue. key: {:#x}", config_->key_of_cmd_queue);
-
-  TraderCommand cmd{};
-  int res;
-  for (;;) {
-    // 这里没有使用零拷贝的方式，性能影响甚微
-    res = LFQueue_pop(cmd_queue, &cmd, nullptr, nullptr);
-    if (res != 0) continue;
-
-    ExecuteCmd(cmd);
-  }
 }
 
 void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
@@ -296,26 +220,26 @@ void OrderManagementSystem::CancelAll() {
 }
 
 bool OrderManagementSystem::InitGateway() {
-  gateway_ = LoadGateway(config_->api);
+  gateway_ = LoadGateway(config_->gateway_config.api);
   if (!gateway_) {
     return false;
   }
 
-  if (!gateway_->Init(*config_)) {
+  if (!gateway_->Init(config_->gateway_config)) {
     spdlog::error("failed to init gateway");
     return false;
   }
-  spdlog::info("gateway inited. account: {}", config_->investor_id);
+  spdlog::info("gateway inited");
   return true;
 }
 
 bool OrderManagementSystem::InitContractTable() {
-  if (!config_->contracts_file.empty()) {
-    if (ContractTable::Init(config_->contracts_file)) {
+  if (!config_->oms_config.contract_file.empty()) {
+    if (ContractTable::Init(config_->oms_config.contract_file)) {
       return true;
     }
     spdlog::warn("failed to load contract table from file {}，try to query from gateway later",
-                 config_->contracts_file);
+                 config_->oms_config.contract_file);
   }
 
   auto qry_res_rb = gateway_->GetQryResultRB();
@@ -418,7 +342,7 @@ bool OrderManagementSystem::InitTradeInfo() {
 
 bool OrderManagementSystem::InitRMS() {
   RiskRuleParams risk_params{};
-  risk_params.config = config_;
+  risk_params.config = &config_->rms_config;
   risk_params.account = &account_;
   risk_params.pos_calculator = &pos_calculator_;
   risk_params.order_map = &order_map_;
@@ -426,7 +350,7 @@ bool OrderManagementSystem::InitRMS() {
   rms_->AddRule(std::make_shared<PositionManager>());
   rms_->AddRule(std::make_shared<NoSelfTradeRule>());
   rms_->AddRule(std::make_shared<ThrottleRateLimit>());
-  if (!config_->no_receipt_mode) {
+  if (!config_->rms_config.no_receipt_mode) {
     rms_->AddRule(std::make_shared<StrategyNotifier>());
   }
   if (!rms_->Init(&risk_params)) {

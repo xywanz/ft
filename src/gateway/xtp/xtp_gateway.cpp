@@ -9,7 +9,7 @@ namespace ft {
 
 XtpGateway::XtpGateway() {}
 
-bool XtpGateway::Init(const Config& config) {
+bool XtpGateway::Init(const GatewayConfig& config) {
   if (config.trade_server_address.empty() && config.quote_server_address.empty()) {
     spdlog::error("[XtpGateway::Login] 交易柜台和行情服务器地址都未设置");
     return false;

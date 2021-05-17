@@ -24,7 +24,7 @@ XtpTradeApi::XtpTradeApi(XtpGateway* gateway) : gateway_(gateway) {
 
 XtpTradeApi::~XtpTradeApi() { Logout(); }
 
-bool XtpTradeApi::Login(const Config& config) {
+bool XtpTradeApi::Login(const GatewayConfig& config) {
   investor_id_ = config.investor_id;
 
   char protocol[32]{};

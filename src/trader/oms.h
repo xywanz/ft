@@ -29,7 +29,7 @@ class OrderManagementSystem {
  public:
   OrderManagementSystem();
 
-  bool Init(const Config& config);
+  bool Init(const FlareTraderConfig& config);
 
   void ProcessCmd();
 
@@ -40,8 +40,6 @@ class OrderManagementSystem {
   void operator()(const OrderCancelRejection& rsp);
 
  private:
-  void ProcessPubSubCmd();
-  void ProcessQueueCmd();
   void ExecuteCmd(const TraderCommand& cmd);
 
   bool SendOrder(const TraderCommand& cmd);
@@ -72,7 +70,7 @@ class OrderManagementSystem {
 
  private:
   Gateway* gateway_{nullptr};
-  const Config* config_;
+  const FlareTraderConfig* config_;
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};

@@ -22,7 +22,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   explicit CtpTradeApi(CtpGateway *gateway);
   ~CtpTradeApi();
 
-  bool Login(const Config &config);
+  bool Login(const GatewayConfig &config);
   void Logout();
 
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr);
@@ -106,7 +106,7 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
  private:
   CtpGateway *gateway_;
   CtpUniquePtr<CThostFtdcTraderApi> trade_api_;
-  const Config *config_;
+  const GatewayConfig *config_;
 
   std::string front_addr_;
   std::string broker_id_;

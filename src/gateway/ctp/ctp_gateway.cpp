@@ -13,7 +13,7 @@ CtpGateway::CtpGateway() {}
 
 CtpGateway::~CtpGateway() {}
 
-bool CtpGateway::Init(const Config &config) {
+bool CtpGateway::Init(const GatewayConfig &config) {
   if (config.broker_id.size() > sizeof(TThostFtdcBrokerIDType) || config.broker_id.empty() ||
       config.investor_id.size() > sizeof(TThostFtdcUserIDType) || config.investor_id.empty() ||
       config.password.size() > sizeof(TThostFtdcPasswordType) || config.password.empty()) {

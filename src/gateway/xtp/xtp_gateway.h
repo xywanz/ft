@@ -20,7 +20,7 @@ class XtpGateway : public Gateway {
  public:
   XtpGateway();
 
-  bool Init(const Config& config) override;
+  bool Init(const GatewayConfig& config) override;
   void Logout() override;
   bool Subscribe(const std::vector<std::string>& sub_list) override;
 

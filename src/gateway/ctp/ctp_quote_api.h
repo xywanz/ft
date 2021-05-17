@@ -21,7 +21,7 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   explicit CtpQuoteApi(CtpGateway *gateway);
   ~CtpQuoteApi();
 
-  bool Login(const Config &config);
+  bool Login(const GatewayConfig &config);
 
   void Logout();
 

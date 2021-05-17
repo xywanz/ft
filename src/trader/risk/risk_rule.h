@@ -19,7 +19,7 @@ namespace ft {
 using OrderMap = std::unordered_map<uint64_t, Order>;
 
 struct RiskRuleParams {
-  const Config* config;
+  const RmsConfig* config;
   Account* account;
   PositionCalculator* pos_calculator;
   OrderMap* order_map;

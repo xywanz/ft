@@ -23,7 +23,7 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   explicit XtpTradeApi(XtpGateway* gateway);
   ~XtpTradeApi();
 
-  bool Login(const Config& config);
+  bool Login(const GatewayConfig& config);
   void Logout();
 
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr);

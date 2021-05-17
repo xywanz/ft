@@ -20,7 +20,7 @@ namespace ft {
 
 class BackTestGateway : public Gateway {
  public:
-  bool Init(const Config& config) override;
+  bool Init(const GatewayConfig& config) override;
   void Logout() override;
 
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;

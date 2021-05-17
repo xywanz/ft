@@ -6,7 +6,6 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/trader/gateway.h"
-#include "ft/utils/config_loader.h"
 #include "spdlog/spdlog.h"
 
 static void Usage() {
@@ -29,10 +28,10 @@ int main() {
 
   spdlog::set_level(spdlog::level::from_str(loglevel));
 
-  ft::Config config;
-  ft::LoadConfig(login_yml, &config);
+  ft::FlareTraderConfig config;
+  config.Load(login_yml);
 
-  void* handle = dlopen(config.api.c_str(), RTLD_LAZY);
+  void* handle = dlopen(config.gateway_config.api.c_str(), RTLD_LAZY);
   auto gateway_ctor = reinterpret_cast<ft::GatewayCreateFunc>(dlsym(handle, "CreateGateway"));
   if (!gateway_ctor) {
     spdlog::error("symbol CreateGateway not found");
@@ -43,7 +42,7 @@ int main() {
     spdlog::error("failed to create gateway");
     exit(EXIT_FAILURE);
   }
-  if (!gateway->Init(config)) {
+  if (!gateway->Init(config.gateway_config)) {
     spdlog::error("failed to init gateway");
     exit(EXIT_FAILURE);
   }

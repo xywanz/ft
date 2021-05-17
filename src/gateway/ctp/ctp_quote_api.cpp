@@ -18,7 +18,7 @@ CtpQuoteApi::~CtpQuoteApi() {
   }
 }
 
-bool CtpQuoteApi::Login(const Config &config) {
+bool CtpQuoteApi::Login(const GatewayConfig &config) {
   quote_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!quote_api_) {
     spdlog::error("[CtpQuoteApi::Login] Failed to create CTP MD API");

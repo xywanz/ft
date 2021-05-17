@@ -1,6 +1,7 @@
 
 add_library(base STATIC
-    contract_table.cpp)
+    contract_table.cpp
+    config.cpp)
 add_library(ft::base ALIAS base)
 
 target_include_directories(base PRIVATE "${PROJECT_SOURCE_DIR}/src")

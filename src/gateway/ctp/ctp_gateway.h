@@ -21,7 +21,7 @@ class CtpGateway : public Gateway {
   CtpGateway();
   ~CtpGateway();
 
-  bool Init(const Config &config) override;
+  bool Init(const GatewayConfig &config) override;
   void Logout() override;
 
   bool SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) override;
