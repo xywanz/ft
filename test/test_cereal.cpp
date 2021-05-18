@@ -5,7 +5,7 @@
 #include <chrono>
 #include <string>
 
-#include "ft/component/pubsub/serializable.h"
+#include "ft/component/serializable.h"
 
 struct MyData : public ft::pubsub::Serializable<MyData> {
   int a;
