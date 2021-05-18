@@ -44,7 +44,24 @@ bool CtpTradeApi::Login(const GatewayConfig &config) {
   while (status_.load(std::memory_order::memory_order_relaxed) == 0) {
     continue;
   }
-  return status_.load(std::memory_order::memory_order_acquire) == 1;
+  if (status_.load(std::memory_order::memory_order_acquire) != 1) {
+    return false;
+  }
+
+  if (config_->cancel_outstanding_orders_on_startup) {
+    spdlog::debug("[CtpTradeApi::Login] Cancel outstanding orders on startup");
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    CThostFtdcQryOrderField req{};
+    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
+    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
+
+    if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
+      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
+      return false;
+    }
+  }
+  return true;
 }
 
 void CtpTradeApi::Logout() {
@@ -180,21 +197,7 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
   spdlog::debug(
       "[CtpTradeApi::OnRspSettlementInfoConfirm] Success. Settlement "
       "confirmed");
-
-  if (config_->cancel_outstanding_orders_on_startup) {
-    spdlog::debug("[CtpTradeApi::Login] Cancel outstanding orders on startup");
-
-    CThostFtdcQryOrderField req{};
-    strncpy(req.BrokerID, broker_id_.c_str(), sizeof(req.BrokerID));
-    strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
-
-    if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
-      status_.store(-1, std::memory_order::memory_order_release);
-    }
-  } else {
-    status_.store(1, std::memory_order::memory_order_release);
-  }
+  status_.store(1, std::memory_order::memory_order_release);
 }
 
 void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,

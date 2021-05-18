@@ -11,8 +11,8 @@ bool FlareTraderConfig::Load(const std::string& file) {
   try {
     YAML::Node node = YAML::LoadFile(file);
 
-    auto oms_item = node["oms_config"];
-    oms_config.contract_file = oms_item["contract_file"].as<std::string>("");
+    auto global_item = node["global"];
+    global_config.contract_file = global_item["contract_file"].as<std::string>("");
 
     auto gateway_item = node["gateway_config"];
     gateway_config.api = gateway_item["api"].as<std::string>();
@@ -27,13 +27,25 @@ bool FlareTraderConfig::Load(const std::string& file) {
     gateway_config.arg1 = gateway_item["arg1"].as<std::string>("");
     gateway_config.arg2 = gateway_item["arg2"].as<std::string>("");
     gateway_config.arg3 = gateway_item["arg3"].as<std::string>("");
+    gateway_config.cancel_outstanding_orders_on_startup =
+        gateway_item["cancel_outstanding_orders_on_startup"].as<bool>(true);
 
     auto rms_item = node["rms_config"];
-    rms_config.no_receipt_mode = rms_item["no_receipt_mode"].as<bool>(true);
     rms_config.throttle_rate_limit_period_ms =
         rms_item["throttle_rate_limit_period_ms"].as<uint64_t>(0);
     rms_config.throttle_rate_order_limit = rms_item["throttle_rate_order_limit"].as<uint64_t>(0);
     rms_config.throttle_rate_volume_limit = rms_item["throttle_rate_volume_limit"].as<uint64_t>(0);
+
+    auto strategy_item_list = node["strategy_list"];
+    for (auto strategy_item : strategy_item_list) {
+      StrategyConfig strategy_config;
+      strategy_config.strategy_name = strategy_item["name"].as<std::string>();
+      strategy_config.trade_mq_name = strategy_item["trade_mq"].as<std::string>();
+      strategy_config.rsp_mq_name = strategy_item["rsp_mq"].as<std::string>();
+      strategy_config.md_mq_name = strategy_item["md_mq"].as<std::string>();
+      strategy_config_list.emplace_back(std::move(strategy_config));
+    }
+
     return true;
   } catch (YAML::Exception& e) {
     spdlog::error("{}", e.what());

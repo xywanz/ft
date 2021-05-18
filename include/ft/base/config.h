@@ -8,6 +8,10 @@
 
 namespace ft {
 
+struct GlobalConfig {
+  std::string contract_file;
+};
+
 struct OmsConfig {
   std::string contract_file;
 };
@@ -32,19 +36,27 @@ struct GatewayConfig {
 };
 
 struct RmsConfig {
-  bool no_receipt_mode = false;
-
   uint64_t throttle_rate_limit_period_ms = 0;
   uint64_t throttle_rate_order_limit = 0;
   uint64_t throttle_rate_volume_limit = 0;
 };
 
+struct StrategyConfig {
+  std::string strategy_name;
+  std::string trade_mq_name;
+  std::string rsp_mq_name;
+  std::string md_mq_name;
+  std::vector<std::string> subscription_list;
+};
+
 struct FlareTraderConfig {
   bool Load(const std::string& file);
 
+  GlobalConfig global_config;
   OmsConfig oms_config;
   GatewayConfig gateway_config;
   RmsConfig rms_config;
+  std::vector<StrategyConfig> strategy_config_list;
 };
 
 }  // namespace ft

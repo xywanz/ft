@@ -15,6 +15,8 @@
 #include "ft/base/trade_msg.h"
 #include "ft/component/position_calculator.h"
 #include "ft/component/pubsub/publisher.h"
+#include "ft/component/yijinjing/journal/JournalReader.h"
+#include "ft/component/yijinjing/journal/JournalWriter.h"
 #include "ft/trader/gateway.h"
 #include "ft/utils/redis_position_helper.h"
 #include "ft/utils/spinlock.h"
@@ -53,6 +55,9 @@ class OrderManagementSystem {
   bool InitPositions();
   bool InitTradeInfo();
   bool InitRMS();
+  bool InitMQ();
+
+  void SendRspToStrategy(const Order& order, int this_traded, double price, int error_code);
 
   void OnTick(const TickData& tick);
 
@@ -71,6 +76,10 @@ class OrderManagementSystem {
  private:
   Gateway* gateway_{nullptr};
   const FlareTraderConfig* config_;
+
+  std::vector<yijinjing::JournalReaderPtr> trade_msg_readers_;
+  std::vector<yijinjing::JournalWriterPtr> rsp_writers_;
+  std::map<std::string, std::size_t> strategy_name_to_index_;
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};

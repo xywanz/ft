@@ -7,13 +7,17 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/base/trade_msg.h"
-#include "ft/component/pubsub/publisher.h"
+#include "ft/component/yijinjing/journal/JournalWriter.h"
 
 namespace ft {
 
 class OrderSender {
  public:
-  OrderSender() : cmd_pub_("ipc://trade.ft_trader.ipc") {}
+  OrderSender() {}
+
+  void Init(const std::string& trade_mq_name) {
+    cmd_sender_ = yijinjing::JournalWriter::create(".", trade_mq_name, "order_sender");
+  }
 
   void SetStrategyId(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
@@ -83,7 +87,9 @@ class OrderSender {
     cmd.order_req.flags = flags_;
     cmd.order_req.without_check = false;
 
-    cmd_pub_.Publish(ft_cmd_topic_, cmd);
+    std::string buf;
+    cmd.SerializeToString(&buf);
+    cmd_sender_->write_str(buf, 0);
   }
 
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
@@ -101,7 +107,9 @@ class OrderSender {
     cmd.type = CMD_CANCEL_ORDER;
     cmd.cancel_req.order_id = order_id;
 
-    cmd_pub_.Publish(ft_cmd_topic_, cmd);
+    std::string buf;
+    cmd.SerializeToString(&buf);
+    cmd_sender_->write_str(buf, 0);
   }
 
   void CancelForTicker(const std::string& ticker) {
@@ -112,7 +120,9 @@ class OrderSender {
     cmd.type = CMD_CANCEL_TICKER;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
-    cmd_pub_.Publish(ft_cmd_topic_, cmd);
+    std::string buf;
+    cmd.SerializeToString(&buf);
+    cmd_sender_->write_str(buf, 0);
   }
 
   void CancelAll() {
@@ -120,7 +130,9 @@ class OrderSender {
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ALL;
 
-    cmd_pub_.Publish(ft_cmd_topic_, cmd);
+    std::string buf;
+    cmd.SerializeToString(&buf);
+    cmd_sender_->write_str(buf, 0);
   }
 
   void SendNotification(uint64_t signal) {
@@ -129,12 +141,14 @@ class OrderSender {
     cmd.type = CMD_NOTIFY;
     cmd.notification.signal = signal;
 
-    cmd_pub_.Publish(ft_cmd_topic_, cmd);
+    std::string buf;
+    cmd.SerializeToString(&buf);
+    cmd_sender_->write_str(buf, 0);
   }
 
  private:
   StrategyIdType strategy_id_;
-  pubsub::Publisher cmd_pub_;
+  yijinjing::JournalWriterPtr cmd_sender_;
   std::string ft_cmd_topic_;
   OrderFlag flags_{0};
 };

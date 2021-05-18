@@ -8,6 +8,7 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/component/pubsub/subscriber.h"
+#include "ft/component/yijinjing/journal/Timer.h"
 #include "ft/utils/lockfree-queue/queue.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
@@ -15,7 +16,6 @@
 #include "trader/risk/common/fund_manager.h"
 #include "trader/risk/common/no_self_trade.h"
 #include "trader/risk/common/position_manager.h"
-#include "trader/risk/common/strategy_notifier.h"
 #include "trader/risk/common/throttle_rate_limit.h"
 
 namespace ft {
@@ -29,25 +29,33 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
 
   config_ = &config;
 
-  if (!InitGateway()) {
-    return false;
-  }
-
   if (!InitContractTable()) {
     return false;
   }
 
+  if (!InitMQ()) {
+    return false;
+  }
+
+  if (!InitGateway()) {
+    return false;
+  }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
   if (!InitAccount()) {
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   if (!InitPositions()) {
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   if (!InitTradeInfo()) {
     return false;
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   if (!InitRMS()) {
     return false;
@@ -61,9 +69,6 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
   // 启动个线程去定时查询资金账户信息
   timer_thread_.AddTask(15 * 1000, std::mem_fn(&OrderManagementSystem::OnTimer), this);
   timer_thread_.Start();
-
-  spdlog::info("ft_trader inited");
-  is_logon_ = true;
 
   std::thread([this] {
     auto* rsp_rb = gateway_->GetOrderRspRB();
@@ -83,10 +88,24 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
     }
   }).detach();
 
+  spdlog::info("ft_trader inited");
+  is_logon_ = true;
+
   return true;
 }
 
 void OrderManagementSystem::ProcessCmd() {
+  for (;;) {
+    for (auto& reader : trade_msg_readers_) {
+      auto frame = reader->getNextFrame();
+      if (frame) {
+        auto* data = reinterpret_cast<char*>(frame->getData());
+        TraderCommand cmd;
+        cmd.ParseFromString(data, frame->getDataLength());
+        ExecuteCmd(cmd);
+      }
+    }
+  }
   pubsub::Subscriber cmd_sub("ipc://trade.ft_trader.ipc");
 
   auto ft_cmd_topic = std::string("ft_cmd_") + std::to_string(account_.account_id).substr(0, 4);
@@ -173,6 +192,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
     if (error_code != NO_ERROR) {
       spdlog::error("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
       rms_->OnOrderRejected(&order, error_code);
+      SendRspToStrategy(order, 0, 0.0, error_code);
       return false;
     }
   }
@@ -183,6 +203,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
                   ToString(req.type), req.volume, req.price);
 
     rms_->OnOrderRejected(&order, ERR_SEND_FAILED);
+    SendRspToStrategy(order, 0, 0.0, ERR_SEND_FAILED);
     return false;
   }
 
@@ -234,33 +255,9 @@ bool OrderManagementSystem::InitGateway() {
 }
 
 bool OrderManagementSystem::InitContractTable() {
-  if (!config_->oms_config.contract_file.empty()) {
-    if (ContractTable::Init(config_->oms_config.contract_file)) {
-      return true;
-    }
-    spdlog::warn("failed to load contract table from file {}，try to query from gateway later",
-                 config_->oms_config.contract_file);
-  }
-
-  auto qry_res_rb = gateway_->GetQryResultRB();
-  GatewayQueryResult qry_res;
-
-  if (!ContractTable::is_inited()) {
-    std::vector<Contract> contracts;
-    if (!gateway_->QueryContracts()) {
-      spdlog::error("failed to query contracts.");
-      return false;
-    }
-    for (;;) {
-      qry_res_rb->GetWithBlocking(&qry_res);
-      if (qry_res.msg_type == GatewayMsgType::kContractEnd) {
-        break;
-      }
-      assert(qry_res.msg_type == GatewayMsgType::kContract);
-      contracts.emplace_back(std::get<Contract>(qry_res.data));
-    }
-    ContractTable::Init(std::move(contracts));
-    ContractTable::Store("./contracts.csv");
+  if (!ContractTable::Init(config_->global_config.contract_file)) {
+    spdlog::error("failed to init contract table");
+    return false;
   }
   return true;
 }
@@ -350,14 +347,58 @@ bool OrderManagementSystem::InitRMS() {
   rms_->AddRule(std::make_shared<PositionManager>());
   rms_->AddRule(std::make_shared<NoSelfTradeRule>());
   rms_->AddRule(std::make_shared<ThrottleRateLimit>());
-  if (!config_->rms_config.no_receipt_mode) {
-    rms_->AddRule(std::make_shared<StrategyNotifier>());
-  }
   if (!rms_->Init(&risk_params)) {
     spdlog::error("failed to init rms");
     return false;
   }
   return true;
+}
+
+bool OrderManagementSystem::InitMQ() {
+  for (auto& strategy_conf : config_->strategy_config_list) {
+    if (strategy_conf.strategy_name.size() >= sizeof(StrategyIdType)) {
+      spdlog::error("OMS::InitMQ. max len of stratey name is {}", sizeof(StrategyIdType) - 1);
+      return false;
+    }
+    auto rsp_writer =
+        yijinjing::JournalWriter::create(".", strategy_conf.rsp_mq_name, "rsp_writer");
+    rsp_writers_.emplace_back(rsp_writer);
+    strategy_name_to_index_.emplace(strategy_conf.strategy_name, rsp_writers_.size() - 1);
+
+    auto trade_msg_reader = yijinjing::JournalReader::create(
+        ".", strategy_conf.trade_mq_name, yijinjing::getNanoTime(), "trade_msg_reader");
+    trade_msg_readers_.emplace_back(trade_msg_reader);
+  }
+
+  return true;
+}
+
+void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_traded, double price,
+                                              int error_code) {
+  auto it = strategy_name_to_index_.find(order.strategy_id);
+  if (it == strategy_name_to_index_.end()) {
+    spdlog::warn("failed to send rsp: unknown strategy name");
+    return;
+  }
+  auto index = it->second;
+
+  OrderResponse rsp{};
+  rsp.client_order_id = order.client_order_id;
+  rsp.order_id = order.req.order_id;
+  rsp.ticker_id = order.req.contract->ticker_id;
+  rsp.direction = order.req.direction;
+  rsp.offset = order.req.offset;
+  rsp.original_volume = order.req.volume;
+  rsp.traded_volume = order.traded_volume;
+  rsp.price = order.req.price;
+  rsp.this_traded = this_traded;
+  rsp.this_traded_price = price;
+  rsp.completed = order.canceled_volume + order.traded_volume == order.req.volume;
+  rsp.error_code = error_code;
+
+  std::string buf;
+  rsp.SerializeToString(&buf);
+  rsp_writers_[index]->write_str(buf, 0);
 }
 
 Gateway* OrderManagementSystem::LoadGateway(const std::string& gtw_lib_file) {
@@ -451,6 +492,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
 
   order.accepted = true;
   rms_->OnOrderAccepted(&order);
+  SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
   spdlog::info(
       "[OMS::OnOrderAccepted] order accepted. OrderID: {}, {}, {}{}, Volume:{}, Price:{:.2f}, "
@@ -469,6 +511,7 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
 
   auto& order = iter->second;
   rms_->OnOrderRejected(&order, ERR_REJECTED);
+  SendRspToStrategy(order, 0, 0.0, ERR_REJECTED);
 
   spdlog::error("[OMS::OnOrderRejected] order rejected. {}. {}, {}{}, Volume:{}, Price:{:.3f}",
                 rsp.reason, order.req.contract->ticker, ToString(order.req.direction),
@@ -533,6 +576,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   if (!order.accepted) {
     order.accepted = true;
     rms_->OnOrderAccepted(&order);
+    SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
     spdlog::info(
         "[OMS::OnOrderAccepted] order accepted. OrderID: {}, {}, {}{}, Volume:{}, Price:{:.2f}, "
@@ -550,6 +594,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
       ToString(order.req.offset), rsp.volume, rsp.price, order.traded_volume, order.req.volume);
 
   rms_->OnOrderTraded(&order, &rsp);
+  SendRspToStrategy(order, rsp.volume, rsp.price, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(
@@ -579,6 +624,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
                ToString(order.req.offset), rsp.order_id, rsp.canceled_volume);
 
   rms_->OnOrderCanceled(&order, rsp.canceled_volume);
+  SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     spdlog::info(

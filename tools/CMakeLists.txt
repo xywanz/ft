@@ -6,10 +6,10 @@ target_link_directories(contract_collector PRIVATE "${PROJECT_SOURCE_DIR}/third_
 target_link_libraries(contract_collector ft::utils thosttraderapi_se dl)
 
 add_executable(send_order send_order.cpp)
-target_link_libraries(send_order ft::utils)
+target_link_libraries(send_order yijinjing ft::utils)
 
 add_executable(cancel_order cancel_order.cpp)
-target_link_libraries(cancel_order ft::utils)
+target_link_libraries(cancel_order yijinjing ft::utils)
 
 add_executable(query_position query_position.cpp)
 target_link_libraries(query_position ft::utils)

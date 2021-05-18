@@ -26,10 +26,10 @@ static void Usage() {
 }
 
 int main() {
-  std::string contracts_file = getarg("../config/contracts.csv", "--contracts");
+  std::string config_file = getarg("", "--config");
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
-  std::string strategy_id = getarg("strategy", "--id");
+  std::string strategy_id = getarg("strategy", "--name");
   uint64_t account_id = getarg(0ULL, "--account");
   bool backtest_mode = getarg(false, "--backtest");
   bool help = getarg(false, "-h", "--help", "-?");
@@ -43,18 +43,24 @@ int main() {
 
   if (account_id == 0) {
     spdlog::error("Please input account id");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
-  if (!ft::ContractTable::Init(contracts_file)) {
+  ft::FlareTraderConfig config;
+  if (!config.Load(config_file)) {
+    spdlog::error("failed to load config file {}", config_file);
+    return false;
+  }
+
+  if (!ft::ContractTable::Init(config.global_config.contract_file)) {
     spdlog::error("Invalid file of contract list");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   void* handle = dlopen(strategy_file.c_str(), RTLD_LAZY);
   if (!handle) {
     spdlog::error("Invalid strategy .so");
-    exit(-1);
+    exit(EXIT_FAILURE);
   }
 
   auto strategy_ctor = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
@@ -62,15 +68,26 @@ int main() {
     char* error_str = dlerror();
     if (error_str) {
       spdlog::error("CreateStrategy not found. error: {}", error_str);
-      exit(-1);
+      exit(EXIT_FAILURE);
     }
   }
 
   auto strategy = strategy_ctor();
-  strategy->SetStrategyId(strategy_id);
-  strategy->SetAccountId(account_id);
-  strategy->SetBacktestMode(backtest_mode);
+  for (auto& strategy_conf : config.strategy_config_list) {
+    if (strategy_conf.strategy_name == strategy_id) {
+      if (!strategy->Init(strategy_conf)) {
+        spdlog::error("failed to init strategy");
+        exit(EXIT_FAILURE);
+      }
+      strategy->SetStrategyId(strategy_id);
+      strategy->SetAccountId(account_id);
+      strategy->SetBacktestMode(backtest_mode);
 
-  spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
-  strategy->Run();
+      spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
+      strategy->Run();
+    }
+  }
+
+  spdlog::error("strategy config not found. strategy name: {}", strategy_id);
+  exit(EXIT_FAILURE);
 }

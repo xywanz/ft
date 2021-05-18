@@ -5,7 +5,6 @@ add_executable(ft_trader
     risk/common/fund_manager.cpp
     risk/common/no_self_trade.cpp
     risk/common/position_manager.cpp
-    risk/common/strategy_notifier.cpp
     risk/common/throttle_rate_limit.cpp
     risk/rms.cpp
     main.cpp)
@@ -15,5 +14,6 @@ target_link_libraries(ft_trader PRIVATE
     ft::component
     ft::utils
     ft::ft_third_party
+    yijinjing
     dl
     pthread)
