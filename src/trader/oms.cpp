@@ -61,8 +61,7 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
     return false;
   }
 
-  if (!gateway_->Subscribe(config.gateway_config.subscription_list)) {
-    spdlog::error("failed to subscribe market data");
+  if (!SubscribeMarketData()) {
     return false;
   }
 
@@ -368,8 +367,37 @@ bool OrderManagementSystem::InitMQ() {
     auto trade_msg_reader = yijinjing::JournalReader::create(
         ".", strategy_conf.trade_mq_name, yijinjing::getNanoTime(), "trade_msg_reader");
     trade_msg_readers_.emplace_back(trade_msg_reader);
+
+    std::set<std::string> sub_set(strategy_conf.subscription_list.begin(),
+                                  strategy_conf.subscription_list.end());
+    if (!sub_set.empty()) {
+      auto md_writer =
+          yijinjing::JournalWriter::create(".", strategy_conf.md_mq_name, "oms_md_writer");
+      for (auto& ticker : sub_set) {
+        auto* contract = ContractTable::get_by_ticker(ticker);
+        if (!contract) {
+          spdlog::error("OMS::InitMQ. failed to subscribe market data {}. contract not found.",
+                        ticker);
+          return false;
+        }
+        md_dispatch_map_[contract->ticker_id].emplace_back(md_writer);
+      }
+      subscription_set_.merge(sub_set);
+    }
   }
 
+  return true;
+}
+
+bool OrderManagementSystem::SubscribeMarketData() {
+  std::vector<std::string> sub_list;
+  for (auto& ticker : subscription_set_) {
+    sub_list.emplace_back(ticker);
+  }
+  if (!gateway_->Subscribe(sub_list)) {
+    spdlog::error("failed to subscribe market data");
+    return false;
+  }
   return true;
 }
 

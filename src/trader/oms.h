@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -56,6 +57,7 @@ class OrderManagementSystem {
   bool InitTradeInfo();
   bool InitRMS();
   bool InitMQ();
+  bool SubscribeMarketData();
 
   void SendRspToStrategy(const Order& order, int this_traded, double price, int error_code);
 
@@ -80,6 +82,9 @@ class OrderManagementSystem {
   std::vector<yijinjing::JournalReaderPtr> trade_msg_readers_;
   std::vector<yijinjing::JournalWriterPtr> rsp_writers_;
   std::map<std::string, std::size_t> strategy_name_to_index_;
+
+  std::set<std::string> subscription_set_;
+  std::map<uint32_t, std::vector<yijinjing::JournalWriterPtr>> md_dispatch_map_;
 
   volatile bool is_logon_{false};
   uint64_t next_oms_order_id_{1};
