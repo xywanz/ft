@@ -15,7 +15,6 @@
 #include "ft/base/market_data.h"
 #include "ft/base/trade_msg.h"
 #include "ft/component/position_calculator.h"
-#include "ft/component/pubsub/publisher.h"
 #include "ft/component/yijinjing/journal/JournalReader.h"
 #include "ft/component/yijinjing/journal/JournalWriter.h"
 #include "ft/trader/gateway.h"
@@ -95,7 +94,6 @@ class OrderManagementSystem {
   RedisPositionSetter redis_pos_updater_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
-  pubsub::Publisher md_pusher_;
   TimerThread timer_thread_;
 };
 

@@ -7,9 +7,7 @@
 #include <utility>
 
 #include "ft/base/contract_table.h"
-#include "ft/component/pubsub/subscriber.h"
 #include "ft/component/yijinjing/journal/Timer.h"
-#include "ft/utils/lockfree-queue/queue.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
 #include "spdlog/spdlog.h"
@@ -20,9 +18,7 @@
 
 namespace ft {
 
-OrderManagementSystem::OrderManagementSystem() : md_pusher_("ipc://md.ft_trader.ipc") {
-  rms_ = std::make_unique<RiskManagementSystem>();
-}
+OrderManagementSystem::OrderManagementSystem() { rms_ = std::make_unique<RiskManagementSystem>(); }
 
 bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
   spdlog::info("compiling time: {} {}", __TIME__, __DATE__);
@@ -105,18 +101,6 @@ void OrderManagementSystem::ProcessCmd() {
       }
     }
   }
-  pubsub::Subscriber cmd_sub("ipc://trade.ft_trader.ipc");
-
-  auto ft_cmd_topic = std::string("ft_cmd_") + std::to_string(account_.account_id).substr(0, 4);
-  if (!cmd_sub.Subscribe<TraderCommand>(ft_cmd_topic,
-                                        [this](TraderCommand* cmd) { ExecuteCmd(*cmd); })) {
-    spdlog::error("cannot subscribe order request");
-    exit(EXIT_FAILURE);
-  }
-
-  spdlog::info("ft_trader start to retrieve orders from ipc://trade.ft_trader.ipc, topic:{}",
-               ft_cmd_topic);
-  cmd_sub.Start();
 }
 
 void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
@@ -478,8 +462,12 @@ void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
 void OrderManagementSystem::OnTick(const TickData& tick) {
   auto contract = ContractTable::get_by_index(tick.ticker_id);
   assert(contract);
-  if (!md_pusher_.Publish(contract->ticker, tick)) {
-    spdlog::error("failed to publish tick data. ticker: {}", contract->ticker);
+
+  auto& writers = md_dispatch_map_[contract->ticker_id];
+  std::string buf;
+  tick.SerializeToString(&buf);
+  for (auto& writer : writers) {
+    writer->write_str(buf, 0);
   }
 
   spdlog::trace("[OMS::OnTick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick.ask[0],

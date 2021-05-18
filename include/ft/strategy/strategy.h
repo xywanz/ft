@@ -10,7 +10,6 @@
 #include "ft/base/config.h"
 #include "ft/base/market_data.h"
 #include "ft/base/trade_msg.h"
-#include "ft/component/pubsub/subscriber.h"
 #include "ft/component/yijinjing/journal/JournalReader.h"
 #include "ft/component/yijinjing/journal/JournalWriter.h"
 #include "ft/strategy/algo_order/algo_order_engine.h"
@@ -134,7 +133,7 @@ class Strategy {
   StrategyIdType strategy_id_;
   OrderSender sender_;
   RedisPositionGetter pos_getter_;
-  pubsub::Subscriber md_sub_;
+  yijinjing::JournalReaderPtr md_reader_;
   yijinjing::JournalReaderPtr rsp_reader_;
   bool backtest_mode_ = false;
 
