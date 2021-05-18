@@ -161,14 +161,12 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick{};
+  tick.local_datetime = datetime::Datetime::now();
   tick.source = MarketDataSource::kCTP;
   tick.ticker_id = contract->ticker_id;
-
-  auto today = datetime::Date::today();
-  tick.datetime =
-      datetime::strptime(fmt::format("{:04}{:02}{:02} {}.{:03}", today.year(), today.month(),
-                                     today.day(), md->UpdateTime, md->UpdateMillisec),
-                         "%Y%m%d %H:%M:%S.%s");
+  tick.exchange_datetime = datetime::strptime(
+      fmt::format("{} {}.{:03}", md->ActionDay, md->UpdateTime, md->UpdateMillisec),
+      "%Y%m%d %H:%M:%S.%s");
 
   tick.volume = md->Volume;
   tick.turnover = md->Turnover;
@@ -203,10 +201,10 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   tick.bid_volume[4] = md->BidVolume5;
 
   spdlog::trace(
-      "[CtpQuoteApi::OnRtnDepthMarketData] {}, Datetime:{}, TimeUS:{}, "
+      "[CtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime:{}, TimeUS:{}, "
       "LastPrice:{:.2f}, Volume:{}, Turnover:{}, OpenInterest:{}",
-      contract->ticker, md->ActionDay, tick.datetime.ToString(), tick.last_price, tick.volume,
-      tick.turnover, tick.open_interest);
+      contract->ticker, md->ActionDay, tick.exchange_datetime.ToString(), tick.last_price,
+      tick.volume, tick.turnover, tick.open_interest);
 
   gateway_->OnTick(tick);
 }

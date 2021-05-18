@@ -19,7 +19,8 @@ enum class MarketDataSource : uint8_t {
 
 struct TickData : public pubsub::Serializable<TickData> {
   MarketDataSource source;
-  datetime::Datetime datetime;
+  datetime::Datetime local_datetime;
+  datetime::Datetime exchange_datetime;
 
   uint32_t ticker_id;
   double last_price = 0;
@@ -42,9 +43,10 @@ struct TickData : public pubsub::Serializable<TickData> {
     double iopv;
   } etf;
 
-  SERIALIZABLE_FIELDS(source, datetime, ticker_id, last_price, open_price, highest_price,
-                      lowest_price, pre_close_price, upper_limit_price, lower_limit_price, volume,
-                      turnover, open_interest, ask, bid, ask_volume, bid_volume, etf.iopv);
+  SERIALIZABLE_FIELDS(source, local_datetime, exchange_datetime, ticker_id, last_price, open_price,
+                      highest_price, lowest_price, pre_close_price, upper_limit_price,
+                      lower_limit_price, volume, turnover, open_interest, ask, bid, ask_volume,
+                      bid_volume, etf.iopv);
 };
 
 }  // namespace ft

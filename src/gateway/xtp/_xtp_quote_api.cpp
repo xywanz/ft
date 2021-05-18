@@ -175,7 +175,8 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   TickData tick{};
   tick.source = MarketDataSource::kXTP;
   tick.ticker_id = contract->ticker_id;
-  tick.datetime =
+  tick.local_datetime = datetime::Datetime::now();
+  tick.exchange_datetime =
       datetime::strptime(fmt::format("{:017}", market_data->data_time), "%Y%m%d%H%M%S%s");
 
   tick.volume = market_data->qty;
@@ -232,10 +233,10 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   tick.bid_volume[4] = market_data->bid_qty[9];
 
   spdlog::trace(
-      "[XtpQuoteApi::OnRtnDepthMarketData] {}, TimeUS: {}, LastPrice:{:.2f}, "
+      "[XtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime: {}, LastPrice:{:.2f}, "
       "Volume:{}, Turnover:{}, Open Interest:{}",
-      market_data->ticker, tick.datetime.ToString(), tick.last_price, tick.volume, tick.turnover,
-      tick.open_interest);
+      market_data->ticker, tick.exchange_datetime.ToString(), tick.last_price, tick.volume,
+      tick.turnover, tick.open_interest);
 
   gateway_->OnTick(tick);
 }

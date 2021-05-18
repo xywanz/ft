@@ -21,7 +21,7 @@ void BarGenerator::OnTick(const TickData& tick) {
     new_1m_bar = true;
     bar_m1 = &bars_[tick.ticker_id];
     bar_m1->ticker_id = tick.ticker_id;
-  } else if (bar_iter->second.datetime.minute() != tick.datetime.minute()) {
+  } else if (bar_iter->second.datetime.minute() != tick.exchange_datetime.minute()) {
     bar_m1 = &bar_iter->second;
     if (m1_cb_) {
       m1_cb_(*bar_m1);
@@ -32,9 +32,9 @@ void BarGenerator::OnTick(const TickData& tick) {
   }
 
   if (new_1m_bar) {
-    bar_m1->datetime =
-        datetime::Datetime(tick.datetime.year(), tick.datetime.month(), tick.datetime.day(),
-                           tick.datetime.hour(), tick.datetime.minute());
+    bar_m1->datetime = datetime::Datetime(
+        tick.exchange_datetime.year(), tick.exchange_datetime.month(), tick.exchange_datetime.day(),
+        tick.exchange_datetime.hour(), tick.exchange_datetime.minute());
     bar_m1->open = tick.last_price;
     bar_m1->high = tick.last_price;
     bar_m1->low = tick.last_price;
