@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <string>
 
-#include "ft/component/pubsub/serializable.h"
+#include "ft/component/serializable.h"
 #include "ft/utils/datetime.h"
 
 namespace ft {

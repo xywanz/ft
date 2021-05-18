@@ -6,8 +6,8 @@
 #include <memory>
 #include <string>
 
-#include "ft/component/pubsub/serializable.h"
 #include "ft/component/pubsub/socket.h"
+#include "ft/component/serializable.h"
 
 namespace ft::pubsub {
 

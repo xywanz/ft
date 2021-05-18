@@ -1,7 +1,7 @@
 // Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_FT_COMPONENT_PUBSUB_SERIALIZABLE_H_
-#define FT_INCLUDE_FT_COMPONENT_PUBSUB_SERIALIZABLE_H_
+#ifndef FT_INCLUDE_FT_COMPONENT_SERIALIZABLE_H_
+#define FT_INCLUDE_FT_COMPONENT_SERIALIZABLE_H_
 
 #include <algorithm>
 #include <stdexcept>
@@ -143,4 +143,4 @@ class Serializable {
 
 }  // namespace ft::pubsub
 
-#endif  // FT_INCLUDE_FT_COMPONENT_PUBSUB_SERIALIZABLE_H_
+#endif  // FT_INCLUDE_FT_COMPONENT_SERIALIZABLE_H_

@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "ft/component/pubsub/serializable.h"
+#include "ft/component/serializable.h"
 #include "ft/component/pubsub/socket.h"
 
 namespace ft::pubsub {
