@@ -9,7 +9,6 @@ gateway_config:
   password: 1234567                                       # 必填。密码
   auth_code: 0000000000000000                             # 选填。认证码，CTP和XTP都需要
   app_id: simnow_client_test                              # 选填。CTP交易需要
-  subscription_list: [rb2010, rb2011]                     # 选填。要订阅的行情。格式为yaml数组
 
   # 下面9个都是各个Gateway自定义的参数，可选
   arg0:
@@ -45,3 +44,8 @@ rms_config:
   throttle_rate_limit_period_ms: 1000    # 流速的一个时间片，设置为0表示关闭流控功能
   throttle_rate_order_limit: 10          # 任意一个时间片内允许发送的订单个数，设置为0表示关闭该功能
   throttle_rate_volume_limit: 2000       # 任意一个时间片内允许发送的volume，设置为0表示关闭该功能
+
+
+strategy_list: [
+  {name: ctp_strategy0, trade_mq: ctp_strategy0_trade_mq, rsp_mq: ctp_strategy0_rsp_mq, md_mq: ctp_strategy0_md_mq, subscription_list: [IF2106]},
+]
