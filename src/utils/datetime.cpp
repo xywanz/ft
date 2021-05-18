@@ -286,13 +286,14 @@ Timedelta Datetime::operator-(const Datetime& rhs) const {
                                          microsecond() - rhs.microsecond());
 }
 
-// TODO(Kevin): 只能获取到精度为秒级的时间，需要支持获取到微秒级别
 Datetime Datetime::today() {
   std::tm tm;
-  std::time_t unix_sec = std::time(nullptr);
-  FastUnixSecondToDate(unix_sec, &tm);
+  struct timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  FastUnixSecondToDate(ts.tv_sec, &tm);
 
-  return Datetime(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+  return Datetime(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
+                  ts.tv_nsec / 1000);
 }
 
 std::string Timedelta::ToString() const {
