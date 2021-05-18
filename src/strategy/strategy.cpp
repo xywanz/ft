@@ -22,6 +22,26 @@ bool Strategy::Init(const StrategyConfig& config) {
 
 void Strategy::Run() {
   OnInit();
+
+  for (;;) {
+    auto frame = rsp_reader_->getNextFrame();
+    if (frame) {
+      OrderResponse rsp;
+      rsp.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
+      OnOrderResponse(rsp);
+    }
+
+    frame = md_reader_->getNextFrame();
+    if (frame) {
+      TickData tick;
+      tick.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
+      OnTick(tick);
+    }
+  }
+}
+
+void Strategy::RunBacktest() {
+  OnInit();
   if (backtest_mode_) {
     SendNotification(0);
   }
@@ -39,6 +59,7 @@ void Strategy::Run() {
       TickData tick;
       tick.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
       OnTick(tick);
+      SendNotification(0);
     }
   }
 }

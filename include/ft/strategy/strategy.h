@@ -40,6 +40,8 @@ class Strategy {
   // 仅供加载器调用，内部不可使用
   void Run();
 
+  void RunBacktest();
+
   // 策略启动后请勿更改id
   void SetStrategyId(const std::string& name) {
     strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);

@@ -84,7 +84,11 @@ int main() {
       strategy->SetBacktestMode(backtest_mode);
 
       spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
-      strategy->Run();
+      if (backtest_mode) {
+        strategy->RunBacktest();
+      } else {
+        strategy->Run();
+      }
     }
   }
 
