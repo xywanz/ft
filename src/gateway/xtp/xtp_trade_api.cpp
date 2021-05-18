@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <thread>
 
 #include "ft/base/contract_table.h"
 #include "ft/utils/misc.h"
@@ -363,7 +364,7 @@ void XtpTradeApi::OnQueryOrder(XTPQueryOrderRsp* order_info, XTPRI* error_info, 
 
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpTradeApi::OnQueryOrder] {}", error_info->error_msg);
-    status_.store(-1, std::memory_order::memory_order_release);
+    status_.store(1, std::memory_order::memory_order_release);
     return;
   }
 
