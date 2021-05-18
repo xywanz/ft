@@ -432,9 +432,9 @@ void OrderManagementSystem::OnAccount(const Account& account) {
   account_ = account;
   lock.unlock();
 
-  spdlog::info("[OMS::OnAccount] account_id:{} total_asset:{} cash:{} margin:{} frozen:{}",
-               account.account_id, account.total_asset, account.cash, account.margin,
-               account.frozen);
+  spdlog::debug("[OMS::OnAccount] account_id:{} total_asset:{} cash:{} margin:{} frozen:{}",
+                account.account_id, account.total_asset, account.cash, account.margin,
+                account.frozen);
 }
 
 void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
