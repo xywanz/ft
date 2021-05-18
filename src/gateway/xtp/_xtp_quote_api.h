@@ -35,26 +35,12 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
                          int32_t max_ask1_count) override;
 
  private:
-  void done() { is_done_ = true; }
-  void error() { is_error_ = true; }
-
-  bool wait_sync() {
-    while (!is_done_)
-      if (is_error_) return false;
-
-    is_done_ = false;
-    return true;
-  }
-
- private:
   XtpGateway* gateway_;
   XtpUniquePtr<XTP::API::QuoteApi> quote_api_;
-
   std::vector<std::string> subscribed_list_;
 
-  volatile bool is_logon_ = false;
-  volatile bool is_error_ = false;
-  volatile bool is_done_ = false;
+  std::vector<Contract> qry_contract_res_;
+  int query_count_ = 0;
 };
 
 }  // namespace ft

@@ -2,6 +2,8 @@
 
 #include "gateway/xtp/_xtp_quote_api.h"
 
+#include <thread>
+#include <utility>
 #include <vector>
 
 #include "ft/base/contract_table.h"
@@ -13,17 +15,9 @@ namespace ft {
 
 XtpQuoteApi::XtpQuoteApi(XtpGateway* gateway) : gateway_(gateway) {}
 
-XtpQuoteApi::~XtpQuoteApi() {
-  error();
-  Logout();
-}
+XtpQuoteApi::~XtpQuoteApi() { Logout(); }
 
 bool XtpQuoteApi::Login(const GatewayConfig& config) {
-  if (is_logon_) {
-    spdlog::error("[XtpQuoteApi::Login] Don't Login twice");
-    return false;
-  }
-
   uint32_t seed = time(nullptr);
   uint8_t client_id = rand_r(&seed) & 0xff;
   quote_api_.reset(XTP::API::QuoteApi::CreateQuoteApi(client_id, "."));
@@ -59,14 +53,12 @@ bool XtpQuoteApi::Login(const GatewayConfig& config) {
   }
 
   spdlog::debug("[XtpQuoteApi::Login] Success");
-  is_logon_ = true;
   return true;
 }
 
 void XtpQuoteApi::Logout() {
-  if (is_logon_) {
+  if (quote_api_) {
     quote_api_->Logout();
-    is_logon_ = false;
   }
 }
 
@@ -103,19 +95,15 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
 }
 
 bool XtpQuoteApi::QueryContracts() {
-  if (!is_logon_) {
-    spdlog::error("[XtpQuoteApi::QueryContractList] 未登录到quote服务器");
-    return false;
-  }
+  query_count_ = 0;
+  qry_contract_res_.clear();
 
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SH) != 0) {
     spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
     return false;
   }
-  if (!wait_sync()) {
-    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
-    return false;
-  }
+
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SZ) != 0) {
     spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
@@ -129,6 +117,8 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool
   if (is_error_rsp(error_info)) {
     spdlog::error("[XtpQuoteApi::OnQueryAllTickers] {}", error_info->error_msg);
     gateway_->OnQueryContractEnd();
+    qry_contract_res_.clear();
+    qry_contract_res_.shrink_to_fit();
     return;
   }
 
@@ -149,11 +139,21 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool
       contract.product_type = ProductType::kFund;
     contract.size = 1;
 
+    qry_contract_res_.emplace_back(std::move(contract));
     gateway_->OnQueryContract(contract);
   }
 
   if (is_last) {
-    gateway_->OnQueryContractEnd();
+    ++query_count_;
+    if (query_count_ == 2) {
+      for (auto& contract : qry_contract_res_) {
+        gateway_->OnQueryContract(contract);
+      }
+      gateway_->OnQueryContractEnd();
+    }
+
+    qry_contract_res_.clear();
+    qry_contract_res_.shrink_to_fit();
   }
 }
 
