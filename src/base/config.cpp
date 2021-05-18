@@ -23,6 +23,8 @@ bool FlareTraderConfig::Load(const std::string& file) {
     gateway_config.password = gateway_item["password"].as<std::string>("");
     gateway_config.auth_code = gateway_item["auth_code"].as<std::string>("");
     gateway_config.app_id = gateway_item["app_id"].as<std::string>("");
+    gateway_config.subscription_list =
+        gateway_item["subscription_list"].as<std::vector<std::string>>(std::vector<std::string>{});
     gateway_config.arg0 = gateway_item["arg0"].as<std::string>("");
     gateway_config.arg1 = gateway_item["arg1"].as<std::string>("");
     gateway_config.arg2 = gateway_item["arg2"].as<std::string>("");
