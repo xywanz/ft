@@ -461,7 +461,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
     spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Error Msg: {}",
                   gb2312_to_utf8(rsp_info->ErrorMsg));
     pos_cache_.clear();
-    gateway_->OnQueryContractEnd();
+    gateway_->OnQueryPositionEnd();
     return;
   }
 
