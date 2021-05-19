@@ -42,9 +42,7 @@ void Strategy::Run() {
 
 void Strategy::RunBacktest() {
   OnInit();
-  if (backtest_mode_) {
-    SendNotification(0);
-  }
+  SendNotification(0);
 
   for (;;) {
     auto frame = rsp_reader_->getNextFrame();
