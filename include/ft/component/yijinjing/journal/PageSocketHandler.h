@@ -27,13 +27,10 @@
 #include "ft/component/yijinjing/utils/YJJ_DECLARE.h"
 ///#include "log/KfLog.h"
 #include "ft/component/yijinjing/journal/PageSocketStruct.h"
-#include "ft/component/yijinjing/utils/json.hpp"
 #include "spdlog/spdlog.h"
 ///#include <boost/enable_shared_from_this.hpp>
 
 YJJ_NAMESPACE_START
-
-using json = nlohmann::json;
 
 /** utilities for socket usage */
 class IPageSocketUtil {
