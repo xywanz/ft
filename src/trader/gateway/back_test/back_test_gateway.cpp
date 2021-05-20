@@ -1,6 +1,6 @@
 // Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/back_test/back_test_gateway.h"
+#include "trader/gateway/back_test/back_test_gateway.h"
 
 #include <algorithm>
 #include <fstream>
@@ -302,7 +302,5 @@ void BackTestGateway::BackgroudTask() {
     }
   }
 }
-
-REGISTER_GATEWAY(::ft::BackTestGateway);
 
 }  // namespace ft

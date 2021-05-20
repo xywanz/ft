@@ -9,10 +9,10 @@
 
 #include "ThostFtdcMdApi.h"
 #include "ThostFtdcTraderApi.h"
-#include "ft/trader/gateway.h"
-#include "gateway/ctp/ctp_common.h"
-#include "gateway/ctp/ctp_quote_api.h"
-#include "gateway/ctp/ctp_trade_api.h"
+#include "trader/gateway/ctp/ctp_common.h"
+#include "trader/gateway/ctp/ctp_quote_api.h"
+#include "trader/gateway/ctp/ctp_trade_api.h"
+#include "trader/gateway/gateway.h"
 
 namespace ft {
 

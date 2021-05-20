@@ -224,8 +224,9 @@ void OrderManagementSystem::CancelAll() {
 }
 
 bool OrderManagementSystem::InitGateway() {
-  gateway_ = LoadGateway(config_->gateway_config.api);
+  gateway_ = CreateGateway(config_->gateway_config.api);
   if (!gateway_) {
+    spdlog::error("failed to create gateway");
     return false;
   }
 
@@ -411,20 +412,6 @@ void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_trade
   std::string buf;
   rsp.SerializeToString(&buf);
   rsp_writers_[index]->write_str(buf, 0);
-}
-
-Gateway* OrderManagementSystem::LoadGateway(const std::string& gtw_lib_file) {
-  void* gtw_handle = dlopen(gtw_lib_file.c_str(), RTLD_LAZY);
-  if (!gtw_handle) {
-    spdlog::error("failed to load gateway from {}", gtw_lib_file);
-    return nullptr;
-  }
-  auto gateway_ctor = reinterpret_cast<GatewayCreateFunc>(dlsym(gtw_handle, "CreateGateway"));
-  if (!gateway_ctor) {
-    spdlog::error("failed to init gateway: symbol CreateGateway not found，register your gateway");
-    return nullptr;
-  }
-  return gateway_ctor();
 }
 
 void OrderManagementSystem::OnAccount(const Account& account) {

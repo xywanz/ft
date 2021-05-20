@@ -17,10 +17,10 @@
 #include "ft/component/position_calculator.h"
 #include "ft/component/yijinjing/journal/JournalReader.h"
 #include "ft/component/yijinjing/journal/JournalWriter.h"
-#include "ft/trader/gateway.h"
 #include "ft/utils/redis_position_helper.h"
 #include "ft/utils/spinlock.h"
 #include "ft/utils/timer_thread.h"
+#include "trader/gateway/gateway.h"
 #include "trader/order.h"
 #include "trader/risk/rms.h"
 
@@ -72,10 +72,8 @@ class OrderManagementSystem {
 
   uint64_t next_order_id() { return next_oms_order_id_++; }
 
-  static Gateway* LoadGateway(const std::string& gtw_lib_file);
-
  private:
-  Gateway* gateway_{nullptr};
+  std::shared_ptr<Gateway> gateway_{nullptr};
   const FlareTraderConfig* config_;
 
   std::vector<yijinjing::JournalReaderPtr> trade_msg_readers_;

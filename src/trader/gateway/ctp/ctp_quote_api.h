@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "ThostFtdcMdApi.h"
-#include "ft/trader/gateway.h"
-#include "gateway/ctp/ctp_common.h"
+#include "trader/gateway/ctp/ctp_common.h"
+#include "trader/gateway/gateway.h"
 
 namespace ft {
 

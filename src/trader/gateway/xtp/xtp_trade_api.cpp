@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/xtp/xtp_trade_api.h"
+#include "trader/gateway/xtp/xtp_trade_api.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -9,8 +9,8 @@
 #include "ft/base/contract_table.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "gateway/xtp/xtp_gateway.h"
 #include "spdlog/spdlog.h"
+#include "trader/gateway/xtp/xtp_gateway.h"
 
 namespace ft {
 

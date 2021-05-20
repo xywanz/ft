@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/xtp/xtp_gateway.h"
+#include "trader/gateway/xtp/xtp_gateway.h"
 
 #include "ft/base/contract_table.h"
 #include "spdlog/spdlog.h"
@@ -59,7 +59,5 @@ bool XtpGateway::QueryAccount() { return trade_api_->QueryAccount(); }
 bool XtpGateway::QueryPositions() { return trade_api_->QueryPositions(); }
 
 bool XtpGateway::QueryTrades() { return trade_api_->QueryTrades(); }
-
-REGISTER_GATEWAY(::ft::XtpGateway);
 
 }  // namespace ft

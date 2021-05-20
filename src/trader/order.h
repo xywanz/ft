@@ -6,7 +6,7 @@
 #include <string>
 
 #include "ft/base/trade_msg.h"
-#include "ft/trader/msg.h"
+#include "trader/msg.h"
 
 namespace ft {
 

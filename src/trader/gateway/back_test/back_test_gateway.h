@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "ft/component/position_calculator.h"
-#include "ft/trader/gateway.h"
+#include "trader/gateway/gateway.h"
 
 namespace ft {
 

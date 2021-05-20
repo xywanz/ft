@@ -1,5 +1,7 @@
 # Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
+add_subdirectory(gateway)
+
 add_executable(ft_trader
     oms.cpp
     risk/common/fund_manager.cpp
@@ -15,5 +17,5 @@ target_link_libraries(ft_trader PRIVATE
     ft::utils
     ft::ft_third_party
     yijinjing
-    dl
+    gateway
     pthread)

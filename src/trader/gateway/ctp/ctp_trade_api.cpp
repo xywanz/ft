@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/ctp/ctp_trade_api.h"
+#include "trader/gateway/ctp/ctp_trade_api.h"
 
 #include <algorithm>
 #include <thread>
@@ -8,8 +8,8 @@
 #include "ThostFtdcTraderApi.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "gateway/ctp/ctp_gateway.h"
 #include "spdlog/spdlog.h"
+#include "trader/gateway/ctp/ctp_gateway.h"
 
 namespace ft {
 

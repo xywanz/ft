@@ -1,8 +1,10 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_INCLUDE_FT_TRADER_GATEWAY_H_
-#define FT_INCLUDE_FT_TRADER_GATEWAY_H_
+#ifndef FT_SRC_TRADER_GATEWAY_GATEWAY_H_
+#define FT_SRC_TRADER_GATEWAY_GATEWAY_H_
 
+#include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,8 +12,8 @@
 #include "ft/base/config.h"
 #include "ft/base/market_data.h"
 #include "ft/base/trade_msg.h"
-#include "ft/trader/msg.h"
 #include "ft/utils/ring_buffer.h"
+#include "trader/msg.h"
 
 namespace ft {
 
@@ -205,13 +207,21 @@ inline void Gateway::OnQueryContractEnd() {
 
 inline void Gateway::OnTick(const TickData& tick_data) { tick_rb_.PutWithBlocking(tick_data); }
 
-using GatewayCreateFunc = Gateway* (*)();
-using GatewayDestroyFunc = void (*)(Gateway*);
+using CreateGatewayFn = std::shared_ptr<Gateway> (*)();
+using GatewayCtorMap = std::map<std::string, CreateGatewayFn>;
+GatewayCtorMap& __GetGatewayCtorMap();
 
-#define REGISTER_GATEWAY(type)                                     \
-  extern "C" ::ft::Gateway* CreateGateway() { return new type(); } \
-  extern "C" void DestroyGateway(::ft::Gateway* p) { delete p; }
+std::shared_ptr<Gateway> CreateGateway(const std::string& name);
+
+#define REGISTER_GATEWAY(name, type)                                \
+  static std::shared_ptr<::ft::Gateway> __CreateGateway##type() {   \
+    return std::make_shared<type>();                                \
+  }                                                                 \
+  static const bool __is_##type##_registered [[gnu::unused]] = [] { \
+    ::ft::__GetGatewayCtorMap()[name] = &__CreateGateway##type;     \
+    return true;                                                    \
+  }();
 
 }  // namespace ft
 
-#endif  // FT_INCLUDE_FT_TRADER_GATEWAY_H_
+#endif  // FT_SRC_TRADER_GATEWAY_GATEWAY_H_

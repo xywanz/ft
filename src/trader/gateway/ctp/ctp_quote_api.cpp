@@ -1,11 +1,11 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/ctp/ctp_quote_api.h"
+#include "trader/gateway/ctp/ctp_quote_api.h"
 
 #include <utility>
 
-#include "gateway/ctp/ctp_gateway.h"
 #include "spdlog/spdlog.h"
+#include "trader/gateway/ctp/ctp_gateway.h"
 
 namespace ft {
 

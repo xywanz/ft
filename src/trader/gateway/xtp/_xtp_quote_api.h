@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
-#include "ft/trader/gateway.h"
-#include "gateway/xtp/xtp_common.h"
+#include "trader/gateway/gateway.h"
+#include "trader/gateway/xtp/xtp_common.h"
 #include "xtp_quote_api.h"
 
 namespace ft {

@@ -3,7 +3,7 @@
 add_executable(contract_collector contract_collector.cpp)
 target_include_directories(contract_collector PRIVATE "${PROJECT_SOURCE_DIR}/third_party/ctp/include")
 target_link_directories(contract_collector PRIVATE "${PROJECT_SOURCE_DIR}/third_party/ctp/lib")
-target_link_libraries(contract_collector ft::utils thosttraderapi_se dl)
+target_link_libraries(contract_collector ft::utils gateway)
 
 # add_executable(send_order send_order.cpp)
 # target_link_libraries(send_order yijinjing ft::utils)

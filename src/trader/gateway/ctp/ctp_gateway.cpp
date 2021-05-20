@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "gateway/ctp/ctp_gateway.h"
+#include "trader/gateway/ctp/ctp_gateway.h"
 
 #include "ThostFtdcMdApi.h"
 #include "ThostFtdcTraderApi.h"
@@ -71,7 +71,5 @@ bool CtpGateway::QueryPositions() { return trade_api_->QueryPositions(); }
 bool CtpGateway::QueryAccount() { return trade_api_->QueryAccount(); }
 
 bool CtpGateway::QueryTrades() { return trade_api_->QueryTrades(); }
-
-REGISTER_GATEWAY(::ft::CtpGateway);
 
 }  // namespace ft

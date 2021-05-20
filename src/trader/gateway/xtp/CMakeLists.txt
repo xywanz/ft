@@ -1,15 +1,15 @@
 
-add_library(xtp_gateway SHARED
+add_library(xtp_gateway STATIC
     xtp_gateway.cpp
     _xtp_quote_api.cpp
     xtp_trade_api.cpp)
 add_library(ft::xtp_gateway ALIAS xtp_gateway)
 
-target_include_directories(xtp_gateway PRIVATE
+target_include_directories(xtp_gateway PUBLIC
     "${PROJECT_SOURCE_DIR}/src"
     "${PROJECT_SOURCE_DIR}/third_party/xtp/include")
-target_link_directories(xtp_gateway PRIVATE "${PROJECT_SOURCE_DIR}/third_party/xtp/lib")
-target_link_libraries(xtp_gateway PRIVATE
+target_link_directories(xtp_gateway PUBLIC "${PROJECT_SOURCE_DIR}/third_party/xtp/lib")
+target_link_libraries(xtp_gateway PUBLIC
     ft::ft_header
     ft::base
     ft::component

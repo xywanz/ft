@@ -2,7 +2,6 @@
 
 add_subdirectory(base)
 add_subdirectory(component)
-add_subdirectory(gateway)
 add_subdirectory(strategy)
 add_subdirectory(trader)
 add_subdirectory(utils)
