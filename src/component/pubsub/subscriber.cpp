@@ -2,15 +2,11 @@
 
 #include "ft/component/pubsub/subscriber.h"
 
-#include "component/pubsub/zmq_socket.h"
-
 namespace ft::pubsub {
 
 Subscriber::Subscriber(const std::string& address) {
-  sock_ = std::make_unique<ZmqSocket>();
-  if (!sock_->Connect(address)) {
-    throw std::runtime_error("subscriber: cannot connect to address");
-  }
+  // init socket
+  abort();
 }
 
 void Subscriber::Start() {

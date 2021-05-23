@@ -35,14 +35,6 @@ target_include_directories(cereal INTERFACE "third_party/cereal/include")
 add_library(getopt INTERFACE)
 target_include_directories(getopt INTERFACE "third_party/getopt")
 
-add_library(cppzmq INTERFACE)
-target_include_directories(cppzmq INTERFACE "third_party/cppzmq"
-                                            "third_party/libzmq/include")
-target_link_libraries(cppzmq INTERFACE libzmq-static)
-
-set(ZMQ_BUILD_TESTS OFF)
-add_subdirectory("third_party/libzmq" "third_party/libzmq")
-
 add_library(ft_third_party INTERFACE)
 add_library(ft::ft_third_party ALIAS ft_third_party)
 target_link_libraries(ft_third_party INTERFACE fmt
@@ -50,8 +42,7 @@ target_link_libraries(ft_third_party INTERFACE fmt
                                                spdlog
                                                getopt
                                                hiredis
-                                               yaml-cpp
-                                               cppzmq)
+                                               yaml-cpp)
 
 add_library(ft_header INTERFACE)
 add_library(ft::ft_header ALIAS ft_header)

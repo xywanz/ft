@@ -8,8 +8,7 @@ mark_as_advanced(
     gtest_disable_pthreads gtest_force_shared_crt gtest_hide_internal_symbols
 )
 
-add_library(ft_test ../src/trader/risk/common/no_self_trade.cpp
-                    ../src/component/pubsub/zmq_socket.cpp)
+add_library(ft_test ../src/trader/risk/common/no_self_trade.cpp)
 target_include_directories(ft_test PUBLIC ../src)
 target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils ft::ft_third_party)
 
@@ -39,7 +38,5 @@ package_add_test(test_datetime test_datetime.cpp ft_test)
 package_add_test(test_decimal_price test_decimal_price.cpp ft_test)
 package_add_test(test_no_self_trade test_no_self_trade.cpp ft_test)
 package_add_test(test_order_book test_order_book.cpp ft_test)
-package_add_test(test_pubsub test_pubsub.cpp ft_test)
-package_add_test(test_zmq test_zmq.cpp ft_test)
 package_add_test(test_ring_buffer test_ring_buffer.cpp ft_test)
 package_add_test(test_yijinjing test_yijinjing.cpp yijinjing ft_test)

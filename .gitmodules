@@ -19,9 +19,3 @@
 [submodule "third_party/spdlog"]
 	path = third_party/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "third_party/cppzmq"]
-	path = third_party/cppzmq
-	url = https://github.com/zeromq/cppzmq.git
-[submodule "third_party/libzmq"]
-	path = third_party/libzmq
-	url = https://github.com/zeromq/libzmq.git

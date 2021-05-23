@@ -2,7 +2,6 @@
 add_library(component STATIC
     order_book/order_book.cpp
     order_book/price_level.cpp
-    pubsub/zmq_socket.cpp
     pubsub/publisher.cpp
     pubsub/subscriber.cpp
     position_calculator.cpp)
