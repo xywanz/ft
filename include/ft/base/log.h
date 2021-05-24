@@ -16,7 +16,7 @@ class Logger {
     return logger;
   }
 
-  std::shared_ptr<spdlog::logger> GetLogger() { return logger_; }
+  spdlog::logger* GetLogger() { return logger_.get(); }
 
  private:
   Logger() : logger_(spdlog::default_logger()) {}

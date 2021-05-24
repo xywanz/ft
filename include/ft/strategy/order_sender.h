@@ -19,14 +19,6 @@ class OrderSender {
     cmd_sender_ = yijinjing::JournalWriter::create(".", trade_mq_name, "order_sender");
   }
 
-  void SetStrategyId(const std::string& name) {
-    strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
-  }
-
-  void SetAccount(uint64_t account_id) {
-    ft_cmd_topic_ = std::string("ft_cmd_") + std::to_string(account_id).substr(0, 4);
-  }
-
   void SetOrderFlag(OrderFlag flags) { flags_ = flags; }
 
   void BuyOpen(const std::string& ticker, int volume, double price,

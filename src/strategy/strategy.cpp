@@ -11,12 +11,21 @@ namespace ft {
 
 Strategy::Strategy() {}
 
-bool Strategy::Init(const StrategyConfig& config) {
+bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_config) {
+  if (!ft::ContractTable::Init(ft_config.global_config.contract_file)) {
+    printf("invalid contract list file");
+    return false;
+  }
+
   rsp_reader_ = yijinjing::JournalReader::create(".", config.rsp_mq_name, yijinjing::getNanoTime(),
                                                  config.strategy_name);
   md_reader_ = yijinjing::JournalReader::create(".", config.md_mq_name, yijinjing::getNanoTime(),
                                                 config.strategy_name);
   sender_.Init(config.trade_mq_name);
+
+  account_id_ = std::stoul(ft_config.gateway_config.investor_id);
+  pos_getter_.SetAccount(account_id_);
+
   return true;
 }
 

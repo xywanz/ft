@@ -19,13 +19,26 @@
 
 namespace ft {
 
-class Strategy {
+class StrategyRunner {
+ public:
+  virtual ~StrategyRunner() {}
+
+  virtual bool Init(const StrategyConfig& config, const FlareTraderConfig& ft_config) = 0;
+
+  virtual void Run() = 0;
+
+  virtual void RunBacktest() = 0;
+};
+
+class Strategy : public StrategyRunner {
  public:
   Strategy();
 
-  bool Init(const StrategyConfig& config);
+  bool Init(const StrategyConfig& config, const FlareTraderConfig& ft_config) override;
 
-  virtual ~Strategy() {}
+  void Run() override;
+
+  void RunBacktest() override;
 
   virtual void OnInit() {}
 
@@ -36,25 +49,6 @@ class Strategy {
   virtual void OnTrade(const OrderResponse& trade) {}
 
   virtual void OnExit() {}
-
-  // 仅供加载器调用，内部不可使用
-  void Run();
-
-  void RunBacktest();
-
-  // 策略启动后请勿更改id
-  void SetStrategyId(const std::string& name) {
-    strncpy(strategy_id_, name.c_str(), sizeof(strategy_id_) - 1);
-    sender_.SetStrategyId(name);
-  }
-
-  void SetAccountId(uint64_t account_id) {
-    account_id_ = account_id;
-    sender_.SetAccount(account_id);
-    pos_getter_.SetAccount(account_id);
-  }
-
-  void SetBacktestMode(bool backtest_mode = true) { backtest_mode_ = backtest_mode; }
 
  protected:
   void OnOrderResponse(const OrderResponse& order_rsp) {
@@ -137,14 +131,13 @@ class Strategy {
   RedisPositionGetter pos_getter_;
   yijinjing::JournalReaderPtr md_reader_;
   yijinjing::JournalReaderPtr rsp_reader_;
-  bool backtest_mode_ = false;
 
   SpinLock spinlock_;
   std::vector<AlgoOrderEngine*> algo_order_engines_;
 };
 
 #define EXPORT_STRATEGY(type) \
-  extern "C" ft::Strategy* CreateStrategy() { return new type; }
+  extern "C" ft::StrategyRunner* CreateStrategy() { return new type; }
 
 }  // namespace ft
 

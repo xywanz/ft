@@ -8,7 +8,6 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
-#include "ft/component/pubsub/subscriber.h"
 #include "ft/strategy/strategy.h"
 
 static void Usage() {
@@ -52,18 +51,13 @@ int main() {
     return false;
   }
 
-  if (!ft::ContractTable::Init(config.global_config.contract_file)) {
-    LOG_ERROR("Invalid file of contract list");
-    exit(EXIT_FAILURE);
-  }
-
   void* handle = dlopen(strategy_file.c_str(), RTLD_LAZY);
   if (!handle) {
     LOG_ERROR("Invalid strategy .so");
     exit(EXIT_FAILURE);
   }
 
-  auto strategy_ctor = reinterpret_cast<ft::Strategy* (*)()>(dlsym(handle, "CreateStrategy"));
+  auto strategy_ctor = reinterpret_cast<ft::StrategyRunner* (*)()>(dlsym(handle, "CreateStrategy"));
   if (!strategy_ctor) {
     char* error_str = dlerror();
     if (error_str) {
@@ -75,13 +69,10 @@ int main() {
   auto strategy = strategy_ctor();
   for (auto& strategy_conf : config.strategy_config_list) {
     if (strategy_conf.strategy_name == strategy_id) {
-      if (!strategy->Init(strategy_conf)) {
+      if (!strategy->Init(strategy_conf, config)) {
         LOG_ERROR("failed to init strategy");
         exit(EXIT_FAILURE);
       }
-      strategy->SetStrategyId(strategy_id);
-      strategy->SetAccountId(account_id);
-      strategy->SetBacktestMode(backtest_mode);
 
       spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
       if (backtest_mode) {
