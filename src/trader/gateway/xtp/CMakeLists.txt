@@ -7,8 +7,8 @@ add_library(ft::xtp_gateway ALIAS xtp_gateway)
 
 target_include_directories(xtp_gateway PUBLIC
     "${PROJECT_SOURCE_DIR}/src"
-    "${PROJECT_SOURCE_DIR}/third_party/xtp/include")
-target_link_directories(xtp_gateway PUBLIC "${PROJECT_SOURCE_DIR}/third_party/xtp/lib")
+    "${PROJECT_SOURCE_DIR}/third_party/trade_api/xtp/include")
+target_link_directories(xtp_gateway PUBLIC "${PROJECT_SOURCE_DIR}/third_party/trade_api/xtp/lib")
 target_link_libraries(xtp_gateway PUBLIC
     ft::ft_header
     ft::base
