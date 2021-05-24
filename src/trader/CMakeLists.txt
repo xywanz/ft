@@ -15,7 +15,8 @@ target_link_libraries(ft_trader PRIVATE
     ft::base
     ft::component
     ft::utils
-    ft::ft_third_party
+    getopt
+    spdlog
     yijinjing
     gateway
     pthread)

@@ -14,7 +14,6 @@ target_link_libraries(ctp_gateway PUBLIC
     ft::base
     ft::component
     ft::utils
-    ft::ft_third_party
     thostmduserapi_se
     thosttraderapi_se
     pthread)

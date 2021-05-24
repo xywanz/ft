@@ -14,6 +14,5 @@ target_link_libraries(xtp_gateway PUBLIC
     ft::base
     ft::component
     ft::utils
-    ft::ft_third_party
     xtptraderapi
     xtpquoteapi)

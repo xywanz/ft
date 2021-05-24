@@ -5,5 +5,5 @@ add_subdirectory(xtp)
 add_subdirectory(back_test)
 
 add_library(gateway STATIC gateway.cpp)
-target_link_libraries(gateway PUBLIC ft_header ft_third_party ctp_gateway xtp_gateway backtest_gateway)
+target_link_libraries(gateway PUBLIC ft_header ctp_gateway xtp_gateway backtest_gateway)
 target_include_directories(gateway PUBLIC "${PROJECT_SOURCE_DIR}/src")

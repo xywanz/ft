@@ -10,7 +10,7 @@ mark_as_advanced(
 
 add_library(ft_test ../src/trader/risk/common/no_self_trade.cpp)
 target_include_directories(ft_test PUBLIC ../src)
-target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils ft::ft_third_party)
+target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils)
 
 set_target_properties(gtest PROPERTIES FOLDER third_party)
 set_target_properties(gtest_main PROPERTIES FOLDER third_party)

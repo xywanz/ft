@@ -7,4 +7,4 @@ add_library(ft::strategy ALIAS strategy)
 target_link_libraries(strategy PUBLIC yijinjing ft::utils)
 
 add_executable(strategy_engine strategy_engine.cpp)
-target_link_libraries(strategy_engine strategy dl)
+target_link_libraries(strategy_engine strategy dl getopt)

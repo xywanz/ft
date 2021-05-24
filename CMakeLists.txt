@@ -35,15 +35,6 @@ target_include_directories(cereal INTERFACE "third_party/cereal/include")
 add_library(getopt INTERFACE)
 target_include_directories(getopt INTERFACE "third_party/getopt")
 
-add_library(ft_third_party INTERFACE)
-add_library(ft::ft_third_party ALIAS ft_third_party)
-target_link_libraries(ft_third_party INTERFACE fmt
-                                               cereal
-                                               spdlog
-                                               getopt
-                                               hiredis
-                                               yaml-cpp)
-
 add_library(ft_header INTERFACE)
 add_library(ft::ft_header ALIAS ft_header)
 target_include_directories(ft_header INTERFACE "include")

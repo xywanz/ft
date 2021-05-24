@@ -7,5 +7,4 @@ target_link_libraries(backtest_gateway PUBLIC
     ft::base
     ft::component
     ft::utils
-    ft::ft_third_party
     pthread)
