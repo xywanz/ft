@@ -32,9 +32,6 @@ add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE "third_party/cereal/include")
 
-add_library(getopt INTERFACE)
-target_include_directories(getopt INTERFACE "third_party/getopt")
-
 add_library(ft_header INTERFACE)
 add_library(ft::ft_header ALIAS ft_header)
 target_include_directories(ft_header INTERFACE "include")

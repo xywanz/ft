@@ -1,8 +1,8 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
+#include "ft/utils/getopt.hpp"
 #include "ft/utils/protocol_utils.h"
 #include "ft/utils/redis_position_helper.h"
-#include "getopt.hpp"
 
 static void Usage() {
   printf("Usage:\n");

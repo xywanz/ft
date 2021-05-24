@@ -2,9 +2,8 @@
 
 #include <dlfcn.h>
 
-#include <getopt.hpp>
-
 #include "ft/base/contract_table.h"
+#include "ft/utils/getopt.hpp"
 #include "spdlog/spdlog.h"
 #include "trader/gateway/gateway.h"
 

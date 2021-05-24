@@ -2,7 +2,7 @@
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
-#include "getopt.hpp"
+#include "ft/utils/getopt.hpp"
 #include "trader/oms.h"
 
 static void Usage(const char* pname) {

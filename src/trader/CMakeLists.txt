@@ -15,7 +15,6 @@ target_link_libraries(ft_trader PRIVATE
     ft::base
     ft::component
     ft::utils
-    getopt
     spdlog
     yijinjing
     gateway

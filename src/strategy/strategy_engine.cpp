@@ -3,12 +3,12 @@
 #include <dlfcn.h>
 
 #include <fstream>
-#include <getopt.hpp>
 #include <thread>
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
 #include "ft/strategy/strategy.h"
+#include "ft/utils/getopt.hpp"
 
 static void Usage() {
   printf("Usage: ./strategy_engine [--account=<account>]\n");
