@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/utils/misc.h"
-#include "spdlog/spdlog.h"
 #include "trader/gateway/xtp/xtp_gateway.h"
 
 namespace ft {
@@ -22,7 +22,7 @@ bool XtpQuoteApi::Login(const GatewayConfig& config) {
   uint8_t client_id = rand_r(&seed) & 0xff;
   quote_api_.reset(XTP::API::QuoteApi::CreateQuoteApi(client_id, "."));
   if (!quote_api_) {
-    spdlog::error("[XtpQuoteApi::Login] Failed to CreateQuoteApi");
+    LOG_ERROR("[XtpQuoteApi::Login] Failed to CreateQuoteApi");
     return false;
   }
 
@@ -33,11 +33,11 @@ bool XtpQuoteApi::Login(const GatewayConfig& config) {
   try {
     int ret = sscanf(config.quote_server_address.c_str(), "%[^:]://%[^:]:%d", protocol, ip, &port);
     if (ret != 3) {
-      spdlog::error("FAILED to parse server address: {}", config.quote_server_address);
+      LOG_ERROR("FAILED to parse server address: {}", config.quote_server_address);
       return false;
     }
   } catch (...) {
-    spdlog::error("FAILED to parse server address: {}", config.quote_server_address);
+    LOG_ERROR("FAILED to parse server address: {}", config.quote_server_address);
     return false;
   }
 
@@ -47,12 +47,11 @@ bool XtpQuoteApi::Login(const GatewayConfig& config) {
   quote_api_->RegisterSpi(this);
   if (quote_api_->Login(ip, port, config.investor_id.c_str(), config.password.c_str(), sock_type) !=
       0) {
-    spdlog::error("[XtpQuoteApi::Login] Failed to Login: {}",
-                  quote_api_->GetApiLastError()->error_msg);
+    LOG_ERROR("[XtpQuoteApi::Login] Failed to Login: {}", quote_api_->GetApiLastError()->error_msg);
     return false;
   }
 
-  spdlog::debug("[XtpQuoteApi::Login] Success");
+  LOG_DEBUG("[XtpQuoteApi::Login] Success");
   return true;
 }
 
@@ -78,7 +77,7 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   if (sub_list_sh.size() > 0) {
     if (quote_api_->SubscribeMarketData(sub_list_sh.data(), sub_list_sh.size(), XTP_EXCHANGE_SH) !=
         0) {
-      spdlog::error("[XtpQuoteApi::Login] 无法订阅行情");
+      LOG_ERROR("[XtpQuoteApi::Login] 无法订阅行情");
       return false;
     }
   }
@@ -86,7 +85,7 @@ bool XtpQuoteApi::Subscribe(const std::vector<std::string>& sub_list) {
   if (sub_list_sz.size() > 0) {
     if (quote_api_->SubscribeMarketData(sub_list_sz.data(), sub_list_sz.size(), XTP_EXCHANGE_SZ) !=
         0) {
-      spdlog::error("[XtpQuoteApi::Login] 无法订阅行情");
+      LOG_ERROR("[XtpQuoteApi::Login] 无法订阅行情");
       return false;
     }
   }
@@ -99,14 +98,14 @@ bool XtpQuoteApi::QueryContracts() {
   qry_contract_res_.clear();
 
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SH) != 0) {
-    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
+    LOG_ERROR("[XtpQuoteApi::QueryContract] Failed to query SH stocks");
     return false;
   }
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   if (quote_api_->QueryAllTickers(XTP_EXCHANGE_SZ) != 0) {
-    spdlog::error("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
+    LOG_ERROR("[XtpQuoteApi::QueryContract] Failed to query SZ stocks");
     return false;
   }
 
@@ -115,7 +114,7 @@ bool XtpQuoteApi::QueryContracts() {
 
 void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool is_last) {
   if (is_error_rsp(error_info)) {
-    spdlog::error("[XtpQuoteApi::OnQueryAllTickers] {}", error_info->error_msg);
+    LOG_ERROR("[XtpQuoteApi::OnQueryAllTickers] {}", error_info->error_msg);
     gateway_->OnQueryContractEnd();
     qry_contract_res_.clear();
     qry_contract_res_.shrink_to_fit();
@@ -124,8 +123,8 @@ void XtpQuoteApi::OnQueryAllTickers(XTPQSI* ticker_info, XTPRI* error_info, bool
 
   if (ticker_info && (ticker_info->ticker_type == XTP_TICKER_TYPE_STOCK ||
                       ticker_info->ticker_type == XTP_TICKER_TYPE_FUND)) {
-    spdlog::debug("[XtpQuoteApi::OnQueryAllTickers] {}, {}", ticker_info->ticker,
-                  ticker_info->ticker_name);
+    LOG_DEBUG("[XtpQuoteApi::OnQueryAllTickers] {}, {}", ticker_info->ticker,
+              ticker_info->ticker_name);
     Contract contract{};
     contract.ticker = ticker_info->ticker;
     contract.exchange = ft_exchange_type(ticker_info->exchange_id);
@@ -161,14 +160,14 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
                                     int32_t max_bid1_count, int64_t ask1_qty[], int32_t ask1_count,
                                     int32_t max_ask1_count) {
   if (!market_data) {
-    spdlog::warn("[XtpQuoteApi::OnDepthMarketData] nullptr");
+    LOG_WARN("[XtpQuoteApi::OnDepthMarketData] nullptr");
     return;
   }
 
   auto contract = ContractTable::get_by_ticker(market_data->ticker);
   if (!contract) {
-    spdlog::trace("[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
-                  market_data->ticker);
+    LOG_TRACE("[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
+              market_data->ticker);
     return;
   }
 
@@ -232,7 +231,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   tick.bid_volume[3] = market_data->bid_qty[8];
   tick.bid_volume[4] = market_data->bid_qty[9];
 
-  spdlog::trace(
+  LOG_TRACE(
       "[XtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime: {}, LastPrice:{:.2f}, "
       "Volume:{}, Turnover:{}, Open Interest:{}",
       market_data->ticker, tick.exchange_datetime.ToString(), tick.last_price, tick.volume,

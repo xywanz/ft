@@ -6,9 +6,9 @@
 #include <thread>
 
 #include "ThostFtdcTraderApi.h"
+#include "ft/base/log.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "spdlog/spdlog.h"
 #include "trader/gateway/ctp/ctp_gateway.h"
 
 namespace ft {
@@ -16,7 +16,7 @@ namespace ft {
 CtpTradeApi::CtpTradeApi(CtpGateway *gateway)
     : gateway_(gateway), trade_api_(CThostFtdcTraderApi::CreateFtdcTraderApi()) {
   if (!trade_api_) {
-    spdlog::error("[CtpTradeApi::CtpTradeApi] Failed to CreateFtdcTraderApi");
+    LOG_ERROR("[CtpTradeApi::CtpTradeApi] Failed to CreateFtdcTraderApi");
     exit(-1);
   }
 }
@@ -49,7 +49,7 @@ bool CtpTradeApi::Login(const GatewayConfig &config) {
   }
 
   if (config_->cancel_outstanding_orders_on_startup) {
-    spdlog::debug("[CtpTradeApi::Login] Cancel outstanding orders on startup");
+    LOG_DEBUG("[CtpTradeApi::Login] Cancel outstanding orders on startup");
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     CThostFtdcQryOrderField req{};
@@ -57,7 +57,7 @@ bool CtpTradeApi::Login(const GatewayConfig &config) {
     strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
     if (trade_api_->ReqQryOrder(&req, next_req_id()) != 0) {
-      spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
+      LOG_ERROR("[CtpTradeApi::Login] Failed. Failed to ReqQryOrder");
       return false;
     }
   }
@@ -74,7 +74,7 @@ void CtpTradeApi::Logout() {
 }
 
 void CtpTradeApi::OnFrontConnected() {
-  spdlog::debug("[CtpTradeApi::OnFrontConnected] Success. Connected to {}", front_addr_);
+  LOG_DEBUG("[CtpTradeApi::OnFrontConnected] Success. Connected to {}", front_addr_);
 
   CThostFtdcReqAuthenticateField auth_req{};
   strncpy(auth_req.BrokerID, config_->broker_id.c_str(), sizeof(auth_req.BrokerID));
@@ -83,18 +83,18 @@ void CtpTradeApi::OnFrontConnected() {
   strncpy(auth_req.AppID, config_->app_id.c_str(), sizeof(auth_req.AppID));
 
   if (trade_api_->ReqAuthenticate(&auth_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqAuthenticate");
+    LOG_ERROR("[CtpTradeApi::Login] Failed. Failed to ReqAuthenticate");
     status_.store(-1, std::memory_order::memory_order_release);
   }
 }
 
 void CtpTradeApi::OnFrontDisconnected(int reason) {
-  spdlog::error("[CtpTradeApi::OnFrontDisconnected] . Disconnected from {}", front_addr_);
+  LOG_ERROR("[CtpTradeApi::OnFrontDisconnected] . Disconnected from {}", front_addr_);
   status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpTradeApi::OnHeartBeatWarning(int time_lapse) {
-  spdlog::warn("[CtpTradeApi::OnHeartBeatWarning] No packet received for some time");
+  LOG_WARN("[CtpTradeApi::OnHeartBeatWarning] No packet received for some time");
 }
 
 void CtpTradeApi::OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenticate_field,
@@ -104,13 +104,13 @@ void CtpTradeApi::OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenti
   }
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspAuthenticate] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspAuthenticate] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
-  spdlog::debug("[CTP::OnRspAuthenticate] Success. Investor ID: {}", investor_id_);
+  LOG_DEBUG("[CTP::OnRspAuthenticate] Success. Investor ID: {}", investor_id_);
 
   CThostFtdcReqUserLoginField login_req{};
   strncpy(login_req.BrokerID, config_->broker_id.c_str(), sizeof(login_req.BrokerID));
@@ -118,7 +118,7 @@ void CtpTradeApi::OnRspAuthenticate(CThostFtdcRspAuthenticateField *rsp_authenti
   strncpy(login_req.Password, config_->password.c_str(), sizeof(login_req.Password));
 
   if (trade_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqUserLogin");
+    LOG_ERROR("[CtpTradeApi::Login] Failed. Failed to ReqUserLogin");
     status_.store(-1, std::memory_order::memory_order_release);
   }
 }
@@ -130,8 +130,8 @@ void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
   }
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspUserLogin] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspUserLogin] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
@@ -141,7 +141,7 @@ void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
   auto max_order_ref = std::stoul(rsp_user_login->MaxOrderRef);
   order_ref_base_ = max_order_ref + 1;
 
-  spdlog::debug(
+  LOG_DEBUG(
       "[CtpTradeApi::OnRspUserLogin] Success. Login as {}. "
       "Front ID: {}, Session ID: {}, Max OrderRef: {}",
       investor_id_, front_id_, session_id_, max_order_ref);
@@ -151,7 +151,7 @@ void CtpTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField *rsp_user_login,
   strncpy(settlement_req.InvestorID, investor_id_.c_str(), sizeof(settlement_req.InvestorID));
 
   if (trade_api_->ReqQrySettlementInfo(&settlement_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqQrySettlementInfo");
+    LOG_ERROR("[CtpTradeApi::Login] Failed. Failed to ReqQrySettlementInfo");
     status_.store(-1, std::memory_order::memory_order_release);
   }
 }
@@ -164,20 +164,20 @@ void CtpTradeApi::OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *settleme
   }
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CTP::OnRspQrySettlementInfo] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CTP::OnRspQrySettlementInfo] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
-  spdlog::debug("[CTP::OnRspQrySettlementInfo] Success");
+  LOG_DEBUG("[CTP::OnRspQrySettlementInfo] Success");
 
   CThostFtdcSettlementInfoConfirmField confirm_req{};
   strncpy(confirm_req.BrokerID, broker_id_.c_str(), sizeof(confirm_req.BrokerID));
   strncpy(confirm_req.InvestorID, investor_id_.c_str(), sizeof(confirm_req.InvestorID));
 
   if (trade_api_->ReqSettlementInfoConfirm(&confirm_req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::Login] Failed. Failed to ReqSettlementInfoConfirm");
+    LOG_ERROR("[CtpTradeApi::Login] Failed. Failed to ReqSettlementInfoConfirm");
     status_.store(-1, std::memory_order::memory_order_release);
   }
 }
@@ -188,13 +188,13 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
   if (!is_last) return;
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::debug("[CtpTradeApi::OnRspSettlementInfoConfirm] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_DEBUG("[CtpTradeApi::OnRspSettlementInfoConfirm] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
-  spdlog::debug(
+  LOG_DEBUG(
       "[CtpTradeApi::OnRspSettlementInfoConfirm] Success. Settlement "
       "confirmed");
   status_.store(1, std::memory_order::memory_order_release);
@@ -202,8 +202,8 @@ void CtpTradeApi::OnRspSettlementInfoConfirm(
 
 void CtpTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField *user_logout,
                                   CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  spdlog::debug("[CtpTradeApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
-                user_logout->BrokerID, user_logout->UserID);
+  LOG_DEBUG("[CtpTradeApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
+            user_logout->BrokerID, user_logout->UserID);
   status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
@@ -246,11 +246,11 @@ bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
   }
 
   if (trade_api_->ReqOrderInsert(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::SendOrder] Failed to call ReqOrderInsert");
+    LOG_ERROR("[CtpTradeApi::SendOrder] Failed to call ReqOrderInsert");
     return false;
   }
 
-  spdlog::debug(
+  LOG_DEBUG(
       "[CtpTradeApi::SendOrder] 订单发送成功. OrderID: {}, {}, {}, {}{}"
       "Volume:{}, Price:{:.3f}",
       order.order_id, order_ref, contract->ticker, ToString(order.direction),
@@ -262,12 +262,12 @@ bool CtpTradeApi::SendOrder(const OrderRequest &order, uint64_t *privdata_ptr) {
 void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
                                    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   if (!order) {
-    spdlog::warn("[CtpTradeApi::OnRspOrderInsert] nullptr");
+    LOG_WARN("[CtpTradeApi::OnRspOrderInsert] nullptr");
     return;
   }
 
   if (order->InvestorID != investor_id_) {
-    spdlog::warn(
+    LOG_WARN(
         "[CtpTradeApi::OnRspOrderInsert] Failed. "
         "= =#Receive RspOrderInsert of other investor");
     return;
@@ -277,7 +277,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
   try {
     order_ref = std::stoul(order->OrderRef);
   } catch (...) {
-    spdlog::error("[CtpTradeApi::OnRspOrderInsert] Invalid order ref");
+    LOG_ERROR("[CtpTradeApi::OnRspOrderInsert] Invalid order ref");
     return;
   }
 
@@ -287,13 +287,13 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
 
 void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   if (!order) {
-    spdlog::warn("[CtpTradeApi::OnRtnOrder] nullptr");
+    LOG_WARN("[CtpTradeApi::OnRtnOrder] nullptr");
     return;
   }
 
   // 过滤不是自己的订单
   if (order->InvestorID != investor_id_) {
-    spdlog::warn("[CtpTradeApi::OnRtnOrder] Failed. Unknown order");
+    LOG_WARN("[CtpTradeApi::OnRtnOrder] Failed. Unknown order");
     return;
   }
 
@@ -333,12 +333,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
 
 void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   if (!trade) {
-    spdlog::warn("[CtpTradeApi::OnRtnTrade] nullptr");
+    LOG_WARN("[CtpTradeApi::OnRtnTrade] nullptr");
     return;
   }
 
   if (trade->InvestorID != investor_id_) {
-    spdlog::warn("[CtpTradeApi::OnRtnTrade] Failed. Recv unknown trade");
+    LOG_WARN("[CtpTradeApi::OnRtnTrade] Failed. Recv unknown trade");
     return;
   }
 
@@ -373,7 +373,7 @@ bool CtpTradeApi::CancelOrder(uint64_t order_id, uint64_t ticker_id) {
   req.ActionFlag = THOST_FTDC_AF_Delete;
 
   if (trade_api_->ReqOrderAction(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::CancelOrder] Failed to ReqOrderAction");
+    LOG_ERROR("[CtpTradeApi::CancelOrder] Failed to ReqOrderAction");
     return false;
   }
 
@@ -382,21 +382,21 @@ bool CtpTradeApi::CancelOrder(uint64_t order_id, uint64_t ticker_id) {
 
 void CtpTradeApi::OnRspOrderAction(CThostFtdcInputOrderActionField *action,
                                    CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  if (!action) spdlog::warn("[CtpTradeApi::OnRspOrderAction] nullptr");
+  if (!action) LOG_WARN("[CtpTradeApi::OnRspOrderAction] nullptr");
 
   if (action->InvestorID != investor_id_) {
-    spdlog::warn("[CtpTradeApi::OnRspOrderAction] Recv unknown action");
+    LOG_WARN("[CtpTradeApi::OnRspOrderAction] Recv unknown action");
     return;
   }
 
-  spdlog::error("[CtpTradeApi::OnRspOrderAction] Rejected. Reason: {}",
-                gb2312_to_utf8(rsp_info->ErrorMsg));
+  LOG_ERROR("[CtpTradeApi::OnRspOrderAction] Rejected. Reason: {}",
+            gb2312_to_utf8(rsp_info->ErrorMsg));
 }
 
 bool CtpTradeApi::QueryContracts() {
   CThostFtdcQryInstrumentField req{};
   if (trade_api_->ReqQryInstrument(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::QueryContract] Failed to ReqQryInstrument");
+    LOG_ERROR("[CtpTradeApi::QueryContract] Failed to ReqQryInstrument");
     return false;
   }
 
@@ -406,15 +406,15 @@ bool CtpTradeApi::QueryContracts() {
 void CtpTradeApi::OnRspQryInstrument(CThostFtdcInstrumentField *instrument,
                                      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryInstrument] Error Msg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspQryInstrument] Error Msg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     gateway_->OnQueryContractEnd();
     return;
   }
 
   if (instrument) {
-    spdlog::debug("[CtpTradeApi::OnRspQryInstrument] Instrument: {}, Exchange: {}, {}",
-                  instrument->InstrumentID, instrument->ExchangeID, instrument->LongMarginRatio);
+    LOG_DEBUG("[CtpTradeApi::OnRspQryInstrument] Instrument: {}, Exchange: {}, {}",
+              instrument->InstrumentID, instrument->ExchangeID, instrument->LongMarginRatio);
 
     Contract contract;
     contract.product_type = product_type(instrument->ProductClass);
@@ -447,7 +447,7 @@ bool CtpTradeApi::QueryPositions() {
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
   if (trade_api_->ReqQryInvestorPosition(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::QueryPosition] Failed to send query req");
+    LOG_ERROR("[CtpTradeApi::QueryPosition] Failed to send query req");
     return false;
   }
 
@@ -458,8 +458,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
                                            CThostFtdcRspInfoField *rsp_info, int req_id,
                                            bool is_last) {
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Error Msg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspQryInvestorPosition] Error Msg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     pos_cache_.clear();
     gateway_->OnQueryPositionEnd();
     return;
@@ -468,8 +468,8 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
   if (position) {
     auto contract = ContractTable::get_by_ticker(position->InstrumentID);
     if (!contract) {
-      spdlog::error("[CtpTradeApi::OnRspQryInvestorPosition] Contract not found: {}",
-                    position->InstrumentID);
+      LOG_ERROR("[CtpTradeApi::OnRspQryInvestorPosition] Contract not found: {}",
+                position->InstrumentID);
       goto check_last;
     }
 
@@ -490,7 +490,7 @@ void CtpTradeApi::OnRspQryInvestorPosition(CThostFtdcInvestorPositionField *posi
     if (pos_detail.holdings > 0 && contract->size > 0)
       pos_detail.cost_price = position->PositionCost / (pos_detail.holdings * contract->size);
 
-    spdlog::debug(
+    LOG_DEBUG(
         "[CtpTradeApi::OnRspQryInvestorPosition] {}, long:{}, ydlong:{}, "
         "short:{}, ydshort:{}",
         contract->ticker, static_cast<int>(pos.long_pos.holdings),
@@ -514,7 +514,7 @@ bool CtpTradeApi::QueryAccount() {
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
   if (trade_api_->ReqQryTradingAccount(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::QueryAccount] Failed to ReqQryTradingAccount");
+    LOG_ERROR("[CtpTradeApi::QueryAccount] Failed to ReqQryTradingAccount");
     return false;
   }
 
@@ -527,13 +527,13 @@ void CtpTradeApi::OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_
   if (!is_last) return;
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryTradingAccount] ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspQryTradingAccount] ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     gateway_->OnQueryAccountEnd();
     return;
   }
 
-  spdlog::debug(
+  LOG_DEBUG(
       "[CtpTradeApi::OnRspQryTradingAccount] Account ID: {}, Balance: {:.3f}, "
       "Frozen: {:.3f}, Margin: {:.3f}",
       trading_account->AccountID, trading_account->Balance, trading_account->FrozenMargin,
@@ -554,14 +554,14 @@ void CtpTradeApi::OnRspQryTradingAccount(CThostFtdcTradingAccountField *trading_
 void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoField *rsp_info,
                                 int req_id, bool is_last) {
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryOrder] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspQryOrder] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
   if (order && (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing ||
                 order->OrderStatus == THOST_FTDC_OST_PartTradedQueueing)) {
-    spdlog::info(
+    LOG_INFO(
         "[CtpTradeApi::OnRspQryOrder] Cancel all orders on startup. Ticker: "
         "{}.{}, OrderSysID: {}, OriginalVolume: {}, Traded: {}, StatusMsg: {}",
         order->InstrumentID, order->ExchangeID, order->OrderSysID, order->VolumeTotalOriginal,
@@ -575,7 +575,7 @@ void CtpTradeApi::OnRspQryOrder(CThostFtdcOrderField *order, CThostFtdcRspInfoFi
     req.ActionFlag = THOST_FTDC_AF_Delete;
 
     if (trade_api_->ReqOrderAction(&req, next_req_id()) != 0)
-      spdlog::error("[CtpTradeApi::OnRspQryOrder] Failed to call ReqOrderAction");
+      LOG_ERROR("[CtpTradeApi::OnRspQryOrder] Failed to call ReqOrderAction");
   }
 
   if (is_last) {
@@ -589,7 +589,7 @@ bool CtpTradeApi::QueryTrades() {
   strncpy(req.InvestorID, investor_id_.c_str(), sizeof(req.InvestorID));
 
   if (trade_api_->ReqQryTrade(&req, next_req_id()) != 0) {
-    spdlog::error("[CtpTradeApi::QueryTradeList] Failed. Failed to ReqQryTrade");
+    LOG_ERROR("[CtpTradeApi::QueryTradeList] Failed. Failed to ReqQryTrade");
     return false;
   }
 
@@ -599,8 +599,8 @@ bool CtpTradeApi::QueryTrades() {
 void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoField *rsp_info,
                                 int req_id, bool is_last) {
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpTradeApi::OnRspQryTrade] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpTradeApi::OnRspQryTrade] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     gateway_->OnQueryContractEnd();
     return;
   }

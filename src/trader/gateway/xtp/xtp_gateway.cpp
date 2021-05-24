@@ -3,7 +3,7 @@
 #include "trader/gateway/xtp/xtp_gateway.h"
 
 #include "ft/base/contract_table.h"
-#include "spdlog/spdlog.h"
+#include "ft/base/log.h"
 
 namespace ft {
 
@@ -11,14 +11,14 @@ XtpGateway::XtpGateway() {}
 
 bool XtpGateway::Init(const GatewayConfig& config) {
   if (config.trade_server_address.empty() && config.quote_server_address.empty()) {
-    spdlog::error("[XtpGateway::Login] 交易柜台和行情服务器地址都未设置");
+    LOG_ERROR("[XtpGateway::Login] 交易柜台和行情服务器地址都未设置");
     return false;
   }
 
   if (!config.trade_server_address.empty()) {
     trade_api_ = std::make_unique<XtpTradeApi>(this);
     if (!trade_api_->Login(config)) {
-      spdlog::error("[XtpGateway::Login] Failed to Login into the counter");
+      LOG_ERROR("[XtpGateway::Login] Failed to Login into the counter");
       return false;
     }
   }
@@ -26,7 +26,7 @@ bool XtpGateway::Init(const GatewayConfig& config) {
   if (!config.quote_server_address.empty()) {
     quote_api_ = std::make_unique<XtpQuoteApi>(this);
     if (!quote_api_->Login(config)) {
-      spdlog::error("[XtpGateway::Login] Failed to Login into the md server");
+      LOG_ERROR("[XtpGateway::Login] Failed to Login into the md server");
       return false;
     }
   }

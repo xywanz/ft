@@ -7,9 +7,9 @@
 #include <thread>
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/component/pubsub/subscriber.h"
 #include "ft/strategy/strategy.h"
-#include "spdlog/spdlog.h"
 
 static void Usage() {
   printf("Usage: ./strategy_engine [--account=<account>]\n");
@@ -42,24 +42,24 @@ int main() {
   spdlog::set_level(spdlog::level::from_str(log_level));
 
   if (account_id == 0) {
-    spdlog::error("Please input account id");
+    LOG_ERROR("Please input account id");
     exit(EXIT_FAILURE);
   }
 
   ft::FlareTraderConfig config;
   if (!config.Load(config_file)) {
-    spdlog::error("failed to load config file {}", config_file);
+    LOG_ERROR("failed to load config file {}", config_file);
     return false;
   }
 
   if (!ft::ContractTable::Init(config.global_config.contract_file)) {
-    spdlog::error("Invalid file of contract list");
+    LOG_ERROR("Invalid file of contract list");
     exit(EXIT_FAILURE);
   }
 
   void* handle = dlopen(strategy_file.c_str(), RTLD_LAZY);
   if (!handle) {
-    spdlog::error("Invalid strategy .so");
+    LOG_ERROR("Invalid strategy .so");
     exit(EXIT_FAILURE);
   }
 
@@ -67,7 +67,7 @@ int main() {
   if (!strategy_ctor) {
     char* error_str = dlerror();
     if (error_str) {
-      spdlog::error("CreateStrategy not found. error: {}", error_str);
+      LOG_ERROR("CreateStrategy not found. error: {}", error_str);
       exit(EXIT_FAILURE);
     }
   }
@@ -76,7 +76,7 @@ int main() {
   for (auto& strategy_conf : config.strategy_config_list) {
     if (strategy_conf.strategy_name == strategy_id) {
       if (!strategy->Init(strategy_conf)) {
-        spdlog::error("failed to init strategy");
+        LOG_ERROR("failed to init strategy");
         exit(EXIT_FAILURE);
       }
       strategy->SetStrategyId(strategy_id);
@@ -92,6 +92,6 @@ int main() {
     }
   }
 
-  spdlog::error("strategy config not found. strategy name: {}", strategy_id);
+  LOG_ERROR("strategy config not found. strategy name: {}", strategy_id);
   exit(EXIT_FAILURE);
 }

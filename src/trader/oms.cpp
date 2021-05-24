@@ -7,10 +7,10 @@
 #include <utility>
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/component/yijinjing/journal/Timer.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "spdlog/spdlog.h"
 #include "trader/risk/common/fund_manager.h"
 #include "trader/risk/common/no_self_trade.h"
 #include "trader/risk/common/position_manager.h"
@@ -21,7 +21,7 @@ namespace ft {
 OrderManagementSystem::OrderManagementSystem() { rms_ = std::make_unique<RiskManagementSystem>(); }
 
 bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
-  spdlog::info("compiling time: {} {}", __TIME__, __DATE__);
+  LOG_INFO("compiling time: {} {}", __TIME__, __DATE__);
 
   config_ = &config;
 
@@ -83,7 +83,7 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
     }
   }).detach();
 
-  spdlog::info("ft_trader inited");
+  LOG_INFO("ft_trader inited");
   is_logon_ = true;
 
   return true;
@@ -109,7 +109,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
 #endif
 
   if (cmd.magic != kTradingCmdMagic) {
-    spdlog::error("invalid cmd: invalid magic number");
+    LOG_ERROR("invalid cmd: invalid magic number");
     return;
   }
 
@@ -135,22 +135,22 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
       break;
     }
     default: {
-      spdlog::error("unknown cmd");
+      LOG_ERROR("unknown cmd");
       break;
     }
   }
 
 #ifdef FT_TIME_PERF
   auto end_time = std::chrono::steady_clock::now();
-  spdlog::info("[OMS::ExecuteCmd] cmd type: {}   time elapsed: {} ns", cmd.type,
-               (end_time - start_time).count());
+  LOG_INFO("[OMS::ExecuteCmd] cmd type: {}   time elapsed: {} ns", cmd.type,
+           (end_time - start_time).count());
 #endif
 }
 
 bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   auto contract = ContractTable::get_by_index(cmd.order_req.ticker_id);
   if (!contract) {
-    spdlog::error("[OMS::SendOrder] contract not found");
+    LOG_ERROR("[OMS::SendOrder] contract not found");
     return false;
   }
 
@@ -173,7 +173,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   if (!cmd.order_req.without_check) {
     int error_code = rms_->CheckOrderRequest(&order);
     if (error_code != NO_ERROR) {
-      spdlog::error("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
+      LOG_ERROR("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
       rms_->OnOrderRejected(&order, error_code);
       SendRspToStrategy(order, 0, 0.0, error_code);
       return false;
@@ -181,9 +181,9 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   }
 
   if (!gateway_->SendOrder(req, &order.privdata)) {
-    spdlog::error("[OMS::SendOrder] failed to send order. {}, {}{}, {}, Volume:{}, Price:{:.3f}",
-                  contract->ticker, ToString(req.direction), ToString(req.offset),
-                  ToString(req.type), req.volume, req.price);
+    LOG_ERROR("[OMS::SendOrder] failed to send order. {}, {}{}, {}, Volume:{}, Price:{:.3f}",
+              contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
+              req.volume, req.price);
 
     rms_->OnOrderRejected(&order, ERR_SEND_FAILED);
     SendRspToStrategy(order, 0, 0.0, ERR_SEND_FAILED);
@@ -193,9 +193,9 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   order_map_.emplace(req.order_id, order);
   rms_->OnOrderSent(&order);
 
-  spdlog::debug("[OMS::SendOrder] success. {}, {}{}, {}, OrderID:{}, Volume:{}, Price: {:.3f}",
-                contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
-                req.order_id, req.volume, req.price);
+  LOG_DEBUG("[OMS::SendOrder] success. {}, {}{}, {}, OrderID:{}, Volume:{}, Price: {:.3f}",
+            contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
+            req.order_id, req.volume, req.price);
   return true;
 }
 
@@ -203,7 +203,7 @@ void OrderManagementSystem::CancelOrder(uint64_t order_id) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(order_id);
   if (iter == order_map_.end()) {
-    spdlog::error("[OMS::CancelOrder] order not found");
+    LOG_ERROR("[OMS::CancelOrder] order not found");
     return;
   }
   gateway_->CancelOrder(order_id, iter->second.privdata);
@@ -226,21 +226,21 @@ void OrderManagementSystem::CancelAll() {
 bool OrderManagementSystem::InitGateway() {
   gateway_ = CreateGateway(config_->gateway_config.api);
   if (!gateway_) {
-    spdlog::error("failed to create gateway");
+    LOG_ERROR("failed to create gateway");
     return false;
   }
 
   if (!gateway_->Init(config_->gateway_config)) {
-    spdlog::error("failed to init gateway");
+    LOG_ERROR("failed to init gateway");
     return false;
   }
-  spdlog::info("gateway inited");
+  LOG_INFO("gateway inited");
   return true;
 }
 
 bool OrderManagementSystem::InitContractTable() {
   if (!ContractTable::Init(config_->global_config.contract_file)) {
-    spdlog::error("failed to init contract table");
+    LOG_ERROR("failed to init contract table");
     return false;
   }
   return true;
@@ -251,12 +251,12 @@ bool OrderManagementSystem::InitAccount() {
   GatewayQueryResult qry_res;
 
   if (!gateway_->QueryAccount()) {
-    spdlog::error("failed to query account");
+    LOG_ERROR("failed to query account");
     return false;
   }
   qry_res_rb->GetWithBlocking(&qry_res);
   if (qry_res.msg_type != GatewayMsgType::kAccount) {
-    spdlog::error("error occurred when querying account: {}", qry_res.msg_type);
+    LOG_ERROR("error occurred when querying account: {}", qry_res.msg_type);
     return false;
   }
   OnAccount(std::get<Account>(qry_res.data));
@@ -275,8 +275,8 @@ bool OrderManagementSystem::InitPositions() {
   pos_calculator_.SetCallback([this](const Position& new_pos) {
     auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
     if (!contract) {
-      spdlog::error("contract not found. failed to update positions in redis. ticker_id:{}",
-                    new_pos.ticker_id);
+      LOG_ERROR("contract not found. failed to update positions in redis. ticker_id:{}",
+                new_pos.ticker_id);
       return;
     }
     redis_pos_updater_.set(contract->ticker, new_pos);
@@ -284,7 +284,7 @@ bool OrderManagementSystem::InitPositions() {
 
   std::vector<Position> init_positions;
   if (!gateway_->QueryPositions()) {
-    spdlog::error("failed to query positions");
+    LOG_ERROR("failed to query positions");
     return false;
   }
   for (;;) {
@@ -306,7 +306,7 @@ bool OrderManagementSystem::InitTradeInfo() {
   // query trades to update position
   std::vector<Trade> init_trades;
   if (!gateway_->QueryTrades()) {
-    spdlog::error("failed to query trades");
+    LOG_ERROR("failed to query trades");
     return false;
   }
   for (;;) {
@@ -332,7 +332,7 @@ bool OrderManagementSystem::InitRMS() {
   rms_->AddRule(std::make_shared<NoSelfTradeRule>());
   rms_->AddRule(std::make_shared<ThrottleRateLimit>());
   if (!rms_->Init(&risk_params)) {
-    spdlog::error("failed to init rms");
+    LOG_ERROR("failed to init rms");
     return false;
   }
   return true;
@@ -341,7 +341,7 @@ bool OrderManagementSystem::InitRMS() {
 bool OrderManagementSystem::InitMQ() {
   for (auto& strategy_conf : config_->strategy_config_list) {
     if (strategy_conf.strategy_name.size() >= sizeof(StrategyIdType)) {
-      spdlog::error("OMS::InitMQ. max len of stratey name is {}", sizeof(StrategyIdType) - 1);
+      LOG_ERROR("OMS::InitMQ. max len of stratey name is {}", sizeof(StrategyIdType) - 1);
       return false;
     }
     auto rsp_writer =
@@ -361,8 +361,7 @@ bool OrderManagementSystem::InitMQ() {
       for (auto& ticker : sub_set) {
         auto* contract = ContractTable::get_by_ticker(ticker);
         if (!contract) {
-          spdlog::error("OMS::InitMQ. failed to subscribe market data {}. contract not found.",
-                        ticker);
+          LOG_ERROR("OMS::InitMQ. failed to subscribe market data {}. contract not found.", ticker);
           return false;
         }
         md_dispatch_map_[contract->ticker_id].emplace_back(md_writer);
@@ -380,7 +379,7 @@ bool OrderManagementSystem::SubscribeMarketData() {
     sub_list.emplace_back(ticker);
   }
   if (!gateway_->Subscribe(sub_list)) {
-    spdlog::error("failed to subscribe market data");
+    LOG_ERROR("failed to subscribe market data");
     return false;
   }
   return true;
@@ -390,7 +389,7 @@ void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_trade
                                               int error_code) {
   auto it = strategy_name_to_index_.find(order.strategy_id);
   if (it == strategy_name_to_index_.end()) {
-    spdlog::warn("failed to send rsp: unknown strategy name");
+    LOG_WARN("failed to send rsp: unknown strategy name");
     return;
   }
   auto index = it->second;
@@ -419,22 +418,21 @@ void OrderManagementSystem::OnAccount(const Account& account) {
   account_ = account;
   lock.unlock();
 
-  spdlog::debug("[OMS::OnAccount] account_id:{} total_asset:{} cash:{} margin:{} frozen:{}",
-                account.account_id, account.total_asset, account.cash, account.margin,
-                account.frozen);
+  LOG_DEBUG("[OMS::OnAccount] account_id:{} total_asset:{} cash:{} margin:{} frozen:{}",
+            account.account_id, account.total_asset, account.cash, account.margin, account.frozen);
 }
 
 void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
   for (auto& position : *positions) {
     auto contract = ContractTable::get_by_index(position.ticker_id);
     if (!contract) {
-      spdlog::error("contract not found. ticker_id: {}", position.ticker_id);
+      LOG_ERROR("contract not found. ticker_id: {}", position.ticker_id);
       exit(-1);
     }
 
     auto& lp = position.long_pos;
     auto& sp = position.short_pos;
-    spdlog::info(
+    LOG_INFO(
         "[OMS::OnPosition] {}, LongVol:{}, LongYdVol:{}, LongPrice:{:.2f}, LongFrozen:{}, "
         "LongPNL:{}, ShortVol:{}, ShortYdVol:{}, ShortPrice:{:.2f}, ShortFrozen:{}, ShortPNL:{}",
         contract->ticker, lp.holdings, lp.yd_holdings, lp.cost_price, lp.frozen, lp.float_pnl,
@@ -457,8 +455,7 @@ void OrderManagementSystem::OnTick(const TickData& tick) {
     writer->write_str(buf, 0);
   }
 
-  spdlog::trace("[OMS::OnTick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick.ask[0],
-                tick.bid[0]);
+  LOG_TRACE("[OMS::OnTick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick.ask[0], tick.bid[0]);
 }
 
 void OrderManagementSystem::OnTrades(std::vector<Trade>* trades) {}
@@ -486,7 +483,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderAccepted] order not found. OrderID: {}", rsp.order_id);
+    LOG_WARN("[OMS::OnOrderAccepted] order not found. OrderID: {}", rsp.order_id);
     return;
   }
 
@@ -497,7 +494,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
   rms_->OnOrderAccepted(&order);
   SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
-  spdlog::info(
+  LOG_INFO(
       "[OMS::OnOrderAccepted] order accepted. OrderID: {}, {}, {}{}, Volume:{}, Price:{:.2f}, "
       "OrderType:{}",
       rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
@@ -508,7 +505,7 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderRejected] Order not found. OrderID: {}", rsp.order_id);
+    LOG_WARN("[OMS::OnOrderRejected] Order not found. OrderID: {}", rsp.order_id);
     return;
   }
 
@@ -516,9 +513,9 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   rms_->OnOrderRejected(&order, ERR_REJECTED);
   SendRspToStrategy(order, 0, 0.0, ERR_REJECTED);
 
-  spdlog::error("[OMS::OnOrderRejected] order rejected. {}. {}, {}{}, Volume:{}, Price:{:.3f}",
-                rsp.reason, order.req.contract->ticker, ToString(order.req.direction),
-                ToString(order.req.offset), order.req.volume, order.req.price);
+  LOG_ERROR("[OMS::OnOrderRejected] order rejected. {}. {}, {}{}, Volume:{}, Price:{:.3f}",
+            rsp.reason, order.req.contract->ticker, ToString(order.req.direction),
+            ToString(order.req.offset), order.req.volume, order.req.price);
 
   order_map_.erase(iter);
 }
@@ -534,9 +531,8 @@ void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn(
-        "[OMS::OnPrimaryMarketTraded] order not found. OrderID:{}, Traded:{}, Price:{:.3f}",
-        rsp.order_id, rsp.volume, rsp.price);
+    LOG_WARN("[OMS::OnPrimaryMarketTraded] order not found. OrderID:{}, Traded:{}, Price:{:.3f}",
+             rsp.order_id, rsp.volume, rsp.price);
     return;
   }
 
@@ -545,9 +541,9 @@ void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
     order.accepted = true;
     rms_->OnOrderAccepted(&order);
 
-    spdlog::info("[OMS::OnOrderAccepted] order accepted. {}, {}, OrderID:{}, Volume:{}",
-                 order.req.contract->ticker, ToString(order.req.direction), rsp.order_id,
-                 order.req.volume);
+    LOG_INFO("[OMS::OnOrderAccepted] order accepted. {}, {}, OrderID:{}, Volume:{}",
+             order.req.contract->ticker, ToString(order.req.direction), rsp.order_id,
+             order.req.volume);
   }
 
   if (rsp.trade_type == TradeType::kAcquireStock) {
@@ -559,8 +555,8 @@ void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
   } else if (rsp.trade_type == TradeType::kPrimaryMarket) {
     order.traded_volume = rsp.volume;
     rms_->OnOrderTraded(&order, &rsp);
-    spdlog::info("[OMS::OnPrimaryMarketTraded] done. {}, {}, Volume:{}", order.req.contract->ticker,
-                 ToString(order.req.direction), order.req.volume);
+    LOG_INFO("[OMS::OnPrimaryMarketTraded] done. {}, {}, Volume:{}", order.req.contract->ticker,
+             ToString(order.req.direction), order.req.volume);
     order_map_.erase(iter);
   }
 }
@@ -569,9 +565,8 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn(
-        "[OMS::OnSecondaryMarketTraded] Order not found. OrderID:{}, Traded:{}, Price:{:.3f}",
-        rsp.order_id, rsp.volume, rsp.price);
+    LOG_WARN("[OMS::OnSecondaryMarketTraded] Order not found. OrderID:{}, Traded:{}, Price:{:.3f}",
+             rsp.order_id, rsp.volume, rsp.price);
     return;
   }
 
@@ -581,7 +576,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
     rms_->OnOrderAccepted(&order);
     SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
-    spdlog::info(
+    LOG_INFO(
         "[OMS::OnOrderAccepted] order accepted. OrderID: {}, {}, {}{}, Volume:{}, Price:{:.2f}, "
         "OrderType:{}",
         rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
@@ -590,7 +585,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
 
   order.traded_volume += rsp.volume;
 
-  spdlog::info(
+  LOG_INFO(
       "[OMS::OnOrderTraded] order traded. OrderID: {}, {}, {}{}, Traded:{}, Price:{:.3f}, "
       "TotalTraded/Original:{}/{}",
       rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
@@ -600,10 +595,9 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   SendRspToStrategy(order, rsp.volume, rsp.price, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
-    spdlog::info(
-        "[OMS::OnOrderTraded] order completed. OrderID:{}, {}, {}{}, Traded/Original: {}/{}",
-        rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
-        ToString(order.req.offset), order.traded_volume, order.req.volume);
+    LOG_INFO("[OMS::OnOrderTraded] order completed. OrderID:{}, {}, {}{}, Traded/Original: {}/{}",
+             rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
+             ToString(order.req.offset), order.traded_volume, order.req.volume);
 
     // 订单结束，通知风控模块
     rms_->OnOrderCompleted(&order);
@@ -615,25 +609,24 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
-    spdlog::warn("[OMS::OnOrderCanceled] Order not found. OrderID:{}", rsp.order_id);
+    LOG_WARN("[OMS::OnOrderCanceled] Order not found. OrderID:{}", rsp.order_id);
     return;
   }
 
   auto& order = iter->second;
   order.canceled_volume = rsp.canceled_volume;
 
-  spdlog::info("[OMS::OnOrderCanceled] order canceled. {}, {}{}, OrderID:{}, Canceled:{}",
-               order.req.contract->ticker, ToString(order.req.direction),
-               ToString(order.req.offset), rsp.order_id, rsp.canceled_volume);
+  LOG_INFO("[OMS::OnOrderCanceled] order canceled. {}, {}{}, OrderID:{}, Canceled:{}",
+           order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
+           rsp.order_id, rsp.canceled_volume);
 
   rms_->OnOrderCanceled(&order, rsp.canceled_volume);
   SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
-    spdlog::info(
-        "[OMS::OnOrderCanceled] order completed. {}, {}{}, OrderID:{}, Traded/Original:{}/{}",
-        order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
-        rsp.order_id, order.traded_volume, order.req.volume);
+    LOG_INFO("[OMS::OnOrderCanceled] order completed. {}, {}{}, OrderID:{}, Traded/Original:{}/{}",
+             order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
+             rsp.order_id, order.traded_volume, order.req.volume);
 
     rms_->OnOrderCompleted(&order);
     order_map_.erase(iter);
@@ -641,8 +634,8 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
 }
 
 void OrderManagementSystem::operator()(const OrderCancelRejection& rsp) {
-  spdlog::warn("[OMS::OnOrderCancelRejected] order cannot be canceled. {}. OrderID: {}", rsp.reason,
-               rsp.order_id);
+  LOG_WARN("[OMS::OnOrderCancelRejected] order cannot be canceled. {}. OrderID: {}", rsp.reason,
+           rsp.order_id);
 }
 
 }  // namespace ft

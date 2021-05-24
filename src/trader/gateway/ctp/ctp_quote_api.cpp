@@ -4,7 +4,7 @@
 
 #include <utility>
 
-#include "spdlog/spdlog.h"
+#include "ft/base/log.h"
 #include "trader/gateway/ctp/ctp_gateway.h"
 
 namespace ft {
@@ -21,7 +21,7 @@ CtpQuoteApi::~CtpQuoteApi() {
 bool CtpQuoteApi::Login(const GatewayConfig &config) {
   quote_api_.reset(CThostFtdcMdApi::CreateFtdcMdApi());
   if (!quote_api_) {
-    spdlog::error("[CtpQuoteApi::Login] Failed to create CTP MD API");
+    LOG_ERROR("[CtpQuoteApi::Login] Failed to create CTP MD API");
     return false;
   }
 
@@ -55,7 +55,7 @@ bool CtpQuoteApi::Subscribe(const std::vector<std::string> &_sub_list) {
 
   if (sub_list.size() > 0) {
     if (quote_api_->SubscribeMarketData(sub_list.data(), sub_list.size()) != 0) {
-      spdlog::error("[CtpQuoteApi::Subscribe] Failed to Subscribe");
+      LOG_ERROR("[CtpQuoteApi::Subscribe] Failed to Subscribe");
       return false;
     }
   }
@@ -63,25 +63,25 @@ bool CtpQuoteApi::Subscribe(const std::vector<std::string> &_sub_list) {
 }
 
 void CtpQuoteApi::OnFrontConnected() {
-  spdlog::debug("[CtpQuoteApi::OnFrontConnectedMD] Connected");
+  LOG_DEBUG("[CtpQuoteApi::OnFrontConnectedMD] Connected");
 
   CThostFtdcReqUserLoginField login_req{};
   strncpy(login_req.BrokerID, broker_id_.c_str(), sizeof(login_req.BrokerID));
   strncpy(login_req.UserID, investor_id_.c_str(), sizeof(login_req.UserID));
   strncpy(login_req.Password, passwd_.c_str(), sizeof(login_req.Password));
   if (quote_api_->ReqUserLogin(&login_req, next_req_id()) != 0) {
-    spdlog::error("[CtpQuoteApi::Login] Invalid user-Login field");
+    LOG_ERROR("[CtpQuoteApi::Login] Invalid user-Login field");
     status_.store(-1, std::memory_order::memory_order_release);
   }
 }
 
 void CtpQuoteApi::OnFrontDisconnected(int reason) {
-  spdlog::error("[CtpQuoteApi::OnFrontDisconnectedMD] Disconnected");
+  LOG_ERROR("[CtpQuoteApi::OnFrontDisconnectedMD] Disconnected");
   status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnHeartBeatWarning(int time_lapse) {
-  spdlog::warn(
+  LOG_WARN(
       "[CtpQuoteApi::OnHeartBeatWarningMD] Warn. No packet received for a "
       "period of time");
 }
@@ -91,46 +91,46 @@ void CtpQuoteApi::OnRspUserLogin(CThostFtdcRspUserLoginField *login_rsp,
   if (!is_last) return;
 
   if (is_error_rsp(rsp_info)) {
-    spdlog::error("[CtpQuoteApi::OnRspUserLogin] Failed. ErrorMsg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpQuoteApi::OnRspUserLogin] Failed. ErrorMsg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     status_.store(-1, std::memory_order::memory_order_release);
     return;
   }
 
-  spdlog::debug("[CtpQuoteApi::OnRspUserLogin] Success. Login as {}", investor_id_);
+  LOG_DEBUG("[CtpQuoteApi::OnRspUserLogin] Success. Login as {}", investor_id_);
   status_.store(1, std::memory_order::memory_order_release);
 }
 
 void CtpQuoteApi::OnRspUserLogout(CThostFtdcUserLogoutField *logout_rsp,
                                   CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  spdlog::debug("[CtpQuoteApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
-                logout_rsp->BrokerID, logout_rsp->UserID);
+  LOG_DEBUG("[CtpQuoteApi::OnRspUserLogout] Success. Broker ID: {}, Investor ID: {}",
+            logout_rsp->BrokerID, logout_rsp->UserID);
   status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnRspError(CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
-  spdlog::debug("[CtpQuoteApi::OnRspError] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
+  LOG_DEBUG("[CtpQuoteApi::OnRspError] ErrorMsg: {}", gb2312_to_utf8(rsp_info->ErrorMsg));
   status_.store(0, std::memory_order::memory_order_relaxed);
 }
 
 void CtpQuoteApi::OnRspSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
                                      CThostFtdcRspInfoField *rsp_info, int req_id, bool is_last) {
   if (is_error_rsp(rsp_info) || !instrument) {
-    spdlog::error("[CtpQuoteApi::OnRspSubMarketData] Failed. Error Msg: {}",
-                  gb2312_to_utf8(rsp_info->ErrorMsg));
+    LOG_ERROR("[CtpQuoteApi::OnRspSubMarketData] Failed. Error Msg: {}",
+              gb2312_to_utf8(rsp_info->ErrorMsg));
     return;
   }
 
   auto contract = ContractTable::get_by_ticker(instrument->InstrumentID);
   if (!contract) {
-    spdlog::error(
+    LOG_ERROR(
         "[CtpQuoteApi::OnRspSubMarketData] ExchangeID not found in contract "
         "list. Maybe you should update the contract list. Ticker: {}",
         instrument->InstrumentID);
     return;
   }
 
-  spdlog::debug("[CtpQuoteApi::OnRspSubMarketData] Success. Ticker: {}", contract->ticker);
+  LOG_DEBUG("[CtpQuoteApi::OnRspSubMarketData] Success. Ticker: {}", contract->ticker);
 }
 
 void CtpQuoteApi::OnRspUnSubMarketData(CThostFtdcSpecificInstrumentField *instrument,
@@ -146,13 +146,13 @@ void CtpQuoteApi::OnRspUnSubForQuoteRsp(CThostFtdcSpecificInstrumentField *instr
 
 void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   if (!md) {
-    spdlog::error("[CtpQuoteApi::OnRtnDepthMarketData] Failed. md is nullptr");
+    LOG_ERROR("[CtpQuoteApi::OnRtnDepthMarketData] Failed. md is nullptr");
     return;
   }
 
   auto contract = ContractTable::get_by_ticker(md->InstrumentID);
   if (!contract) {
-    spdlog::warn(
+    LOG_WARN(
         "[CtpQuoteApi::OnRtnDepthMarketData] Failed. ExchangeID not found in "
         "contract list. "
         "Maybe you should update the contract list. Symbol: {}",
@@ -200,7 +200,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   tick.bid_volume[3] = md->BidVolume4;
   tick.bid_volume[4] = md->BidVolume5;
 
-  spdlog::trace(
+  LOG_TRACE(
       "[CtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime:{}, TimeUS:{}, "
       "LastPrice:{:.2f}, Volume:{}, Turnover:{}, OpenInterest:{}",
       contract->ticker, md->ActionDay, tick.exchange_datetime.ToString(), tick.last_price,

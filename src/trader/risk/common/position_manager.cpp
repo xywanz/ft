@@ -3,8 +3,8 @@
 #include "trader/risk/common/position_manager.h"
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/utils/protocol_utils.h"
-#include "spdlog/spdlog.h"
 
 namespace ft {
 
@@ -28,7 +28,7 @@ int PositionManager::CheckOrderRequest(const Order* order) {
     }
 
     if (available < req->volume) {
-      spdlog::error(
+      LOG_ERROR(
           "[PositionManager::CheckOrderRequest] Not enough volume to Close. "
           "Available: {}, OrderVolume: {}, OrderType: {}, {}{}",
           available, req->volume, ToString(req->type), ToString(req->direction),

@@ -5,7 +5,7 @@
 #include "ThostFtdcMdApi.h"
 #include "ThostFtdcTraderApi.h"
 #include "ft/base/contract_table.h"
-#include "spdlog/spdlog.h"
+#include "ft/base/log.h"
 
 namespace ft {
 
@@ -17,29 +17,29 @@ bool CtpGateway::Init(const GatewayConfig &config) {
   if (config.broker_id.size() > sizeof(TThostFtdcBrokerIDType) || config.broker_id.empty() ||
       config.investor_id.size() > sizeof(TThostFtdcUserIDType) || config.investor_id.empty() ||
       config.password.size() > sizeof(TThostFtdcPasswordType) || config.password.empty()) {
-    spdlog::error("[CtpGateway::Login] Failed. Invalid Login config");
+    LOG_ERROR("[CtpGateway::Login] Failed. Invalid Login config");
     return false;
   }
 
   if (config.trade_server_address.empty() && config.quote_server_address.empty()) {
-    spdlog::warn("[CtpGateway::Login] 交易柜台和行情服务器地址都未设置");
+    LOG_WARN("[CtpGateway::Login] 交易柜台和行情服务器地址都未设置");
     return false;
   }
 
   if (!config.trade_server_address.empty()) {
-    spdlog::debug("[CtpGateway::Login] Login into trading server");
+    LOG_DEBUG("[CtpGateway::Login] Login into trading server");
     trade_api_ = std::make_unique<CtpTradeApi>(this);
     if (!trade_api_->Login(config)) {
-      spdlog::error("[CtpGateway::Login] Failed to Login into the counter");
+      LOG_ERROR("[CtpGateway::Login] Failed to Login into the counter");
       return false;
     }
   }
 
   if (!config.quote_server_address.empty()) {
-    spdlog::debug("[CtpGateway::Login] Login into market data server");
+    LOG_DEBUG("[CtpGateway::Login] Login into market data server");
     quote_api_ = std::make_unique<CtpQuoteApi>(this);
     if (!quote_api_->Login(config)) {
-      spdlog::error("[CtpGateway::Login] Failed to Login into the md server");
+      LOG_ERROR("[CtpGateway::Login] Failed to Login into the md server");
       return false;
     }
   }

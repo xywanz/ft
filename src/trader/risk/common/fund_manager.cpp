@@ -3,7 +3,7 @@
 #include "trader/risk/common/fund_manager.h"
 
 #include "ft/base/contract_table.h"
-#include "spdlog/spdlog.h"
+#include "ft/base/log.h"
 
 namespace ft {
 
@@ -47,9 +47,9 @@ void FundManager::OnOrderSent(const Order* order) {
     double changed = contract->size * order->req.volume * order->req.price * margin_rate;
     account_->cash -= changed;
     account_->frozen += changed;
-    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                  static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
-                  static_cast<double>(account_->margin));
+    LOG_DEBUG("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+              static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
+              static_cast<double>(account_->margin));
   }
 }
 
@@ -73,9 +73,9 @@ void FundManager::OnOrderTraded(const Order* order, const Trade* trade) {
       account_->margin -= margin;
       account_->cash += margin;
       if (account_->margin < 0) account_->margin = 0;
-      spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                    static_cast<double>(account_->total_asset),
-                    static_cast<double>(account_->frozen), static_cast<double>(account_->margin));
+      LOG_DEBUG("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+                static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
+                static_cast<double>(account_->margin));
     }
   } else if (trade->trade_type == TradeType::kCashSubstitution) {
     if (order->req.direction == Direction::kPurchase) {
@@ -97,9 +97,9 @@ void FundManager::OnOrderCanceled(const Order* order, int canceled) {
     account_->frozen -= changed;
     account_->cash += changed;
 
-    spdlog::debug("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                  static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
-                  static_cast<double>(account_->margin));
+    LOG_DEBUG("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+              static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
+              static_cast<double>(account_->margin));
   }
 }
 

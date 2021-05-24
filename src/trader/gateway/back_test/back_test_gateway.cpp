@@ -8,10 +8,10 @@
 
 #include "fmt/format.h"
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
 #include "ft/utils/string_utils.h"
-#include "spdlog/spdlog.h"
 
 namespace ft {
 
@@ -23,7 +23,7 @@ bool BackTestGateway::Init(const GatewayConfig& config) {
   ctx_.account.margin = 0.0;
 
   if (!LoadHistoryData(config.arg0)) {
-    spdlog::error("failed to load history data");
+    LOG_ERROR("failed to load history data");
     return false;
   }
 
@@ -101,7 +101,7 @@ bool BackTestGateway::QueryTrades() {
 void BackTestGateway::OnNotify(uint64_t signal) {
   std::unique_lock<std::mutex> lock(mutex_);
   if (current_tick_pos_ >= history_data_.size()) {
-    spdlog::info("backtest finished");
+    LOG_INFO("backtest finished");
     exit(0);
   }
   msg_queue_.push(history_data_[current_tick_pos_++]);
@@ -111,7 +111,7 @@ void BackTestGateway::OnNotify(uint64_t signal) {
 bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
   std::ifstream tick_ifs(history_data_file);
   if (!tick_ifs) {
-    spdlog::error("BackTestGateway: tick file not found {}", history_data_file);
+    LOG_ERROR("BackTestGateway: tick file not found {}", history_data_file);
     return false;
   }
   std::string line;
@@ -120,7 +120,7 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
   while (std::getline(tick_ifs, line)) {
     StringSplit(line, ",", &tokens, false);
     if (tokens.size() != 15) {
-      spdlog::error("BackTestGateway: invalid tick file {}");
+      LOG_ERROR("BackTestGateway: invalid tick file {}");
       exit(1);
     }
     history_data_.emplace_back(TickData{});
@@ -139,7 +139,7 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
     tick.open_interest = tokens[11].empty() ? 0 : std::stoul(tokens[11]);
     auto* contract = ContractTable::get_by_ticker(tokens[13]);
     if (!contract) {
-      spdlog::error("BackTestGateway: ticker {} not found", tokens[13]);
+      LOG_ERROR("BackTestGateway: ticker {} not found", tokens[13]);
       exit(1);
     }
     tick.ticker_id = contract->ticker_id;
@@ -152,21 +152,20 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
 
 bool BackTestGateway::CheckOrder(const OrderRequest& order) const {
   if (order.volume <= 0) {
-    spdlog::error("BackTestGateway::CheckOrder: invalid volume {}", order.volume);
+    LOG_ERROR("BackTestGateway::CheckOrder: invalid volume {}", order.volume);
     return false;
   }
   if (order.type != OrderType::kLimit && order.type != OrderType::kMarket &&
       order.type != OrderType::kFak && order.type != OrderType::kFok) {
-    spdlog::error("BackTestGateway::CheckOrder: unsupported order type {}", ToString(order.type));
+    LOG_ERROR("BackTestGateway::CheckOrder: unsupported order type {}", ToString(order.type));
     return false;
   }
   if (order.price <= 0.0) {
-    spdlog::error("BackTestGateway::CheckOrder: invalid price {}", order.price);
+    LOG_ERROR("BackTestGateway::CheckOrder: invalid price {}", order.price);
     return false;
   }
   if (order.direction != Direction::kBuy && order.direction != Direction::kSell) {
-    spdlog::error("BackTestGateway::CheckOrder: unsupported direction {}",
-                  ToString(order.direction));
+    LOG_ERROR("BackTestGateway::CheckOrder: unsupported direction {}", ToString(order.direction));
     return false;
   }
   return true;
@@ -176,7 +175,7 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
   if (IsOffsetOpen(order.offset)) {
     double fund_needed = order.contract->size * order.volume * order.price;
     if (ctx_.account.cash < fund_needed) {
-      spdlog::error("BackTestGateway::CheckAndUpdateContext: 资金不足");
+      LOG_ERROR("BackTestGateway::CheckAndUpdateContext: 资金不足");
       return false;
     }
     ctx_.account.cash -= fund_needed;
@@ -190,7 +189,7 @@ bool BackTestGateway::CheckAndUpdateContext(const OrderRequest& order) {
     }
 
     if (available < order.volume) {
-      spdlog::error("BackTestGateway::CheckAndUpdateContext: 仓位不足");
+      LOG_ERROR("BackTestGateway::CheckAndUpdateContext: 仓位不足");
       return false;
     }
   }

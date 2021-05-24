@@ -3,6 +3,7 @@
 #include "trader/risk/common/no_self_trade.h"
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
 
@@ -36,9 +37,8 @@ int NoSelfTradeRule::CheckOrderRequest(const Order* order) {
     if (pending_order->price < 1e-5 || pending_order->type == OrderType::kMarket ||
         (req->direction == Direction::kBuy && req->price > pending_order->price - 1e-5) ||
         (req->direction == Direction::kSell && req->price < pending_order->price + 1e-5)) {
-      spdlog::error(
-          "[RiskMgr] Self trade! Ticker: {}. This Order: "
-          "[Direction: {}, Type: {}, Price: {:.2f}]. "
+      LOG_ERROR(
+          "[RiskMgr] Self trade! Ticker: {}. This Order: [Direction: {}, Type: {}, Price: {:.2f}]. "
           "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
           contract->ticker, ToString(req->direction), ToString(req->type), req->price,
           ToString(pending_order->direction), ToString(pending_order->type), pending_order->price);

@@ -2,7 +2,7 @@
 
 #include "ft/base/config.h"
 
-#include "spdlog/spdlog.h"
+#include "ft/base/log.h"
 #include "yaml-cpp/yaml.h"
 
 namespace ft {
@@ -51,10 +51,10 @@ bool FlareTraderConfig::Load(const std::string& file) {
 
     return true;
   } catch (YAML::Exception& e) {
-    spdlog::error("{}", e.what());
+    LOG_ERROR("{}", e.what());
     return false;
   } catch (std::exception& e) {
-    spdlog::error("{}", e.what());
+    LOG_ERROR("{}", e.what());
     return false;
   } catch (...) {
     return false;

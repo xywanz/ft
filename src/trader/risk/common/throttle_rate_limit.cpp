@@ -2,6 +2,7 @@
 
 #include "trader/risk/common/throttle_rate_limit.h"
 
+#include "ft/base/log.h"
 #include "ft/utils/protocol_utils.h"
 
 namespace ft {
@@ -28,7 +29,7 @@ int ThrottleRateLimit::CheckOrderRequest(const Order* order) {
     }
 
     if (order_tm_record_.size() >= order_limit_) {
-      spdlog::error(
+      LOG_ERROR(
           "[ThrottleRateLimit::check] Order num reached limit within {} ms. "
           "Current: {}, Limit: {}",
           period_ms_, order_tm_record_.size(), order_limit_);
@@ -46,7 +47,7 @@ int ThrottleRateLimit::CheckOrderRequest(const Order* order) {
     }
 
     if (volume_count_ + req->volume > volume_limit_) {
-      spdlog::error(
+      LOG_ERROR(
           "[ThrottleRateLimit::check] Volume reach limit within {} ms. "
           "This Order: {}, Current: {}, Limit: {}",
           period_ms_, req->volume, volume_count_, volume_limit_);

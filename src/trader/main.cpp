@@ -1,8 +1,8 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "getopt.hpp"
-#include "spdlog/spdlog.h"
 #include "trader/oms.h"
 
 static void Usage(const char* pname) {
@@ -26,13 +26,13 @@ int main(int argc, char** argv) {
 
   ft::FlareTraderConfig config;
   if (!config.Load(config_file)) {
-    spdlog::error("failed to load config from {}", config_file);
+    LOG_ERROR("failed to load config from {}", config_file);
     exit(EXIT_FAILURE);
   }
 
   auto oms = std::make_unique<ft::OrderManagementSystem>();
   if (!oms->Init(config)) {
-    spdlog::error("failed to init oms");
+    LOG_ERROR("failed to init oms");
     exit(EXIT_FAILURE);
   }
 
