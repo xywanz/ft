@@ -213,6 +213,7 @@ struct TraderNotification {
 struct TraderCommand : public pubsub::Serializable<TraderCommand> {
   uint32_t magic;
   uint32_t type;
+  uint64_t timestamp_us;
   bool without_check;
   StrategyIdType strategy_id;
   union {
@@ -224,7 +225,7 @@ struct TraderCommand : public pubsub::Serializable<TraderCommand> {
 
   template <class Archive>
   void serialize(Archive& ar) {
-    ar(magic, type, without_check, strategy_id);
+    ar(magic, type, timestamp_us, without_check, strategy_id);
 
     switch (type) {
       case CMD_NEW_ORDER: {

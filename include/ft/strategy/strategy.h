@@ -80,26 +80,31 @@ class Strategy : public StrategyRunner {
   void Subscribe(const std::vector<std::string>& sub_list);
 
   void BuyOpen(const std::string& ticker, int volume, double price,
-               OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
+               OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+               uint64_t timestamp_us = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id,
+                      timestamp_us);
   }
 
   void BuyClose(const std::string& ticker, int volume, double price,
-                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                uint64_t timestamp_us = 0) {
     sender_.SendOrder(ticker, volume, Direction::kBuy, Offset::kCloseToday, type, price,
-                      client_order_id);
+                      client_order_id, timestamp_us);
   }
 
   void SellOpen(const std::string& ticker, int volume, double price,
-                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    sender_.SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price,
-                      client_order_id);
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                uint64_t timestamp_us = 0) {
+    sender_.SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id,
+                      timestamp_us);
   }
 
   void SellClose(const std::string& ticker, int volume, double price,
-                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
+                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                 uint64_t timestamp_us = 0) {
     sender_.SendOrder(ticker, volume, Direction::kSell, Offset::kCloseToday, type, price,
-                      client_order_id);
+                      client_order_id, timestamp_us);
   }
 
   void CancelOrder(uint64_t order_id) { sender_.CancelOrder(order_id); }
@@ -120,8 +125,9 @@ class Strategy : public StrategyRunner {
 
  private:
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
-                 OrderType type, double price, uint32_t client_order_id) {
-    sender_.SendOrder(ticker, volume, direction, offset, type, price, client_order_id);
+                 OrderType type, double price, uint32_t client_order_id, uint32_t timestamp_us) {
+    sender_.SendOrder(ticker, volume, direction, offset, type, price, client_order_id,
+                      timestamp_us);
   }
 
  private:

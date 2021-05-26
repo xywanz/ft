@@ -150,6 +150,9 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
+  timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+
   auto contract = ContractTable::get_by_ticker(md->InstrumentID);
   if (!contract) {
     LOG_WARN(
@@ -161,7 +164,7 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   }
 
   TickData tick{};
-  tick.local_datetime = datetime::Datetime::now();
+  tick.local_timestamp_us = ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
   tick.source = MarketDataSource::kCTP;
   tick.ticker_id = contract->ticker_id;
   tick.exchange_datetime = datetime::strptime(

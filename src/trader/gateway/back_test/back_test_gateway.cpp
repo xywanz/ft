@@ -126,8 +126,8 @@ bool BackTestGateway::LoadHistoryData(const std::string& history_data_file) {
     history_data_.emplace_back(TickData{});
 
     auto& tick = history_data_.back();
+    tick.local_timestamp_us = 0;
     tick.exchange_datetime = datetime::strptime(tokens[0], "%Y-%m-%d %H:%M:%S.%s");
-    tick.local_datetime = tick.exchange_datetime;
     tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
     tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
     tick.ask_volume[0] = tokens[4].empty() ? 0 : std::stoi(tokens[4]);

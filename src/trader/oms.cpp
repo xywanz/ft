@@ -169,6 +169,12 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
     }
   }
 
+#ifdef FT_MEASURE_TICK_TO_TRADE
+  timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  LOG_INFO("tick-to-trade: {} ns", ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL - cmd.timestamp_us);
+#endif
+
   if (!gateway_->SendOrder(req, &order.privdata)) {
     LOG_ERROR("[OMS::SendOrder] failed to send order. {}, {}{}, {}, Volume:{}, Price:{:.3f}",
               contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),

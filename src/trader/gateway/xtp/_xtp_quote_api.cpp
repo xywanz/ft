@@ -164,6 +164,9 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
     return;
   }
 
+  timespec ts;
+  clock_gettime(CLOCK_REALTIME, &ts);
+
   auto contract = ContractTable::get_by_ticker(market_data->ticker);
   if (!contract) {
     LOG_TRACE("[XtpQuoteApi::OnDepthMarketData] {} not found int ContractTable",
@@ -174,7 +177,7 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   TickData tick{};
   tick.source = MarketDataSource::kXTP;
   tick.ticker_id = contract->ticker_id;
-  tick.local_datetime = datetime::Datetime::now();
+  tick.local_timestamp_us = ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
   tick.exchange_datetime =
       datetime::strptime(fmt::format("{:017}", market_data->data_time), "%Y%m%d%H%M%S%s");
 

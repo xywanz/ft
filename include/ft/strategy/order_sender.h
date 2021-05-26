@@ -22,52 +22,63 @@ class OrderSender {
   void SetOrderFlag(OrderFlag flags) { flags_ = flags; }
 
   void BuyOpen(const std::string& ticker, int volume, double price,
-               OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
+               OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+               uint64_t timestamp_us = 0) {
+    SendOrder(ticker, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id,
+              timestamp_us);
   }
 
   void BuyOpen(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
-               uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id);
+               uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
+    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kOpen, type, price, client_order_id,
+              timestamp_us);
   }
 
   void BuyClose(const std::string& ticker, int volume, double price,
-                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::kBuy, Offset::kCloseToday, type, price, client_order_id);
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                uint64_t timestamp_us = 0) {
+    SendOrder(ticker, volume, Direction::kBuy, Offset::kCloseToday, type, price, client_order_id,
+              timestamp_us);
   }
 
   void BuyClose(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
-                uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kCloseToday, type, price,
-              client_order_id);
+                uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
+    SendOrder(ticker_id, volume, Direction::kBuy, Offset::kCloseToday, type, price, client_order_id,
+              timestamp_us);
   }
 
   void SellOpen(const std::string& ticker, int volume, double price,
-                OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id);
+                OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                uint64_t timestamp_us = 0) {
+    SendOrder(ticker, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id,
+              timestamp_us);
   }
 
   void SellOpen(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
-                uint32_t client_order_id = 0) {
-    SendOrder(ticker_id, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id);
+                uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
+    SendOrder(ticker_id, volume, Direction::kSell, Offset::kOpen, type, price, client_order_id,
+              timestamp_us);
   }
 
   void SellClose(const std::string& ticker, int volume, double price,
-                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0) {
-    SendOrder(ticker, volume, Direction::kSell, Offset::kCloseToday, type, price, client_order_id);
+                 OrderType type = OrderType::kFak, uint32_t client_order_id = 0,
+                 uint64_t timestamp_us = 0) {
+    SendOrder(ticker, volume, Direction::kSell, Offset::kCloseToday, type, price, client_order_id,
+              timestamp_us);
   }
 
   void SellClose(uint32_t ticker_id, int volume, double price, OrderType type = OrderType::kFak,
-                 uint32_t client_order_id = 0) {
+                 uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
     SendOrder(ticker_id, volume, Direction::kSell, Offset::kCloseToday, type, price,
-              client_order_id);
+              client_order_id, timestamp_us);
   }
 
   void SendOrder(uint32_t ticker_id, int volume, Direction direction, Offset offset, OrderType type,
-                 double price, uint32_t client_order_id) {
+                 double price, uint32_t client_order_id = 0, uint32_t timestamp_us = 0) {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_NEW_ORDER;
+    cmd.timestamp_us = timestamp_us;
     cmd.without_check = false;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.client_order_id = client_order_id;
@@ -85,12 +96,13 @@ class OrderSender {
   }
 
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
-                 OrderType type, double price, uint32_t client_order_id) {
+                 OrderType type, double price, uint32_t client_order_id, uint64_t timestamp_us) {
     const Contract* contract;
     contract = ContractTable::get_by_ticker(ticker);
     assert(contract);
 
-    SendOrder(contract->ticker_id, volume, direction, offset, type, price, client_order_id);
+    SendOrder(contract->ticker_id, volume, direction, offset, type, price, client_order_id,
+              timestamp_us);
   }
 
   void CancelOrder(uint64_t order_id) {
