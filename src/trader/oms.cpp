@@ -190,7 +190,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
 
   LOG_DEBUG("[OMS::SendOrder] success. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.3f}",
             req.order_id, contract->ticker, ToString(req.direction), ToString(req.offset),
-            ToString(req.type), , req.volume, req.price);
+            ToString(req.type), req.volume, req.price);
   return true;
 }
 
