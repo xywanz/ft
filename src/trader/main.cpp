@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     exit(EXIT_SUCCESS);
   }
 
-  spdlog::set_level(spdlog::level::from_str(log_level));
+  LOG_SET_LEVEL(log_level);
 
   ft::FlareTraderConfig config;
   if (!config.Load(config_file)) {

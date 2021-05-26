@@ -16,21 +16,24 @@ class Logger {
     return logger;
   }
 
-  spdlog::logger* GetLogger() { return logger_.get(); }
+  std::shared_ptr<spdlog::logger> GetLogger() { return logger_; }
 
  private:
-  Logger() : logger_(spdlog::default_logger()) {}
+  Logger() : logger_(spdlog::default_logger_raw()) {}
 
  private:
   std::shared_ptr<spdlog::logger> logger_;
 };
 
-#define LOG_TRACE(...) SPDLOG_LOGGER_TRACE(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
-#define LOG_DEBUG(...) SPDLOG_LOGGER_DEBUG(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
-#define LOG_INFO(...) SPDLOG_LOGGER_INFO(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
-#define LOG_WARN(...) SPDLOG_LOGGER_WARN(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
-#define LOG_ERROR(...) SPDLOG_LOGGER_ERROR(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
-#define LOG_FATAL(...) SPDLOG_LOGGER_CRITICAL(::ft::Logger::Instance().GetLogger(), __VA_ARGS__)
+#define LOG_SET_LEVEL(log_level) \
+  ::ft::Logger::Instance().GetLogger()->set_level(spdlog::level::from_str(log_level))
+
+#define LOG_TRACE(...) ::ft::Logger::Instance().GetLogger()->trace(__VA_ARGS__)
+#define LOG_DEBUG(...) ::ft::Logger::Instance().GetLogger()->debug(__VA_ARGS__)
+#define LOG_INFO(...) ::ft::Logger::Instance().GetLogger()->info(__VA_ARGS__)
+#define LOG_WARN(...) ::ft::Logger::Instance().GetLogger()->warn(__VA_ARGS__)
+#define LOG_ERROR(...) ::ft::Logger::Instance().GetLogger()->error(__VA_ARGS__)
+#define LOG_FATAL(...) ::ft::Logger::Instance().GetLogger()->critical(__VA_ARGS__)
 
 }  // namespace ft
 
