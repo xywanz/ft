@@ -1,7 +1,7 @@
-# virtual api只需要且必须要填api以及contracts_file配置项
+# backtest api只需要且必须要填api以及contracts_file配置项
 # 以下模板为模拟盘或实盘的模板，以ctp为例
 gateway_config: 
-  api:  ./libctp_gateway.so                               # 必填。现支持ctp/xtp/virtual
+  api:  ctp                                               # 必填。现支持ctp/xtp/backtest
   trade_server_address: tcp://123.123.123.123:8888        # 必填。交易柜台地址
   quote_server_address: tcp://180.168.146.187:10131       # 必填。行情服务器地址
   broker_id: 9999                                         # 选填。broker id，根据API选填
@@ -10,12 +10,14 @@ gateway_config:
   auth_code: 0000000000000000                             # 选填。认证码，CTP和XTP都需要
   app_id: simnow_client_test                              # 选填。CTP交易需要
 
-  # 下面9个都是各个Gateway自定义的参数，可选
+  # 是否在启动时撤销所有未完成订单，默认为true
+  cancel_outstanding_orders_on_startup: true
+
+  # 下面4个都是各个Gateway自定义的参数，可选
   arg0:
   arg1:
   arg2:
   arg3:
-  arg4:
 
 
 # XTP的自定义参数说明
@@ -32,13 +34,6 @@ oms_config:
 
 
 rms_config:
-  # 是否在启动时撤销所有未完成订单，默认为true
-  cancel_outstanding_orders_on_startup: true
-
-  # 没有回报模式，若设置为true，则oms不会通过redis向策略程序
-  # 发送交易回报
-  no_receipt_mode: false
-
   # 下面三个是用于订单流速控制的参数
   # 流控模块是对于任意时间片都生效的
   throttle_rate_limit_period_ms: 1000    # 流速的一个时间片，设置为0表示关闭流控功能

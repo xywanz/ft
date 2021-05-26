@@ -55,25 +55,52 @@ $ vim ../config/ctp_config.yml
 ```
 下面是一份simnow的配置文件
 ```yaml
-api: ./libctp_gateway.so
-trade_server_address: tcp://180.168.146.187:10130
-quote_server_address: tcp://180.168.146.187:10131
-broker_id: 9999
-investor_id: 123456  # 你的simnow账户
-password: abc123     # 你的simnow密码
-auth_code: 0000000000000000
-app_id: simnow_client_test
-subscription_list: [rb2104,rb2105]  # 订阅rb2104,rb2105两个品种的行情
+# backtest api只需要且必须要填api以及contracts_file配置项
+# 以下模板为模拟盘或实盘的模板，以ctp为例
+gateway_config: 
+  api:  ctp                                               # 必填。现支持ctp/xtp/backtest
+  trade_server_address: tcp://123.123.123.123:8888        # 必填。交易柜台地址
+  quote_server_address: tcp://180.168.146.187:10131       # 必填。行情服务器地址
+  broker_id: 9999                                         # 选填。broker id，根据API选填
+  investor_id: 123456                                     # 必填。账户
+  password: 1234567                                       # 必填。密码
+  auth_code: 0000000000000000                             # 选填。认证码，CTP和XTP都需要
+  app_id: simnow_client_test                              # 选填。CTP交易需要
 
-contracts_file: ../config/contracts.csv  # 合约文件
+  # 是否在启动时撤销所有未完成订单，默认为true
+  cancel_outstanding_orders_on_startup: true
 
-no_receipt_mode: false  # 无回报模式，开启此选项则策略不会收到回报
-cancel_outstanding_orders_on_startup: true  # 启动时撤销所有未完成订单
+  # 下面4个都是各个Gateway自定义的参数，可选
+  arg0:
+  arg1:
+  arg2:
+  arg3:
 
-# 流控配置，填0表示关闭该功能
-throttle_rate_limit_period_ms: 0
-throttle_rate_order_limit: 0
-throttle_rate_volume_limit: 0
+
+# XTP的自定义参数说明
+# arg0: ../config/etf_list.csv         # etf清单文件，用于etf套利
+# arg1: ../config/etf_components.csv   # etf成分股文件，用于etf套利
+
+# 选填。指定用于交易的contracts文件，如果不填写该项，或
+# 是路径填写有误，程序会在启动时调用查询接口从服务器查询
+# 合约，如果查询成功则使用查询结果，并把查询结果保存至
+# ./contracts.csv，如果查询失败或是该Gateway不支持合约查
+# 询接口，则程序会退出
+oms_config:
+  contracts_file: ../config/contracts.csv
+
+
+rms_config:
+  # 下面三个是用于订单流速控制的参数
+  # 流控模块是对于任意时间片都生效的
+  throttle_rate_limit_period_ms: 1000    # 流速的一个时间片，设置为0表示关闭流控功能
+  throttle_rate_order_limit: 10          # 任意一个时间片内允许发送的订单个数，设置为0表示关闭该功能
+  throttle_rate_volume_limit: 2000       # 任意一个时间片内允许发送的volume，设置为0表示关闭该功能
+
+
+strategy_list: [
+  {name: ctp_strategy0, trade_mq: ctp_strategy0_trade_mq, rsp_mq: ctp_strategy0_rsp_mq, md_mq: ctp_strategy0_md_mq, subscription_list: [IF2106]},
+]
 ```
 配置完成后，准备启动ft_trader交易通道
 
