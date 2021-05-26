@@ -19,18 +19,16 @@ gateway_config:
   arg2:
   arg3:
 
-
-# XTP的自定义参数说明
-# arg0: ../config/etf_list.csv         # etf清单文件，用于etf套利
-# arg1: ../config/etf_components.csv   # etf成分股文件，用于etf套利
-
 # 选填。指定用于交易的contracts文件，如果不填写该项，或
 # 是路径填写有误，程序会在启动时调用查询接口从服务器查询
 # 合约，如果查询成功则使用查询结果，并把查询结果保存至
 # ./contracts.csv，如果查询失败或是该Gateway不支持合约查
 # 询接口，则程序会退出
-oms_config:
+global:
   contracts_file: ../config/contracts.csv
+
+
+oms_config:
 
 
 rms_config:
