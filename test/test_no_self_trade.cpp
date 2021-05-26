@@ -40,98 +40,98 @@ TEST(RMS, NoSelfTrade) {
   order_map.emplace(static_cast<uint64_t>(order.req.order_id), order);
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kOpen, 100.1);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kOpen, 99.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kOpen, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kClose, 100.1);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kClose, 99.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kClose, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseToday, 100.1);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseToday, 99.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseToday, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseYesterday, 100.1);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseYesterday, 99.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kCloseYesterday, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kOpen, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kOpen, 100.1);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kOpen, 99.0);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kClose, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kClose, 100.1);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kClose, 99.0);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseToday, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseToday, 100.1);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseToday, 99.0);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseYesterday, 110.0);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseYesterday, 100.1);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenLO(&order, ft::Direction::kSell, ft::Offset::kCloseYesterday, 99.0);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kBuy, ft::Offset::kOpen);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kBuy, ft::Offset::kClose);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kBuy, ft::Offset::kCloseToday);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kBuy, ft::Offset::kCloseYesterday);
-  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::NO_ERROR, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kSell, ft::Offset::kOpen);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kSell, ft::Offset::kClose);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kSell, ft::Offset::kCloseToday);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 
   GenMO(&order, ft::Direction::kSell, ft::Offset::kCloseYesterday);
-  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(&order));
+  ASSERT_EQ(ft::ERR_SELF_TRADE, rule.CheckOrderRequest(order));
 }

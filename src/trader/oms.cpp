@@ -161,10 +161,10 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   std::unique_lock<SpinLock> lock(spinlock_);
   // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
   if (!cmd.order_req.without_check) {
-    int error_code = rms_->CheckOrderRequest(&order);
+    int error_code = rms_->CheckOrderRequest(order);
     if (error_code != NO_ERROR) {
       LOG_ERROR("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
-      rms_->OnOrderRejected(&order, error_code);
+      rms_->OnOrderRejected(order, error_code);
       SendRspToStrategy(order, 0, 0.0, error_code);
       return false;
     }
@@ -175,13 +175,13 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
               contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
               req.volume, req.price);
 
-    rms_->OnOrderRejected(&order, ERR_SEND_FAILED);
+    rms_->OnOrderRejected(order, ERR_SEND_FAILED);
     SendRspToStrategy(order, 0, 0.0, ERR_SEND_FAILED);
     return false;
   }
 
   order_map_.emplace(req.order_id, order);
-  rms_->OnOrderSent(&order);
+  rms_->OnOrderSent(order);
 
   LOG_DEBUG("[OMS::SendOrder] success. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.3f}",
             req.order_id, contract->ticker, ToString(req.direction), ToString(req.offset),
@@ -486,7 +486,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
   if (order.accepted) return;
 
   order.accepted = true;
-  rms_->OnOrderAccepted(&order);
+  rms_->OnOrderAccepted(order);
   SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
   LOG_INFO(
@@ -504,7 +504,7 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   }
 
   auto& order = iter->second;
-  rms_->OnOrderRejected(&order, ERR_REJECTED);
+  rms_->OnOrderRejected(order, ERR_REJECTED);
   SendRspToStrategy(order, 0, 0.0, ERR_REJECTED);
 
   LOG_ERROR("[OMS::OnOrderRejected] order rejected. {}. {}, {}{}, {}, Volume:{}, Price:{:.3f}",
@@ -534,7 +534,7 @@ void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
   auto& order = iter->second;
   if (!order.accepted) {
     order.accepted = true;
-    rms_->OnOrderAccepted(&order);
+    rms_->OnOrderAccepted(order);
 
     LOG_INFO(
         "[OMS::OnOrderAccepted] order accepted. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.3f}",
@@ -543,14 +543,14 @@ void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
   }
 
   if (rsp.trade_type == TradeType::kAcquireStock) {
-    rms_->OnOrderTraded(&order, &rsp);
+    rms_->OnOrderTraded(order, rsp);
   } else if (rsp.trade_type == TradeType::kReleaseStock) {
-    rms_->OnOrderTraded(&order, &rsp);
+    rms_->OnOrderTraded(order, rsp);
   } else if (rsp.trade_type == TradeType::kCashSubstitution) {
-    rms_->OnOrderTraded(&order, &rsp);
+    rms_->OnOrderTraded(order, rsp);
   } else if (rsp.trade_type == TradeType::kPrimaryMarket) {
     order.traded_volume = rsp.volume;
-    rms_->OnOrderTraded(&order, &rsp);
+    rms_->OnOrderTraded(order, rsp);
     LOG_INFO("[OMS::OnPrimaryMarketTraded] done. {}, {}, Volume:{}", order.req.contract->ticker,
              ToString(order.req.direction), order.req.volume);
     order_map_.erase(iter);
@@ -569,7 +569,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   auto& order = iter->second;
   if (!order.accepted) {
     order.accepted = true;
-    rms_->OnOrderAccepted(&order);
+    rms_->OnOrderAccepted(order);
     SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
     LOG_INFO(
@@ -586,7 +586,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
       rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
       ToString(order.req.offset), rsp.volume, rsp.price, order.traded_volume, order.req.volume);
 
-  rms_->OnOrderTraded(&order, &rsp);
+  rms_->OnOrderTraded(order, rsp);
   SendRspToStrategy(order, rsp.volume, rsp.price, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
@@ -595,7 +595,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
              ToString(order.req.offset), order.traded_volume, order.req.volume);
 
     // 订单结束，通知风控模块
-    rms_->OnOrderCompleted(&order);
+    rms_->OnOrderCompleted(order);
     order_map_.erase(iter);
   }
 }
@@ -615,7 +615,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
            order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
            rsp.order_id, rsp.canceled_volume);
 
-  rms_->OnOrderCanceled(&order, rsp.canceled_volume);
+  rms_->OnOrderCanceled(order, rsp.canceled_volume);
   SendRspToStrategy(order, 0, 0.0, NO_ERROR);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
@@ -625,7 +625,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
         ToString(order.req.offset), ToString(order.req.type), order.traded_volume,
         order.req.volume);
 
-    rms_->OnOrderCompleted(&order);
+    rms_->OnOrderCompleted(order);
     order_map_.erase(iter);
   }
 }

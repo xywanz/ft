@@ -31,19 +31,19 @@ class RiskRule {
 
   virtual bool Init(RiskRuleParams* params) { return true; }
 
-  virtual int CheckOrderRequest(const Order* order) { return NO_ERROR; }
+  virtual int CheckOrderRequest(const Order& order) { return NO_ERROR; }
 
-  virtual void OnOrderSent(const Order* order) {}
+  virtual void OnOrderSent(const Order& order) {}
 
-  virtual void OnOrderAccepted(const Order* order) {}
+  virtual void OnOrderAccepted(const Order& order) {}
 
-  virtual void OnOrderTraded(const Order* order, const Trade* trade) {}
+  virtual void OnOrderTraded(const Order& order, const Trade& trade) {}
 
-  virtual void OnOrderCanceled(const Order* order, int canceled) {}
+  virtual void OnOrderCanceled(const Order& order, int canceled) {}
 
-  virtual void OnOrderCompleted(const Order* order) {}
+  virtual void OnOrderCompleted(const Order& order) {}
 
-  virtual void OnOrderRejected(const Order* order, int error_code) {}
+  virtual void OnOrderRejected(const Order& order, int error_code) {}
 };
 
 }  // namespace ft

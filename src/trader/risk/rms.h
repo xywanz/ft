@@ -22,19 +22,19 @@ class RiskManagementSystem {
 
   void AddRule(std::shared_ptr<RiskRule> rule);
 
-  int CheckOrderRequest(const Order* order);
+  int CheckOrderRequest(const Order& order);
 
-  void OnOrderSent(const Order* order);
+  void OnOrderSent(const Order& order);
 
-  void OnOrderAccepted(const Order* order);
+  void OnOrderAccepted(const Order& order);
 
-  void OnOrderTraded(const Order* order, const Trade* trade);
+  void OnOrderTraded(const Order& order, const Trade& trade);
 
-  void OnOrderCanceled(const Order* order, int canceled);
+  void OnOrderCanceled(const Order& order, int canceled);
 
-  void OnOrderRejected(const Order* order, int error_code);
+  void OnOrderRejected(const Order& order, int error_code);
 
-  void OnOrderCompleted(const Order* order);
+  void OnOrderCompleted(const Order& order);
 
  private:
   std::list<std::shared_ptr<RiskRule>> rules_;

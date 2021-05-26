@@ -14,15 +14,15 @@ class PositionManager : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
-  int CheckOrderRequest(const Order* order) override;
+  int CheckOrderRequest(const Order& order) override;
 
-  void OnOrderSent(const Order* order) override;
+  void OnOrderSent(const Order& order) override;
 
-  void OnOrderTraded(const Order* order, const Trade* trade) override;
+  void OnOrderTraded(const Order& order, const Trade& trade) override;
 
-  void OnOrderCanceled(const Order* order, int canceled) override;
+  void OnOrderCanceled(const Order& order, int canceled) override;
 
-  void OnOrderRejected(const Order* order, int error_code) override;
+  void OnOrderRejected(const Order& order, int error_code) override;
 
  private:
   PositionCalculator* pos_calculator_;

@@ -15,6 +15,7 @@ class BacktestGateway : public Gateway {
   bool Init(const GatewayConfig& config) override;
 
   bool SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) override;
+
   bool CancelOrder(uint64_t order_id, uint64_t privdata) override;
 
   bool Subscribe(const std::vector<std::string>& sub_list) override;

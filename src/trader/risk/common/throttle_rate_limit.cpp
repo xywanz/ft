@@ -15,8 +15,8 @@ bool ThrottleRateLimit::Init(RiskRuleParams* params) {
   return true;
 }
 
-int ThrottleRateLimit::CheckOrderRequest(const Order* order) {
-  auto* req = &order->req;
+int ThrottleRateLimit::CheckOrderRequest(const Order& order) {
+  auto& req = order.req;
   if ((order_limit_ == 0 && volume_limit_ == 0) || period_ms_ == 0) return NO_ERROR;
 
   uint64_t current_ms = GetCurrentTimeMs();
@@ -36,7 +36,7 @@ int ThrottleRateLimit::CheckOrderRequest(const Order* order) {
       return ERR_THROTTLE_RATE_LIMIT;
     }
 
-    order_tm_record_.emplace_back(std::make_tuple(current_ms, order->req.order_id));
+    order_tm_record_.emplace_back(std::make_tuple(current_ms, order.req.order_id));
   }
 
   if (volume_limit_ > 0) {
@@ -46,30 +46,29 @@ int ThrottleRateLimit::CheckOrderRequest(const Order* order) {
       iter = volume_tm_record_.erase(iter);
     }
 
-    if (volume_count_ + req->volume > volume_limit_) {
+    if (volume_count_ + req.volume > volume_limit_) {
       LOG_ERROR(
           "[ThrottleRateLimit::check] Volume reach limit within {} ms. "
           "This Order: {}, Current: {}, Limit: {}",
-          period_ms_, req->volume, volume_count_, volume_limit_);
+          period_ms_, req.volume, volume_count_, volume_limit_);
       return ERR_THROTTLE_RATE_LIMIT;
     }
 
-    volume_count_ += req->volume;
-    volume_tm_record_.emplace_back(std::make_tuple(current_ms, req->volume, order->req.order_id));
+    volume_count_ += req.volume;
+    volume_tm_record_.emplace_back(std::make_tuple(current_ms, req.volume, order.req.order_id));
   }
 
   return NO_ERROR;
 }
 
-void ThrottleRateLimit::OnOrderRejected(const Order* order, int error_code) {
+void ThrottleRateLimit::OnOrderRejected(const Order& order, int error_code) {
   if (error_code <= ERR_SEND_FAILED) {
-    if (!volume_tm_record_.empty() &&
-        std::get<2>(volume_tm_record_.back()) == order->req.order_id) {
+    if (!volume_tm_record_.empty() && std::get<2>(volume_tm_record_.back()) == order.req.order_id) {
       volume_count_ -= std::get<1>(volume_tm_record_.back());
       volume_tm_record_.pop_back();
     }
 
-    if (!order_tm_record_.empty() && std::get<1>(order_tm_record_.back()) == order->req.order_id) {
+    if (!order_tm_record_.empty() && std::get<1>(order_tm_record_.back()) == order.req.order_id) {
       order_tm_record_.pop_back();
     }
   }

@@ -18,9 +18,9 @@ class ThrottleRateLimit : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
-  int CheckOrderRequest(const Order* order) override;
+  int CheckOrderRequest(const Order& order) override;
 
-  void OnOrderRejected(const Order* order, int error_code) override;
+  void OnOrderRejected(const Order& order, int error_code) override;
 
  private:
   uint64_t GetCurrentTimeMs() {
