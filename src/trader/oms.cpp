@@ -115,15 +115,15 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
       break;
     }
     case CMD_CANCEL_ORDER: {
-      CancelOrder(cmd.cancel_req.order_id);
+      CancelOrder(cmd.cancel_req.order_id, cmd.without_check);
       break;
     }
     case CMD_CANCEL_TICKER: {
-      CancelForTicker(cmd.cancel_ticker_req.ticker_id);
+      CancelForTicker(cmd.cancel_ticker_req.ticker_id, cmd.without_check);
       break;
     }
     case CMD_CANCEL_ALL: {
-      CancelAll();
+      CancelAll(cmd.without_check);
       break;
     }
     case CMD_NOTIFY: {
@@ -160,7 +160,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
 
   std::unique_lock<SpinLock> lock(spinlock_);
   // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
-  if (!cmd.order_req.without_check) {
+  if (!cmd.without_check) {
     int error_code = rms_->CheckOrderRequest(order);
     if (error_code != NO_ERROR) {
       LOG_ERROR("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
@@ -188,11 +188,13 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   return true;
 }
 
-void OrderManagementSystem::DoCancelOrder(const Order& order) {
-  int error_code = rms_->CheckCancelReq(order);
-  if (error_code != NO_ERROR) {
-    LOG_ERROR("[OMS::DoCancelOrder] risk: {}", ErrorCodeStr(error_code));
-    return;
+void OrderManagementSystem::DoCancelOrder(const Order& order, bool without_check) {
+  if (!without_check) {
+    int error_code = rms_->CheckCancelReq(order);
+    if (error_code != NO_ERROR) {
+      LOG_ERROR("[OMS::DoCancelOrder] risk: {}", ErrorCodeStr(error_code));
+      return;
+    }
   }
   if (!gateway_->CancelOrder(order.req.order_id, order.privdata)) {
     LOG_ERROR("[OMS::DoCancelOrder] error occurred in Gateway::CancelOrder");
@@ -200,31 +202,31 @@ void OrderManagementSystem::DoCancelOrder(const Order& order) {
   }
 }
 
-void OrderManagementSystem::CancelOrder(uint64_t order_id) {
+void OrderManagementSystem::CancelOrder(uint64_t order_id, bool without_check) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(order_id);
   if (iter == order_map_.end()) {
     LOG_ERROR("[OMS::CancelOrder] order not found. order_id:{}", order_id);
     return;
   }
-  DoCancelOrder(iter->second);
+  DoCancelOrder(iter->second, without_check);
 }
 
-void OrderManagementSystem::CancelForTicker(uint32_t ticker_id) {
+void OrderManagementSystem::CancelForTicker(uint32_t ticker_id, bool without_check) {
   std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
     (void)order_id;
     if (ticker_id == order.req.contract->ticker_id) {
-      DoCancelOrder(order);
+      DoCancelOrder(order, without_check);
     }
   }
 }
 
-void OrderManagementSystem::CancelAll() {
+void OrderManagementSystem::CancelAll(bool without_check) {
   std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
     (void)order_id;
-    DoCancelOrder(order);
+    DoCancelOrder(order, without_check);
   }
 }
 

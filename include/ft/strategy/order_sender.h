@@ -68,6 +68,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_NEW_ORDER;
+    cmd.without_check = false;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
     cmd.order_req.client_order_id = client_order_id;
     cmd.order_req.ticker_id = ticker_id;
@@ -77,7 +78,6 @@ class OrderSender {
     cmd.order_req.type = type;
     cmd.order_req.price = price;
     cmd.order_req.flags = flags_;
-    cmd.order_req.without_check = false;
 
     std::string buf;
     cmd.SerializeToString(&buf);
@@ -97,6 +97,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ORDER;
+    cmd.without_check = false;
     cmd.cancel_req.order_id = order_id;
 
     std::string buf;
@@ -110,6 +111,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_TICKER;
+    cmd.without_check = false;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
     std::string buf;
@@ -121,6 +123,7 @@ class OrderSender {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_CANCEL_ALL;
+    cmd.without_check = false;
 
     std::string buf;
     cmd.SerializeToString(&buf);

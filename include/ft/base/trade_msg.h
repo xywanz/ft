@@ -192,7 +192,6 @@ struct TraderOrderReq {
   double price;
 
   OrderFlag flags;
-  bool without_check;
 };
 
 // 撤单请求
@@ -214,6 +213,7 @@ struct TraderNotification {
 struct TraderCommand : public pubsub::Serializable<TraderCommand> {
   uint32_t magic;
   uint32_t type;
+  bool without_check;
   StrategyIdType strategy_id;
   union {
     TraderOrderReq order_req;
@@ -224,13 +224,12 @@ struct TraderCommand : public pubsub::Serializable<TraderCommand> {
 
   template <class Archive>
   void serialize(Archive& ar) {
-    ar(magic, type, strategy_id);
+    ar(magic, type, without_check, strategy_id);
 
     switch (type) {
       case CMD_NEW_ORDER: {
         ar(order_req.client_order_id, order_req.ticker_id, order_req.direction, order_req.offset,
-           order_req.type, order_req.volume, order_req.price, order_req.flags,
-           order_req.without_check);
+           order_req.type, order_req.volume, order_req.price, order_req.flags);
         break;
       }
       case CMD_CANCEL_ORDER: {

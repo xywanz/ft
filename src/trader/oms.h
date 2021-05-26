@@ -45,10 +45,10 @@ class OrderManagementSystem {
   void ExecuteCmd(const TraderCommand& cmd);
 
   bool SendOrder(const TraderCommand& cmd);
-  void DoCancelOrder(const Order& order);
-  void CancelOrder(uint64_t order_id);
-  void CancelForTicker(uint32_t ticker_id);
-  void CancelAll();
+  void DoCancelOrder(const Order& order, bool without_check);
+  void CancelOrder(uint64_t order_id, bool without_check);
+  void CancelForTicker(uint32_t ticker_id, bool without_check);
+  void CancelAll(bool without_check);
 
   bool InitGateway();
   bool InitContractTable();
