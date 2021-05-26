@@ -22,6 +22,7 @@ bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_co
   md_reader_ = yijinjing::JournalReader::create(".", config.md_mq_name, yijinjing::getNanoTime(),
                                                 config.strategy_name);
   sender_.Init(config.trade_mq_name);
+  sender_.SetStrategyId(config.strategy_name.c_str());
 
   account_id_ = std::stoul(ft_config.gateway_config.investor_id);
   pos_getter_.SetAccount(account_id_);
