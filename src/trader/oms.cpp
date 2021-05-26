@@ -188,6 +188,18 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   return true;
 }
 
+void OrderManagementSystem::DoCancelOrder(const Order& order) {
+  int error_code = rms_->CheckCancelReq(order);
+  if (error_code != NO_ERROR) {
+    LOG_ERROR("[OMS::DoCancelOrder] risk: {}", ErrorCodeStr(error_code));
+    return;
+  }
+  if (!gateway_->CancelOrder(order.req.order_id, order.privdata)) {
+    LOG_ERROR("[OMS::DoCancelOrder] error occurred in Gateway::CancelOrder");
+    return;
+  }
+}
+
 void OrderManagementSystem::CancelOrder(uint64_t order_id) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(order_id);
@@ -195,14 +207,15 @@ void OrderManagementSystem::CancelOrder(uint64_t order_id) {
     LOG_ERROR("[OMS::CancelOrder] order not found. order_id:{}", order_id);
     return;
   }
-  gateway_->CancelOrder(order_id, iter->second.privdata);
+  DoCancelOrder(iter->second);
 }
 
 void OrderManagementSystem::CancelForTicker(uint32_t ticker_id) {
   std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
+    (void)order_id;
     if (ticker_id == order.req.contract->ticker_id) {
-      gateway_->CancelOrder(order_id, order.privdata);
+      DoCancelOrder(order);
     }
   }
 }
@@ -210,7 +223,8 @@ void OrderManagementSystem::CancelForTicker(uint32_t ticker_id) {
 void OrderManagementSystem::CancelAll() {
   std::unique_lock<SpinLock> lock(spinlock_);
   for (const auto& [order_id, order] : order_map_) {
-    gateway_->CancelOrder(order_id, order.privdata);
+    (void)order_id;
+    DoCancelOrder(order);
   }
 }
 

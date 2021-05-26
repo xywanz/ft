@@ -29,9 +29,28 @@ int RiskManagementSystem::CheckOrderRequest(const Order& order) {
   return NO_ERROR;
 }
 
+int RiskManagementSystem::CheckCancelReq(const Order& order) {
+  int error_code;
+
+  for (auto& rule : rules_) {
+    error_code = rule->CheckCancelReq(order);
+    if (error_code != NO_ERROR) {
+      return error_code;
+    }
+  }
+
+  return NO_ERROR;
+}
+
 void RiskManagementSystem::OnOrderSent(const Order& order) {
   for (auto& rule : rules_) {
     rule->OnOrderSent(order);
+  }
+}
+
+void RiskManagementSystem::OnCancelReqSent(const Order& order) {
+  for (auto& rule : rules_) {
+    rule->OnCancelReqSent(order);
   }
 }
 

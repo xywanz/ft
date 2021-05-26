@@ -33,7 +33,11 @@ class RiskRule {
 
   virtual int CheckOrderRequest(const Order& order) { return NO_ERROR; }
 
+  virtual int CheckCancelReq(const Order& order) { return NO_ERROR; }
+
   virtual void OnOrderSent(const Order& order) {}
+
+  virtual void OnCancelReqSent(const Order& order) {}
 
   virtual void OnOrderAccepted(const Order& order) {}
 

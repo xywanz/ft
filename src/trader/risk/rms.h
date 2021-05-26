@@ -24,7 +24,11 @@ class RiskManagementSystem {
 
   int CheckOrderRequest(const Order& order);
 
+  int CheckCancelReq(const Order& order);
+
   void OnOrderSent(const Order& order);
+
+  void OnCancelReqSent(const Order& order);
 
   void OnOrderAccepted(const Order& order);
 

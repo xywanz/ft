@@ -45,6 +45,7 @@ class OrderManagementSystem {
   void ExecuteCmd(const TraderCommand& cmd);
 
   bool SendOrder(const TraderCommand& cmd);
+  void DoCancelOrder(const Order& order);
   void CancelOrder(uint64_t order_id);
   void CancelForTicker(uint32_t ticker_id);
   void CancelAll();
