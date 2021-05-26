@@ -45,7 +45,6 @@ struct Trade {
   uint32_t ticker_id;
   Direction direction;
   Offset offset;
-  TradeType trade_type;
   int volume;
   double price;
   double amount;

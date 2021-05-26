@@ -67,7 +67,6 @@ class OrderManagementSystem {
   void OnTrades(std::vector<Trade>* trades);
   bool OnTimer();
 
-  void OnPrimaryMarketTraded(const Trade& rsp);    // ETF申赎
   void OnSecondaryMarketTraded(const Trade& rsp);  // 二级市场买卖
 
   uint64_t next_order_id() { return next_oms_order_id_++; }

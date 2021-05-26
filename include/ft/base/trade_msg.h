@@ -74,10 +74,8 @@ enum class OrderType : uint8_t {
 
 // 交易的方向
 enum class Direction : uint8_t {
-  kBuy = 1,       // 买入
-  kSell = 2,      // 卖出
-  kPurchase = 4,  // 申购
-  kRedeem = 5,    // 赎回
+  kBuy = 1,   // 买入
+  kSell = 2,  // 卖出
   kUnknown = 6,
 };
 
@@ -112,15 +110,6 @@ enum class OrderStatus : uint8_t {
   ALL_TRADED,
   CANCELED,
   CANCEL_REJECTED
-};
-
-enum class TradeType : uint8_t {
-  kSecondaryMarket = 0,   // 二级市场买卖
-  kPrimaryMarket = 1,     // 一级市场成交，如申赎完成会返回此类型
-  kCashSubstitution = 2,  // ETF申赎的现金替代，也会以回报的形式通知
-  kAcquireStock = 3,      // ETF赎回获得股票，获得成分股的回报
-  kReleaseStock = 4,      // ETF申购消耗股票，消耗成分股的回报
-  kUnknown = 5,
 };
 
 struct Contract {

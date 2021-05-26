@@ -27,15 +27,6 @@ void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, 
     return;
   }
 
-  if (direction == Direction::kBuy || direction == Direction::kSell) {
-    UpdateBuyOrSellPending(ticker_id, direction, offset, changed);
-  } else if (direction == Direction::kPurchase || direction == Direction::kRedeem) {
-    UpdatePurchaseOrRedeemPending(ticker_id, direction, changed);
-  }
-}
-
-void PositionCalculator::UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction,
-                                                Offset offset, int changed) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) {
     direction = OppositeDirection(direction);
@@ -57,41 +48,12 @@ void PositionCalculator::UpdateBuyOrSellPending(uint32_t ticker_id, Direction di
   }
 }
 
-void PositionCalculator::UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction,
-                                                       int changed) {
-  auto& pos = positions_[ticker_id];
-  pos.ticker_id = ticker_id;
-  auto& pos_detail = pos.long_pos;
-
-  if (direction == Direction::kPurchase) {
-    pos_detail.open_pending += changed;
-  } else {
-    pos_detail.close_pending += changed;
-  }
-
-  assert(pos_detail.open_pending >= 0);
-  assert(pos_detail.close_pending >= 0);
-
-  if (cb_) {
-    (*cb_)(pos);
-  }
-}
-
 void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset,
                                       int traded, double traded_price) {
   if (traded <= 0) {
     return;
   }
 
-  if (direction == Direction::kBuy || direction == Direction::kSell) {
-    UpdateBuyOrSell(ticker_id, direction, offset, traded, traded_price);
-  } else if (direction == Direction::kPurchase || direction == Direction::kRedeem) {
-    UpdatePurchaseOrRedeem(ticker_id, direction, traded);
-  }
-}
-
-void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset,
-                                         int traded, double traded_price) {
   bool is_close = IsOffsetClose(offset);
   if (is_close) {
     direction = OppositeDirection(direction);
@@ -136,53 +98,6 @@ void PositionCalculator::UpdateBuyOrSell(uint32_t ticker_id, Direction direction
   if (pos_detail.holdings == 0) {
     pos_detail.cost_price = 0.0;
     pos_detail.float_pnl = 0.0;
-  }
-
-  if (cb_) {
-    (*cb_)(pos);
-  }
-}
-
-void PositionCalculator::UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction,
-                                                int traded) {
-  auto& pos = positions_[ticker_id];
-  pos.ticker_id = ticker_id;
-  auto& pos_detail = pos.long_pos;
-
-  if (direction == Direction::kPurchase) {
-    pos_detail.open_pending -= traded;
-    pos_detail.holdings += traded;
-    pos_detail.yd_holdings += traded;
-  } else {
-    pos_detail.close_pending -= traded;
-
-    int td_pos = pos_detail.holdings - pos_detail.yd_holdings;
-    pos_detail.holdings -= traded;
-    pos_detail.yd_holdings -= std::max(traded - td_pos, 0);
-
-    if (pos_detail.holdings == 0) {
-      pos_detail.float_pnl = 0;
-      pos_detail.cost_price = 0;
-    }
-  }
-
-  if (cb_) {
-    (*cb_)(pos);
-  }
-}
-
-void PositionCalculator::UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire) {
-  auto& pos = positions_[ticker_id];
-  pos.ticker_id = ticker_id;
-  auto& pos_detail = pos.long_pos;
-
-  if (acquire) {
-    pos_detail.holdings += traded;
-    pos_detail.yd_holdings += traded;
-  } else {
-    int td_pos = pos_detail.holdings - pos_detail.yd_holdings;
-    pos_detail.holdings -= traded;
-    pos_detail.yd_holdings -= std::max(traded - td_pos, 0);
   }
 
   if (cb_) {

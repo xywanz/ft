@@ -24,16 +24,11 @@ class PositionCalculator {
   void SetPosition(const Position& pos);
 
   // 二级市场买卖申报，更新交易品种的待成交数量
-  // 一级市场申赎申报，更新基金的待成交数量
   void UpdatePending(uint32_t ticker_id, Direction direction, Offset offset, int changed);
 
   // 二级市场买卖成交，更新交易品种的持仓
-  // 一级市场申赎成交，更新基金持仓
   void UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                     double traded_price);
-
-  // 申赎时对成分股持仓的更新
-  void UpdateComponentStock(uint32_t ticker_id, int traded, bool acquire);
 
   // 更新浮动盈亏
   void UpdateFloatPnl(uint32_t ticker_id, double bid, double ask);
@@ -48,14 +43,6 @@ class PositionCalculator {
 
   // 获取持仓的总资产
   double TotalAssets() const;
-
- private:
-  void UpdateBuyOrSellPending(uint32_t ticker_id, Direction direction, Offset offset, int changed);
-  void UpdateBuyOrSell(uint32_t ticker_id, Direction direction, Offset offset, int traded,
-                       double traded_price);
-
-  void UpdatePurchaseOrRedeemPending(uint32_t ticker_id, Direction direction, int changed);
-  void UpdatePurchaseOrRedeem(uint32_t ticker_id, Direction direction, int traded);
 
  private:
   std::unordered_map<uint32_t, Position> positions_;

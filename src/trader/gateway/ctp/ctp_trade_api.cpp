@@ -352,7 +352,6 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   rsp.price = trade->Price;
   rsp.direction = direction(trade->Direction);
   rsp.offset = offset(trade->OffsetFlag);
-  rsp.trade_type = TradeType::kSecondaryMarket;
   rsp.trade_time = datetime::strptime(fmt::format("{} {}", trade->TradeDate, trade->TradeTime),
                                       "%Y%m%d %H:%M:%S");
   gateway_->OnOrderTraded(rsp);

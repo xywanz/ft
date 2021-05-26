@@ -98,18 +98,13 @@ bool XtpTradeApi::SendOrder(const OrderRequest& order, uint64_t* privdata_ptr) {
     return false;
   }
 
-  if (order.direction == Direction::kBuy || order.direction == Direction::kSell) {
-    req.price_type = xtp_price_type(order.type);
-    if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
-      LOG_ERROR("[XtpTradeApi::SendOrder] 不支持的订单价格类型");
-      return false;
-    }
-    req.business_type = XTP_BUSINESS_TYPE_CASH;
-    req.price = order.price;
-  } else {
-    req.price_type = XTP_PRICE_LIMIT;
-    req.business_type = XTP_BUSINESS_TYPE_ETF;
+  req.price_type = xtp_price_type(order.type);
+  if (req.side == XTP_PRICE_TYPE_UNKNOWN) {
+    LOG_ERROR("[XtpTradeApi::SendOrder] 不支持的订单价格类型");
+    return false;
   }
+  req.business_type = XTP_BUSINESS_TYPE_CASH;
+  req.price = order.price;
 
   req.market = xtp_market_type(contract->exchange);
   if (req.market == XTP_MKT_UNKNOWN) {
@@ -181,36 +176,6 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
             trade_info->quantity, trade_info->price, trade_info->trade_amount);
 
   Trade rsp{};
-  if (trade_info->business_type == XTP_BUSINESS_TYPE_ETF) {
-    auto contract = ContractTable::get_by_ticker(trade_info->ticker);
-    if (!contract) {
-      trade_info->ticker[5] = '0';
-      contract = ContractTable::get_by_ticker(trade_info->ticker);
-      if (!contract) {
-        LOG_WARN("[XtpTradeApi::OnTradeEvent] Contract not found: {}", trade_info->ticker);
-        return;
-      }
-    }
-
-    // 申赎时第一个返回的回报可能是这个类型的
-    // 即ETF的普通成交类型
-    // 这个信息对我们来说没有用处，反而会扰乱仓位的计算
-    // 所以在此处过滤掉该回报
-    if (contract->product_type == ProductType::kFund && trade_info->trade_type == XTP_TRDT_COMMON)
-      return;
-
-    // 收到成分股回报，需要设置tid, direction等信息
-    rsp.ticker_id = contract->ticker_id;
-    rsp.direction =
-        trade_info->side == XTP_SIDE_PURCHASE ? Direction::kPurchase : Direction::kRedeem;
-    rsp.trade_type = ft_trade_type(trade_info->side, trade_info->trade_type);
-    rsp.amount = trade_info->trade_amount;
-  } else {
-    // 二级市场成交，这里无需设置tid，因为该tid和order_req中
-    // 的是一样的；direction和offset同理
-    rsp.trade_type = TradeType::kSecondaryMarket;
-  }
-
   rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;

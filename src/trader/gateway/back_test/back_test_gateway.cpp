@@ -236,7 +236,6 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
   trade.order_id = order.order_id;
   trade.volume = order.volume;
   trade.price = price;
-  trade.trade_type = TradeType::kSecondaryMarket;
   trade.trade_time = tick.exchange_datetime;
   msg_queue_.push(trade);
 }

@@ -54,37 +54,27 @@ void FundManager::OnOrderSent(const Order& order) {
 }
 
 void FundManager::OnOrderTraded(const Order& order, const Trade& trade) {
-  if (trade.trade_type == TradeType::kSecondaryMarket) {
-    auto contract = order.req.contract;
+  auto contract = order.req.contract;
 
-    if (IsOffsetOpen(order.req.offset)) {
-      auto margin_rate = order.req.direction == Direction::kBuy ? contract->long_margin_rate
-                                                                : contract->short_margin_rate;
-      auto frozen_released = contract->size * trade.volume * order.req.price * margin_rate;
-      auto margin = contract->size * trade.volume * trade.price * margin_rate;
-      account_->frozen -= frozen_released;
-      account_->margin += margin;
-      // 如果冻结的时候冻结多了需要释放，冻结少了则需要回补
-      account_->cash += frozen_released - margin;
-    } else if (IsOffsetClose(order.req.offset)) {
-      auto margin_rate = order.req.direction == Direction::kBuy ? contract->long_margin_rate
-                                                                : contract->short_margin_rate;
-      auto margin = contract->size * trade.volume * trade.price * margin_rate;
-      account_->margin -= margin;
-      account_->cash += margin;
-      if (account_->margin < 0) account_->margin = 0;
-      LOG_DEBUG("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
-                static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
-                static_cast<double>(account_->margin));
-    }
-  } else if (trade.trade_type == TradeType::kCashSubstitution) {
-    if (order.req.direction == Direction::kPurchase) {
-      account_->margin -= trade.amount;
-      account_->cash += trade.amount;
-    } else if (order.req.direction == Direction::kRedeem) {
-      account_->margin += trade.amount;
-      account_->cash -= trade.amount;
-    }
+  if (IsOffsetOpen(order.req.offset)) {
+    auto margin_rate = order.req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                              : contract->short_margin_rate;
+    auto frozen_released = contract->size * trade.volume * order.req.price * margin_rate;
+    auto margin = contract->size * trade.volume * trade.price * margin_rate;
+    account_->frozen -= frozen_released;
+    account_->margin += margin;
+    // 如果冻结的时候冻结多了需要释放，冻结少了则需要回补
+    account_->cash += frozen_released - margin;
+  } else if (IsOffsetClose(order.req.offset)) {
+    auto margin_rate = order.req.direction == Direction::kBuy ? contract->long_margin_rate
+                                                              : contract->short_margin_rate;
+    auto margin = contract->size * trade.volume * trade.price * margin_rate;
+    account_->margin -= margin;
+    account_->cash += margin;
+    if (account_->margin < 0) account_->margin = 0;
+    LOG_DEBUG("Account: balance:{:.3f} frozen:{:.3f} margin:{:.3f}",
+              static_cast<double>(account_->total_asset), static_cast<double>(account_->frozen),
+              static_cast<double>(account_->margin));
   }
 }
 

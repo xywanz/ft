@@ -49,10 +49,6 @@ inline uint8_t xtp_side(Direction direction) {
     return XTP_SIDE_BUY;
   else if (direction == Direction::kSell)
     return XTP_SIDE_SELL;
-  else if (direction == Direction::kPurchase)
-    return XTP_SIDE_PURCHASE;
-  else if (direction == Direction::kRedeem)
-    return XTP_SIDE_REDEMPTION;
   return XTP_SIDE_UNKNOWN;
 }
 
@@ -69,27 +65,6 @@ inline XTP_PRICE_TYPE xtp_price_type(OrderType order_type) {
     return XTP_PRICE_ALL_OR_CANCEL;
   else
     return XTP_PRICE_TYPE_UNKNOWN;
-}
-
-// 仅适用于ETF申赎
-inline TradeType ft_trade_type(XTP_SIDE_TYPE side, TXTPTradeTypeType type) {
-  if (side == XTP_SIDE_PURCHASE) {
-    if (type == XTP_TRDT_COMMON)
-      return TradeType::kReleaseStock;
-    else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
-      return TradeType::kCashSubstitution;
-    else if (type == XTP_TRDT_PRIMARY)
-      return TradeType::kPrimaryMarket;
-  } else if (side == XTP_SIDE_REDEMPTION) {
-    if (type == XTP_TRDT_COMMON)
-      return TradeType::kAcquireStock;
-    else if (type == XTP_TRDT_CASH || type == XTP_TRDT_CROSS_MKT_CASH)
-      return TradeType::kCashSubstitution;
-    else if (type == XTP_TRDT_PRIMARY)
-      return TradeType::kPrimaryMarket;
-  }
-
-  return TradeType::kUnknown;
 }
 
 }  // namespace ft

@@ -515,47 +515,7 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   order_map_.erase(iter);
 }
 
-void OrderManagementSystem::operator()(const Trade& rsp) {
-  if (rsp.trade_type == TradeType::kSecondaryMarket)
-    OnSecondaryMarketTraded(rsp);
-  else
-    OnPrimaryMarketTraded(rsp);
-}
-
-void OrderManagementSystem::OnPrimaryMarketTraded(const Trade& rsp) {
-  std::unique_lock<SpinLock> lock(spinlock_);
-  auto iter = order_map_.find(rsp.order_id);
-  if (iter == order_map_.end()) {
-    LOG_WARN("[OMS::OnPrimaryMarketTraded] order not found. OrderID:{}, Traded:{}, Price:{:.3f}",
-             rsp.order_id, rsp.volume, rsp.price);
-    return;
-  }
-
-  auto& order = iter->second;
-  if (!order.accepted) {
-    order.accepted = true;
-    rms_->OnOrderAccepted(order);
-
-    LOG_INFO(
-        "[OMS::OnOrderAccepted] order accepted. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.3f}",
-        rsp.order_id, order.req.contract->ticker, ToString(order.req.direction),
-        ToString(order.req.offset), ToString(order.req.type), order.req.volume, order.req.price);
-  }
-
-  if (rsp.trade_type == TradeType::kAcquireStock) {
-    rms_->OnOrderTraded(order, rsp);
-  } else if (rsp.trade_type == TradeType::kReleaseStock) {
-    rms_->OnOrderTraded(order, rsp);
-  } else if (rsp.trade_type == TradeType::kCashSubstitution) {
-    rms_->OnOrderTraded(order, rsp);
-  } else if (rsp.trade_type == TradeType::kPrimaryMarket) {
-    order.traded_volume = rsp.volume;
-    rms_->OnOrderTraded(order, rsp);
-    LOG_INFO("[OMS::OnPrimaryMarketTraded] done. {}, {}, Volume:{}", order.req.contract->ticker,
-             ToString(order.req.direction), order.req.volume);
-    order_map_.erase(iter);
-  }
-}
+void OrderManagementSystem::operator()(const Trade& rsp) { OnSecondaryMarketTraded(rsp); }
 
 void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
