@@ -20,7 +20,7 @@ class ThrottleRateLimit : public RiskRule {
 
   int CheckOrderRequest(const Order& order) override;
 
-  void OnOrderRejected(const Order& order, int error_code) override;
+  void OnOrderSent(const Order& order) override;
 
  private:
   uint64_t GetCurrentTimeMs() {
@@ -41,6 +41,8 @@ class ThrottleRateLimit : public RiskRule {
 
   // (time_ms, volume, oms_order_id)
   std::list<std::tuple<uint64_t, int, uint64_t>> volume_tm_record_;
+
+  uint64_t current_ms_;
 };
 
 }  // namespace ft

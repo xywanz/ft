@@ -52,8 +52,6 @@ void PositionManager::OnOrderCanceled(const Order& order, int canceled) {
 }
 
 void PositionManager::OnOrderRejected(const Order& order, int error_code) {
-  if (error_code <= ERR_SEND_FAILED) return;
-
   pos_calculator_->UpdatePending(order.req.contract->ticker_id, order.req.direction,
                                  order.req.offset, 0 - order.req.volume);
 }

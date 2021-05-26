@@ -94,8 +94,6 @@ void FundManager::OnOrderCanceled(const Order& order, int canceled) {
 }
 
 void FundManager::OnOrderRejected(const Order& order, int error_code) {
-  if (error_code <= ERR_SEND_FAILED) return;
-
   OnOrderCanceled(order, order.req.volume);
 }
 

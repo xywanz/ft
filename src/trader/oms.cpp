@@ -164,7 +164,6 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
     int error_code = rms_->CheckOrderRequest(order);
     if (error_code != NO_ERROR) {
       LOG_ERROR("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
-      rms_->OnOrderRejected(order, error_code);
       SendRspToStrategy(order, 0, 0.0, error_code);
       return false;
     }

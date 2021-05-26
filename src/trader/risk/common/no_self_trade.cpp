@@ -15,9 +15,6 @@ bool NoSelfTradeRule::Init(RiskRuleParams* params) {
 }
 
 int NoSelfTradeRule::CheckOrderRequest(const Order& order) {
-  if (order.req.direction != Direction::kBuy && order.req.direction != Direction::kSell)
-    return NO_ERROR;
-
   auto& req = order.req;
   auto contract = req.contract;
 
