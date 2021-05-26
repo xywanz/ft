@@ -125,7 +125,7 @@ class Strategy : public StrategyRunner {
 
  private:
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
-                 OrderType type, double price, uint32_t client_order_id, uint32_t timestamp_us) {
+                 OrderType type, double price, uint32_t client_order_id, uint64_t timestamp_us) {
     sender_.SendOrder(ticker, volume, direction, offset, type, price, client_order_id,
                       timestamp_us);
   }

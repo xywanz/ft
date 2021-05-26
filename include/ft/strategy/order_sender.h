@@ -79,7 +79,7 @@ class OrderSender {
   }
 
   void SendOrder(uint32_t ticker_id, int volume, Direction direction, Offset offset, OrderType type,
-                 double price, uint32_t client_order_id = 0, uint32_t timestamp_us = 0) {
+                 double price, uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
     cmd.type = CMD_NEW_ORDER;
