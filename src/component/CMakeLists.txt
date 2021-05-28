@@ -4,7 +4,8 @@ add_library(component STATIC
     order_book/price_level.cpp
     pubsub/publisher.cpp
     pubsub/subscriber.cpp
-    position_calculator.cpp)
+    position/calculator.cpp
+    position/manager.cpp)
 add_library(ft::component ALIAS component)
 
 target_include_directories(component PUBLIC "${PROJECT_SOURCE_DIR}/src")

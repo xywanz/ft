@@ -6,7 +6,7 @@ add_executable(ft_trader
     oms.cpp
     risk/common/fund_manager.cpp
     risk/common/no_self_trade.cpp
-    risk/common/position_manager.cpp
+    risk/common/position_risk.cpp
     risk/common/throttle_rate_limit.cpp
     risk/rms.cpp
     main.cpp)

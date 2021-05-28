@@ -14,7 +14,7 @@
 #include "ft/base/error_code.h"
 #include "ft/base/market_data.h"
 #include "ft/base/trade_msg.h"
-#include "ft/component/position_calculator.h"
+#include "ft/component/position/manager.h"
 #include "ft/component/yijinjing/journal/JournalReader.h"
 #include "ft/component/yijinjing/journal/JournalWriter.h"
 #include "ft/utils/redis_position_helper.h"
@@ -88,7 +88,7 @@ class OrderManagementSystem {
 
   SpinLock spinlock_;
   Account account_;
-  PositionCalculator pos_calculator_;
+  PositionManager pos_manager_;
   RedisPositionSetter redis_pos_updater_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};

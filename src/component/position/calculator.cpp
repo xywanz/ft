@@ -1,30 +1,35 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "ft/component/position_calculator.h"
+#include "ft/component/position/calculator.h"
 
 #include "ft/base/contract_table.h"
+#include "ft/base/log.h"
 #include "ft/utils/protocol_utils.h"
 
 namespace ft {
 
 PositionCalculator::PositionCalculator() {}
 
-void PositionCalculator::SetCallback(std::function<void(const Position&)>&& f) {
-  cb_ = std::make_unique<CallbackType>(std::move(f));
-}
+void PositionCalculator::SetCallback(CallbackType&& f) { cb_ = std::move(f); }
 
-void PositionCalculator::SetPosition(const Position& pos) {
-  positions_[pos.ticker_id] = pos;
-
-  if (cb_) {
-    (*cb_)(pos);
+bool PositionCalculator::SetPosition(const Position& pos) {
+  auto* contract = ContractTable::get_by_index(pos.ticker_id);
+  if (!contract) {
+    LOG_ERROR("[PositionCalculator::SetPosition] contract not found. ticker_id:{}", pos.ticker_id);
+    return false;
   }
+
+  positions_[pos.ticker_id] = pos;
+  if (cb_) {
+    cb_(pos);
+  }
+  return true;
 }
 
-void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset,
+bool PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, Offset offset,
                                        int changed) {
   if (changed == 0) {
-    return;
+    return true;
   }
 
   bool is_close = IsOffsetClose(offset);
@@ -44,15 +49,23 @@ void PositionCalculator::UpdatePending(uint32_t ticker_id, Direction direction, 
   assert(pos_detail.close_pending >= 0);
 
   if (cb_) {
-    (*cb_)(pos);
+    cb_(pos);
   }
+  return true;
 }
 
-void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset,
+bool PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset,
                                       int traded, double traded_price) {
   if (traded <= 0) {
-    return;
+    return true;
   }
+
+  const auto* contract = ContractTable::get_by_index(ticker_id);
+  if (!contract) {
+    LOG_ERROR("[PositionCalculator::UpdateTraded] contract not found. ticker_id:{}", ticker_id);
+    return false;
+  }
+  assert(contract->size > 0);
 
   bool is_close = IsOffsetClose(offset);
   if (is_close) {
@@ -82,12 +95,6 @@ void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, O
   assert(pos_detail.open_pending >= 0);
   assert(pos_detail.close_pending >= 0);
 
-  const auto* contract = ContractTable::get_by_index(ticker_id);
-  if (!contract) {
-    throw std::runtime_error("contract not found");
-  }
-  assert(contract->size > 0);
-
   // 如果是开仓则计算当前持仓的成本价
   if (IsOffsetOpen(offset) && pos_detail.holdings > 0) {
     double cost = contract->size * (pos_detail.holdings - traded) * pos_detail.cost_price +
@@ -101,17 +108,23 @@ void PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, O
   }
 
   if (cb_) {
-    (*cb_)(pos);
+    cb_(pos);
   }
+  return true;
 }
 
-void PositionCalculator::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
-  auto& pos = positions_[ticker_id];
+bool PositionCalculator::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
+  auto it = positions_.find(ticker_id);
+  if (it == positions_.end()) {
+    return true;
+  }
+  auto& pos = it->second;
   pos.ticker_id = ticker_id;
   if (pos.long_pos.holdings > 0 || pos.short_pos.holdings > 0) {
     const auto* contract = ContractTable::get_by_index(ticker_id);
     if (!contract || contract->size <= 0) {
-      return;
+      LOG_ERROR("[PositionCalculator::UpdateFloatPnl] invalid contract");
+      return false;
     }
 
     auto& lp = pos.long_pos;
@@ -126,9 +139,10 @@ void PositionCalculator::UpdateFloatPnl(uint32_t ticker_id, double bid, double a
     }
 
     if (cb_ && (lp.holdings > 0 || sp.holdings > 0)) {
-      (*cb_)(pos);
+      cb_(pos);
     }
   }
+  return true;
 }
 
 double PositionCalculator::TotalAssets() const {

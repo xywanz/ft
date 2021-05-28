@@ -13,7 +13,7 @@
 #include "ft/utils/protocol_utils.h"
 #include "trader/risk/common/fund_manager.h"
 #include "trader/risk/common/no_self_trade.h"
-#include "trader/risk/common/position_manager.h"
+#include "trader/risk/common/position_risk.h"
 #include "trader/risk/common/throttle_rate_limit.h"
 
 namespace ft {
@@ -285,7 +285,7 @@ bool OrderManagementSystem::InitPositions() {
   // query all positions
   redis_pos_updater_.SetAccount(account_.account_id);
   redis_pos_updater_.Clear();
-  pos_calculator_.SetCallback([this](const Position& new_pos) {
+  pos_manager_.Init(*config_, [this](const std::string& strategy, const Position& new_pos) {
     auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
     if (!contract) {
       LOG_ERROR(
@@ -340,10 +340,10 @@ bool OrderManagementSystem::InitRMS() {
   RiskRuleParams risk_params{};
   risk_params.config = &config_->rms_config;
   risk_params.account = &account_;
-  risk_params.pos_calculator = &pos_calculator_;
+  risk_params.pos_manager = &pos_manager_;
   risk_params.order_map = &order_map_;
   rms_->AddRule(std::make_shared<FundManager>());
-  rms_->AddRule(std::make_shared<PositionManager>());
+  rms_->AddRule(std::make_shared<PositionRisk>());
   rms_->AddRule(std::make_shared<NoSelfTradeRule>());
   rms_->AddRule(std::make_shared<ThrottleRateLimit>());
   if (!rms_->Init(&risk_params)) {
@@ -456,7 +456,7 @@ void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
 
     if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0) return;
 
-    pos_calculator_.SetPosition(position);
+    pos_manager_.SetPosition(PositionManager::kCommonPosPool, position);
   }
 }
 

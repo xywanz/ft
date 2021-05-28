@@ -1,16 +1,15 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADER_RISK_COMMON_POSITION_MANAGER_H_
-#define FT_SRC_TRADER_RISK_COMMON_POSITION_MANAGER_H_
+#ifndef FT_SRC_TRADER_RISK_COMMON_POSITION_RISK_H_
+#define FT_SRC_TRADER_RISK_COMMON_POSITION_RISK_H_
 
 #include <map>
 
-#include "ft/component/position_calculator.h"
 #include "trader/risk/risk_rule.h"
 
 namespace ft {
 
-class PositionManager : public RiskRule {
+class PositionRisk : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
@@ -25,9 +24,9 @@ class PositionManager : public RiskRule {
   void OnOrderRejected(const Order& order, int error_code) override;
 
  private:
-  PositionCalculator* pos_calculator_;
+  PositionManager* pos_manager_;
 };
 
 };  // namespace ft
 
-#endif  // FT_SRC_TRADER_RISK_COMMON_POSITION_MANAGER_H_
+#endif  // FT_SRC_TRADER_RISK_COMMON_POSITION_RISK_H_
