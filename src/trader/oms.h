@@ -33,7 +33,7 @@ class OrderManagementSystem {
 
   bool Init(const FlareTraderConfig& config);
 
-  void ProcessCmd();
+  void Run();
 
   void operator()(const OrderAcceptance& rsp);
   void operator()(const OrderRejection& rsp);
@@ -42,6 +42,10 @@ class OrderManagementSystem {
   void operator()(const OrderCancelRejection& rsp);
 
  private:
+  void ProcessCmd();
+  void ProcessRsp();
+  void ProcessTick();
+
   void ExecuteCmd(const TraderCommand& cmd);
 
   bool SendOrder(const TraderCommand& cmd);
@@ -96,6 +100,7 @@ class OrderManagementSystem {
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   TimerThread timer_thread_;
+  std::thread tick_thread_;
 };
 
 }  // namespace ft

@@ -65,23 +65,7 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
   timer_thread_.AddTask(15 * 1000, std::mem_fn(&OrderManagementSystem::OnTimer), this);
   timer_thread_.Start();
 
-  std::thread([this] {
-    auto* rsp_rb = gateway_->GetOrderRspRB();
-    GatewayOrderResponse rsp;
-    for (;;) {
-      rsp_rb->GetWithBlocking(&rsp);
-      std::visit(*this, rsp.data);
-    }
-  }).detach();
-
-  std::thread([this] {
-    auto* tick_rb = gateway_->GetTickRB();
-    TickData tick;
-    for (;;) {
-      tick_rb->GetWithBlocking(&tick);
-      OnTick(tick);
-    }
-  }).detach();
+  tick_thread_ = std::thread(std::mem_fn(&OrderManagementSystem::ProcessTick), this);
 
   LOG_INFO("ft_trader inited");
   is_logon_ = true;
@@ -89,17 +73,41 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
   return true;
 }
 
-void OrderManagementSystem::ProcessCmd() {
+void OrderManagementSystem::Run() {
   for (;;) {
-    for (auto& reader : trade_msg_readers_) {
-      auto frame = reader->getNextFrame();
-      if (frame) {
-        auto* data = reinterpret_cast<char*>(frame->getData());
-        TraderCommand cmd;
-        cmd.ParseFromString(data, frame->getDataLength());
-        ExecuteCmd(cmd);
-      }
+    ProcessCmd();
+    ProcessRsp();
+  }
+}
+
+void OrderManagementSystem::ProcessCmd() {
+  yijinjing::FramePtr frame;
+  for (auto& reader : trade_msg_readers_) {
+    while ((frame = reader->getNextFrame()) != nullptr) {
+      auto* data = reinterpret_cast<char*>(frame->getData());
+      TraderCommand cmd;
+      cmd.ParseFromString(data, frame->getDataLength());
+      ExecuteCmd(cmd);
     }
+  }
+}
+
+void OrderManagementSystem::ProcessRsp() {
+  int count = 0;
+  auto* rsp_rb = gateway_->GetOrderRspRB();
+  GatewayOrderResponse rsp;
+  while (count < 3 && rsp_rb->Get(&rsp)) {
+    std::visit(*this, rsp.data);
+    ++count;
+  }
+}
+
+void OrderManagementSystem::ProcessTick() {
+  auto* tick_rb = gateway_->GetTickRB();
+  TickData tick;
+  for (;;) {
+    tick_rb->GetWithBlocking(&tick);
+    OnTick(tick);
   }
 }
 
