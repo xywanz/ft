@@ -200,27 +200,27 @@ bool TraderDB::Init(const std::string& address, const std::string& username,
 
 bool TraderDB::GetPosition(const std::string& strategy, const std::string& ticker,
                            Position* res) const {
-  if (db_impl_) {
-    return reinterpret_cast<TraderDBImpl*>(db_impl_)->GetPosition(strategy, ticker, res);
+  if (!db_impl_) {
+    return false;
   }
-  return false;
+  return reinterpret_cast<TraderDBImpl*>(db_impl_)->GetPosition(strategy, ticker, res);
 }
 
 bool TraderDB::GetAllPositions(const std::string& strategy, std::vector<Position>* res) const {
-  if (db_impl_) {
+  if (!db_impl_) {
     LOG_ERROR("[TraderDB::GetAllPositions] failed");
-    return reinterpret_cast<TraderDBImpl*>(db_impl_)->GetAllPositions(strategy, res);
+    return false;
   }
-  return false;
+  return reinterpret_cast<TraderDBImpl*>(db_impl_)->GetAllPositions(strategy, res);
 }
 
 bool TraderDB::SetPosition(const std::string& strategy, const std::string& ticker,
                            const Position& pos) {
-  if (db_impl_) {
+  if (!db_impl_) {
     LOG_ERROR("[TraderDB::SetPosition] failed");
-    return reinterpret_cast<TraderDBImpl*>(db_impl_)->SetPosition(strategy, ticker, pos);
+    return false;
   }
-  return false;
+  return reinterpret_cast<TraderDBImpl*>(db_impl_)->SetPosition(strategy, ticker, pos);
 }
 
 }  // namespace ft
