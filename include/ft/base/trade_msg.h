@@ -103,14 +103,12 @@ enum OrderFlag : uint8_t {
 };
 
 enum class OrderStatus : uint8_t {
-  CREATED = 0,
-  SUBMITTING,
-  REJECTED,
-  NO_TRADED,
-  PART_TRADED,
-  ALL_TRADED,
-  CANCELED,
-  CANCEL_REJECTED
+  kSubmitting = 0,
+  kRejected,
+  kAccepted,
+  kPartTraded,
+  kAllTraded,
+  kCanceled,
 };
 
 struct Contract {

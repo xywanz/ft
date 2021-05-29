@@ -163,7 +163,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   req.price = cmd.order_req.price;
   req.flags = cmd.order_req.flags;
   order.client_order_id = cmd.order_req.client_order_id;
-  order.status = OrderStatus::SUBMITTING;
+  order.status = OrderStatus::kSubmitting;
   order.strategy_id = cmd.strategy_id;
 
   std::unique_lock<SpinLock> lock(spinlock_);
@@ -527,9 +527,12 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
   }
 
   auto& order = iter->second;
-  if (order.accepted) return;
+  if (order.accepted) {
+    return;
+  }
 
   order.accepted = true;
+  order.status = OrderStatus::kAccepted;
   rms_->OnOrderAccepted(order);
   SendRspToStrategy(order, 0, 0.0, ErrorCode::kNoError);
 
@@ -548,6 +551,7 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   }
 
   auto& order = iter->second;
+  order.status = OrderStatus::kRejected;
   rms_->OnOrderRejected(order, ErrorCode::kRejected);
   SendRspToStrategy(order, 0, 0.0, ErrorCode::kRejected);
 
@@ -583,6 +587,11 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   }
 
   order.traded_volume += rsp.volume;
+  if (order.traded_volume == order.req.volume) {
+    order.status = OrderStatus::kAllTraded;
+  } else if (order.status != OrderStatus::kCanceled) {
+    order.status = OrderStatus::kPartTraded;
+  }
 
   LOG_INFO(
       "[OMS::OnOrderTraded] order traded. OrderID: {}, {}, {}{}, Traded:{}, Price:{:.3f}, "
@@ -614,6 +623,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
 
   auto& order = iter->second;
   order.canceled_volume = rsp.canceled_volume;
+  order.status = OrderStatus::kCanceled;
 
   LOG_INFO("[OMS::OnOrderCanceled] order canceled. {}, {}{}, OrderID:{}, Canceled:{}",
            order.req.contract->ticker, ToString(order.req.direction), ToString(order.req.offset),
