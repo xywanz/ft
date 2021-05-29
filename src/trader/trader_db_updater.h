@@ -34,6 +34,8 @@ class TraderDBUpdater {
       LOG_ERROR("[TraderDBUpdater::Init] failed to open db connection");
       return false;
     }
+
+    running_ = true;
     wr_thread_ = std::thread([this] {
       PositionContext ctx;
       while (running_) {
@@ -43,6 +45,7 @@ class TraderDBUpdater {
             return;
           }
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }
     });
     return true;
