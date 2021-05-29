@@ -14,7 +14,14 @@ bool RiskManagementSystem::Init(RiskRuleParams* params) {
   return true;
 }
 
-void RiskManagementSystem::AddRule(std::shared_ptr<RiskRule> rule) { rules_.emplace_back(rule); }
+bool RiskManagementSystem::AddRule(const std::string& risk_rule_name) {
+  auto rule = CreateRiskRule(risk_rule_name);
+  if (!rule) {
+    return false;
+  }
+  rules_.emplace_back(rule);
+  return true;
+}
 
 ErrorCode RiskManagementSystem::CheckOrderRequest(const Order& order) {
   ErrorCode error_code;

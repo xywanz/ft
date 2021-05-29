@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "trader/risk/common/no_self_trade.h"
+#include "trader/risk/common/self_trade_risk.h"
 
 static uint64_t order_id = 1;
 
@@ -33,7 +33,7 @@ TEST(RMS, NoSelfTrade) {
   order.req.contract = &contract;
   order.req.volume = 1;
 
-  ft::NoSelfTradeRule rule;
+  ft::SelfTradeRisk rule;
   rule.Init(&params);
 
   GenLO(&order, ft::Direction::kBuy, ft::Offset::kOpen, 100.1);

@@ -11,10 +11,6 @@
 #include "ft/component/yijinjing/journal/Timer.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
-#include "trader/risk/common/fund_manager.h"
-#include "trader/risk/common/no_self_trade.h"
-#include "trader/risk/common/position_risk.h"
-#include "trader/risk/common/throttle_rate_limit.h"
 
 namespace ft {
 
@@ -350,15 +346,21 @@ bool OrderManagementSystem::InitTradeInfo() {
 }
 
 bool OrderManagementSystem::InitRMS() {
+  bool status = true;
+  status &= rms_->AddRule("fund_risk");
+  status &= rms_->AddRule("position_risk");
+  status &= rms_->AddRule("self_trade_risk");
+  status &= rms_->AddRule("throttle_rate_risk");
+  if (!status) {
+    LOG_ERROR("[OMS::InitRMS] risk rule not found");
+    return false;
+  }
+
   RiskRuleParams risk_params{};
   risk_params.config = &config_->rms_config;
   risk_params.account = &account_;
   risk_params.pos_manager = &pos_manager_;
   risk_params.order_map = &order_map_;
-  rms_->AddRule(std::make_shared<FundManager>());
-  rms_->AddRule(std::make_shared<PositionRisk>());
-  rms_->AddRule(std::make_shared<NoSelfTradeRule>());
-  rms_->AddRule(std::make_shared<ThrottleRateLimit>());
   if (!rms_->Init(&risk_params)) {
     LOG_ERROR("[OMS::InitRMS] failed to init rms");
     return false;

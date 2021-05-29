@@ -1,18 +1,18 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "trader/risk/common/fund_manager.h"
+#include "trader/risk/common/fund_risk.h"
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
 
 namespace ft {
 
-bool FundManager::Init(RiskRuleParams* params) {
+bool FundRisk::Init(RiskRuleParams* params) {
   account_ = params->account;
   return true;
 }
 
-ErrorCode FundManager::CheckOrderRequest(const Order& order) {
+ErrorCode FundRisk::CheckOrderRequest(const Order& order) {
   // 暂时只针对买卖进行管理，申赎等操作由其他模块计算资金占用
   // 融资融券暂不支持
   // TODO(Kevin): 市价单不会进行资金的预先冻结，因为不知道价格，这算是个bug
@@ -38,7 +38,7 @@ ErrorCode FundManager::CheckOrderRequest(const Order& order) {
   return ErrorCode::kNoError;
 }
 
-void FundManager::OnOrderSent(const Order& order) {
+void FundRisk::OnOrderSent(const Order& order) {
   auto contract = order.req.contract;
 
   if (IsOffsetOpen(order.req.offset)) {
@@ -53,7 +53,7 @@ void FundManager::OnOrderSent(const Order& order) {
   }
 }
 
-void FundManager::OnOrderTraded(const Order& order, const Trade& trade) {
+void FundRisk::OnOrderTraded(const Order& order, const Trade& trade) {
   auto contract = order.req.contract;
 
   if (IsOffsetOpen(order.req.offset)) {
@@ -78,7 +78,7 @@ void FundManager::OnOrderTraded(const Order& order, const Trade& trade) {
   }
 }
 
-void FundManager::OnOrderCanceled(const Order& order, int canceled) {
+void FundRisk::OnOrderCanceled(const Order& order, int canceled) {
   if (IsOffsetOpen(order.req.offset)) {
     auto contract = order.req.contract;
     auto margin_rate = order.req.direction == Direction::kBuy ? contract->long_margin_rate
@@ -93,8 +93,10 @@ void FundManager::OnOrderCanceled(const Order& order, int canceled) {
   }
 }
 
-void FundManager::OnOrderRejected(const Order& order, ErrorCode error_code) {
+void FundRisk::OnOrderRejected(const Order& order, ErrorCode error_code) {
   OnOrderCanceled(order, order.req.volume);
 }
+
+REGISTER_RISK_RULE("fund_risk", FundRisk);
 
 }  // namespace ft

@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADER_RISK_COMMON_FUND_MANAGER_H_
-#define FT_SRC_TRADER_RISK_COMMON_FUND_MANAGER_H_
+#ifndef FT_SRC_TRADER_RISK_COMMON_FUND_RISK_H_
+#define FT_SRC_TRADER_RISK_COMMON_FUND_RISK_H_
 
 #include <map>
 
@@ -10,7 +10,7 @@
 
 namespace ft {
 
-class FundManager : public RiskRule {
+class FundRisk : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
@@ -30,4 +30,4 @@ class FundManager : public RiskRule {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADER_RISK_COMMON_FUND_MANAGER_H_
+#endif  // FT_SRC_TRADER_RISK_COMMON_FUND_RISK_H_

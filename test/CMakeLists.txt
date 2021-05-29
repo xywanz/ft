@@ -8,7 +8,8 @@ mark_as_advanced(
     gtest_disable_pthreads gtest_force_shared_crt gtest_hide_internal_symbols
 )
 
-add_library(ft_test ../src/trader/risk/common/no_self_trade.cpp)
+add_library(ft_test ../src/trader/risk/common/self_trade_risk.cpp
+                    ../src/trader/risk/risk_rule.cpp)
 target_include_directories(ft_test PUBLIC ../src)
 target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils)
 
@@ -36,7 +37,7 @@ endmacro()
 package_add_test(test_cereal test_cereal.cpp ft_test)
 package_add_test(test_datetime test_datetime.cpp ft_test)
 package_add_test(test_decimal_price test_decimal_price.cpp ft_test)
-package_add_test(test_no_self_trade test_no_self_trade.cpp ft_test)
+package_add_test(test_self_trade_risk test_self_trade_risk.cpp ft_test)
 package_add_test(test_order_book test_order_book.cpp ft_test)
 package_add_test(test_ring_buffer test_ring_buffer.cpp ft_test)
 package_add_test(test_yijinjing test_yijinjing.cpp yijinjing ft_test)

@@ -1,6 +1,6 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "trader/risk/common/no_self_trade.h"
+#include "trader/risk/common/self_trade_risk.h"
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
@@ -9,12 +9,12 @@
 
 namespace ft {
 
-bool NoSelfTradeRule::Init(RiskRuleParams* params) {
+bool SelfTradeRisk::Init(RiskRuleParams* params) {
   order_map_ = params->order_map;
   return true;
 }
 
-ErrorCode NoSelfTradeRule::CheckOrderRequest(const Order& order) {
+ErrorCode SelfTradeRisk::CheckOrderRequest(const Order& order) {
   auto& req = order.req;
   auto contract = req.contract;
 
@@ -45,5 +45,7 @@ ErrorCode NoSelfTradeRule::CheckOrderRequest(const Order& order) {
 
   return ErrorCode::kNoError;
 }
+
+REGISTER_RISK_RULE("self_trade_risk", SelfTradeRisk);
 
 }  // namespace ft

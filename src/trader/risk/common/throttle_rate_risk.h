@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADER_RISK_COMMON_THROTTLE_RATE_LIMIT_H_
-#define FT_SRC_TRADER_RISK_COMMON_THROTTLE_RATE_LIMIT_H_
+#ifndef FT_SRC_TRADER_RISK_COMMON_THROTTLE_RATE_RISK_H_
+#define FT_SRC_TRADER_RISK_COMMON_THROTTLE_RATE_RISK_H_
 
 #include <list>
 #include <map>
@@ -14,7 +14,7 @@
 
 namespace ft {
 
-class ThrottleRateLimit : public RiskRule {
+class ThrottleRateRisk : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 

@@ -20,7 +20,7 @@ class RiskManagementSystem {
 
   bool Init(RiskRuleParams* params);
 
-  void AddRule(std::shared_ptr<RiskRule> rule);
+  bool AddRule(const std::string& risk_rule_name);
 
   ErrorCode CheckOrderRequest(const Order& order);
 

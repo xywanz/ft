@@ -18,7 +18,7 @@ enum class ErrorCode : int {
   kSelfTrade,
   kPositionNotEnough,
   kFundNotEnough,
-  kExceedThrottleRateLimit,
+  kExceedThrottleRateRisk,
 
   kSendFailed,
 
@@ -39,8 +39,8 @@ inline const char* ErrorCodeStr(ErrorCode error_code) {
     case ErrorCode::kFundNotEnough: {
       return "FundNotEnough";
     }
-    case ErrorCode::kExceedThrottleRateLimit: {
-      return "ExceedThrottleRateLimit";
+    case ErrorCode::kExceedThrottleRateRisk: {
+      return "ExceedThrottleRateRisk";
     }
     case ErrorCode::kSendFailed: {
       return "SendFailed";

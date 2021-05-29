@@ -4,6 +4,7 @@
 #define FT_SRC_TRADER_RISK_RISK_RULE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -49,6 +50,21 @@ class RiskRule {
 
   virtual void OnOrderRejected(const Order& order, ErrorCode error_code) {}
 };
+
+using CreateRiskRuleFn = std::shared_ptr<RiskRule> (*)();
+using RiskRuleCtorMap = std::map<std::string, CreateRiskRuleFn>;
+RiskRuleCtorMap& __GetRiskRuleCtorMap();
+
+std::shared_ptr<RiskRule> CreateRiskRule(const std::string& risk_rule_name);
+
+#define REGISTER_RISK_RULE(name, type)                              \
+  static std::shared_ptr<::ft::RiskRule> __CreateGateway##type() {  \
+    return std::make_shared<type>();                                \
+  }                                                                 \
+  static const bool __is_##type##_registered [[gnu::unused]] = [] { \
+    ::ft::__GetRiskRuleCtorMap()[name] = &__CreateGateway##type;    \
+    return true;                                                    \
+  }();
 
 }  // namespace ft
 

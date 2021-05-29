@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADER_RISK_COMMON_NO_SELF_TRADE_H_
-#define FT_SRC_TRADER_RISK_COMMON_NO_SELF_TRADE_H_
+#ifndef FT_SRC_TRADER_RISK_COMMON_SELF_TRADE_RISK_H_
+#define FT_SRC_TRADER_RISK_COMMON_SELF_TRADE_RISK_H_
 
 #include <map>
 #include <string>
@@ -14,7 +14,7 @@ namespace ft {
 // 拦截自成交订单，检查相反方向的挂单
 // 1. 市价单
 // 2. 非市价单的其他订单，且价格可以成功撮合的
-class NoSelfTradeRule : public RiskRule {
+class SelfTradeRisk : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
@@ -26,4 +26,4 @@ class NoSelfTradeRule : public RiskRule {
 
 }  // namespace ft
 
-#endif  // FT_SRC_TRADER_RISK_COMMON_NO_SELF_TRADE_H_
+#endif  // FT_SRC_TRADER_RISK_COMMON_SELF_TRADE_RISK_H_

@@ -1,13 +1,13 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "trader/risk/common/throttle_rate_limit.h"
+#include "trader/risk/common/throttle_rate_risk.h"
 
 #include "ft/base/log.h"
 #include "ft/utils/protocol_utils.h"
 
 namespace ft {
 
-bool ThrottleRateLimit::Init(RiskRuleParams* params) {
+bool ThrottleRateRisk::Init(RiskRuleParams* params) {
   period_ms_ = params->config->throttle_rate_limit_period_ms;
   order_limit_ = params->config->throttle_rate_order_limit;
   volume_limit_ = params->config->throttle_rate_volume_limit;
@@ -15,7 +15,7 @@ bool ThrottleRateLimit::Init(RiskRuleParams* params) {
   return true;
 }
 
-ErrorCode ThrottleRateLimit::CheckOrderRequest(const Order& order) {
+ErrorCode ThrottleRateRisk::CheckOrderRequest(const Order& order) {
   auto& req = order.req;
   if ((order_limit_ == 0 && volume_limit_ == 0) || period_ms_ == 0) {
     return ErrorCode::kNoError;
@@ -34,10 +34,10 @@ ErrorCode ThrottleRateLimit::CheckOrderRequest(const Order& order) {
 
     if (order_tm_record_.size() >= order_limit_) {
       LOG_ERROR(
-          "[ThrottleRateLimit::check] Order num reached limit within {} ms. "
+          "[ThrottleRateRisk::check] Order num reached limit within {} ms. "
           "Current: {}, Limit: {}",
           period_ms_, order_tm_record_.size(), order_limit_);
-      return ErrorCode::kExceedThrottleRateLimit;
+      return ErrorCode::kExceedThrottleRateRisk;
     }
   }
 
@@ -52,17 +52,17 @@ ErrorCode ThrottleRateLimit::CheckOrderRequest(const Order& order) {
 
     if (volume_count_ + req.volume > volume_limit_) {
       LOG_ERROR(
-          "[ThrottleRateLimit::check] Volume reach limit within {} ms. "
+          "[ThrottleRateRisk::check] Volume reach limit within {} ms. "
           "This Order: {}, Current: {}, Limit: {}",
           period_ms_, req.volume, volume_count_, volume_limit_);
-      return ErrorCode::kExceedThrottleRateLimit;
+      return ErrorCode::kExceedThrottleRateRisk;
     }
   }
 
   return ErrorCode::kNoError;
 }
 
-void ThrottleRateLimit::OnOrderSent(const Order& order) {
+void ThrottleRateRisk::OnOrderSent(const Order& order) {
   uint64_t lower_bound_ms = current_ms_ - period_ms_;
 
   if (order_limit_ > 0) {
@@ -75,5 +75,7 @@ void ThrottleRateLimit::OnOrderSent(const Order& order) {
         std::make_tuple(current_ms_, order.req.volume, order.req.order_id));
   }
 }
+
+REGISTER_RISK_RULE("throttle_rate_risk", ThrottleRateRisk);
 
 }  // namespace ft

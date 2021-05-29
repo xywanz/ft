@@ -56,4 +56,6 @@ void PositionRisk::OnOrderRejected(const Order& order, ErrorCode error_code) {
                               order.req.offset, 0 - order.req.volume);
 }
 
+REGISTER_RISK_RULE("position_risk", PositionRisk);
+
 }  // namespace ft

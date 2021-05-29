@@ -4,10 +4,11 @@ add_subdirectory(gateway)
 
 add_executable(ft_trader
     oms.cpp
-    risk/common/fund_manager.cpp
-    risk/common/no_self_trade.cpp
+    risk/common/fund_risk.cpp
+    risk/common/self_trade_risk.cpp
     risk/common/position_risk.cpp
-    risk/common/throttle_rate_limit.cpp
+    risk/common/throttle_rate_risk.cpp
+    risk/risk_rule.cpp
     risk/rms.cpp
     main.cpp)
 target_link_libraries(ft_trader PRIVATE
