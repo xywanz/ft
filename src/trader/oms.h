@@ -61,7 +61,7 @@ class OrderManagementSystem {
 
   bool SubscribeMarketData();
 
-  void SendRspToStrategy(const Order& order, int this_traded, double price, int error_code);
+  void SendRspToStrategy(const Order& order, int this_traded, double price, ErrorCode error_code);
 
   void OnTick(const TickData& tick);
 

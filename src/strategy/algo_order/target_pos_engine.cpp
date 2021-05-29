@@ -137,7 +137,7 @@ void TargetPosEngine::OnOrder(const OrderResponse& order) {
 
   auto& pending_order = it->second;
   if (order.completed) {
-    if (order.error_code != NO_ERROR && order.error_code <= ERR_SEND_FAILED &&
+    if (order.error_code != ErrorCode::kNoError && order.error_code <= ErrorCode::kSendFailed &&
         pending_order.order_id == 0) {
       if (pending_order.direction == Direction::kBuy) {
         long_pending_ -= pending_order.volume;
@@ -146,7 +146,8 @@ void TargetPosEngine::OnOrder(const OrderResponse& order) {
       }
       orders_.erase(it);
       return;
-    } else if (order.error_code == NO_ERROR && pending_order.order_id == order.order_id) {
+    } else if (order.error_code == ErrorCode::kNoError &&
+               pending_order.order_id == order.order_id) {
       if (pending_order.direction == Direction::kBuy) {
         long_pending_ -= (order.original_volume - order.traded_volume);
       } else {

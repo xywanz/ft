@@ -18,7 +18,7 @@ class NoSelfTradeRule : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
-  int CheckOrderRequest(const Order& req) override;
+  ErrorCode CheckOrderRequest(const Order& req) override;
 
  private:
   OrderMap* order_map_;

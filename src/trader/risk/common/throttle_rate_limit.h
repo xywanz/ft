@@ -18,7 +18,7 @@ class ThrottleRateLimit : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
-  int CheckOrderRequest(const Order& order) override;
+  ErrorCode CheckOrderRequest(const Order& order) override;
 
   void OnOrderSent(const Order& order) override;
 

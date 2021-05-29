@@ -11,35 +11,47 @@ namespace ft {
  * 2. 发送错误
  * 3. 发送后
  */
-enum ErrorCode : int {
-  NO_ERROR = 0,
+enum class ErrorCode : int {
+  kNoError = 0,
 
-  // 小于ERR_SEND_FAILED的错误归属于RM
-  ERR_SELF_TRADE,
-  ERR_POSITION_NOT_ENOUGH,
-  ERR_FUND_NOT_ENOUGH,
-  ERR_THROTTLE_RATE_LIMIT,
+  // 小于ErrorCode::kSendFailed的错误归属于RM
+  kSelfTrade,
+  kPositionNotEnough,
+  kFundNotEnough,
+  kExceedThrottleRateLimit,
 
-  ERR_SEND_FAILED,
+  kSendFailed,
 
-  ERR_REJECTED,
-  ERR_COUNT
+  kRejected,
 };
 
-inline const char* ErrorCodeStr(int error_code) {
-  static const char* err_str[ERR_COUNT] = {
-      "NO_ERROR",
-      "ERR_SELF_TRADE",
-      "ERR_POSITION_NOT_ENOUGH",
-      "ERR_FUND_NOT_ENOUGH",
-      "ERR_THROTTLE_RATE_LIMIT",
-      "ERR_SEND_FAILED",
-      "ERR_REJECTED",
-  };
-
-  if (error_code < 0 || error_code >= ERR_COUNT) return "UNKNOWN_ERROR_CODE";
-
-  return err_str[error_code];
+inline const char* ErrorCodeStr(ErrorCode error_code) {
+  switch (error_code) {
+    case ErrorCode::kNoError: {
+      return "NoError";
+    }
+    case ErrorCode::kSelfTrade: {
+      return "SelfTrade";
+    }
+    case ErrorCode::kPositionNotEnough: {
+      return "PositionNotEnough";
+    }
+    case ErrorCode::kFundNotEnough: {
+      return "FundNotEnough";
+    }
+    case ErrorCode::kExceedThrottleRateLimit: {
+      return "ExceedThrottleRateLimit";
+    }
+    case ErrorCode::kSendFailed: {
+      return "SendFailed";
+    }
+    case ErrorCode::kRejected: {
+      return "Rejected";
+    }
+    default: {
+      return "UnknownError";
+    }
+  }
 }
 
 }  // namespace ft

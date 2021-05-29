@@ -16,30 +16,30 @@ bool RiskManagementSystem::Init(RiskRuleParams* params) {
 
 void RiskManagementSystem::AddRule(std::shared_ptr<RiskRule> rule) { rules_.emplace_back(rule); }
 
-int RiskManagementSystem::CheckOrderRequest(const Order& order) {
-  int error_code;
+ErrorCode RiskManagementSystem::CheckOrderRequest(const Order& order) {
+  ErrorCode error_code;
 
   for (auto& rule : rules_) {
     error_code = rule->CheckOrderRequest(order);
-    if (error_code != NO_ERROR) {
+    if (error_code != ErrorCode::kNoError) {
       return error_code;
     }
   }
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
-int RiskManagementSystem::CheckCancelReq(const Order& order) {
-  int error_code;
+ErrorCode RiskManagementSystem::CheckCancelReq(const Order& order) {
+  ErrorCode error_code;
 
   for (auto& rule : rules_) {
     error_code = rule->CheckCancelReq(order);
-    if (error_code != NO_ERROR) {
+    if (error_code != ErrorCode::kNoError) {
       return error_code;
     }
   }
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
 void RiskManagementSystem::OnOrderSent(const Order& order) {
@@ -72,7 +72,7 @@ void RiskManagementSystem::OnOrderCanceled(const Order& order, int canceled) {
   }
 }
 
-void RiskManagementSystem::OnOrderRejected(const Order& order, int error_code) {
+void RiskManagementSystem::OnOrderRejected(const Order& order, ErrorCode error_code) {
   for (auto& rule : rules_) {
     rule->OnOrderRejected(order, error_code);
   }

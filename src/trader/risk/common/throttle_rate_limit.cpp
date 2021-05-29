@@ -15,10 +15,10 @@ bool ThrottleRateLimit::Init(RiskRuleParams* params) {
   return true;
 }
 
-int ThrottleRateLimit::CheckOrderRequest(const Order& order) {
+ErrorCode ThrottleRateLimit::CheckOrderRequest(const Order& order) {
   auto& req = order.req;
   if ((order_limit_ == 0 && volume_limit_ == 0) || period_ms_ == 0) {
-    return NO_ERROR;
+    return ErrorCode::kNoError;
   }
 
   current_ms_ = GetCurrentTimeMs();
@@ -37,7 +37,7 @@ int ThrottleRateLimit::CheckOrderRequest(const Order& order) {
           "[ThrottleRateLimit::check] Order num reached limit within {} ms. "
           "Current: {}, Limit: {}",
           period_ms_, order_tm_record_.size(), order_limit_);
-      return ERR_THROTTLE_RATE_LIMIT;
+      return ErrorCode::kExceedThrottleRateLimit;
     }
   }
 
@@ -55,11 +55,11 @@ int ThrottleRateLimit::CheckOrderRequest(const Order& order) {
           "[ThrottleRateLimit::check] Volume reach limit within {} ms. "
           "This Order: {}, Current: {}, Limit: {}",
           period_ms_, req.volume, volume_count_, volume_limit_);
-      return ERR_THROTTLE_RATE_LIMIT;
+      return ErrorCode::kExceedThrottleRateLimit;
     }
   }
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
 void ThrottleRateLimit::OnOrderSent(const Order& order) {

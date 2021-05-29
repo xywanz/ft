@@ -12,15 +12,15 @@ bool FundManager::Init(RiskRuleParams* params) {
   return true;
 }
 
-int FundManager::CheckOrderRequest(const Order& order) {
+ErrorCode FundManager::CheckOrderRequest(const Order& order) {
   // 暂时只针对买卖进行管理，申赎等操作由其他模块计算资金占用
   // 融资融券暂不支持
   // TODO(Kevin): 市价单不会进行资金的预先冻结，因为不知道价格，这算是个bug
   if (order.req.direction != Direction::kBuy && order.req.direction != Direction::kSell)
-    return NO_ERROR;
+    return ErrorCode::kNoError;
 
   auto& req = order.req;
-  if (IsOffsetClose(req.offset)) return NO_ERROR;
+  if (IsOffsetClose(req.offset)) return ErrorCode::kNoError;
 
   auto contract = ContractTable::get_by_index(req.contract->ticker_id);
   assert(contract);
@@ -33,9 +33,9 @@ int FundManager::CheckOrderRequest(const Order& order) {
     estimated = req.price * req.volume * contract->size * contract->short_margin_rate;
   }
 
-  if (account_->cash * 1.1 < estimated) return ERR_FUND_NOT_ENOUGH;
+  if (account_->cash * 1.1 < estimated) return ErrorCode::kFundNotEnough;
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
 void FundManager::OnOrderSent(const Order& order) {
@@ -93,7 +93,7 @@ void FundManager::OnOrderCanceled(const Order& order, int canceled) {
   }
 }
 
-void FundManager::OnOrderRejected(const Order& order, int error_code) {
+void FundManager::OnOrderRejected(const Order& order, ErrorCode error_code) {
   OnOrderCanceled(order, order.req.volume);
 }
 

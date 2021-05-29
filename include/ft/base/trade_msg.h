@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <string>
 
+#include "ft/base/error_code.h"
 #include "ft/component/serializable.h"
 #include "ft/utils/datetime.h"
 
@@ -174,11 +175,11 @@ inline const uint32_t kTradingCmdMagic = 0x1709394;
 
 // 交易指令类型
 enum TraderCmdType : uint32_t {
-  CMD_NEW_ORDER = 1,
-  CMD_CANCEL_ORDER,
-  CMD_CANCEL_TICKER,
-  CMD_CANCEL_ALL,
-  CMD_NOTIFY,
+  kNewOrder = 1,
+  kCancelOrder,
+  kCancelTicker,
+  kCancelAll,
+  kNotify,
 };
 
 // 订单请求
@@ -212,7 +213,7 @@ struct TraderNotification {
 // 交易指令
 struct TraderCommand : public pubsub::Serializable<TraderCommand> {
   uint32_t magic;
-  uint32_t type;
+  TraderCmdType type;
   uint64_t timestamp_us;
   bool without_check;
   StrategyIdType strategy_id;
@@ -228,23 +229,23 @@ struct TraderCommand : public pubsub::Serializable<TraderCommand> {
     ar(magic, type, timestamp_us, without_check, strategy_id);
 
     switch (type) {
-      case CMD_NEW_ORDER: {
+      case TraderCmdType::kNewOrder: {
         ar(order_req.client_order_id, order_req.ticker_id, order_req.direction, order_req.offset,
            order_req.type, order_req.volume, order_req.price, order_req.flags);
         break;
       }
-      case CMD_CANCEL_ORDER: {
+      case TraderCmdType::kCancelOrder: {
         ar(cancel_req.order_id);
         break;
       }
-      case CMD_CANCEL_TICKER: {
+      case TraderCmdType::kCancelTicker: {
         ar(cancel_ticker_req.ticker_id);
         break;
       }
-      case CMD_CANCEL_ALL: {
+      case TraderCmdType::kCancelAll: {
         break;
       }
-      case CMD_NOTIFY: {
+      case TraderCmdType::kNotify: {
         ar(notification.signal);
         break;
       }
@@ -267,7 +268,7 @@ struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   int traded_volume;
 
   bool completed;
-  int error_code;
+  ErrorCode error_code;
   uint32_t this_traded;
   double this_traded_price;
 

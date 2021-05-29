@@ -14,7 +14,7 @@ class FundManager : public RiskRule {
  public:
   bool Init(RiskRuleParams* params) override;
 
-  int CheckOrderRequest(const Order& order) override;
+  ErrorCode CheckOrderRequest(const Order& order) override;
 
   void OnOrderSent(const Order& order) override;
 
@@ -22,7 +22,7 @@ class FundManager : public RiskRule {
 
   void OnOrderCanceled(const Order& order, int canceled) override;
 
-  void OnOrderRejected(const Order& order, int error_code) override;
+  void OnOrderRejected(const Order& order, ErrorCode error_code) override;
 
  private:
   Account* account_{nullptr};

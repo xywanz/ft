@@ -14,7 +14,7 @@ bool NoSelfTradeRule::Init(RiskRuleParams* params) {
   return true;
 }
 
-int NoSelfTradeRule::CheckOrderRequest(const Order& order) {
+ErrorCode NoSelfTradeRule::CheckOrderRequest(const Order& order) {
   auto& req = order.req;
   auto contract = req.contract;
 
@@ -39,11 +39,11 @@ int NoSelfTradeRule::CheckOrderRequest(const Order& order) {
           "Pending Order: [Direction: {}, Type: {}, Price: {:.2f}]",
           contract->ticker, ToString(req.direction), ToString(req.type), req.price,
           ToString(pending_order->direction), ToString(pending_order->type), pending_order->price);
-      return ERR_SELF_TRADE;
+      return ErrorCode::kSelfTrade;
     }
   }
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
 }  // namespace ft

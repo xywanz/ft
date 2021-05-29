@@ -13,7 +13,7 @@ bool PositionRisk::Init(RiskRuleParams* params) {
   return true;
 }
 
-int PositionRisk::CheckOrderRequest(const Order& order) {
+ErrorCode PositionRisk::CheckOrderRequest(const Order& order) {
   auto& req = order.req;
   if (IsOffsetClose(req.offset)) {
     int available = 0;
@@ -29,11 +29,11 @@ int PositionRisk::CheckOrderRequest(const Order& order) {
           "[PositionRisk::CheckOrderRequest] no enough volume to close. "
           "Available: {}, OrderVolume: {}, OrderType: {}, {}{}",
           available, req.volume, ToString(req.type), ToString(req.direction), ToString(req.offset));
-      return ERR_POSITION_NOT_ENOUGH;
+      return ErrorCode::kPositionNotEnough;
     }
   }
 
-  return NO_ERROR;
+  return ErrorCode::kNoError;
 }
 
 void PositionRisk::OnOrderSent(const Order& order) {
@@ -51,7 +51,7 @@ void PositionRisk::OnOrderCanceled(const Order& order, int canceled) {
                               order.req.offset, 0 - canceled);
 }
 
-void PositionRisk::OnOrderRejected(const Order& order, int error_code) {
+void PositionRisk::OnOrderRejected(const Order& order, ErrorCode error_code) {
   pos_manager_->UpdatePending(order.strategy_id, order.req.contract->ticker_id, order.req.direction,
                               order.req.offset, 0 - order.req.volume);
 }

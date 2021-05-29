@@ -82,7 +82,7 @@ class OrderSender {
                  double price, uint32_t client_order_id = 0, uint64_t timestamp_us = 0) {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
-    cmd.type = CMD_NEW_ORDER;
+    cmd.type = TraderCmdType::kNewOrder;
     cmd.timestamp_us = timestamp_us;
     cmd.without_check = false;
     strncpy(cmd.strategy_id, strategy_id_, sizeof(cmd.strategy_id));
@@ -113,7 +113,7 @@ class OrderSender {
   void CancelOrder(uint64_t order_id) {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
-    cmd.type = CMD_CANCEL_ORDER;
+    cmd.type = TraderCmdType::kCancelOrder;
     cmd.without_check = false;
     cmd.cancel_req.order_id = order_id;
 
@@ -127,7 +127,7 @@ class OrderSender {
     assert(contract);
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
-    cmd.type = CMD_CANCEL_TICKER;
+    cmd.type = TraderCmdType::kCancelTicker;
     cmd.without_check = false;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
@@ -139,7 +139,7 @@ class OrderSender {
   void CancelAll() {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
-    cmd.type = CMD_CANCEL_ALL;
+    cmd.type = TraderCmdType::kCancelAll;
     cmd.without_check = false;
 
     std::string buf;
@@ -150,7 +150,7 @@ class OrderSender {
   void SendNotification(uint64_t signal) {
     TraderCommand cmd{};
     cmd.magic = kTradingCmdMagic;
-    cmd.type = CMD_NOTIFY;
+    cmd.type = TraderCmdType::kNotify;
     cmd.notification.signal = signal;
 
     std::string buf;

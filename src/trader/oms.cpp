@@ -29,7 +29,7 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
     return false;
   }
 
-    if (!InitTraderDBConn()) {
+  if (!InitTraderDBConn()) {
     return false;
   }
 
@@ -114,23 +114,23 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
   }
 
   switch (cmd.type) {
-    case CMD_NEW_ORDER: {
+    case TraderCmdType::kNewOrder: {
       SendOrder(cmd);
       break;
     }
-    case CMD_CANCEL_ORDER: {
+    case TraderCmdType::kCancelOrder: {
       CancelOrder(cmd.cancel_req.order_id, cmd.without_check);
       break;
     }
-    case CMD_CANCEL_TICKER: {
+    case TraderCmdType::kCancelTicker: {
       CancelForTicker(cmd.cancel_ticker_req.ticker_id, cmd.without_check);
       break;
     }
-    case CMD_CANCEL_ALL: {
+    case TraderCmdType::kCancelAll: {
       CancelAll(cmd.without_check);
       break;
     }
-    case CMD_NOTIFY: {
+    case TraderCmdType::kNotify: {
       gateway_->OnNotify(cmd.notification.signal);
       break;
     }
@@ -165,8 +165,8 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   std::unique_lock<SpinLock> lock(spinlock_);
   // 增加是否经过风控检查字段，在紧急情况下可以设置该字段绕过风控下单
   if (!cmd.without_check) {
-    int error_code = rms_->CheckOrderRequest(order);
-    if (error_code != NO_ERROR) {
+    auto error_code = rms_->CheckOrderRequest(order);
+    if (error_code != ErrorCode::kNoError) {
       LOG_ERROR("[OMS::SendOrder] risk: {}", ErrorCodeStr(error_code));
       SendRspToStrategy(order, 0, 0.0, error_code);
       return false;
@@ -184,8 +184,8 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
               contract->ticker, ToString(req.direction), ToString(req.offset), ToString(req.type),
               req.volume, req.price);
 
-    rms_->OnOrderRejected(order, ERR_SEND_FAILED);
-    SendRspToStrategy(order, 0, 0.0, ERR_SEND_FAILED);
+    rms_->OnOrderRejected(order, ErrorCode::kSendFailed);
+    SendRspToStrategy(order, 0, 0.0, ErrorCode::kSendFailed);
     return false;
   }
 
@@ -200,8 +200,8 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
 
 void OrderManagementSystem::DoCancelOrder(const Order& order, bool without_check) {
   if (!without_check) {
-    int error_code = rms_->CheckCancelReq(order);
-    if (error_code != NO_ERROR) {
+    auto error_code = rms_->CheckCancelReq(order);
+    if (error_code != ErrorCode::kNoError) {
       LOG_ERROR("[OMS::DoCancelOrder] risk: {}", ErrorCodeStr(error_code));
       return;
     }
@@ -415,7 +415,7 @@ bool OrderManagementSystem::SubscribeMarketData() {
 }
 
 void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_traded, double price,
-                                              int error_code) {
+                                              ErrorCode error_code) {
   auto it = strategy_name_to_index_.find(order.strategy_id);
   if (it == strategy_name_to_index_.end()) {
     LOG_WARN("[OMS::SendRspToStrategy] failed to send rsp: unknown strategy name");
@@ -521,7 +521,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
 
   order.accepted = true;
   rms_->OnOrderAccepted(order);
-  SendRspToStrategy(order, 0, 0.0, NO_ERROR);
+  SendRspToStrategy(order, 0, 0.0, ErrorCode::kNoError);
 
   LOG_INFO(
       "[OMS::OnOrderAccepted] order accepted. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.2f}",
@@ -538,8 +538,8 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   }
 
   auto& order = iter->second;
-  rms_->OnOrderRejected(order, ERR_REJECTED);
-  SendRspToStrategy(order, 0, 0.0, ERR_REJECTED);
+  rms_->OnOrderRejected(order, ErrorCode::kRejected);
+  SendRspToStrategy(order, 0, 0.0, ErrorCode::kRejected);
 
   LOG_ERROR("[OMS::OnOrderRejected] order rejected. {}. {}, {}{}, {}, Volume:{}, Price:{:.3f}",
             rsp.reason, order.req.contract->ticker, ToString(order.req.direction),
@@ -564,7 +564,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   if (!order.accepted) {
     order.accepted = true;
     rms_->OnOrderAccepted(order);
-    SendRspToStrategy(order, 0, 0.0, NO_ERROR);
+    SendRspToStrategy(order, 0, 0.0, ErrorCode::kNoError);
 
     LOG_INFO(
         "[OMS::OnOrderAccepted] order accepted. OrderID:{}, {}, {}{}, {}, Volume:{}, Price:{:.3f}",
@@ -581,7 +581,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
       ToString(order.req.offset), rsp.volume, rsp.price, order.traded_volume, order.req.volume);
 
   rms_->OnOrderTraded(order, rsp);
-  SendRspToStrategy(order, rsp.volume, rsp.price, NO_ERROR);
+  SendRspToStrategy(order, rsp.volume, rsp.price, ErrorCode::kNoError);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     LOG_INFO("[OMS::OnOrderTraded] order completed. OrderID:{}, {}, {}{}, Traded/Original: {}/{}",
@@ -610,7 +610,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
            rsp.order_id, rsp.canceled_volume);
 
   rms_->OnOrderCanceled(order, rsp.canceled_volume);
-  SendRspToStrategy(order, 0, 0.0, NO_ERROR);
+  SendRspToStrategy(order, 0, 0.0, ErrorCode::kNoError);
 
   if (order.traded_volume + order.canceled_volume == order.req.volume) {
     LOG_INFO(

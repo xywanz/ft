@@ -22,9 +22,9 @@ class RiskManagementSystem {
 
   void AddRule(std::shared_ptr<RiskRule> rule);
 
-  int CheckOrderRequest(const Order& order);
+  ErrorCode CheckOrderRequest(const Order& order);
 
-  int CheckCancelReq(const Order& order);
+  ErrorCode CheckCancelReq(const Order& order);
 
   void OnOrderSent(const Order& order);
 
@@ -36,7 +36,7 @@ class RiskManagementSystem {
 
   void OnOrderCanceled(const Order& order, int canceled);
 
-  void OnOrderRejected(const Order& order, int error_code);
+  void OnOrderRejected(const Order& order, ErrorCode error_code);
 
   void OnOrderCompleted(const Order& order);
 

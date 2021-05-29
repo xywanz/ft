@@ -31,9 +31,9 @@ class RiskRule {
 
   virtual bool Init(RiskRuleParams* params) { return true; }
 
-  virtual int CheckOrderRequest(const Order& order) { return NO_ERROR; }
+  virtual ErrorCode CheckOrderRequest(const Order& order) { return ErrorCode::kNoError; }
 
-  virtual int CheckCancelReq(const Order& order) { return NO_ERROR; }
+  virtual ErrorCode CheckCancelReq(const Order& order) { return ErrorCode::kNoError; }
 
   virtual void OnOrderSent(const Order& order) {}
 
@@ -47,7 +47,7 @@ class RiskRule {
 
   virtual void OnOrderCompleted(const Order& order) {}
 
-  virtual void OnOrderRejected(const Order& order, int error_code) {}
+  virtual void OnOrderRejected(const Order& order, ErrorCode error_code) {}
 };
 
 }  // namespace ft
