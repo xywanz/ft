@@ -19,7 +19,7 @@ class Logger {
   std::shared_ptr<spdlog::logger> GetLogger() { return logger_; }
 
  private:
-  Logger() : logger_(spdlog::default_logger_raw()) {}
+  Logger() : logger_(spdlog::default_logger()) {}
 
  private:
   std::shared_ptr<spdlog::logger> logger_;

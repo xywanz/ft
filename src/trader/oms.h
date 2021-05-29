@@ -17,12 +17,12 @@
 #include "ft/component/position/manager.h"
 #include "ft/component/yijinjing/journal/JournalReader.h"
 #include "ft/component/yijinjing/journal/JournalWriter.h"
-#include "ft/utils/redis_position_helper.h"
 #include "ft/utils/spinlock.h"
 #include "ft/utils/timer_thread.h"
 #include "trader/gateway/gateway.h"
 #include "trader/order.h"
 #include "trader/risk/rms.h"
+#include "trader/trader_db_updater.h"
 
 namespace ft {
 
@@ -50,13 +50,15 @@ class OrderManagementSystem {
   void CancelForTicker(uint32_t ticker_id, bool without_check);
   void CancelAll(bool without_check);
 
-  bool InitGateway();
   bool InitContractTable();
+  bool InitTraderDBConn();
+  bool InitMQ();
+  bool InitGateway();
   bool InitAccount();
   bool InitPositions();
   bool InitTradeInfo();
   bool InitRMS();
-  bool InitMQ();
+
   bool SubscribeMarketData();
 
   void SendRspToStrategy(const Order& order, int this_traded, double price, int error_code);
@@ -89,7 +91,8 @@ class OrderManagementSystem {
   SpinLock spinlock_;
   Account account_;
   PositionManager pos_manager_;
-  RedisPositionSetter redis_pos_updater_;
+
+  TraderDBUpdater trader_db_updater_;
   OrderMap order_map_;
   std::unique_ptr<RiskManagementSystem> rms_{nullptr};
   TimerThread timer_thread_;

@@ -13,7 +13,12 @@ Strategy::Strategy() {}
 
 bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_config) {
   if (!ft::ContractTable::Init(ft_config.global_config.contract_file)) {
-    printf("invalid contract list file");
+    printf("invalid contract list file\n");
+    return false;
+  }
+
+  if (!trader_db_.Init("127.0.0.1:6379", "", "")) {
+    printf("cannot open db connection\n");
     return false;
   }
 
@@ -25,8 +30,6 @@ bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_co
   sender_.SetStrategyId(config.strategy_name.c_str());
 
   account_id_ = std::stoul(ft_config.gateway_config.investor_id);
-  pos_getter_.SetAccount(account_id_);
-
   return true;
 }
 
@@ -73,8 +76,9 @@ void Strategy::RunBacktest() {
 }
 
 void Strategy::RegisterAlgoOrderEngine(AlgoOrderEngine* engine) {
+  engine->SetStrategyName(strategy_id_);
   engine->SetOrderSender(&sender_);
-  engine->SetPosGetter(&pos_getter_);
+  engine->SetTraderDB(&trader_db_);
   engine->Init();
   algo_order_engines_.emplace_back(engine);
 }

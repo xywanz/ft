@@ -1,8 +1,7 @@
 
 add_library(utils STATIC
     lockfree-queue/queue.c
-    datetime.cpp
-    redis.cpp)
+    datetime.cpp)
 add_library(ft::utils ALIAS utils)
 
 target_include_directories(utils PUBLIC "${PROJECT_SOURCE_DIR}/src")

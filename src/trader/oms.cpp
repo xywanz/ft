@@ -29,6 +29,10 @@ bool OrderManagementSystem::Init(const FlareTraderConfig& config) {
     return false;
   }
 
+    if (!InitTraderDBConn()) {
+    return false;
+  }
+
   if (!InitMQ()) {
     return false;
   }
@@ -236,6 +240,14 @@ void OrderManagementSystem::CancelAll(bool without_check) {
   }
 }
 
+bool OrderManagementSystem::InitTraderDBConn() {
+  if (!trader_db_updater_.Init("127.0.0.1:6379", "", "")) {
+    LOG_ERROR("[OMS::InitTraderDBConn] failed");
+    return false;
+  }
+  return true;
+}
+
 bool OrderManagementSystem::InitGateway() {
   gateway_ = CreateGateway(config_->gateway_config.api);
   if (!gateway_) {
@@ -283,18 +295,19 @@ bool OrderManagementSystem::InitPositions() {
   GatewayQueryResult qry_res;
 
   // query all positions
-  redis_pos_updater_.SetAccount(account_.account_id);
-  redis_pos_updater_.Clear();
   pos_manager_.Init(*config_, [this](const std::string& strategy, const Position& new_pos) {
     auto* contract = ContractTable::get_by_index(new_pos.ticker_id);
     if (!contract) {
       LOG_ERROR(
-          "[OMS::::InitPositions] contract not found. failed to update positions in redis. "
+          "[OMS::UpdatePosition] contract not found. failed to update positions in redis. "
           "ticker_id:{}",
           new_pos.ticker_id);
       return;
     }
-    redis_pos_updater_.set(contract->ticker, new_pos);
+    if (!trader_db_updater_.SetPosition(strategy, contract->ticker, new_pos)) {
+      LOG_ERROR("[OMS::UpdatePosition] failed");
+      // TODO: 异常处理
+    }
   });
 
   std::vector<Position> init_positions;

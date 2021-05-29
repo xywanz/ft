@@ -8,8 +8,8 @@
 
 #include "ft/base/market_data.h"
 #include "ft/base/trade_msg.h"
+#include "ft/component/trader_db.h"
 #include "ft/strategy/order_sender.h"
-#include "ft/utils/redis_position_helper.h"
 
 namespace ft {
 
@@ -25,9 +25,11 @@ class AlgoOrderEngine {
 
   virtual void OnTrade(const OrderResponse& trade) {}
 
+  void SetStrategyName(const std::string& strategy_name) { strategy_name_ = strategy_name; }
+
   void SetOrderSender(OrderSender* order_sender) { order_sender_ = order_sender; }
 
-  void SetPosGetter(RedisPositionGetter* pos_getter) { pos_getter_ = pos_getter; }
+  void SetTraderDB(TraderDB* trader_db) { trader_db_ = trader_db; }
 
   void SendOrder(uint32_t ticker_id, int volume, Direction direction, Offset offset, OrderType type,
                  double price, uint32_t client_order_id) {
@@ -40,14 +42,15 @@ class AlgoOrderEngine {
   Position GetPosition(const std::string& ticker) const {
     Position ret{};
 
-    assert(pos_getter_);
-    pos_getter_->get(ticker, &ret);
+    assert(trader_db_);
+    trader_db_->GetPosition(strategy_name_, ticker, &ret);
     return ret;
   }
 
  private:
+  std::string strategy_name_;
   OrderSender* order_sender_;
-  RedisPositionGetter* pos_getter_;
+  TraderDB* trader_db_;
 };
 
 }  // namespace ft
