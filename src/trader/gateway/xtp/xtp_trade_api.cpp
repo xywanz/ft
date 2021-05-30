@@ -367,6 +367,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
     assert(contract);
 
     HistoricalTrade trade{};
+    trade.order_sys_id = trade_info->order_xtp_id;
     trade.ticker_id = contract->ticker_id;
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;

@@ -607,6 +607,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoFi
     assert(contract);
 
     HistoricalTrade td{};
+    td.order_sys_id = std::stoul(trade->OrderSysID);
     td.ticker_id = contract->ticker_id;
     td.volume = trade->Volume;
     td.price = trade->Price;
