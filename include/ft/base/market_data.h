@@ -5,8 +5,6 @@
 
 #include <cstdint>
 
-#include "ft/utils/datetime.h"
-
 namespace ft {
 
 constexpr int kMaxMarketLevel = 5;
