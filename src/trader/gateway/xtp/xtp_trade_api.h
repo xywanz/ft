@@ -65,6 +65,8 @@ class XtpTradeApi : public XTP::API::TraderSpi {
   std::atomic<uint32_t> next_req_id_ = 1;
   std::atomic<int> status_ = 0;
 
+  XtpDatetimeConverter dt_converter_;
+
   std::map<uint64_t, Position> pos_cache_;
 };
 

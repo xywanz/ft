@@ -174,12 +174,13 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
     return;
   }
 
+  dt_converter_.UpdateDate(market_data->data_time);
+
   TickData tick{};
   tick.source = MarketDataSource::kXTP;
   tick.ticker_id = contract->ticker_id;
   tick.local_timestamp_us = ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
-  tick.exchange_datetime =
-      datetime::strptime(fmt::format("{:017}", market_data->data_time), "%Y%m%d%H%M%S%s");
+  tick.exchange_timestamp_us = dt_converter_.GetExchTimeStamp(market_data->data_time);
 
   tick.volume = market_data->qty;
   tick.turnover = market_data->turnover;
@@ -191,7 +192,6 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   tick.pre_close_price = market_data->pre_close_price;
   tick.upper_limit_price = market_data->upper_limit_price;
   tick.lower_limit_price = market_data->lower_limit_price;
-  tick.etf.iopv = market_data->stk.iopv;  // 只对于ETF有效
 
   tick.ask[0] = market_data->ask[0];
   tick.ask[1] = market_data->ask[1];
@@ -235,10 +235,10 @@ void XtpQuoteApi::OnDepthMarketData(XTPMD* market_data, int64_t bid1_qty[], int3
   tick.bid_volume[4] = market_data->bid_qty[9];
 
   LOG_TRACE(
-      "[XtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime: {}, LastPrice:{:.2f}, "
+      "[XtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeTimeStamp: {}, LastPrice:{:.2f}, "
       "Volume:{}, Turnover:{}, Open Interest:{}",
-      market_data->ticker, tick.exchange_datetime.ToString(), tick.last_price, tick.volume,
-      tick.turnover, tick.open_interest);
+      market_data->ticker, tick.exchange_timestamp_us, tick.last_price, tick.volume, tick.turnover,
+      tick.open_interest);
 
   gateway_->OnTick(tick);
 }

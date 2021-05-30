@@ -3,8 +3,8 @@
 add_executable(contract_collector contract_collector.cpp)
 target_link_libraries(contract_collector ft::utils gateway)
 
-# add_executable(send_order send_order.cpp)
-# target_link_libraries(send_order yijinjing ft::utils)
+add_executable(send_order send_order.cpp)
+target_link_libraries(send_order yijinjing ft::utils)
 
 # add_executable(cancel_order cancel_order.cpp)
 # target_link_libraries(cancel_order yijinjing ft::utils)

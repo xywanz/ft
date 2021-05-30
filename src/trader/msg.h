@@ -49,7 +49,7 @@ struct Trade {
   double price;
   double amount;
 
-  datetime::Datetime trade_time;
+  uint64_t timestamp_us;
 };
 
 enum class GatewayMsgType : uint32_t {

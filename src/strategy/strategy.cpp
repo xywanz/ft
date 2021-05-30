@@ -46,9 +46,12 @@ void Strategy::Run() {
 
     frame = md_reader_->getNextFrame();
     if (frame) {
-      TickData tick;
-      tick.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
-      OnTick(tick);
+      if (frame->getDataLength() != sizeof(TickData)) {
+        printf("invalid tick data len\n");
+        abort();
+      }
+      TickData* tick = reinterpret_cast<TickData*>(frame->getData());
+      OnTick(*tick);
     }
   }
 }
@@ -67,9 +70,12 @@ void Strategy::RunBacktest() {
 
     frame = md_reader_->getNextFrame();
     if (frame) {
-      TickData tick;
-      tick.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
-      OnTick(tick);
+      if (frame->getDataLength() != sizeof(TickData)) {
+        printf("invalid tick data len\n");
+        abort();
+      }
+      TickData* tick = reinterpret_cast<TickData*>(frame->getData());
+      OnTick(*tick);
       SendNotification(0);
     }
   }

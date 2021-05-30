@@ -345,6 +345,8 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
   assert(contract);
 
+  dt_converter_.UpdateDate(trade->TradeDate);
+
   Trade rsp{};
   rsp.ticker_id = contract->ticker_id;
   rsp.order_id = get_order_id(std::stoul(trade->OrderRef));
@@ -352,8 +354,7 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
   rsp.price = trade->Price;
   rsp.direction = direction(trade->Direction);
   rsp.offset = offset(trade->OffsetFlag);
-  rsp.trade_time = datetime::strptime(fmt::format("{} {}", trade->TradeDate, trade->TradeTime),
-                                      "%Y%m%d %H:%M:%S");
+  rsp.timestamp_us = dt_converter_.GetExchTimeStamp(trade->TradeTime, 0);
   gateway_->OnOrderTraded(rsp);
 }
 

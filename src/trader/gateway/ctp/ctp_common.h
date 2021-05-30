@@ -4,6 +4,7 @@
 #define FT_SRC_GATEWAY_CTP_CTP_COMMON_H_
 
 #include <codecvt>
+#include <ctime>
 #include <limits>
 #include <locale>
 #include <map>
@@ -25,6 +26,31 @@ struct CtpApiDeleter {
       p->Release();
     }
   }
+};
+
+class CtpDatetimeConverter {
+ public:
+  void UpdateDate(TThostFtdcDateType date) {
+    if (cur_date_ != date) {
+      cur_date_ = date;
+      struct tm tmp_tm;
+      strptime(date, "%Y%m%d", &tmp_tm);
+      time_t t = mktime(&tmp_tm);
+      today_timestamp_us_ = t * 1000000UL;
+    }
+  }
+
+  uint64_t GetExchTimeStamp(TThostFtdcTimeType time, TThostFtdcMillisecType ms) {
+    uint64_t hour = (time[0] - '0') * 10UL + (time[1] - '0');
+    uint64_t min = (time[3] - '0') * 10UL + (time[4] - '0');
+    uint64_t sec = (time[6] - '0') * 10UL + (time[7] - '0');
+    return today_timestamp_us_ + hour * 3600000000UL + min * 60000000UL + sec * 1000000UL +
+           ms * 1000UL;
+  }
+
+ private:
+  std::string cur_date_;
+  uint64_t today_timestamp_us_ = 0;
 };
 
 template <class T>

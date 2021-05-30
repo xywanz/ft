@@ -10,44 +10,35 @@
 
 namespace ft {
 
-constexpr int kMaxMarketLevel = 10;
+constexpr int kMaxMarketLevel = 5;
 
 enum class MarketDataSource : uint8_t {
   kCTP = 1,
   kXTP = 2,
 };
 
-struct TickData : public pubsub::Serializable<TickData> {
+struct TickData {
   MarketDataSource source;
   uint64_t local_timestamp_us;
-  datetime::Datetime exchange_datetime;
+  uint64_t exchange_timestamp_us;
 
   uint32_t ticker_id;
-  double last_price = 0;
-  double open_price = 0;
-  double highest_price = 0;
-  double lowest_price = 0;
-  double pre_close_price = 0;
-  double upper_limit_price = 0;
-  double lower_limit_price = 0;
-  uint64_t volume = 0;
-  uint64_t turnover = 0;
-  uint64_t open_interest = 0;
+  double last_price;
+  double open_price;
+  double highest_price;
+  double lowest_price;
+  double pre_close_price;
+  double upper_limit_price;
+  double lower_limit_price;
+  uint64_t volume;
+  uint64_t turnover;
+  uint64_t open_interest;
 
-  double ask[kMaxMarketLevel]{0};
-  double bid[kMaxMarketLevel]{0};
-  int ask_volume[kMaxMarketLevel]{0};
-  int bid_volume[kMaxMarketLevel]{0};
-
-  struct {
-    double iopv;
-  } etf;
-
-  SERIALIZABLE_FIELDS(source, local_timestamp_us, exchange_datetime, ticker_id, last_price,
-                      open_price, highest_price, lowest_price, pre_close_price, upper_limit_price,
-                      lower_limit_price, volume, turnover, open_interest, ask, bid, ask_volume,
-                      bid_volume, etf.iopv);
-};
+  double ask[kMaxMarketLevel];
+  double bid[kMaxMarketLevel];
+  int ask_volume[kMaxMarketLevel];
+  int bid_volume[kMaxMarketLevel];
+} __attribute__((__aligned__(8)));
 
 }  // namespace ft
 

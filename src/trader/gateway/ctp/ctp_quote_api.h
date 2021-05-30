@@ -69,6 +69,8 @@ class CtpQuoteApi : public CThostFtdcMdSpi {
   std::string investor_id_;
   std::string passwd_;
 
+  CtpDatetimeConverter dt_converter_;
+
   std::atomic<int> next_req_id_ = 0;
   std::atomic<int> status_ = 0;
 

@@ -115,6 +115,8 @@ class CtpTradeApi : public CThostFtdcTraderSpi {
   int session_id_;
   uint64_t order_ref_base_;
 
+  CtpDatetimeConverter dt_converter_;
+
   std::atomic<int> next_req_id_ = 0;
 
   // 登录状态，0:正在登录，1:登录成功，-1:登录失败

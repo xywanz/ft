@@ -171,16 +171,13 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
     return;
   }
 
-  LOG_TRACE("ETF purchase/redeem: {},{},{},{},{},{},{}", trade_info->ticker,
-            trade_info->business_type, trade_info->trade_type, trade_info->side,
-            trade_info->quantity, trade_info->price, trade_info->trade_amount);
+  dt_converter_.UpdateDate(trade_info->trade_time);
 
   Trade rsp{};
   rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;
-  rsp.trade_time =
-      datetime::strptime(fmt::format("{:017}", trade_info->trade_time), "%Y%m%d%H%M%S%s");
+  rsp.timestamp_us = dt_converter_.GetExchTimeStamp(trade_info->trade_time);
   gateway_->OnOrderTraded(rsp);
 }
 

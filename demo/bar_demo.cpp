@@ -17,8 +17,8 @@ class BarDemo : public ft::Strategy {
   void OnTick(const ft::TickData& tick) { bar_generator_.OnTick(tick); }
 
   void OnBar(const ft::BarData& bar) {
-    spdlog::info("on_bar: open:{}, high:{}, low:{}, close:{}, ticker:{}, datatime:{}", bar.open,
-                 bar.high, bar.low, bar.close, bar.ticker_id, bar.datetime.ToString());
+    spdlog::info("on_bar: open:{}, high:{}, low:{}, close:{}, ticker:{}, timestamp:{}", bar.open,
+                 bar.high, bar.low, bar.close, bar.ticker_id, bar.timestamp_us);
   }
 
  private:

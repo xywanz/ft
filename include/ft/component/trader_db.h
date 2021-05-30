@@ -25,7 +25,7 @@ class TraderDB {
   bool SetPosition(const std::string& strategy, const std::string& ticker, const Position& pos);
 
  private:
-  void* db_impl_;
+  void* db_impl_ = nullptr;
 };
 
 }  // namespace ft

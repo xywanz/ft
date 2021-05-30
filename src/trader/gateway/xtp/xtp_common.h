@@ -3,6 +3,7 @@
 #ifndef FT_SRC_GATEWAY_XTP_XTP_COMMON_H_
 #define FT_SRC_GATEWAY_XTP_XTP_COMMON_H_
 
+#include <ctime>
 #include <memory>
 #include <string>
 
@@ -19,6 +20,34 @@ struct XtpApiDeleter {
       p->Release();
     }
   }
+};
+
+class XtpDatetimeConverter {
+ public:
+  void UpdateDate(int64_t dt) {
+    int64_t new_date = dt / 1000000000L;
+    if (date_ != new_date) {
+      date_ = new_date;
+      auto date_str = std::to_string(date_);
+      struct tm tmp_tm;
+      strptime(date_str.c_str(), "%Y%m%d", &tmp_tm);
+      time_t t = mktime(&tmp_tm);
+      today_timestamp_us_ = t * 1000000UL;
+    }
+  }
+
+  uint64_t GetExchTimeStamp(int64_t dt) {
+    uint64_t ms = dt % 1000;
+    uint64_t sec = static_cast<uint64_t>((dt / 1000L) % 100L);
+    uint64_t min = static_cast<uint64_t>((dt / 100000L) % 100L);
+    uint64_t hour = static_cast<uint64_t>((dt / 10000000L) % 100L);
+    return today_timestamp_us_ + hour * 3600000000UL + min * 60000000UL + sec * 1000000UL +
+           ms * 1000UL;
+  }
+
+ private:
+  int64_t date_ = 0;
+  uint64_t today_timestamp_us_ = 0;
 };
 
 template <class T>

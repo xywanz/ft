@@ -11,7 +11,7 @@ namespace ft {
 
 struct BarData {
   uint32_t ticker_id;
-  datetime::Datetime datetime;
+  uint32_t timestamp_us;
 
   double open;
   double high;

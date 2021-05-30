@@ -39,6 +39,8 @@ class XtpQuoteApi : public XTP::API::QuoteSpi {
   XtpUniquePtr<XTP::API::QuoteApi> quote_api_;
   std::vector<std::string> subscribed_list_;
 
+  XtpDatetimeConverter dt_converter_;
+
   std::vector<Contract> qry_contract_res_;
   int query_count_ = 0;
 };

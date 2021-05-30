@@ -163,14 +163,13 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
     return;
   }
 
+  dt_converter_.UpdateDate(md->ActionDay);
+
   TickData tick{};
   tick.local_timestamp_us = ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
   tick.source = MarketDataSource::kCTP;
   tick.ticker_id = contract->ticker_id;
-  tick.exchange_datetime = datetime::strptime(
-      fmt::format("{} {}.{:03}", md->ActionDay, md->UpdateTime, md->UpdateMillisec),
-      "%Y%m%d %H:%M:%S.%s");
-
+  tick.exchange_timestamp_us = dt_converter_.GetExchTimeStamp(md->UpdateTime, md->UpdateMillisec);
   tick.volume = md->Volume;
   tick.turnover = md->Turnover;
   tick.open_interest = md->OpenInterest;
@@ -206,8 +205,8 @@ void CtpQuoteApi::OnRtnDepthMarketData(CThostFtdcDepthMarketDataField *md) {
   LOG_TRACE(
       "[CtpQuoteApi::OnRtnDepthMarketData] {}, ExchangeDatetime:{}, TimeUS:{}, "
       "LastPrice:{:.2f}, Volume:{}, Turnover:{}, OpenInterest:{}",
-      contract->ticker, md->ActionDay, tick.exchange_datetime.ToString(), tick.last_price,
-      tick.volume, tick.turnover, tick.open_interest);
+      contract->ticker, md->ActionDay, tick.exchange_timestamp_us, tick.last_price, tick.volume,
+      tick.turnover, tick.open_interest);
 
   gateway_->OnTick(tick);
 }

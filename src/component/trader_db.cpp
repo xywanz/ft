@@ -22,7 +22,9 @@ class RedisSession {
  private:
   struct RedisReplyDestructor {
     void operator()(redisReply* p) {
-      if (p) freeReplyObject(p);
+      if (p) {
+        freeReplyObject(p);
+      }
     }
   };
 
@@ -83,6 +85,9 @@ class RedisSession {
     argvlen[1] = key.length();
 
     auto* reply = reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
+    if (!reply || !reply->str) {
+      return nullptr;
+    }
     return RedisReply(reply, RedisReplyDestructor());
   }
 

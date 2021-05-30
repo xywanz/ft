@@ -488,10 +488,8 @@ void OrderManagementSystem::OnTick(const TickData& tick) {
   assert(contract);
 
   auto& writers = md_dispatch_map_[contract->ticker_id];
-  std::string buf;
-  tick.SerializeToString(&buf);
   for (auto& writer : writers) {
-    writer->write_str(buf, 0);
+    writer->write_data(tick, 0, 0);
   }
 
   LOG_TRACE("[OMS::OnTick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick.ask[0], tick.bid[0]);
