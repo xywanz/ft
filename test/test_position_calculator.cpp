@@ -84,3 +84,52 @@ TEST(PositionCalculator, Update) {
   ASSERT_EQ(pos->short_pos.close_pending, 0);
   ASSERT_DOUBLE_EQ(pos->long_pos.cost_price, 150);
 }
+
+TEST(PositionCalculator, Callback) {
+  ASSERT_TRUE(is_contractable_inited);
+
+  PositionCalculator pos_calc{};
+  pos_calc.SetCallback([](const Position& pos) {
+    static int count = 0;
+    switch (count) {
+      case 0: {
+        ASSERT_EQ(pos.long_pos.open_pending, 8);
+        ASSERT_EQ(pos.long_pos.close_pending, 0);
+        ASSERT_EQ(pos.long_pos.holdings, 0);
+        ASSERT_EQ(pos.short_pos.open_pending, 0);
+        ASSERT_EQ(pos.short_pos.holdings, 0);
+        ASSERT_EQ(pos.short_pos.close_pending, 0);
+        break;
+      }
+      case 1: {
+        ASSERT_EQ(pos.long_pos.open_pending, 4);
+        ASSERT_EQ(pos.long_pos.close_pending, 0);
+        ASSERT_EQ(pos.long_pos.holdings, 4);
+        ASSERT_EQ(pos.short_pos.open_pending, 0);
+        ASSERT_EQ(pos.short_pos.holdings, 0);
+        ASSERT_EQ(pos.short_pos.close_pending, 0);
+        ASSERT_DOUBLE_EQ(pos.long_pos.cost_price, 100);
+        break;
+      }
+      case 2: {
+        ASSERT_EQ(pos.long_pos.open_pending, 0);
+        ASSERT_EQ(pos.long_pos.close_pending, 0);
+        ASSERT_EQ(pos.long_pos.holdings, 8);
+        ASSERT_EQ(pos.short_pos.open_pending, 0);
+        ASSERT_EQ(pos.short_pos.holdings, 0);
+        ASSERT_EQ(pos.short_pos.close_pending, 0);
+        ASSERT_DOUBLE_EQ(pos.long_pos.cost_price, 150);
+        break;
+      }
+      default: {
+        ASSERT_TRUE(false);
+        break;
+      }
+    }
+    ++count;
+  });
+
+  ASSERT_TRUE(pos_calc.UpdatePending(1, Direction::kBuy, Offset::kOpen, 8));
+  ASSERT_TRUE(pos_calc.UpdateTraded(1, Direction::kBuy, Offset::kOpen, 4, 100));
+  ASSERT_TRUE(pos_calc.UpdateTraded(1, Direction::kBuy, Offset::kOpen, 4, 200));
+}
