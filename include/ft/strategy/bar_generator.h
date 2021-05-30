@@ -3,6 +3,7 @@
 #ifndef FT_INCLUDE_FT_STRATEGY_BAR_GENERATOR_H_
 #define FT_INCLUDE_FT_STRATEGY_BAR_GENERATOR_H_
 
+#include <functional>
 #include <unordered_map>
 
 #include "ft/base/market_data.h"

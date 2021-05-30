@@ -41,6 +41,7 @@ target_include_directories(ft_header INTERFACE "include")
 add_subdirectory(src)
 add_subdirectory(demo)
 add_subdirectory(tools)
+add_subdirectory(benchmark)
 
 option(FT_BUILD_TESTS "Build the tests" ON)
 if(FT_BUILD_TESTS)
