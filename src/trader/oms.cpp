@@ -84,10 +84,12 @@ void OrderManagementSystem::ProcessCmd() {
   yijinjing::FramePtr frame;
   for (auto& reader : trade_msg_readers_) {
     while ((frame = reader->getNextFrame()) != nullptr) {
-      auto* data = reinterpret_cast<char*>(frame->getData());
-      TraderCommand cmd;
-      cmd.ParseFromString(data, frame->getDataLength());
-      ExecuteCmd(cmd);
+      if (frame->getDataLength() != sizeof(TraderCommand)) {
+        LOG_ERROR("[OMS::ProcessCmd] invalid trader cmd size");
+        continue;
+      }
+      auto* cmd = reinterpret_cast<TraderCommand*>(frame->getData());
+      ExecuteCmd(*cmd);
     }
   }
 }
@@ -444,12 +446,11 @@ void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_trade
   rsp.price = order.req.price;
   rsp.this_traded = this_traded;
   rsp.this_traded_price = price;
-  rsp.completed = order.canceled_volume + order.traded_volume == order.req.volume;
+  rsp.completed = order.canceled_volume + order.traded_volume == order.req.volume ||
+                  error_code != ErrorCode::kNoError;
   rsp.error_code = error_code;
 
-  std::string buf;
-  rsp.SerializeToString(&buf);
-  rsp_writers_[index]->write_str(buf, 0);
+  rsp_writers_[index]->write_data(rsp, 0, 0);
 }
 
 void OrderManagementSystem::OnAccount(const Account& account) {

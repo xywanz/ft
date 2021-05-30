@@ -39,9 +39,12 @@ void Strategy::Run() {
   for (;;) {
     auto frame = rsp_reader_->getNextFrame();
     if (frame) {
-      OrderResponse rsp;
-      rsp.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
-      OnOrderResponse(rsp);
+      if (frame->getDataLength() != sizeof(OrderResponse)) {
+        printf("invalid order rsp len\n");
+        abort();
+      }
+      auto* rsp = reinterpret_cast<OrderResponse*>(frame->getData());
+      OnOrderResponse(*rsp);
     }
 
     frame = md_reader_->getNextFrame();
@@ -63,9 +66,12 @@ void Strategy::RunBacktest() {
   for (;;) {
     auto frame = rsp_reader_->getNextFrame();
     if (frame) {
-      OrderResponse rsp;
-      rsp.ParseFromString(reinterpret_cast<char*>(frame->getData()), frame->getDataLength());
-      OnOrderResponse(rsp);
+      if (frame->getDataLength() != sizeof(OrderResponse)) {
+        printf("invalid order rsp len\n");
+        abort();
+      }
+      auto* rsp = reinterpret_cast<OrderResponse*>(frame->getData());
+      OnOrderResponse(*rsp);
     }
 
     frame = md_reader_->getNextFrame();

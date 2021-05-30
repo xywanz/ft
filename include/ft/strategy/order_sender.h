@@ -95,9 +95,7 @@ class OrderSender {
     cmd.order_req.price = price;
     cmd.order_req.flags = flags_;
 
-    std::string buf;
-    cmd.SerializeToString(&buf);
-    cmd_sender_->write_str(buf, 0);
+    cmd_sender_->write_data(cmd, 0, 0);
   }
 
   void SendOrder(const std::string& ticker, int volume, Direction direction, Offset offset,
@@ -117,9 +115,7 @@ class OrderSender {
     cmd.without_check = false;
     cmd.cancel_req.order_id = order_id;
 
-    std::string buf;
-    cmd.SerializeToString(&buf);
-    cmd_sender_->write_str(buf, 0);
+    cmd_sender_->write_data(cmd, 0, 0);
   }
 
   void CancelForTicker(const std::string& ticker) {
@@ -131,9 +127,7 @@ class OrderSender {
     cmd.without_check = false;
     cmd.cancel_ticker_req.ticker_id = contract->ticker_id;
 
-    std::string buf;
-    cmd.SerializeToString(&buf);
-    cmd_sender_->write_str(buf, 0);
+    cmd_sender_->write_data(cmd, 0, 0);
   }
 
   void CancelAll() {
@@ -142,9 +136,7 @@ class OrderSender {
     cmd.type = TraderCmdType::kCancelAll;
     cmd.without_check = false;
 
-    std::string buf;
-    cmd.SerializeToString(&buf);
-    cmd_sender_->write_str(buf, 0);
+    cmd_sender_->write_data(cmd, 0, 0);
   }
 
   void SendNotification(uint64_t signal) {
@@ -153,9 +145,7 @@ class OrderSender {
     cmd.type = TraderCmdType::kNotify;
     cmd.notification.signal = signal;
 
-    std::string buf;
-    cmd.SerializeToString(&buf);
-    cmd_sender_->write_str(buf, 0);
+    cmd_sender_->write_data(cmd, 0, 0);
   }
 
  private:

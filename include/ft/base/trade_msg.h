@@ -7,7 +7,6 @@
 #include <string>
 
 #include "ft/base/error_code.h"
-#include "ft/component/serializable.h"
 #include "ft/utils/datetime.h"
 
 namespace ft {
@@ -209,7 +208,7 @@ struct TraderNotification {
 };
 
 // 交易指令
-struct TraderCommand : public pubsub::Serializable<TraderCommand> {
+struct TraderCommand {
   uint32_t magic;
   TraderCmdType type;
   uint64_t timestamp_us;
@@ -221,41 +220,10 @@ struct TraderCommand : public pubsub::Serializable<TraderCommand> {
     TraderCancelTickerReq cancel_ticker_req;
     TraderNotification notification;
   };
-
-  template <class Archive>
-  void serialize(Archive& ar) {
-    ar(magic, type, timestamp_us, without_check, strategy_id);
-
-    switch (type) {
-      case TraderCmdType::kNewOrder: {
-        ar(order_req.client_order_id, order_req.ticker_id, order_req.direction, order_req.offset,
-           order_req.type, order_req.volume, order_req.price, order_req.flags);
-        break;
-      }
-      case TraderCmdType::kCancelOrder: {
-        ar(cancel_req.order_id);
-        break;
-      }
-      case TraderCmdType::kCancelTicker: {
-        ar(cancel_ticker_req.ticker_id);
-        break;
-      }
-      case TraderCmdType::kCancelAll: {
-        break;
-      }
-      case TraderCmdType::kNotify: {
-        ar(notification.signal);
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-  }
-};
+} __attribute__((__aligned__(8)));
 
 // 订单回报
-struct OrderResponse : public pubsub::Serializable<OrderResponse> {
+struct OrderResponse {
   uint32_t client_order_id;
   uint64_t order_id;
   uint32_t ticker_id;
@@ -269,11 +237,7 @@ struct OrderResponse : public pubsub::Serializable<OrderResponse> {
   ErrorCode error_code;
   uint32_t this_traded;
   double this_traded_price;
-
-  SERIALIZABLE_FIELDS(client_order_id, order_id, ticker_id, direction, offset, price,
-                      original_volume, traded_volume, completed, error_code, this_traded,
-                      this_traded_price);
-};
+} __attribute__((__aligned__(8)));
 
 }  // namespace ft
 
