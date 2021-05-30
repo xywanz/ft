@@ -42,7 +42,7 @@ class RiskRule {
 
   virtual void OnOrderAccepted(const Order& order) {}
 
-  virtual void OnOrderTraded(const Order& order, const Trade& trade) {}
+  virtual void OnOrderTraded(const Order& order, const OrderTradedRsp& trade) {}
 
   virtual void OnOrderCanceled(const Order& order, int canceled) {}
 

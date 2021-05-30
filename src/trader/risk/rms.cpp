@@ -67,7 +67,7 @@ void RiskManagementSystem::OnOrderAccepted(const Order& order) {
   }
 }
 
-void RiskManagementSystem::OnOrderTraded(const Order& order, const Trade& trade) {
+void RiskManagementSystem::OnOrderTraded(const Order& order, const OrderTradedRsp& trade) {
   for (auto& rule : rules_) {
     rule->OnOrderTraded(order, trade);
   }

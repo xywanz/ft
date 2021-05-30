@@ -53,7 +53,7 @@ void FundRisk::OnOrderSent(const Order& order) {
   }
 }
 
-void FundRisk::OnOrderTraded(const Order& order, const Trade& trade) {
+void FundRisk::OnOrderTraded(const Order& order, const OrderTradedRsp& trade) {
   auto contract = order.req.contract;
 
   if (IsOffsetOpen(order.req.offset)) {

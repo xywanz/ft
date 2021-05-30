@@ -162,6 +162,16 @@ struct Position {
   PositionDetail short_pos{};
 } __attribute__((__aligned__(8)));
 
+struct HistoricalTrade {
+  uint64_t timestamp_us;
+  uint64_t order_sys_id;
+  uint32_t ticker_id;
+  Direction direction;
+  Offset offset;
+  double price;
+  int volume;
+};
+
 // 策略的名称类型，用于订阅回报消息
 using StrategyIdType = char[16];
 

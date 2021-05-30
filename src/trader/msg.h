@@ -21,43 +21,38 @@ struct OrderRequest {
   OrderFlag flags;
 };
 
-struct OrderAcceptance {
+struct OrderAcceptedRsp {
   uint64_t order_id;
 };
 
-struct OrderRejection {
+struct OrderRejectedRsp {
   uint64_t order_id;
   std::string reason;
 };
 
-struct OrderCancellation {
+struct OrderCanceledRsp {
   uint64_t order_id;
   int canceled_volume;
 };
 
-struct OrderCancelRejection {
+struct OrderCancelRejectedRsp {
   uint64_t order_id;
   std::string reason;
 };
 
-struct Trade {
-  uint64_t order_id;
-  uint32_t ticker_id;
-  Direction direction;
-  Offset offset;
-  int volume;
-  double price;
-  double amount;
-
+struct OrderTradedRsp {
   uint64_t timestamp_us;
+  uint64_t order_id;
+  double price;
+  int volume;
 };
 
 enum class GatewayMsgType : uint32_t {
-  kOrderAcceptance = 1,
-  kOrderTrade,
-  kOrderRejection,
-  kOrderCancellation,
-  kOrderCancelRejection,
+  kOrderAcceptedRsp = 1,
+  kOrderOrderTradedRsp,
+  kOrderRejectedRsp,
+  kOrderCanceledRsp,
+  kOrderCancelRejectedRsp,
   kAccount,
   kAccountEnd,
   kPosition,
@@ -70,13 +65,14 @@ enum class GatewayMsgType : uint32_t {
 
 struct GatewayOrderResponse {
   GatewayMsgType msg_type;
-  std::variant<OrderAcceptance, Trade, OrderRejection, OrderCancellation, OrderCancelRejection>
+  std::variant<OrderAcceptedRsp, OrderTradedRsp, OrderRejectedRsp, OrderCanceledRsp,
+               OrderCancelRejectedRsp>
       data;
 };
 
 struct GatewayQueryResult {
   GatewayMsgType msg_type;
-  std::variant<Account, Position, Trade, Contract> data;
+  std::variant<Account, Position, HistoricalTrade, Contract> data;
 };
 
 }  // namespace ft

@@ -84,15 +84,15 @@ class Gateway {
   TickRB* GetTickRB() { return &tick_rb_; }
 
  protected:
-  void OnOrderAccepted(const OrderAcceptance& rsp);
+  void OnOrderAccepted(const OrderAcceptedRsp& rsp);
 
-  void OnOrderTraded(const Trade& rsp);
+  void OnOrderTraded(const OrderTradedRsp& rsp);
 
-  void OnOrderRejected(const OrderRejection& rsp);
+  void OnOrderRejected(const OrderRejectedRsp& rsp);
 
-  void OnOrderCanceled(const OrderCancellation& rsp);
+  void OnOrderCanceled(const OrderCanceledRsp& rsp);
 
-  void OnOrderCancelRejected(const OrderCancelRejection& rsp);
+  void OnOrderCancelRejected(const OrderCancelRejectedRsp& rsp);
 
   void OnQueryAccount(const Account& rsp);
 
@@ -102,7 +102,7 @@ class Gateway {
 
   void OnQueryPositionEnd();
 
-  void OnQueryTrade(const Trade& rsp);
+  void OnQueryTrade(const HistoricalTrade& rsp);
 
   void OnQueryTradeEnd();
 
@@ -118,37 +118,37 @@ class Gateway {
   TickRB tick_rb_;
 };
 
-inline void Gateway::OnOrderAccepted(const OrderAcceptance& rsp) {
+inline void Gateway::OnOrderAccepted(const OrderAcceptedRsp& rsp) {
   GatewayOrderResponse gtw_rsp;
-  gtw_rsp.msg_type = GatewayMsgType::kOrderAcceptance;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderAcceptedRsp;
   gtw_rsp.data = rsp;
   rsp_rb_.PutWithBlocking(std::move(gtw_rsp));
 }
 
-inline void Gateway::OnOrderTraded(const Trade& rsp) {
+inline void Gateway::OnOrderTraded(const OrderTradedRsp& rsp) {
   GatewayOrderResponse gtw_rsp;
-  gtw_rsp.msg_type = GatewayMsgType::kOrderTrade;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderOrderTradedRsp;
   gtw_rsp.data = rsp;
   rsp_rb_.PutWithBlocking(std::move(gtw_rsp));
 }
 
-inline void Gateway::OnOrderRejected(const OrderRejection& rsp) {
+inline void Gateway::OnOrderRejected(const OrderRejectedRsp& rsp) {
   GatewayOrderResponse gtw_rsp;
-  gtw_rsp.msg_type = GatewayMsgType::kOrderRejection;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderRejectedRsp;
   gtw_rsp.data = rsp;
   rsp_rb_.PutWithBlocking(std::move(gtw_rsp));
 }
 
-inline void Gateway::OnOrderCanceled(const OrderCancellation& rsp) {
+inline void Gateway::OnOrderCanceled(const OrderCanceledRsp& rsp) {
   GatewayOrderResponse gtw_rsp;
-  gtw_rsp.msg_type = GatewayMsgType::kOrderCancellation;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderCanceledRsp;
   gtw_rsp.data = rsp;
   rsp_rb_.PutWithBlocking(std::move(gtw_rsp));
 }
 
-inline void Gateway::OnOrderCancelRejected(const OrderCancelRejection& rsp) {
+inline void Gateway::OnOrderCancelRejected(const OrderCancelRejectedRsp& rsp) {
   GatewayOrderResponse gtw_rsp;
-  gtw_rsp.msg_type = GatewayMsgType::kOrderCancelRejection;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderCancelRejectedRsp;
   gtw_rsp.data = rsp;
   rsp_rb_.PutWithBlocking(std::move(gtw_rsp));
 }
@@ -179,7 +179,7 @@ inline void Gateway::OnQueryPositionEnd() {
   qry_result_rb_.PutWithBlocking(gtw_rsp);
 }
 
-inline void Gateway::OnQueryTrade(const Trade& rsp) {
+inline void Gateway::OnQueryTrade(const HistoricalTrade& rsp) {
   GatewayQueryResult gtw_rsp;
   gtw_rsp.msg_type = GatewayMsgType::kTrade;
   gtw_rsp.data = rsp;

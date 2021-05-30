@@ -338,7 +338,7 @@ bool OrderManagementSystem::InitTradeInfo() {
   GatewayQueryResult qry_res;
 
   // query trades to update position
-  std::vector<Trade> init_trades;
+  std::vector<HistoricalTrade> init_trades;
   if (!gateway_->QueryTrades()) {
     LOG_ERROR("[OMS::InitTradeInfo] failed to query trades");
     return false;
@@ -349,7 +349,7 @@ bool OrderManagementSystem::InitTradeInfo() {
       break;
     }
     assert(qry_res.msg_type == GatewayMsgType::kTrade);
-    init_trades.emplace_back(std::get<Trade>(qry_res.data));
+    init_trades.emplace_back(std::get<HistoricalTrade>(qry_res.data));
   }
   OnTrades(&init_trades);
   return true;
@@ -496,7 +496,7 @@ void OrderManagementSystem::OnTick(const TickData& tick) {
   LOG_TRACE("[OMS::OnTick] {}  ask:{:.3f}  bid:{:.3f}", contract->ticker, tick.ask[0], tick.bid[0]);
 }
 
-void OrderManagementSystem::OnTrades(std::vector<Trade>* trades) {}
+void OrderManagementSystem::OnTrades(std::vector<HistoricalTrade>* trades) {}
 
 bool OrderManagementSystem::OnTimer() {
   gateway_->QueryAccount();
@@ -517,7 +517,7 @@ bool OrderManagementSystem::OnTimer() {
  * 订单被市场接受后通知策略
  * 告知策略order_id，策略可通过此order_id撤单
  */
-void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
+void OrderManagementSystem::operator()(const OrderAcceptedRsp& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
@@ -541,7 +541,7 @@ void OrderManagementSystem::operator()(const OrderAcceptance& rsp) {
       ToString(order.req.offset), ToString(order.req.type), order.req.volume, order.req.price);
 }
 
-void OrderManagementSystem::operator()(const OrderRejection& rsp) {
+void OrderManagementSystem::operator()(const OrderRejectedRsp& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
@@ -562,9 +562,9 @@ void OrderManagementSystem::operator()(const OrderRejection& rsp) {
   order_map_.erase(iter);
 }
 
-void OrderManagementSystem::operator()(const Trade& rsp) { OnSecondaryMarketTraded(rsp); }
+void OrderManagementSystem::operator()(const OrderTradedRsp& rsp) { OnSecondaryMarketTraded(rsp); }
 
-void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
+void OrderManagementSystem::OnSecondaryMarketTraded(const OrderTradedRsp& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
@@ -612,7 +612,7 @@ void OrderManagementSystem::OnSecondaryMarketTraded(const Trade& rsp) {
   }
 }
 
-void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
+void OrderManagementSystem::operator()(const OrderCanceledRsp& rsp) {
   std::unique_lock<SpinLock> lock(spinlock_);
   auto iter = order_map_.find(rsp.order_id);
   if (iter == order_map_.end()) {
@@ -643,7 +643,7 @@ void OrderManagementSystem::operator()(const OrderCancellation& rsp) {
   }
 }
 
-void OrderManagementSystem::operator()(const OrderCancelRejection& rsp) {
+void OrderManagementSystem::operator()(const OrderCancelRejectedRsp& rsp) {
   LOG_WARN("[OMS::OnOrderCancelRejected] order cannot be canceled: {}. OrderID:{}", rsp.reason,
            rsp.order_id);
 }

@@ -281,7 +281,7 @@ void CtpTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField *order,
     return;
   }
 
-  OrderRejection rsp{get_order_id(order_ref), gb2312_to_utf8(rsp_info->ErrorMsg)};
+  OrderRejectedRsp rsp{get_order_id(order_ref), gb2312_to_utf8(rsp_info->ErrorMsg)};
   gateway_->OnOrderRejected(rsp);
 }
 
@@ -301,11 +301,11 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
 
   // 被拒单或撤销被拒，回调相应函数
   if (order->OrderSubmitStatus == THOST_FTDC_OSS_InsertRejected) {
-    OrderRejection rsp{order_id, gb2312_to_utf8(order->StatusMsg)};
+    OrderRejectedRsp rsp{order_id, gb2312_to_utf8(order->StatusMsg)};
     gateway_->OnOrderRejected(rsp);
     return;
   } else if (order->OrderSubmitStatus == THOST_FTDC_OSS_CancelRejected) {
-    OrderCancelRejection rsp = {order_id, gb2312_to_utf8(order->StatusMsg)};
+    OrderCancelRejectedRsp rsp = {order_id, gb2312_to_utf8(order->StatusMsg)};
     gateway_->OnOrderCancelRejected(rsp);
     return;
   } else if ((order->OrderSubmitStatus == THOST_FTDC_OSS_InsertSubmitted &&
@@ -321,12 +321,12 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
   // 处理撤单
   if (order->OrderStatus == THOST_FTDC_OST_PartTradedNotQueueing ||
       order->OrderStatus == THOST_FTDC_OST_Canceled) {
-    OrderCancellation rsp = {order_id, order->VolumeTotalOriginal - order->VolumeTraded};
+    OrderCanceledRsp rsp = {order_id, order->VolumeTotalOriginal - order->VolumeTraded};
     gateway_->OnOrderCanceled(rsp);
   } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
     auto contract = ContractTable::get_by_ticker(order->InstrumentID);
     assert(contract);
-    OrderAcceptance rsp = {order_id};
+    OrderAcceptedRsp rsp = {order_id};
     gateway_->OnOrderAccepted(rsp);
   }
 }
@@ -347,13 +347,10 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
 
   dt_converter_.UpdateDate(trade->TradeDate);
 
-  Trade rsp{};
-  rsp.ticker_id = contract->ticker_id;
+  OrderTradedRsp rsp{};
   rsp.order_id = get_order_id(std::stoul(trade->OrderRef));
   rsp.volume = trade->Volume;
   rsp.price = trade->Price;
-  rsp.direction = direction(trade->Direction);
-  rsp.offset = offset(trade->OffsetFlag);
   rsp.timestamp_us = dt_converter_.GetExchTimeStamp(trade->TradeTime, 0);
   gateway_->OnOrderTraded(rsp);
 }
@@ -609,7 +606,7 @@ void CtpTradeApi::OnRspQryTrade(CThostFtdcTradeField *trade, CThostFtdcRspInfoFi
     auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
     assert(contract);
 
-    Trade td{};
+    HistoricalTrade td{};
     td.ticker_id = contract->ticker_id;
     td.volume = trade->Volume;
     td.price = trade->Price;

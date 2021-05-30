@@ -17,7 +17,7 @@ class PositionRisk : public RiskRule {
 
   void OnOrderSent(const Order& order) override;
 
-  void OnOrderTraded(const Order& order, const Trade& trade) override;
+  void OnOrderTraded(const Order& order, const OrderTradedRsp& trade) override;
 
   void OnOrderCanceled(const Order& order, int canceled) override;
 

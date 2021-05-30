@@ -41,7 +41,7 @@ bool BackTestGateway::SendOrder(const OrderRequest& order, uint64_t* privdata_pt
   if (!CheckAndUpdateContext(order)) {
     return false;
   }
-  msg_queue_.push(OrderAcceptance{order.order_id});
+  msg_queue_.push(OrderAcceptedRsp{order.order_id});
 
   auto& tick = get_current_tick(order.contract->ticker_id);
   if (!MatchOrder(order, tick)) {
@@ -228,11 +228,7 @@ void BackTestGateway::UpdateTraded(const OrderRequest& order, const TickData& ti
   ctx_.pos_calculator.UpdateTraded(order.contract->ticker_id, order.direction, order.offset,
                                    order.volume, price);
 
-  Trade trade{};
-  trade.ticker_id = order.contract->ticker_id;
-  trade.amount = price * order.volume * order.contract->size;
-  trade.direction = order.direction;
-  trade.offset = order.offset;
+  OrderTradedRsp trade{};
   trade.order_id = order.order_id;
   trade.volume = order.volume;
   trade.price = price;
@@ -248,7 +244,7 @@ void BackTestGateway::UpdateCanceled(const OrderRequest& order) {
   }
   ctx_.pos_calculator.UpdatePending(order.contract->ticker_id, order.direction, order.offset,
                                     -order.volume);
-  msg_queue_.push(OrderCancellation{order.order_id, order.volume});
+  msg_queue_.push(OrderCanceledRsp{order.order_id, order.volume});
 }
 
 void BackTestGateway::UpdatePnl(const TickData& tick) {

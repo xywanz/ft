@@ -35,11 +35,11 @@ class OrderManagementSystem {
 
   void Run();
 
-  void operator()(const OrderAcceptance& rsp);
-  void operator()(const OrderRejection& rsp);
-  void operator()(const Trade& rsp);
-  void operator()(const OrderCancellation& rsp);
-  void operator()(const OrderCancelRejection& rsp);
+  void operator()(const OrderAcceptedRsp& rsp);
+  void operator()(const OrderRejectedRsp& rsp);
+  void operator()(const OrderTradedRsp& rsp);
+  void operator()(const OrderCanceledRsp& rsp);
+  void operator()(const OrderCancelRejectedRsp& rsp);
 
  private:
   void ProcessCmd();
@@ -71,10 +71,10 @@ class OrderManagementSystem {
 
   void OnAccount(const Account& account);
   void OnPositions(std::vector<Position>* positions);
-  void OnTrades(std::vector<Trade>* trades);
+  void OnTrades(std::vector<HistoricalTrade>* trades);
   bool OnTimer();
 
-  void OnSecondaryMarketTraded(const Trade& rsp);  // 二级市场买卖
+  void OnSecondaryMarketTraded(const OrderTradedRsp& rsp);  // 二级市场买卖
 
   uint64_t next_order_id() { return next_oms_order_id_++; }
 

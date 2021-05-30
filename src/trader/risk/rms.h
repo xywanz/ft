@@ -32,7 +32,7 @@ class RiskManagementSystem {
 
   void OnOrderAccepted(const Order& order);
 
-  void OnOrderTraded(const Order& order, const Trade& trade);
+  void OnOrderTraded(const Order& order, const OrderTradedRsp& trade);
 
   void OnOrderCanceled(const Order& order, int canceled);
 

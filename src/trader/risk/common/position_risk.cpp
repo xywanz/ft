@@ -41,7 +41,7 @@ void PositionRisk::OnOrderSent(const Order& order) {
                               order.req.offset, order.req.volume);
 }
 
-void PositionRisk::OnOrderTraded(const Order& order, const Trade& trade) {
+void PositionRisk::OnOrderTraded(const Order& order, const OrderTradedRsp& trade) {
   pos_manager_->UpdateTraded(order.strategy_id, order.req.contract->ticker_id, order.req.direction,
                              order.req.offset, trade.volume, trade.price);
 }

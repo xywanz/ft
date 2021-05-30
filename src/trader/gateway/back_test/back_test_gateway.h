@@ -34,11 +34,11 @@ class BackTestGateway : public Gateway {
 
   void OnNotify(uint64_t signal) override;
 
-  void operator()(const OrderAcceptance& acceptance) { OnOrderAccepted(acceptance); }
-  void operator()(const OrderRejection& rejection) { OnOrderRejected(rejection); }
-  void operator()(const Trade& trade) { OnOrderTraded(trade); }
-  void operator()(const OrderCancellation& cancellation) { OnOrderCanceled(cancellation); }
-  void operator()(const OrderCancelRejection& cxl_rejection) {
+  void operator()(const OrderAcceptedRsp& acceptance) { OnOrderAccepted(acceptance); }
+  void operator()(const OrderRejectedRsp& rejection) { OnOrderRejected(rejection); }
+  void operator()(const OrderTradedRsp& trade) { OnOrderTraded(trade); }
+  void operator()(const OrderCanceledRsp& cancellation) { OnOrderCanceled(cancellation); }
+  void operator()(const OrderCancelRejectedRsp& cxl_rejection) {
     OnOrderCancelRejected(cxl_rejection);
   }
   void operator()(const TickData& tick) {
@@ -75,8 +75,8 @@ class BackTestGateway : public Gateway {
     std::unordered_map<uint64_t, std::list<OrderRequest>> pending_orders;
   };
 
-  using Message = std::variant<OrderAcceptance, OrderRejection, Trade, OrderCancellation,
-                               OrderCancelRejection, TickData>;
+  using Message = std::variant<OrderAcceptedRsp, OrderRejectedRsp, OrderTradedRsp, OrderCanceledRsp,
+                               OrderCancelRejectedRsp, TickData>;
 
  private:
   BackTestContext ctx_;

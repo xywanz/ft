@@ -137,13 +137,13 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint
   }
 
   if (is_error_rsp(error_info)) {
-    OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
+    OrderRejectedRsp rsp = {order_info->order_client_id, error_info->error_msg};
     gateway_->OnOrderRejected(rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_REJECTED) {
-    OrderRejection rsp = {order_info->order_client_id, error_info->error_msg};
+    OrderRejectedRsp rsp = {order_info->order_client_id, error_info->error_msg};
     gateway_->OnOrderRejected(rsp);
     return;
   }
@@ -151,14 +151,14 @@ void XtpTradeApi::OnOrderEvent(XTPOrderInfo* order_info, XTPRI* error_info, uint
   if (order_info->order_status == XTP_ORDER_STATUS_UNKNOWN) return;
 
   if (order_info->order_status == XTP_ORDER_STATUS_NOTRADEQUEUEING) {
-    OrderAcceptance rsp = {order_info->order_client_id};
+    OrderAcceptedRsp rsp = {order_info->order_client_id};
     gateway_->OnOrderAccepted(rsp);
     return;
   }
 
   if (order_info->order_status == XTP_ORDER_STATUS_CANCELED ||
       order_info->order_status == XTP_ORDER_STATUS_PARTTRADEDNOTQUEUEING) {
-    OrderCancellation rsp = {order_info->order_client_id, static_cast<int>(order_info->qty_left)};
+    OrderCanceledRsp rsp = {order_info->order_client_id, static_cast<int>(order_info->qty_left)};
     gateway_->OnOrderCanceled(rsp);
   }
 }
@@ -173,7 +173,7 @@ void XtpTradeApi::OnTradeEvent(XTPTradeReport* trade_info, uint64_t session_id) 
 
   dt_converter_.UpdateDate(trade_info->trade_time);
 
-  Trade rsp{};
+  OrderTradedRsp rsp{};
   rsp.order_id = trade_info->order_client_id;
   rsp.volume = trade_info->quantity;
   rsp.price = trade_info->price;
@@ -366,7 +366,7 @@ void XtpTradeApi::OnQueryTrade(XTPQueryTradeRsp* trade_info, XTPRI* error_info, 
     auto contract = ContractTable::get_by_ticker(trade_info->ticker);
     assert(contract);
 
-    Trade trade{};
+    HistoricalTrade trade{};
     trade.ticker_id = contract->ticker_id;
     trade.volume = trade_info->quantity;
     trade.price = trade_info->price;
