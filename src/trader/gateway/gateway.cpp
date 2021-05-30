@@ -4,6 +4,7 @@
 
 #include "trader/gateway/back_test/back_test_gateway.h"
 #include "trader/gateway/ctp/ctp_gateway.h"
+#include "trader/gateway/stub/stub_gateway.h"
 #include "trader/gateway/xtp/xtp_gateway.h"
 
 namespace ft {
@@ -26,5 +27,6 @@ std::shared_ptr<Gateway> CreateGateway(const std::string& name) {
 REGISTER_GATEWAY("ctp", CtpGateway);
 REGISTER_GATEWAY("xtp", XtpGateway);
 REGISTER_GATEWAY("backtest", BackTestGateway);
+REGISTER_GATEWAY("stub", StubGateway);
 
 }  // namespace ft
