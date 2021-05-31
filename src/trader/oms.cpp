@@ -82,14 +82,15 @@ void OrderManagementSystem::Run() {
 
 void OrderManagementSystem::ProcessCmd() {
   yijinjing::FramePtr frame;
-  for (auto& reader : trade_msg_readers_) {
+  for (std::size_t i = 0; i < trade_msg_readers_.size(); ++i) {
+    auto& reader = trade_msg_readers_[i];
     while ((frame = reader->getNextFrame()) != nullptr) {
       if (frame->getDataLength() != sizeof(TraderCommand)) {
         LOG_ERROR("[OMS::ProcessCmd] invalid trader cmd size");
         continue;
       }
       auto* cmd = reinterpret_cast<TraderCommand*>(frame->getData());
-      ExecuteCmd(*cmd);
+      ExecuteCmd(*cmd, static_cast<uint32_t>(i));
     }
   }
 }
@@ -113,7 +114,7 @@ void OrderManagementSystem::ProcessTick() {
   }
 }
 
-void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
+void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd, uint32_t mq_id) {
   if (cmd.magic != kTradingCmdMagic) {
     LOG_ERROR("[OMS::ExecuteCmd] invalid magic number of cmd");
     return;
@@ -121,7 +122,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
 
   switch (cmd.type) {
     case TraderCmdType::kNewOrder: {
-      SendOrder(cmd);
+      SendOrder(cmd, mq_id);
       break;
     }
     case TraderCmdType::kCancelOrder: {
@@ -147,7 +148,7 @@ void OrderManagementSystem::ExecuteCmd(const TraderCommand& cmd) {
   }
 }
 
-bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
+bool OrderManagementSystem::SendOrder(const TraderCommand& cmd, uint32_t mq_id) {
   auto contract = ContractTable::get_by_index(cmd.order_req.ticker_id);
   if (!contract) {
     LOG_ERROR("[OMS::SendOrder] contract not found. ticker_id:{}", cmd.order_req.ticker_id);
@@ -165,6 +166,7 @@ bool OrderManagementSystem::SendOrder(const TraderCommand& cmd) {
   req.price = cmd.order_req.price;
   req.flags = cmd.order_req.flags;
   order.client_order_id = cmd.order_req.client_order_id;
+  order.mq_id = mq_id;
   order.status = OrderStatus::kSubmitting;
   order.strategy_id = cmd.strategy_id;
 
@@ -387,7 +389,6 @@ bool OrderManagementSystem::InitMQ() {
     auto rsp_writer =
         yijinjing::JournalWriter::create(".", strategy_conf.rsp_mq_name, "rsp_writer");
     rsp_writers_.emplace_back(rsp_writer);
-    strategy_name_to_index_.emplace(strategy_conf.strategy_name, rsp_writers_.size() - 1);
 
     auto trade_msg_reader = yijinjing::JournalReader::create(
         ".", strategy_conf.trade_mq_name, yijinjing::getNanoTime(), "trade_msg_reader");
@@ -428,13 +429,6 @@ bool OrderManagementSystem::SubscribeMarketData() {
 
 void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_traded, double price,
                                               ErrorCode error_code) {
-  auto it = strategy_name_to_index_.find(order.strategy_id);
-  if (it == strategy_name_to_index_.end()) {
-    LOG_WARN("[OMS::SendRspToStrategy] failed to send rsp: unknown strategy name");
-    return;
-  }
-  auto index = it->second;
-
   OrderResponse rsp{};
   rsp.client_order_id = order.client_order_id;
   rsp.order_id = order.req.order_id;
@@ -450,7 +444,7 @@ void OrderManagementSystem::SendRspToStrategy(const Order& order, int this_trade
                   error_code != ErrorCode::kNoError;
   rsp.error_code = error_code;
 
-  rsp_writers_[index]->write_data(rsp, 0, 0);
+  rsp_writers_[order.mq_id]->write_data(rsp, 0, 0);
 }
 
 void OrderManagementSystem::OnAccount(const Account& account) {

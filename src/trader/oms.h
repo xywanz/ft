@@ -46,9 +46,9 @@ class OrderManagementSystem {
   void ProcessRsp();
   void ProcessTick();
 
-  void ExecuteCmd(const TraderCommand& cmd);
+  void ExecuteCmd(const TraderCommand& cmd, uint32_t mq_id);
 
-  bool SendOrder(const TraderCommand& cmd);
+  bool SendOrder(const TraderCommand& cmd, uint32_t mq_id);
   void DoCancelOrder(const Order& order, bool without_check);
   void CancelOrder(uint64_t order_id, bool without_check);
   void CancelForTicker(uint32_t ticker_id, bool without_check);
@@ -84,7 +84,6 @@ class OrderManagementSystem {
 
   std::vector<yijinjing::JournalReaderPtr> trade_msg_readers_;
   std::vector<yijinjing::JournalWriterPtr> rsp_writers_;
-  std::map<std::string, std::size_t> strategy_name_to_index_;
 
   std::set<std::string> subscription_set_;
   std::map<uint32_t, std::vector<yijinjing::JournalWriterPtr>> md_dispatch_map_;

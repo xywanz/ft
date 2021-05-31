@@ -15,6 +15,7 @@ struct Order {
 
   // 这个ID是策略发单的时候提供的，使策略能定位其订单，类似于备注
   uint32_t client_order_id;
+  uint32_t mq_id;
 
   bool accepted = false;
   int traded_volume = 0;
