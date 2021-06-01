@@ -113,6 +113,28 @@ bool PositionCalculator::UpdateTraded(uint32_t ticker_id, Direction direction, O
   return true;
 }
 
+bool PositionCalculator::ModifyPostition(uint32_t ticker_id, Direction direction, int changed) {
+  if (changed == 0) {
+    return true;
+  }
+
+  auto& pos = positions_[ticker_id];
+  pos.ticker_id = ticker_id;
+
+  auto& pos_detail = direction == Direction::kBuy ? pos.long_pos : pos.short_pos;
+  if (changed < 0 && pos_detail.holdings - pos_detail.close_pending + changed < 0) {
+    LOG_ERROR("PositionCalculator::ModifyPostition. position not enough. {} {} {}", ticker_id,
+              ToString(direction), changed);
+    return false;
+  }
+  pos_detail.holdings += changed;
+
+  if (cb_) {
+    cb_(pos);
+  }
+  return true;
+}
+
 bool PositionCalculator::UpdateFloatPnl(uint32_t ticker_id, double bid, double ask) {
   auto it = positions_.find(ticker_id);
   if (it == positions_.end()) {

@@ -35,6 +35,10 @@ class PositionManager {
   bool UpdateTraded(const std::string& strategy, uint32_t ticker_id, Direction direction,
                     Offset offset, int traded, double traded_price);
 
+  // 将仓位从src策略转移到dst策略
+  bool MovePosition(const std::string& src_strategy, const std::string& dst_strategy,
+                    uint32_t ticker, Direction direction, int volume);
+
   // 更新浮动盈亏
   bool UpdateFloatPnl(const std::string& strategy, uint32_t ticker_id, double bid, double ask);
 

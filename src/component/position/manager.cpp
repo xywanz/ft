@@ -60,6 +60,32 @@ bool PositionManager::UpdateTraded(const std::string& strategy, uint32_t ticker_
   return true;
 }
 
+bool PositionManager::MovePosition(const std::string& src_strategy, const std::string& dst_strategy,
+                                   uint32_t ticker_id, Direction direction, int volume) {
+  if (volume < 0) {
+    LOG_ERROR("invalid volume moved: {}", volume);
+    return false;
+  }
+
+  auto src_it = st_pos_calculators_.find(src_strategy);
+  auto dst_it = st_pos_calculators_.find(dst_strategy);
+  if (src_it == st_pos_calculators_.end() || dst_it == st_pos_calculators_.end()) {
+    LOG_ERROR("PositionManager::MovePosition. strategy not found. {} {} {} {} {}", src_strategy,
+              dst_strategy, ticker_id, ToString(direction), volume);
+    return false;
+  }
+
+  auto& src_pos_calc = src_it->second;
+  auto& dst_pos_calc = dst_it->second;
+  if (src_pos_calc.ModifyPostition(ticker_id, direction, -volume)) {
+    LOG_ERROR("PositionManager::MovePosition. position not enough. {} {} {} {} {}", src_strategy,
+              dst_strategy, ticker_id, ToString(direction), volume);
+    return false;
+  }
+  dst_pos_calc.ModifyPostition(ticker_id, direction, volume);
+  return true;
+}
+
 bool PositionManager::UpdateFloatPnl(const std::string& strategy, uint32_t ticker_id, double bid,
                                      double ask) {
   auto it = st_pos_calculators_.find(strategy);

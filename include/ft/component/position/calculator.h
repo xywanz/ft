@@ -29,6 +29,9 @@ class PositionCalculator {
   bool UpdateTraded(uint32_t ticker_id, Direction direction, Offset offset, int traded,
                     double traded_price);
 
+  // 直接修改仓位，volume>0表示增，volume<0表示减
+  bool ModifyPostition(uint32_t ticker_id, Direction direction, int changed);
+
   // 更新浮动盈亏
   bool UpdateFloatPnl(uint32_t ticker_id, double bid, double ask);
 
