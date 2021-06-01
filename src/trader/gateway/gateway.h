@@ -72,6 +72,8 @@ class Gateway {
 
   virtual bool QueryAccount() { return false; }
 
+  virtual bool QueryOrders() { return false; }
+
   virtual bool QueryTrades() { return false; }
 
   // 扩展接口，用于向Gateway发送自定义消息
@@ -101,6 +103,10 @@ class Gateway {
   void OnQueryPosition(const Position& rsp);
 
   void OnQueryPositionEnd();
+
+  void OnQueryOrder(const HistoricalOrder& rsp);
+
+  void OnQueryOrderEnd();
 
   void OnQueryTrade(const HistoricalTrade& rsp);
 
@@ -176,6 +182,19 @@ inline void Gateway::OnQueryPosition(const Position& rsp) {
 inline void Gateway::OnQueryPositionEnd() {
   GatewayQueryResult gtw_rsp;
   gtw_rsp.msg_type = GatewayMsgType::kPositionEnd;
+  qry_result_rb_.PutWithBlocking(gtw_rsp);
+}
+
+inline void Gateway::OnQueryOrder(const HistoricalOrder& rsp) {
+  GatewayQueryResult gtw_rsp;
+  gtw_rsp.msg_type = GatewayMsgType::kOrder;
+  gtw_rsp.data = rsp;
+  qry_result_rb_.PutWithBlocking(gtw_rsp);
+}
+
+inline void Gateway::OnQueryOrderEnd() {
+  GatewayQueryResult gtw_rsp;
+  gtw_rsp.msg_type = GatewayMsgType::kOrderEnd;
   qry_result_rb_.PutWithBlocking(gtw_rsp);
 }
 

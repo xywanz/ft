@@ -57,6 +57,8 @@ enum class GatewayMsgType : uint32_t {
   kAccountEnd,
   kPosition,
   kPositionEnd,
+  kOrder,
+  kOrderEnd,
   kTrade,
   kTradeEnd,
   kContract,
@@ -72,7 +74,7 @@ struct GatewayOrderResponse {
 
 struct GatewayQueryResult {
   GatewayMsgType msg_type;
-  std::variant<Account, Position, HistoricalTrade, Contract> data;
+  std::variant<Account, Position, HistoricalOrder, HistoricalTrade, Contract> data;
 };
 
 }  // namespace ft

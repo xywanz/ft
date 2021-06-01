@@ -171,6 +171,15 @@ struct HistoricalTrade {
   int volume;
 };
 
+struct HistoricalOrder {
+  uint32_t ticker_id;
+  Direction direction;
+  Offset offset;
+  int volume;
+  double price;
+  uint64_t order_sys_id;
+};
+
 // 策略的名称类型，用于订阅回报消息
 using StrategyIdType = char[16];
 
