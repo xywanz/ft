@@ -162,6 +162,20 @@ class TraderDBImpl {
     return redis_session_->Set(GetKey(strategy, ticker), &pos, sizeof(pos));
   }
 
+  bool ClearPositions(const std::string& strategy) {
+    auto pattern = fmt::format("pos/{}/*", strategy);
+    auto keys_reply = redis_session_->Keys(pattern);
+    if (!keys_reply) {
+      return false;
+    }
+    for (size_t i = 0; i < keys_reply->elements; ++i) {
+      if (!redis_session_->Del(keys_reply->element[i]->str)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   std::string GetKey(const std::string& strategy, const std::string& ticker) const {
     return fmt::format("pos/{}/{}", strategy, ticker);
   }
@@ -227,6 +241,14 @@ bool TraderDB::SetPosition(const std::string& strategy, const std::string& ticke
     return false;
   }
   return reinterpret_cast<TraderDBImpl*>(db_impl_)->SetPosition(strategy, ticker, pos);
+}
+
+bool TraderDB::ClearPositions(const std::string& strategy) {
+  if (!db_impl_) {
+    LOG_ERROR("[TraderDB::ClearPositions] failed");
+    return false;
+  }
+  return reinterpret_cast<TraderDBImpl*>(db_impl_)->ClearPositions(strategy);
 }
 
 }  // namespace ft

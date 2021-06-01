@@ -24,6 +24,8 @@ class TraderDB {
 
   bool SetPosition(const std::string& strategy, const std::string& ticker, const Position& pos);
 
+  bool ClearPositions(const std::string& strategy);
+
  private:
   void* db_impl_ = nullptr;
 };

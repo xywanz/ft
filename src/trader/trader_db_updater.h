@@ -60,6 +60,8 @@ class TraderDBUpdater {
     return true;
   }
 
+  TraderDB* GetTraderDB() { return &trader_db_; }
+
  private:
   TraderDB trader_db_;
   std::thread wr_thread_;

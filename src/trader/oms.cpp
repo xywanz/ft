@@ -456,7 +456,10 @@ void OrderManagementSystem::OnAccount(const Account& account) {
             account.account_id, account.total_asset, account.cash, account.margin, account.frozen);
 }
 
-void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
+bool OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
+  auto* trader_db = trader_db_updater_.GetTraderDB();
+  trader_db->ClearPositions(PositionManager::kCommonPosPool);
+
   for (auto& position : *positions) {
     auto contract = ContractTable::get_by_index(position.ticker_id);
     if (!contract) {
@@ -472,10 +475,45 @@ void OrderManagementSystem::OnPositions(std::vector<Position>* positions) {
         contract->ticker, lp.holdings, lp.yd_holdings, lp.cost_price, lp.frozen, lp.float_pnl,
         sp.holdings, sp.yd_holdings, sp.cost_price, sp.frozen, sp.float_pnl);
 
-    if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0) return;
+    if (lp.holdings == 0 && lp.frozen == 0 && sp.holdings == 0 && sp.frozen == 0) {
+      continue;
+    }
 
-    pos_manager_.SetPosition(PositionManager::kCommonPosPool, position);
+    if (!pos_manager_.SetPosition(PositionManager::kCommonPosPool, position)) {
+      LOG_ERROR("SetPostion failed");
+      return false;
+    }
   }
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));  // 确保仓位已被写入数据库
+  return RecoveryStrategyPositions();
+}
+
+bool OrderManagementSystem::RecoveryStrategyPositions() {
+  auto* trader_db = trader_db_updater_.GetTraderDB();
+  for (auto& strategy_conf : config_->strategy_config_list) {
+    std::vector<Position> pos_list;
+    if (!trader_db->GetAllPositions(strategy_conf.strategy_name, &pos_list)) {
+      LOG_ERROR("OMS::RecoveryStrategyPositions. failed to get strategy({}) pos from db",
+                strategy_conf.strategy_name);
+      return false;
+    }
+    for (auto& pos : pos_list) {
+      if (!pos_manager_.MovePosition(PositionManager::kCommonPosPool, strategy_conf.strategy_name,
+                                     pos.ticker_id, Direction::kBuy, pos.long_pos.holdings)) {
+        LOG_ERROR("OMS::RecoveryStrategyPositions. failed to recover long pos. {} {} {}",
+                  strategy_conf.strategy_name, pos.ticker_id, pos.long_pos.holdings);
+        return false;
+      }
+      if (!pos_manager_.MovePosition(PositionManager::kCommonPosPool, strategy_conf.strategy_name,
+                                     pos.ticker_id, Direction::kSell, pos.short_pos.holdings)) {
+        LOG_ERROR("OMS::RecoveryStrategyPositions. failed to recover short pos. {} {} {}",
+                  strategy_conf.strategy_name, pos.ticker_id, pos.short_pos.holdings);
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 void OrderManagementSystem::OnTick(const TickData& tick) {

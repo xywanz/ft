@@ -70,9 +70,11 @@ class OrderManagementSystem {
   void OnTick(const TickData& tick);
 
   void OnAccount(const Account& account);
-  void OnPositions(std::vector<Position>* positions);
+  bool OnPositions(std::vector<Position>* positions);
   void OnTrades(std::vector<HistoricalTrade>* trades);
   bool OnTimer();
+
+  bool RecoveryStrategyPositions();
 
   void OnSecondaryMarketTraded(const OrderTradedRsp& rsp);  // 二级市场买卖
 
