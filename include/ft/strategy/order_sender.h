@@ -3,6 +3,7 @@
 #ifndef FT_INCLUDE_FT_STRATEGY_ORDER_SENDER_H_
 #define FT_INCLUDE_FT_STRATEGY_ORDER_SENDER_H_
 
+#include <cassert>
 #include <string>
 
 #include "ft/base/contract_table.h"
