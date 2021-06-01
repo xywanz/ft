@@ -85,9 +85,6 @@ class RedisSession {
     argvlen[1] = key.length();
 
     auto* reply = reinterpret_cast<redisReply*>(redisCommandArgv(ctx_, 2, argv, argvlen));
-    if (!reply || !reply->str) {
-      return nullptr;
-    }
     return RedisReply(reply, RedisReplyDestructor());
   }
 
@@ -137,7 +134,11 @@ class TraderDBImpl {
     if (!reply) {
       return false;
     }
-    *res = *reinterpret_cast<Position*>(reply->str);
+    if (reply->str) {
+      *res = *reinterpret_cast<Position*>(reply->str);
+    } else {
+      *res = Position{};
+    }
     return true;
   }
 
