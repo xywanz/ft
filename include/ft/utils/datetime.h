@@ -8,8 +8,6 @@
 #include <ctime>
 #include <string>
 
-#include "ft/component/serializable.h"
-
 namespace ft::datetime {
 
 constexpr int kMaxYear = 9999;
@@ -111,7 +109,7 @@ class Timedelta {
   int microseconds_ = 0;
 };
 
-class Date : public pubsub::Serializable<Date> {
+class Date {
  public:
   explicit Date(int year = 1, int month = 1, int day = 1);
 
@@ -144,19 +142,6 @@ class Date : public pubsub::Serializable<Date> {
 
   std::string ToString() const;
 
-  template <class Archive>
-  void save(Archive& ar) const {
-    ar(year_, month_, day_);
-  }
-
-  template <class Archive>
-  void load(Archive& ar) {
-    int year, month, day;
-    ar(year, month, day);
-
-    *this = Date(year, month, day);
-  }
-
  public:
   static Date today();
 
@@ -172,7 +157,7 @@ class Date : public pubsub::Serializable<Date> {
   int integer_date_;  // YYYYmmdd
 };
 
-class Time : public pubsub::Serializable<Time> {
+class Time {
  public:
   explicit Time(int hour = 0, int minute = 0, int second = 0, int microsecond = 0);
 
@@ -190,19 +175,6 @@ class Time : public pubsub::Serializable<Time> {
 
   std::string ToString() const;
 
-  template <class Archive>
-  void save(Archive& ar) const {
-    ar(hour_, minute_, second_, microsecond_);
-  }
-
-  template <class Archive>
-  void load(Archive& ar) {
-    int hour, minute, second, microsecond;
-    ar(hour, minute, second, microsecond);
-
-    *this = Time(hour, minute, second, microsecond);
-  }
-
  public:
   static Time max() { return Time(23, 59, 59, 999999); }
   static Time min() { return Time(0, 0, 0, 0); }
@@ -217,9 +189,8 @@ class Time : public pubsub::Serializable<Time> {
   int64_t microsecond_count_ = 0;
 };
 
-class Datetime : public pubsub::Serializable<Datetime> {
+class Datetime {
  public:
-  Datetime() {}
   Datetime(int year, int month, int day, int hour = 0, int minute = 0, int second = 0,
            int microsecond = 0)
       : date_(year, month, day), time_(hour, minute, second, microsecond) {}
@@ -259,16 +230,6 @@ class Datetime : public pubsub::Serializable<Datetime> {
   Timedelta operator-(const Datetime& rhs) const;
 
   std::string ToString() const;
-
-  template <class Archive>
-  void save(Archive& ar) const {
-    ar(date_, time_);
-  }
-
-  template <class Archive>
-  void load(Archive& ar) {
-    ar(date_, time_);
-  }
 
  public:
   static Datetime today();
