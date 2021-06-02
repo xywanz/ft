@@ -331,7 +331,9 @@ bool OrderManagementSystem::InitPositions() {
     assert(qry_res.msg_type == GatewayMsgType::kPosition);
     init_positions.emplace_back(std::get<Position>(qry_res.data));
   }
-  OnPositions(&init_positions);
+  if (!OnPositions(&init_positions)) {
+    return false;
+  }
   return true;
 }
 
