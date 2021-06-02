@@ -3,16 +3,13 @@
 #ifndef FT_INCLUDE_FT_BASE_CONFIG_H_
 #define FT_INCLUDE_FT_BASE_CONFIG_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
 namespace ft {
 
 struct GlobalConfig {
-  std::string contract_file;
-};
-
-struct OmsConfig {
   std::string contract_file;
 };
 
@@ -35,10 +32,13 @@ struct GatewayConfig {
   std::string arg3;
 };
 
+struct RiskConfig {
+  std::string name;
+  std::map<std::string, std::string> options;
+};
+
 struct RmsConfig {
-  uint64_t throttle_rate_limit_period_ms = 0;
-  uint64_t throttle_rate_order_limit = 0;
-  uint64_t throttle_rate_volume_limit = 0;
+  std::vector<RiskConfig> risk_conf_list;
 };
 
 struct StrategyConfig {
@@ -53,7 +53,6 @@ struct FlareTraderConfig {
   bool Load(const std::string& file);
 
   GlobalConfig global_config;
-  OmsConfig oms_config;
   GatewayConfig gateway_config;
   RmsConfig rms_config;
   std::vector<StrategyConfig> strategy_config_list;

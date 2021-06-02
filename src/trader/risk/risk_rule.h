@@ -49,6 +49,12 @@ class RiskRule {
   virtual void OnOrderCompleted(const Order& order) {}
 
   virtual void OnOrderRejected(const Order& order, ErrorCode error_code) {}
+
+  uint32_t GetId() const { return id_; }
+  void SetId(uint32_t id) { id_ = id; }
+
+ private:
+  uint32_t id_ = 0;
 };
 
 using CreateRiskRuleFn = std::shared_ptr<RiskRule> (*)();

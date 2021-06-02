@@ -360,14 +360,11 @@ bool OrderManagementSystem::InitTradeInfo() {
 }
 
 bool OrderManagementSystem::InitRMS() {
-  bool status = true;
-  status &= rms_->AddRule("fund_risk");
-  status &= rms_->AddRule("position_risk");
-  status &= rms_->AddRule("self_trade_risk");
-  status &= rms_->AddRule("throttle_rate_risk");
-  if (!status) {
-    LOG_ERROR("[OMS::InitRMS] risk rule not found");
-    return false;
+  for (auto& risk_conf : config_->rms_config.risk_conf_list) {
+    if (!rms_->AddRule(risk_conf.name)) {
+      LOG_ERROR("unknown risk rule: {}", risk_conf.name);
+      return false;
+    }
   }
 
   RiskRuleParams risk_params{};

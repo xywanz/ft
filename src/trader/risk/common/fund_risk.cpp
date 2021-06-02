@@ -9,6 +9,7 @@ namespace ft {
 
 bool FundRisk::Init(RiskRuleParams* params) {
   account_ = params->account;
+  LOG_INFO("fund risk inited");
   return true;
 }
 
@@ -97,6 +98,6 @@ void FundRisk::OnOrderRejected(const Order& order, ErrorCode error_code) {
   OnOrderCanceled(order, order.req.volume);
 }
 
-REGISTER_RISK_RULE("fund_risk", FundRisk);
+REGISTER_RISK_RULE("ft.risk.fund", FundRisk);
 
 }  // namespace ft

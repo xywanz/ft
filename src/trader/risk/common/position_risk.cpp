@@ -10,6 +10,7 @@ namespace ft {
 
 bool PositionRisk::Init(RiskRuleParams* params) {
   pos_manager_ = params->pos_manager;
+  LOG_INFO("position risk inited");
   return true;
 }
 
@@ -56,6 +57,6 @@ void PositionRisk::OnOrderRejected(const Order& order, ErrorCode error_code) {
                               order.req.offset, 0 - order.req.volume);
 }
 
-REGISTER_RISK_RULE("position_risk", PositionRisk);
+REGISTER_RISK_RULE("ft.risk.position", PositionRisk);
 
 }  // namespace ft

@@ -11,6 +11,7 @@ namespace ft {
 
 bool SelfTradeRisk::Init(RiskRuleParams* params) {
   order_map_ = params->order_map;
+  LOG_INFO("self trade risk inited");
   return true;
 }
 
@@ -46,6 +47,6 @@ ErrorCode SelfTradeRisk::CheckOrderRequest(const Order& order) {
   return ErrorCode::kNoError;
 }
 
-REGISTER_RISK_RULE("self_trade_risk", SelfTradeRisk);
+REGISTER_RISK_RULE("ft.risk.self_trade", SelfTradeRisk);
 
 }  // namespace ft

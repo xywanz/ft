@@ -19,6 +19,7 @@ bool RiskManagementSystem::AddRule(const std::string& risk_rule_name) {
   if (!rule) {
     return false;
   }
+  rule->SetId(static_cast<uint32_t>(rules_.size()));
   rules_.emplace_back(rule);
   return true;
 }

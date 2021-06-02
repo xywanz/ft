@@ -14,7 +14,7 @@ bool FlareTraderConfig::Load(const std::string& file) {
     auto global_item = node["global"];
     global_config.contract_file = global_item["contract_file"].as<std::string>("");
 
-    auto gateway_item = node["gateway_config"];
+    auto gateway_item = node["gateway"];
     gateway_config.api = gateway_item["api"].as<std::string>();
     gateway_config.trade_server_address = gateway_item["trade_server_address"].as<std::string>("");
     gateway_config.quote_server_address = gateway_item["quote_server_address"].as<std::string>("");
@@ -30,11 +30,23 @@ bool FlareTraderConfig::Load(const std::string& file) {
     gateway_config.cancel_outstanding_orders_on_startup =
         gateway_item["cancel_outstanding_orders_on_startup"].as<bool>(true);
 
-    auto rms_item = node["rms_config"];
-    rms_config.throttle_rate_limit_period_ms =
-        rms_item["throttle_rate_limit_period_ms"].as<uint64_t>(0);
-    rms_config.throttle_rate_order_limit = rms_item["throttle_rate_order_limit"].as<uint64_t>(0);
-    rms_config.throttle_rate_volume_limit = rms_item["throttle_rate_volume_limit"].as<uint64_t>(0);
+    auto rms_item = node["rms"];
+    assert(rms_item.IsSequence());
+    for (std::size_t i = 0; i < rms_item.size(); ++i) {
+      RiskConfig risk_conf{};
+      auto risk = rms_item[i];
+      assert(risk.IsMap());
+
+      risk_conf.name = risk["name"].as<std::string>();
+      for (auto it = risk.begin(); it != risk.end(); ++it) {
+        auto key = it->first.as<std::string>();
+        if (key != "name") {
+          auto value = it->second.as<std::string>();
+          risk_conf.options.emplace(key, value);
+        }
+      }
+      rms_config.risk_conf_list.emplace_back(std::move(risk_conf));
+    }
 
     auto strategy_item_list = node["strategy_list"];
     for (auto strategy_item : strategy_item_list) {
