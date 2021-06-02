@@ -14,6 +14,10 @@ Flare Trader是一套量化交易解决方案，旨在追求以下目标：
 详细使用及开发文档请移步wiki页面
 https://github.com/DuckDuckDuck0/ft/wiki
 
+其他说明 
+* 本平台只支持linux，以后也不会支持Windows，需要在Windows上运行的用户自行移植
+* 本平台不提供界面，只提供相应的数据获取方式，需要的自行实现监控界面
+
 QQ交流群：341031341
 
 Table of Contents
