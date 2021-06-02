@@ -77,7 +77,7 @@ bool PositionManager::MovePosition(const std::string& src_strategy, const std::s
 
   auto& src_pos_calc = src_it->second;
   auto& dst_pos_calc = dst_it->second;
-  if (src_pos_calc.ModifyPostition(ticker_id, direction, -volume)) {
+  if (!src_pos_calc.ModifyPostition(ticker_id, direction, -volume)) {
     LOG_ERROR("PositionManager::MovePosition. position not enough. {} {} {} {} {}", src_strategy,
               dst_strategy, ticker_id, ToString(direction), volume);
     return false;
