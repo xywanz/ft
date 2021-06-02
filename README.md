@@ -57,7 +57,7 @@ $ vim ../config/ctp_config.yml
 ```yaml
 # backtest api只需要且必须要填api以及contracts_file配置项
 # 以下模板为模拟盘或实盘的模板，以ctp为例
-gateway_config: 
+gateway: 
   api:  ctp                                               # 必填。现支持ctp/xtp/backtest
   trade_server_address: tcp://123.123.123.123:8888        # 必填。交易柜台地址
   quote_server_address: tcp://180.168.146.187:10131       # 必填。行情服务器地址
@@ -85,15 +85,13 @@ global:
   contracts_file: ../config/contracts.csv
 
 
-oms_config:
-
-
-rms_config:
-  # 下面三个是用于订单流速控制的参数
-  # 流控模块是对于任意时间片都生效的
-  throttle_rate_limit_period_ms: 1000    # 流速的一个时间片，设置为0表示关闭流控功能
-  throttle_rate_order_limit: 10          # 任意一个时间片内允许发送的订单个数，设置为0表示关闭该功能
-  throttle_rate_volume_limit: 2000       # 任意一个时间片内允许发送的volume，设置为0表示关闭该功能
+rms:
+  - name: ft.risk.fund
+  - name: ft.risk.position
+  - name: ft.risk.self_trade
+  - name: ft.risk.throttle_rate
+    order_limit: 10
+    period_ms: 10000 
 
 
 strategy_list: [
