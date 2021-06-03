@@ -41,7 +41,7 @@ Table of Contents
 ![framework](img/framework.png)
 
 ## Install
-使用cmake(>=3.13)及g++(>=7)进行编译
+使用cmake(>=3.13)及g++(>=9)进行编译
 ```bash
 $ git clone https://github.com/DuckDuckDuck0/ft.git
 $ cd ft
@@ -111,7 +111,7 @@ $ ./contract_collector --config=../config/ctp_config.yml --output=../config/cont
 
 在启动ft_trader前，先启动redis-server服务。如未安装，在ubuntu系统上可通过apt进行安装
 ```bash
-$ sudo apt install redis-server
+$ sudo apt install -y redis-server
 ```
 安装完毕后启动redis-server
 ```bash
@@ -125,7 +125,7 @@ $ ./ft_trader --config=../config/ctp_config.yml
 
 最后启动demo策略
 ```bash
-$ ./strategy_engine --account=123456 --contracts=../config/contracts.csv --id=spread_arb_0 --strategy=libspread_arb.so
+$ ./strategy_engine --config=../config/ctp_config.yml --strategy=libspread_arb.so --name=ctp_strategy0
 ```
 
 ## Maintainers
