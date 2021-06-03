@@ -26,7 +26,7 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-add_subdirectory("third_party/fmt" "third_party/fmt")
+#add_subdirectory("third_party/fmt" "third_party/fmt")
 add_subdirectory("third_party/hiredis" "third_party/hiredis")
 add_subdirectory("third_party/spdlog" "third_party/spdlog")
 add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")

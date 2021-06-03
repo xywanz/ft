@@ -5,7 +5,7 @@
 #include <cctype>
 #include <stdexcept>
 
-#include "fmt/format.h"
+#include "spdlog/fmt/bundled/format.h"
 
 namespace ft::datetime {
 

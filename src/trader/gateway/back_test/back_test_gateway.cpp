@@ -6,12 +6,12 @@
 #include <fstream>
 #include <thread>
 
-#include "fmt/format.h"
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
 #include "ft/utils/misc.h"
 #include "ft/utils/protocol_utils.h"
 #include "ft/utils/string_utils.h"
+#include "spdlog/fmt/bundled/format.h"
 
 namespace ft {
 
