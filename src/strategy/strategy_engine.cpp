@@ -3,7 +3,6 @@
 #include <dlfcn.h>
 
 #include <fstream>
-#include <thread>
 
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
@@ -11,15 +10,13 @@
 #include "ft/utils/getopt.hpp"
 
 static void Usage() {
-  printf("Usage: ./strategy_engine [--account=<account>]\n");
-  printf("                         [--contracts=<file>] [-h -? --help]\n");
-  printf("                         [--id=<id>] [--loglevel=level]\n");
-  printf("                         [--strategy=<so>]\n");
+  printf("Usage: ./strategy_engine <--config=file> [-h -? --help]\n");
+  printf("                         <--name=name> [--loglevel=level]\n");
+  printf("                         <--strategy=so>\n");
   printf("\n");
-  printf("    --account           账户\n");
-  printf("    --contracts         合约列表文件\n");
+  printf("    --config            配置文件\n");
   printf("    -h, -?, --help      帮助\n");
-  printf("    --id                策略的唯一标识，用于接收订单回报\n");
+  printf("    --name              策略的唯一标识，用于接收订单回报\n");
   printf("    --loglevel          日志等级(trace, debug, info, warn, error)\n");
   printf("    --strategy          要加载的策略的动态库\n");
 }
@@ -29,7 +26,6 @@ int main() {
   std::string strategy_file = getarg("", "--strategy");
   std::string log_level = getarg("info", "--loglevel");
   std::string strategy_id = getarg("strategy", "--name");
-  uint64_t account_id = getarg(0ULL, "--account");
   bool backtest_mode = getarg(false, "--backtest");
   bool help = getarg(false, "-h", "--help", "-?");
 
@@ -39,11 +35,6 @@ int main() {
   }
 
   spdlog::set_level(spdlog::level::from_str(log_level));
-
-  if (account_id == 0) {
-    LOG_ERROR("Please input account id");
-    exit(EXIT_FAILURE);
-  }
 
   ft::FlareTraderConfig config;
   if (!config.Load(config_file)) {
@@ -74,7 +65,7 @@ int main() {
         exit(EXIT_FAILURE);
       }
 
-      spdlog::info("ready to start strategy. id={}, account={}", strategy_id, account_id);
+      spdlog::info("ready to start strategy. name={}", strategy_id);
       if (backtest_mode) {
         strategy->RunBacktest();
       } else {
