@@ -1,5 +1,6 @@
 
 add_library(backtest_gateway STATIC backtest_gateway.cpp
+                                    match_engine/match_engine.cpp
                                     match_engine/simple_match_engine.cpp
                                     match_engine/advanced_match_engine.cpp)
 add_library(ft::backtest_gateway ALIAS backtest_gateway)

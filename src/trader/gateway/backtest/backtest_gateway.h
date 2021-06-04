@@ -38,7 +38,7 @@ class BacktestGateway : public Gateway, public OrderEventListener {
   bool LoadHistoryData(const std::string& history_data_file);
 
  private:
-  std::unique_ptr<MatchEngine> match_engine_;
+  std::shared_ptr<MatchEngine> match_engine_;
   std::vector<TickData> history_data_;
   uint64_t tick_cursor_ = 0;
 };

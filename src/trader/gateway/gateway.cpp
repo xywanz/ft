@@ -10,6 +10,9 @@
 
 namespace ft {
 
+using CreateGatewayFn = std::shared_ptr<Gateway> (*)();
+using GatewayCtorMap = std::map<std::string, CreateGatewayFn>;
+
 GatewayCtorMap& __GetGatewayCtorMap() {
   static GatewayCtorMap map;
   return map;
@@ -24,6 +27,15 @@ std::shared_ptr<Gateway> CreateGateway(const std::string& name) {
     return (*it->second)();
   }
 }
+
+#define REGISTER_GATEWAY(name, type)                                \
+  static std::shared_ptr<::ft::Gateway> __CreateGateway##type() {   \
+    return std::make_shared<type>();                                \
+  }                                                                 \
+  static const bool __is_##type##_registered [[gnu::unused]] = [] { \
+    ::ft::__GetGatewayCtorMap()[name] = &__CreateGateway##type;     \
+    return true;                                                    \
+  }();
 
 REGISTER_GATEWAY("ctp", CtpGateway);
 REGISTER_GATEWAY("xtp", XtpGateway);

@@ -7,7 +7,6 @@
 #include "ft/base/contract_table.h"
 #include "ft/base/log.h"
 #include "ft/utils/string_utils.h"
-#include "trader/gateway/backtest/match_engine/simple_match_engine.h"
 
 namespace ft {
 
@@ -16,8 +15,11 @@ bool BacktestGateway::Init(const GatewayConfig& config) {
     return false;
   }
 
-  // TODO(K): 选择撮合引擎
-  match_engine_ = std::make_unique<SimpleMatchEngine>();
+  match_engine_ = CreateMatchEngine(config.arg1);
+  if (!match_engine_) {
+    LOG_ERROR("match engine {} not found", config.arg1);
+    return false;
+  }
   match_engine_->RegisterListener(this);
   if (!match_engine_->Init()) {
     return false;

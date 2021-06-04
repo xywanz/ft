@@ -226,20 +226,7 @@ inline void Gateway::OnQueryContractEnd() {
 
 inline void Gateway::OnTick(const TickData& tick_data) { tick_rb_.PutWithBlocking(tick_data); }
 
-using CreateGatewayFn = std::shared_ptr<Gateway> (*)();
-using GatewayCtorMap = std::map<std::string, CreateGatewayFn>;
-GatewayCtorMap& __GetGatewayCtorMap();
-
 std::shared_ptr<Gateway> CreateGateway(const std::string& name);
-
-#define REGISTER_GATEWAY(name, type)                                \
-  static std::shared_ptr<::ft::Gateway> __CreateGateway##type() {   \
-    return std::make_shared<type>();                                \
-  }                                                                 \
-  static const bool __is_##type##_registered [[gnu::unused]] = [] { \
-    ::ft::__GetGatewayCtorMap()[name] = &__CreateGateway##type;     \
-    return true;                                                    \
-  }();
 
 }  // namespace ft
 

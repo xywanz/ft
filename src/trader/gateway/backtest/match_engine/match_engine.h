@@ -2,6 +2,10 @@
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <string>
+
 #include "ft/base/market_data.h"
 #include "trader/msg.h"
 
@@ -39,5 +43,7 @@ class MatchEngine {
  private:
   OrderEventListener* listener_ = nullptr;
 };
+
+std::shared_ptr<MatchEngine> CreateMatchEngine(const std::string& name);
 
 }  // namespace ft

@@ -1,4 +1,4 @@
-// Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
+// Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include "ft/base/config.h"
 

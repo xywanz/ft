@@ -1,4 +1,4 @@
-// Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+// Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #ifndef FT_INCLUDE_FT_BASE_CONFIG_H_
 #define FT_INCLUDE_FT_BASE_CONFIG_H_
