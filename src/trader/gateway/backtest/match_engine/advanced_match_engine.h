@@ -1,15 +1,15 @@
-// Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
+// Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#ifndef FT_SRC_TRADER_GATEWAY_BACKTEST_MATCH_SYSTEM_H_
-#define FT_SRC_TRADER_GATEWAY_BACKTEST_MATCH_SYSTEM_H_
+#pragma once
 
 #include <algorithm>
+#include <functional>
 #include <list>
 #include <map>
 #include <vector>
 
 #include "ft/base/market_data.h"
-#include "trader/msg.h"
+#include "trader/gateway/backtest/match_engine/match_engine.h"
 
 namespace ft {
 
@@ -17,13 +17,15 @@ inline uint64_t u64_price(double p) {
   return (static_cast<uint64_t>(p * 100000000UL) + 50UL) / 10000UL;
 }
 
-class MatchSystem {
+class AdvancedMatchEngine : public MatchEngine {
  public:
-  void UpdateTick(const TickData& new_tick);
+  bool Init() override;
 
-  void AddOrder(const OrderRequest& order);
+  bool InsertOrder(const OrderRequest& order) override;
 
-  void DelOrder(uint64_t order_id);
+  bool CancelOrder(uint64_t order_id, uint32_t ticker_id) override;
+
+  void OnNewTick(const TickData& tick) override;
 
  private:
   void AddLongOrder(const OrderRequest& order);
@@ -44,5 +46,3 @@ class MatchSystem {
 };
 
 }  // namespace ft
-
-#endif  // FT_SRC_TRADER_GATEWAY_BACKTEST_MATCH_SYSTEM_H_

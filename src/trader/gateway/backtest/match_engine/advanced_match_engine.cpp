@@ -1,12 +1,12 @@
-// Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
+// Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
-#include "trader/gateway/backtest/match_system.h"
+#include "trader/gateway/backtest/match_engine/advanced_match_engine.h"
 
 #include "ft/base/contract_table.h"
 
 namespace ft {
 
-void MatchSystem::UpdateTick(const TickData& new_tick) {
+void AdvancedMatchEngine::OnNewTick(const TickData& new_tick) {
   if (new_tick.ask_volume[0] > 0) {
     uint64_t ask_u64 = u64_price(new_tick.ask[0]);
     while (!bid_levels_.empty()) {
@@ -44,7 +44,6 @@ void MatchSystem::UpdateTick(const TickData& new_tick) {
   uint64_t delta_turnover = new_tick.turnover - current_tick_.turnover;
   uint64_t delta_volume = new_tick.volume - current_tick_.volume;
   auto* contract = ContractTable::get_by_index(new_tick.ticker_id);
-  assert(contract);
   double avg_price = static_cast<double>(delta_turnover) / (delta_volume * contract->size);
   int bid_trade_volume = 0;
   int ask_trade_volume = 0;
@@ -67,9 +66,9 @@ void MatchSystem::UpdateTick(const TickData& new_tick) {
       auto level_it = ask_levels_.find(u64p);
       if (level_it != ask_levels_.end()) {
         auto& order_list = level_it->second;
-        for (auto order_it = order_list.begin(); order_it != order_list.end(); ) {
+        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
           auto& order = *order_it;
-          if (order.order_pos <= order.order_pos) {
+          if (order.order_pos <= ask_trade_volume) {
             // OnTrade
             order_it = order_list.erase(order_it);
           } else {
@@ -93,9 +92,9 @@ void MatchSystem::UpdateTick(const TickData& new_tick) {
       auto level_it = bid_levels_.find(u64p);
       if (level_it != bid_levels_.end()) {
         auto& order_list = level_it->second;
-        for (auto order_it = order_list.begin(); order_it != order_list.end(); ) {
+        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
           auto& order = *order_it;
-          if (order.order_pos <= order.order_pos) {
+          if (order.order_pos <= bid_trade_volume) {
             // OnTrade
             order_it = order_list.erase(order_it);
           } else {
@@ -113,21 +112,21 @@ void MatchSystem::UpdateTick(const TickData& new_tick) {
   current_tick_ = new_tick;
 }
 
-void MatchSystem::AddOrder(const OrderRequest& order) {
+bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
   if (order.direction == Direction::kBuy) {
     AddLongOrder(order);
   } else {
     AddShortOrder(order);
   }
+  return true;
 }
 
-void MatchSystem::AddLongOrder(const OrderRequest& order) {
+void AdvancedMatchEngine::AddLongOrder(const OrderRequest& order) {
   if (order.type == OrderType::kLimit) {
     int volume_left = order.volume;
     int level_pos = 0;
     while (volume_left > 0 && level_pos < 5) {
-      if (current_tick_.ask_volume[level_pos] > 0 &&
-          current_tick_.ask[level_pos] <= order.price) {
+      if (current_tick_.ask_volume[level_pos] > 0 && current_tick_.ask[level_pos] <= order.price) {
         int traded = std::min(current_tick_.ask_volume[level_pos], volume_left);
         volume_left -= traded;
         // OnTrade
@@ -160,7 +159,7 @@ void MatchSystem::AddLongOrder(const OrderRequest& order) {
     int volume_left = order.volume;
     int level_pos = 0;
     bool to_trade = true;
-    
+
     if (order.type == OrderType::kFok) {
       while (volume_left > 0 && level_pos < 5) {
         if (current_tick_.ask_volume[level_pos] > 0 &&
@@ -195,13 +194,12 @@ void MatchSystem::AddLongOrder(const OrderRequest& order) {
   }
 }
 
-void MatchSystem::AddShortOrder(const OrderRequest& order) {
+void AdvancedMatchEngine::AddShortOrder(const OrderRequest& order) {
   if (order.type == OrderType::kLimit) {
     int volume_left = order.volume;
     int level_pos = 0;
     while (volume_left > 0 && level_pos < 5) {
-      if (current_tick_.bid_volume[level_pos] > 0 &&
-          current_tick_.bid[level_pos] >= order.price) {
+      if (current_tick_.bid_volume[level_pos] > 0 && current_tick_.bid[level_pos] >= order.price) {
         int traded = std::min(current_tick_.bid_volume[level_pos], volume_left);
         volume_left -= traded;
         // OnTrade
@@ -234,7 +232,7 @@ void MatchSystem::AddShortOrder(const OrderRequest& order) {
     int volume_left = order.volume;
     int level_pos = 0;
     bool to_trade = true;
-    
+
     if (order.type == OrderType::kFok) {
       while (volume_left > 0 && level_pos < 5) {
         if (current_tick_.bid_volume[level_pos] > 0 &&
@@ -269,8 +267,6 @@ void MatchSystem::AddShortOrder(const OrderRequest& order) {
   }
 }
 
-void MatchSystem::DelOrder(uint64_t order_id) {
-
-}
+bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) { return false; }
 
 }  // namespace ft
