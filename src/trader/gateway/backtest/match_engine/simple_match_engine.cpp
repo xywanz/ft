@@ -23,7 +23,7 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
       if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
           (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
         double price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(order, order.volume, price, 0);  // TODO(K): trade_time
+        listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
       } else {
         orders_[order.contract->ticker_id].emplace(order.order_id, order);
       }
@@ -42,7 +42,7 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
       if (IsEqual(price, 0.0)) {
         listener()->OnCanceled(order, order.volume);
       } else {
-        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
+        listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
       }
       break;
     }
@@ -51,7 +51,7 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
       if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
           (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
         double price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
+        listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
       } else {
         listener()->OnCanceled(order, order.volume);
       }
@@ -79,14 +79,16 @@ bool SimpleMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
 }
 
 void SimpleMatchEngine::OnNewTick(const TickData& tick) {
+  cur_timestamp_us_ = tick.exchange_timestamp_us;
   ticks_[tick.ticker_id] = tick;
+
   auto& map = orders_[tick.ticker_id];
   for (auto it = map.begin(); it != map.end();) {
     auto& order = it->second;
     if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
         (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
       double price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
-      listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
+      listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
       it = map.erase(it);
     } else {
       ++it;

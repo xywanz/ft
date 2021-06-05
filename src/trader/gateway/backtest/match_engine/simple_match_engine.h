@@ -22,6 +22,8 @@ class SimpleMatchEngine : public MatchEngine {
  private:
   std::vector<std::map<uint64_t, OrderRequest>> orders_;  // ticker_id: order_id -> order
   std::vector<TickData> ticks_;
+
+  uint64_t cur_timestamp_us_ = 0;
 };
 
 }  // namespace ft
