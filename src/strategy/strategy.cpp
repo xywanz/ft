@@ -30,6 +30,8 @@ bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_co
   sender_.SetStrategyId(config.strategy_name.c_str());
 
   account_id_ = std::stoul(ft_config.gateway_config.investor_id);
+  strncpy(strategy_id_, config.strategy_name.c_str(), sizeof(strategy_id_));
+
   return true;
 }
 
