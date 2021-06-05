@@ -2,7 +2,6 @@
 
 #include "trader/gateway/gateway.h"
 
-#include "trader/gateway/back_test_old/back_test_gateway.h"
 #include "trader/gateway/backtest/backtest_gateway.h"
 #include "trader/gateway/ctp/ctp_gateway.h"
 #include "trader/gateway/stub/stub_gateway.h"
@@ -39,7 +38,6 @@ std::shared_ptr<Gateway> CreateGateway(const std::string& name) {
 
 REGISTER_GATEWAY("ctp", CtpGateway);
 REGISTER_GATEWAY("xtp", XtpGateway);
-REGISTER_GATEWAY("backtest_old", BackTestGateway);
 REGISTER_GATEWAY("backtest", BacktestGateway);
 REGISTER_GATEWAY("stub", StubGateway);
 
