@@ -15,15 +15,16 @@ class OrderEventListener {
  public:
   virtual ~OrderEventListener() {}
 
-  virtual void OnAccepted(OrderAcceptedRsp* rsp) {}
+  virtual void OnAccepted(const OrderRequest& order) {}
 
-  virtual void OnRejected(OrderRejectedRsp* rsp) {}
+  virtual void OnRejected(const OrderRequest& order) {}
 
-  virtual void OnTraded(OrderTradedRsp* rsp) {}
+  virtual void OnTraded(const OrderRequest& order, int volume, double price,
+                        uint64_t timestamp_us) {}
 
-  virtual void OnCanceled(OrderCanceledRsp* rsp) {}
+  virtual void OnCanceled(const OrderRequest& order, int canceled_volume) {}
 
-  virtual void OnCancelRejected(OrderCancelRejectedRsp* rsp) {}
+  virtual void OnCancelRejected(uint64_t order_id) {}
 };
 
 class MatchEngine {

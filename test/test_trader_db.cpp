@@ -19,5 +19,5 @@ TEST(TraderDB, ReadWrite) {
   ASSERT_TRUE(trader_db.GetPosition("test_trader_db", "test_ticker", &pos_to_get));
   ASSERT_EQ(pos_to_get.ticker_id, 10086);
   ASSERT_EQ(memcmp(&pos_to_get, &pos, sizeof(Position)), 0);
-  ASSERT_FALSE(trader_db.GetPosition("test_trader_db", "unknown_ticker_xxxx", &pos_to_get));
+  ASSERT_TRUE(trader_db.GetPosition("test_trader_db", "unknown_ticker_xxxx", &pos_to_get));
 }

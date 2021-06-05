@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "ft/component/position/calculator.h"
+#include "ft/utils/spinlock.h"
+#include "trader/gateway/backtest/fund_calculator.h"
 #include "trader/gateway/backtest/match_engine/match_engine.h"
 #include "trader/gateway/gateway.h"
 
@@ -28,17 +31,25 @@ class BacktestGateway : public Gateway, public OrderEventListener {
 
   void OnNotify(uint64_t signal) override;
 
-  void OnAccepted(OrderAcceptedRsp* rsp) override;
-  void OnRejected(OrderRejectedRsp* rsp) override;
-  void OnTraded(OrderTradedRsp* rsp) override;
-  void OnCanceled(OrderCanceledRsp* rsp) override;
-  void OnCancelRejected(OrderCancelRejectedRsp* rsp) override;
+  void OnAccepted(const OrderRequest& order) override;
+  void OnRejected(const OrderRequest& order) override;
+  void OnTraded(const OrderRequest& order, int volume, double price,
+                uint64_t timestamp_us) override;
+  void OnCanceled(const OrderRequest& order, int canceled_volume) override;
+  void OnCancelRejected(uint64_t order_id) override;
 
  private:
   bool LoadHistoryData(const std::string& history_data_file);
 
+  bool CheckOrder(const OrderRequest& order) const;
+
  private:
   std::shared_ptr<MatchEngine> match_engine_;
+  PositionCalculator pos_calculator_;
+  FundCalculator fund_calculator_;
+  std::vector<TickData> current_ticks_;
+  SpinLock spinlock_;
+
   std::vector<TickData> history_data_;
   uint64_t tick_cursor_ = 0;
 };

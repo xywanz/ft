@@ -22,12 +22,8 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
     case OrderType::kLimit: {
       if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
           (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-        OrderTradedRsp rsp{};
-        // rsp.timestamp_us = 0;
-        rsp.order_id = order.order_id;
-        rsp.volume = order.volume;
-        rsp.price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(&rsp);
+        double price = order.direction == Direction::kBuy ? ask : bid;
+        listener()->OnTraded(order, order.volume, price, 0);  // TODO(K): trade_time
       } else {
         orders_[order.contract->ticker_id].emplace(order.order_id, order);
       }
@@ -37,15 +33,16 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
       if ((order.direction == Direction::kBuy && IsEqual(bid, 0.0)) ||
           (order.direction == Direction::kSell && IsEqual(ask, 0.0))) {
         OrderRejectedRsp rsp{order.order_id};
-        listener()->OnRejected(&rsp);
+        listener()->OnRejected(order);
       }
       break;
     }
     case OrderType::kMarket: {
       double price = order.direction == Direction::kBuy ? ask : bid;
       if (IsEqual(price, 0.0)) {
-        OrderCanceledRsp rsp{order.order_id};
-        listener()->OnCanceled(&rsp);
+        listener()->OnCanceled(order, order.volume);
+      } else {
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       }
       break;
     }
@@ -53,15 +50,10 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
     case OrderType::kFok: {
       if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
           (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-        OrderTradedRsp rsp{};
-        // rsp.timestamp_us = 0;
-        rsp.order_id = order.order_id;
-        rsp.volume = order.volume;
-        rsp.price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(&rsp);
+        double price = order.direction == Direction::kBuy ? ask : bid;
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       } else {
-        OrderCanceledRsp rsp{order.order_id};
-        listener()->OnCanceled(&rsp);
+        listener()->OnCanceled(order, order.volume);
       }
       break;
     }
@@ -77,12 +69,11 @@ bool SimpleMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
   auto& map = orders_[ticker_id];
   auto it = map.find(order_id);
   if (it == map.end()) {
-    OrderCancelRejectedRsp rsp{order_id};
-    listener()->OnCancelRejected(&rsp);
+    listener()->OnCancelRejected(order_id);
   } else {
+    auto& order = it->second;
+    listener()->OnCanceled(order, order.volume);
     map.erase(it);
-    OrderCanceledRsp rsp{order_id};
-    listener()->OnCanceled(&rsp);
   }
   return true;
 }
@@ -94,12 +85,8 @@ void SimpleMatchEngine::OnNewTick(const TickData& tick) {
     auto& order = it->second;
     if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
         (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-      OrderTradedRsp rsp{};
-      // rsp.timestamp_us = 0;
-      rsp.order_id = order.order_id;
-      rsp.volume = order.volume;
-      rsp.price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
-      listener()->OnTraded(&rsp);
+      double price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
+      listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       it = map.erase(it);
     } else {
       ++it;

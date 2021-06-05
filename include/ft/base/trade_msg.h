@@ -132,6 +132,7 @@ struct Contract {
 };
 
 // total_asset = cash + margin + fronzen
+// balance = cash + margin + fronzen - floating_pnl
 // total_asset: 总资产
 // cash: 可用资金，可用于购买证券资产的资金
 // margin: 保证金，对于股票来说就是持有的股票资产
@@ -139,9 +140,11 @@ struct Contract {
 struct Account {
   uint64_t account_id;  // 资金账户号
   double total_asset;   // 总资产
+  double balance;       // 结余
   double cash;          // 可用资金
   double margin;        // 保证金
   double frozen;        // 冻结金额
+  double floating_pnl;  // 浮动盈亏
 } __attribute__((__aligned__(8)));
 
 struct PositionDetail {

@@ -1,5 +1,6 @@
 
 add_library(backtest_gateway STATIC backtest_gateway.cpp
+                                    fund_calculator.cpp
                                     match_engine/match_engine.cpp
                                     match_engine/simple_match_engine.cpp
                                     match_engine/advanced_match_engine.cpp)
