@@ -6,6 +6,8 @@
 
 namespace ft {
 
+bool AdvancedMatchEngine::Init() { return true; }
+
 void AdvancedMatchEngine::OnNewTick(const TickData& new_tick) {
   if (new_tick.ask_volume[0] > 0) {
     uint64_t ask_u64 = u64_price(new_tick.ask[0]);

@@ -35,6 +35,6 @@ std::shared_ptr<MatchEngine> CreateMatchEngine(const std::string& name) {
   }();
 
 REGISTER_MATCH_ENGINE("ft.match_engine.simple", SimpleMatchEngine);
-// REGISTER_MATCH_ENGINE("ft.match_engine.advanced", AdvancedMatchEngine);
+REGISTER_MATCH_ENGINE("ft.match_engine.advanced", AdvancedMatchEngine);
 
 }  // namespace ft
