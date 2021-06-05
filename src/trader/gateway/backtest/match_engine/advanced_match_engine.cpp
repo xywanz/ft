@@ -17,6 +17,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& new_tick) {
       auto& order_list = level_it->second;
       for (auto& order : order_list) {
         // OnTrade
+        (void)order;
       }
       bid_levels_.erase(level_it);
     }
@@ -32,6 +33,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& new_tick) {
       auto& order_list = level_it->second;
       for (auto& order : order_list) {
         // OnTrade
+        (void)order;
       }
       bid_levels_.erase(level_it);
     }

@@ -22,7 +22,6 @@ static void BM_yijinjing_ipc(benchmark::State& state) {
   std::atomic<bool> running = true;
 
   std::thread st_thread([&] {
-    ft::TickData tick;
     ft::TraderCommand cmd;
 
     while (running) {
@@ -36,7 +35,6 @@ static void BM_yijinjing_ipc(benchmark::State& state) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   ft::TickData tick;
-  ft::TraderCommand cmd;
   for (auto _ : state) {
     md_writer->write_data(tick, 0, 0);
     while (!td_reader->getNextFrame()) {

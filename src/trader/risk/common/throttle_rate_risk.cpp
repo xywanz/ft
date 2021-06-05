@@ -11,7 +11,7 @@ bool ThrottleRateRisk::Init(RiskRuleParams* params) {
   auto& risk_conf = params->config->risk_conf_list[GetId()];
   for (auto& [opt, val] : risk_conf.options) {
     if (opt == "order_limit") {
-      order_limit_ == std::stoull(val);
+      order_limit_ = std::stoull(val);
     } else if (opt == "period_ms") {
       period_ms_ = std::stoull(val);
     } else {
@@ -49,8 +49,6 @@ ErrorCode ThrottleRateRisk::CheckOrderRequest(const Order& order) {
 }
 
 void ThrottleRateRisk::OnOrderSent(const Order& order) {
-  uint64_t lower_bound_ms = current_ms_ - period_ms_;
-
   if (order_limit_ > 0 && period_ms_ > 0) {
     time_queue_.push(current_ms_);
   }

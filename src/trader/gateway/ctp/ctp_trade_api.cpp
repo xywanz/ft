@@ -324,8 +324,6 @@ void CtpTradeApi::OnRtnOrder(CThostFtdcOrderField *order) {
     OrderCanceledRsp rsp = {order_id, order->VolumeTotalOriginal - order->VolumeTraded};
     gateway_->OnOrderCanceled(rsp);
   } else if (order->OrderStatus == THOST_FTDC_OST_NoTradeQueueing) {
-    auto contract = ContractTable::get_by_ticker(order->InstrumentID);
-    assert(contract);
     OrderAcceptedRsp rsp = {order_id};
     gateway_->OnOrderAccepted(rsp);
   }
@@ -341,9 +339,6 @@ void CtpTradeApi::OnRtnTrade(CThostFtdcTradeField *trade) {
     LOG_WARN("[CtpTradeApi::OnRtnTrade] Failed. Recv unknown trade");
     return;
   }
-
-  auto contract = ContractTable::get_by_ticker(trade->InstrumentID);
-  assert(contract);
 
   dt_converter_.UpdateDate(trade->TradeDate);
 
