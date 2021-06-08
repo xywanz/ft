@@ -23,13 +23,9 @@ struct GatewayConfig {
   std::string auth_code;
   std::string app_id;
   std::vector<std::string> subscription_list;
-
   bool cancel_outstanding_orders_on_startup;
 
-  std::string arg0;
-  std::string arg1;
-  std::string arg2;
-  std::string arg3;
+  std::map<std::string, std::string> extended_args;
 };
 
 struct RiskConfig {

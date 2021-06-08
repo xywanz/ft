@@ -14,7 +14,12 @@
 namespace ft {
 
 bool BacktestGateway::Init(const GatewayConfig& config) {
-  if (!LoadHistoryData(config.arg0)) {
+  if (!LoadMatchEngine(config.extended_args)) {
+    return false;
+  }
+
+  current_ticks_.resize(ContractTable::size() + 1);
+  if (!LoadDataFeed(config.extended_args)) {
     return false;
   }
 
@@ -29,18 +34,6 @@ bool BacktestGateway::Init(const GatewayConfig& config) {
     LOG_ERROR("init fund calculator failed");
     return false;
   }
-
-  match_engine_ = CreateMatchEngine(config.arg1);
-  if (!match_engine_) {
-    LOG_ERROR("match engine {} not found", config.arg1);
-    return false;
-  }
-  match_engine_->RegisterListener(this);
-  if (!match_engine_->Init()) {
-    return false;
-  }
-
-  current_ticks_.resize(ContractTable::size() + 1);
 
   return true;
 }
@@ -93,19 +86,7 @@ bool BacktestGateway::QueryOrders() {
   return true;
 }
 
-void BacktestGateway::OnNotify(uint64_t signal) {
-  std::unique_lock<SpinLock> lock(spinlock_);
-  auto& tick = history_data_[tick_cursor_];
-  auto* pos = pos_calculator_.GetPosition(tick.ticker_id);
-  if (pos && (pos->long_pos.holdings > 0 || pos->short_pos.holdings > 0)) {
-    fund_calculator_.UpdatePrice(*pos, current_ticks_[tick.ticker_id], tick);
-  }
-  current_ticks_[tick.ticker_id] = tick;
-
-  match_engine_->OnNewTick(tick);
-  OnTick(tick);
-  ++tick_cursor_;
-}
+void BacktestGateway::OnNotify(uint64_t signal) { data_feed_->Feed(); }
 
 void BacktestGateway::OnAccepted(const OrderRequest& order) {
   OrderAcceptedRsp rsp{order.order_id};
@@ -149,45 +130,62 @@ void BacktestGateway::OnCancelRejected(uint64_t order_id) {
   OnOrderCancelRejected(rsp);
 }
 
-bool BacktestGateway::LoadHistoryData(const std::string& history_data_file) {
-  std::ifstream tick_ifs(history_data_file);
-  if (!tick_ifs) {
-    LOG_ERROR("tick file not found {}", history_data_file);
+void BacktestGateway::OnDataFeed(TickData* tick) {
+  std::unique_lock<SpinLock> lock(spinlock_);
+  auto* pos = pos_calculator_.GetPosition(tick->ticker_id);
+  if (pos && (pos->long_pos.holdings > 0 || pos->short_pos.holdings > 0)) {
+    fund_calculator_.UpdatePrice(*pos, current_ticks_[tick->ticker_id], *tick);
+  }
+  current_ticks_[tick->ticker_id] = *tick;
+
+  match_engine_->OnNewTick(*tick);
+  OnTick(*tick);
+}
+
+bool BacktestGateway::LoadMatchEngine(const std::map<std::string, std::string>& args) {
+  std::string match_engine_name = kDefaultMatchEngine;
+  auto match_engine_it = args.find("match_engine");
+  if (match_engine_it != args.end()) {
+    match_engine_name = match_engine_it->second;
+    LOG_INFO("find match engine config: {}", match_engine_name);
+  } else {
+    LOG_INFO("use default match engine: {}", match_engine_name);
+  }
+  match_engine_ = CreateMatchEngine(match_engine_name);
+  if (!match_engine_) {
+    LOG_ERROR("match engine {} not found", match_engine_name);
     return false;
   }
-  std::string line;
-  std::vector<std::string> tokens;
-  std::getline(tick_ifs, line);
-  while (std::getline(tick_ifs, line)) {
-    StringSplit(line, ",", &tokens, false);
-    if (tokens.size() != 15) {
-      LOG_ERROR("invalid tick file {}");
-      exit(1);
-    }
-    history_data_.emplace_back(TickData{});
-
-    auto& tick = history_data_.back();
-    tick.local_timestamp_us = 0;
-    // tick.exchange_timestamp_us = 0;
-    tick.last_price = tokens[1].empty() ? 0.0 : std::stod(tokens[1]);
-    tick.ask[0] = tokens[3].empty() ? 0.0 : std::stod(tokens[3]);
-    tick.ask_volume[0] = tokens[4].empty() ? 0 : std::stoi(tokens[4]);
-    tick.bid[0] = tokens[5].empty() ? 0.0 : std::stoi(tokens[5]);
-    tick.bid_volume[0] = tokens[6].empty() ? 0 : std::stoi(tokens[6]);
-    tick.highest_price = tokens[7].empty() ? 0.0 : std::stod(tokens[7]);
-    tick.lowest_price = tokens[8].empty() ? 0.0 : std::stod(tokens[8]);
-    tick.volume = tokens[9].empty() ? 0 : std::stoul(tokens[9]);
-    tick.open_interest = tokens[11].empty() ? 0 : std::stoul(tokens[11]);
-    auto* contract = ContractTable::get_by_ticker(tokens[13]);
-    if (!contract) {
-      LOG_ERROR("ticker {} not found", tokens[13]);
-      return false;
-    }
-    tick.ticker_id = contract->ticker_id;
-
-    tokens.clear();
+  match_engine_->RegisterListener(this);
+  if (!match_engine_->Init()) {
+    LOG_ERROR("match engine {} init failed", match_engine_name);
+    return false;
   }
+  LOG_INFO("match engine {} inited", match_engine_name);
+  return true;
+}
 
+bool BacktestGateway::LoadDataFeed(const std::map<std::string, std::string>& args) {
+  std::string data_feed_name;
+  auto feed_name_it = args.find("data_feed");
+  if (feed_name_it == args.end()) {
+    LOG_ERROR("option data_feed not indicated");
+    return false;
+  } else {
+    data_feed_name = feed_name_it->second;
+    LOG_INFO("use data feed: {}", data_feed_name);
+  }
+  data_feed_ = CreateDataFeed(data_feed_name);
+  if (!data_feed_) {
+    LOG_ERROR("data feed {} not found", data_feed_name);
+    return false;
+  }
+  data_feed_->RegisterListener(this);
+  if (!data_feed_->Init(args)) {
+    LOG_ERROR("data feed {} init failed", data_feed_name);
+    return false;
+  }
+  LOG_INFO("data feed {} inited", data_feed_name);
   return true;
 }
 

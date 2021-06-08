@@ -1,6 +1,8 @@
 
 add_library(backtest_gateway STATIC backtest_gateway.cpp
                                     fund_calculator.cpp
+                                    data_feed/data_feed.cpp
+                                    data_feed/csv_data_feed.cpp
                                     match_engine/match_engine.cpp
                                     match_engine/simple_match_engine.cpp
                                     match_engine/advanced_match_engine.cpp)

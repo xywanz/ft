@@ -2,12 +2,14 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "ft/component/position/calculator.h"
 #include "ft/utils/spinlock.h"
+#include "trader/gateway/backtest/data_feed/data_feed.h"
 #include "trader/gateway/backtest/fund_calculator.h"
 #include "trader/gateway/backtest/match_engine/match_engine.h"
 #include "trader/gateway/gateway.h"
@@ -15,7 +17,7 @@
 namespace ft {
 
 // TODO(K): 资金账户计算
-class BacktestGateway : public Gateway, public OrderEventListener {
+class BacktestGateway : public Gateway, public OrderEventListener, public MarketDataListener {
  public:
   bool Init(const GatewayConfig& config) override;
 
@@ -38,20 +40,24 @@ class BacktestGateway : public Gateway, public OrderEventListener {
   void OnCanceled(const OrderRequest& order, int canceled_volume) override;
   void OnCancelRejected(uint64_t order_id) override;
 
+  void OnDataFeed(TickData* tick) override;
+
  private:
-  bool LoadHistoryData(const std::string& history_data_file);
+  bool LoadMatchEngine(const std::map<std::string, std::string>& args);
+  bool LoadDataFeed(const std::map<std::string, std::string>& args);
 
   bool CheckOrder(const OrderRequest& order) const;
 
  private:
+  static constexpr const char* kDefaultMatchEngine = "ft.match_engine.simple";
+
+ private:
   std::shared_ptr<MatchEngine> match_engine_;
+  std::shared_ptr<DataFeed> data_feed_;
   PositionCalculator pos_calculator_;
   FundCalculator fund_calculator_;
   std::vector<TickData> current_ticks_;
   SpinLock spinlock_;
-
-  std::vector<TickData> history_data_;
-  uint64_t tick_cursor_ = 0;
 };
 
 }  // namespace ft

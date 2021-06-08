@@ -13,11 +13,11 @@ gateway:
   # 是否在启动时撤销所有未完成订单，默认为true
   cancel_outstanding_orders_on_startup: true
 
-  # 下面4个都是各个Gateway自定义的参数，可选
-  arg0:
-  arg1:
-  arg2:
-  arg3:
+  # 以下是backtest gateway的相关配置
+  # extended_args:
+  #   match_engine: ft.match_engine.simple
+  #   data_feed: ft.data_feed.csv
+  #   data_file: xxx/xxx.csv
 
 # 选填。指定用于交易的contracts文件，如果不填写该项，或
 # 是路径填写有误，程序会在启动时调用查询接口从服务器查询
@@ -25,7 +25,7 @@ gateway:
 # ./contracts.csv，如果查询失败或是该Gateway不支持合约查
 # 询接口，则程序会退出
 global:
-  contracts_file: ../config/contracts.csv
+  contract_file: ../config/contracts.csv
 
 
 rms:

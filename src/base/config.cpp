@@ -23,12 +23,15 @@ bool FlareTraderConfig::Load(const std::string& file) {
     gateway_config.password = gateway_item["password"].as<std::string>("");
     gateway_config.auth_code = gateway_item["auth_code"].as<std::string>("");
     gateway_config.app_id = gateway_item["app_id"].as<std::string>("");
-    gateway_config.arg0 = gateway_item["arg0"].as<std::string>("");
-    gateway_config.arg1 = gateway_item["arg1"].as<std::string>("");
-    gateway_config.arg2 = gateway_item["arg2"].as<std::string>("");
-    gateway_config.arg3 = gateway_item["arg3"].as<std::string>("");
     gateway_config.cancel_outstanding_orders_on_startup =
         gateway_item["cancel_outstanding_orders_on_startup"].as<bool>(true);
+
+    auto extended_args = gateway_item["extended_args"];
+    for (auto it = extended_args.begin(); it != extended_args.end(); ++it) {
+      auto key = it->first.as<std::string>();
+      auto val = it->second.as<std::string>();
+      gateway_config.extended_args.emplace(key, val);
+    }
 
     auto rms_item = node["rms"];
     assert(rms_item.IsSequence());
