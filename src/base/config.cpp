@@ -13,6 +13,7 @@ bool FlareTraderConfig::Load(const std::string& file) {
 
     auto global_item = node["global"];
     global_config.contract_file = global_item["contract_file"].as<std::string>("");
+    global_config.trader_db_address = global_item["trader_db_address"].as<std::string>("");
 
     auto gateway_item = node["gateway"];
     gateway_config.api = gateway_item["api"].as<std::string>();

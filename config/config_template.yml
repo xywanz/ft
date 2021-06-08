@@ -26,6 +26,7 @@ gateway:
 # 询接口，则程序会退出
 global:
   contract_file: ../config/contracts.csv
+  trader_db_address: 127.0.0.1:6379
 
 
 rms:

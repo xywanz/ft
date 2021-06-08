@@ -11,6 +11,7 @@ namespace ft {
 
 struct GlobalConfig {
   std::string contract_file;
+  std::string trader_db_address;
 };
 
 struct GatewayConfig {

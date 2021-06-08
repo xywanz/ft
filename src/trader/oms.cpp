@@ -249,7 +249,7 @@ void OrderManagementSystem::CancelAll(bool without_check) {
 }
 
 bool OrderManagementSystem::InitTraderDBConn() {
-  if (!trader_db_updater_.Init("127.0.0.1:6379", "", "")) {
+  if (!trader_db_updater_.Init(config_->global_config.trader_db_address, "", "")) {
     LOG_ERROR("[OMS::InitTraderDBConn] failed");
     return false;
   }

@@ -17,7 +17,7 @@ bool Strategy::Init(const StrategyConfig& config, const FlareTraderConfig& ft_co
     return false;
   }
 
-  if (!trader_db_.Init("127.0.0.1:6379", "", "")) {
+  if (!trader_db_.Init(ft_config.global_config.trader_db_address, "", "")) {
     printf("cannot open db connection\n");
     return false;
   }
