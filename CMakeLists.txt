@@ -27,9 +27,12 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 #add_subdirectory("third_party/fmt" "third_party/fmt")
-add_subdirectory("third_party/hiredis" "third_party/hiredis")
 add_subdirectory("third_party/spdlog" "third_party/spdlog")
 add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
+
+set(DISABLE_TESTS ON CACHE INTERNAL "Disable hiredis tests")
+add_subdirectory("third_party/hiredis" "third_party/hiredis")
+unset(DISABLE_TESTS CACHE)
 
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE "third_party/cereal/include")
