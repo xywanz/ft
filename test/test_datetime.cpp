@@ -5,7 +5,7 @@
 #include <ctime>
 
 #include "ft/utils/datetime.h"
-#include "spdlog/fmt/bundled/format.h"
+#include "fmt/format.h"
 
 using ft::datetime::Date;
 using ft::datetime::Datetime;

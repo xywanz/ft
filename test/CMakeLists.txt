@@ -1,6 +1,4 @@
-# Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
-
-add_subdirectory("${PROJECT_SOURCE_DIR}/third_party/googletest" "third_party/googletest")
+# Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 mark_as_advanced(
     BUILD_GMOCK BUILD_GTEST BUILD_SHARED_LIBS
@@ -11,7 +9,7 @@ mark_as_advanced(
 add_library(ft_test ../src/trader/risk/common/self_trade_risk.cpp
                     ../src/trader/risk/risk_rule.cpp)
 target_include_directories(ft_test PUBLIC ../src)
-target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils)
+target_link_libraries(ft_test PUBLIC ft::ft_header ft::utils fmt)
 
 set_target_properties(gtest PROPERTIES FOLDER third_party)
 set_target_properties(gtest_main PROPERTIES FOLDER third_party)

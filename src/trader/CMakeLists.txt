@@ -12,7 +12,7 @@ add_executable(ft_trader
     risk/rms.cpp
     main.cpp)
 target_link_libraries(ft_trader PRIVATE
-    ft::ft_header ft::base ft::component ft::utils spdlog
+    ft::ft_header ft::base ft::component ft::utils spdlog fmt
     yijinjing gateway pthread)
 if(FT_MEASURE_TICK_TO_TRADE)
     target_compile_definitions(ft_trader PRIVATE FT_MEASURE_TICK_TO_TRADE)

@@ -2,9 +2,9 @@
 
 #include "ft/base/contract_table.h"
 
+#include "fmt/format.h"
 #include "ft/utils/protocol_utils.h"
 #include "ft/utils/string_utils.h"
-#include "spdlog/fmt/bundled/format.h"
 
 namespace ft {
 

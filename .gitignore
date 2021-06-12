@@ -3,3 +3,4 @@ build
 build-win
 config
 .VSCodeCounter
+third_party

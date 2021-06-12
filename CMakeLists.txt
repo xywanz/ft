@@ -1,4 +1,4 @@
-# Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+# Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 cmake_minimum_required(VERSION 3.13)
 
@@ -26,13 +26,10 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-#add_subdirectory("third_party/fmt" "third_party/fmt")
-add_subdirectory("third_party/spdlog" "third_party/spdlog")
-add_subdirectory("third_party/yaml-cpp" "third_party/yaml-cpp")
-
-set(DISABLE_TESTS ON CACHE INTERNAL "Disable hiredis tests")
-add_subdirectory("third_party/hiredis" "third_party/hiredis")
-unset(DISABLE_TESTS CACHE)
+include(fmt)
+include(spdlog)
+include(hiredis)
+include(yaml-cpp)
 
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE "third_party/cereal/include")
@@ -47,8 +44,7 @@ add_subdirectory(tools)
 
 option(FT_BUILD_BENCHMARK "Build the benchmark" ON)
 if(FT_BUILD_BENCHMARK)
-    set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
-    add_subdirectory("third_party/benchmark" "third_party/benchmark")
+    include(benchmark)
     add_subdirectory(benchmark)
 endif()
 

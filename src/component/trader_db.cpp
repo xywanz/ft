@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 
+#include "fmt/format.h"
 #include "ft/base/log.h"
 #include "hiredis.h"
-#include "spdlog/fmt/bundled/format.h"
 
 namespace ft {
 

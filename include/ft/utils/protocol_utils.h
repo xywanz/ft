@@ -5,9 +5,9 @@
 
 #include <string>
 
+#include "fmt/format.h"
 #include "ft/base/contract_table.h"
 #include "ft/base/trade_msg.h"
-#include "spdlog/fmt/bundled/format.h"
 
 namespace ft {
 
