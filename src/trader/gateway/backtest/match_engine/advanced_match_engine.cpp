@@ -115,9 +115,10 @@ bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
   if (it == id_price_map_.end()) {
     return false;
   }
-  auto bid_order_list_it = bid_orderbooks_[ticker_id - 1].find(it->second);
+  uint64_t price_u64 = it->second;
+  auto bid_order_list_it = bid_orderbooks_[ticker_id - 1].find(price_u64);
   if (bid_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
-    auto ask_order_list_it = ask_orderbooks_[ticker_id - 1].find(it->second);
+    auto ask_order_list_it = ask_orderbooks_[ticker_id - 1].find(price_u64);
     if (ask_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
       // bug
       abort();
