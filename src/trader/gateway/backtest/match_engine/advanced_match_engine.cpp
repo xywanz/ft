@@ -6,271 +6,299 @@
 
 namespace ft {
 
-bool AdvancedMatchEngine::Init() { return true; }
-
-void AdvancedMatchEngine::OnNewTick(const TickData& new_tick) {
-  if (new_tick.ask_volume[0] > 0) {
-    uint64_t ask_u64 = u64_price(new_tick.ask[0]);
-    while (!bid_levels_.empty()) {
-      auto level_it = bid_levels_.begin();
-      if (level_it->first < ask_u64) {
-        break;
-      }
-      auto& order_list = level_it->second;
-      for (auto& order : order_list) {
-        // OnTrade
-        (void)order;
-      }
-      bid_levels_.erase(level_it);
-    }
-  }
-
-  if (new_tick.bid_volume[0] > 0) {
-    uint64_t bid_u64 = u64_price(new_tick.bid[0]);
-    while (!ask_levels_.empty()) {
-      auto level_it = ask_levels_.begin();
-      if (level_it->first > bid_u64) {
-        break;
-      }
-      auto& order_list = level_it->second;
-      for (auto& order : order_list) {
-        // OnTrade
-        (void)order;
-      }
-      bid_levels_.erase(level_it);
-    }
-  }
-
-  if (new_tick.ask_volume[0] == 0 || new_tick.bid_volume[0] == 0) {
-    return;
-  }
-
-  uint64_t delta_turnover = new_tick.turnover - current_tick_.turnover;
-  uint64_t delta_volume = new_tick.volume - current_tick_.volume;
-  auto* contract = ContractTable::get_by_index(new_tick.ticker_id);
-  double avg_price = static_cast<double>(delta_turnover) / (delta_volume * contract->size);
-  int bid_trade_volume = 0;
-  int ask_trade_volume = 0;
-  if (avg_price >= current_tick_.ask[0]) {
-    ask_trade_volume = delta_volume;
-  } else if (avg_price <= current_tick_.bid[0]) {
-    bid_trade_volume = delta_volume;
-  } else {
-    double spread = current_tick_.ask[0] - current_tick_.bid[0];
-    bid_trade_volume = static_cast<int>((avg_price - current_tick_.bid[0]) / spread * delta_volume);
-    ask_trade_volume = delta_volume - bid_trade_volume;
-  }
-
-  if (ask_trade_volume != 0) {
-    for (int i = 0; i < 5; ++i) {
-      if (current_tick_.ask_volume[i] == 0) {
-        continue;
-      }
-      uint64_t u64p = u64_price(current_tick_.ask[i]);
-      auto level_it = ask_levels_.find(u64p);
-      if (level_it != ask_levels_.end()) {
-        auto& order_list = level_it->second;
-        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
-          auto& order = *order_it;
-          if (order.order_pos <= ask_trade_volume) {
-            // OnTrade
-            order_it = order_list.erase(order_it);
-          } else {
-            ++order_it;
-          }
-        }
-      }
-      ask_trade_volume -= current_tick_.ask_volume[i];
-      if (ask_trade_volume <= 0) {
-        break;
-      }
-    }
-  }
-
-  if (bid_trade_volume != 0) {
-    for (int i = 0; i < 5; ++i) {
-      if (current_tick_.bid_volume[i] == 0 || current_tick_.bid[i] > avg_price) {
-        continue;
-      }
-      uint64_t u64p = u64_price(current_tick_.bid[i]);
-      auto level_it = bid_levels_.find(u64p);
-      if (level_it != bid_levels_.end()) {
-        auto& order_list = level_it->second;
-        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
-          auto& order = *order_it;
-          if (order.order_pos <= bid_trade_volume) {
-            // OnTrade
-            order_it = order_list.erase(order_it);
-          } else {
-            ++order_it;
-          }
-        }
-      }
-      bid_trade_volume -= current_tick_.bid_volume[i];
-      if (bid_trade_volume <= 0) {
-        break;
-      }
-    }
-  }
-
-  current_tick_ = new_tick;
+static inline uint64_t u64_price(double p) {
+  return (static_cast<uint64_t>(p * 100000000UL) + 50UL) / 10000UL;
 }
 
-bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
-  if (order.direction == Direction::kBuy) {
-    AddLongOrder(order);
-  } else {
-    AddShortOrder(order);
-  }
+bool AdvancedMatchEngine::Init() {
+  bid_orderbooks_.resize(ContractTable::size());
+  ask_orderbooks_.resize(ContractTable::size());
+  ticks_.resize(ContractTable::size());
   return true;
 }
 
-void AdvancedMatchEngine::AddLongOrder(const OrderRequest& order) {
-  if (order.type == OrderType::kLimit) {
-    int volume_left = order.volume;
-    int level_pos = 0;
-    while (volume_left > 0 && level_pos < 5) {
-      if (current_tick_.ask_volume[level_pos] > 0 && current_tick_.ask[level_pos] <= order.price) {
-        int traded = std::min(current_tick_.ask_volume[level_pos], volume_left);
-        volume_left -= traded;
-        // OnTrade
-      }
-      ++level_pos;
-    }
+bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
+  auto& tick = ticks_[order.contract->ticker_id - 1];
+  double ask = tick.ask[0];
+  double bid = tick.bid[0];
 
-    if (volume_left > 0) {
-      uint64_t u64price = u64_price(order.price);
-      InnerOrder inner_order{};
-      inner_order.orig_order = order;
-      inner_order.traded = order.volume - volume_left;
-      inner_order.order_pos = 0;
-
-      if (inner_order.traded == 0) {
-        level_pos = 0;
-        while (level_pos < 5) {
-          if (current_tick_.bid_volume[level_pos] > 0 &&
-              u64_price(current_tick_.bid[level_pos]) == u64price) {
-            inner_order.order_pos = current_tick_.bid_volume[level_pos] + 1;
-            break;
+  switch (order.type) {
+    case OrderType::kLimit: {
+      if ((order.direction == Direction::kBuy && tick.ask_volume[0] > 0 && order.price >= ask) ||
+          (order.direction == Direction::kSell && tick.bid_volume[0] > 0 && order.price <= bid)) {
+        double price = order.direction == Direction::kBuy ? ask : bid;
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
+      } else {
+        InnerOrder inner_order{};
+        inner_order.orig_order = order;
+        if (order.direction == Direction::kBuy) {
+          for (int level = 0; level < kMaxMarketLevel; ++level) {
+            if (IsEqual(tick.bid[level], order.price)) {
+              inner_order.queue_position = tick.bid_volume[level];
+              break;
+            }
           }
-          ++level_pos;
+          uint64_t price_u64 = u64_price(bid);
+          bid_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          id_price_map_.emplace(order.order_id, price_u64);
+        } else {
+          for (int level = 0; level < kMaxMarketLevel; ++level) {
+            if (IsEqual(tick.ask[level], order.price)) {
+              inner_order.queue_position = tick.ask_volume[level];
+              break;
+            }
+          }
+          uint64_t price_u64 = u64_price(ask);
+          ask_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          id_price_map_.emplace(order.order_id, price_u64);
         }
+        listener()->OnAccepted(order);
       }
-
-      bid_levels_[u64price].emplace_back(inner_order);
+      break;
     }
-  } else {
-    int volume_left = order.volume;
-    int level_pos = 0;
-    bool to_trade = true;
-
-    if (order.type == OrderType::kFok) {
-      while (volume_left > 0 && level_pos < 5) {
-        if (current_tick_.ask_volume[level_pos] > 0 &&
-            current_tick_.ask[level_pos] <= order.price) {
-          volume_left -= std::min(current_tick_.ask_volume[level_pos], volume_left);
+    case OrderType::kBest: {
+      if ((order.direction == Direction::kBuy && tick.bid_volume[0] == 0) ||
+          (order.direction == Direction::kSell && tick.ask_volume[0] == 0)) {
+        listener()->OnRejected(order);
+      } else {
+        InnerOrder inner_order;
+        inner_order.orig_order = order;
+        if (order.direction == Direction::kBuy) {
+          inner_order.orig_order.price = bid;
+          inner_order.queue_position = tick.bid_volume[0];
+          uint64_t price_u64 = u64_price(bid);
+          bid_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          id_price_map_.emplace(order.order_id, price_u64);
+        } else {
+          inner_order.orig_order.price = ask;
+          inner_order.queue_position = tick.ask_volume[0];
+          uint64_t price_u64 = u64_price(ask);
+          ask_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          id_price_map_.emplace(order.order_id, price_u64);
         }
-        ++level_pos;
+        listener()->OnAccepted(order);
       }
-
-      if (volume_left != 0) {
-        to_trade = false;
+      break;
+    }
+    case OrderType::kMarket: {
+      int volume = order.direction == Direction::kBuy ? tick.ask_volume[0] : tick.bid_volume[0];
+      if (volume == 0) {
+        listener()->OnCanceled(order, order.volume);
+      } else {
+        double price = order.direction == Direction::kBuy ? ask : bid;
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
       }
+      break;
     }
-
-    if (to_trade) {
-      volume_left = order.volume;
-      level_pos = 0;
-      while (volume_left > 0 && level_pos < 5) {
-        if (current_tick_.ask_volume[level_pos] > 0 &&
-            current_tick_.ask[level_pos] <= order.price) {
-          int traded = std::min(current_tick_.ask_volume[level_pos], volume_left);
-          volume_left -= traded;
-          // OnTrade
-        }
-        ++level_pos;
+    case OrderType::kFak:
+    case OrderType::kFok: {
+      if ((order.direction == Direction::kBuy && tick.ask_volume[0] > 0 && order.price >= ask) ||
+          (order.direction == Direction::kSell && tick.bid_volume[0] > 0 && order.price <= bid)) {
+        double price = order.direction == Direction::kBuy ? ask : bid;
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
+      } else {
+        listener()->OnCanceled(order, order.volume);
       }
+      break;
     }
-
-    if (volume_left != 0) {
-      // OnCancel
-    }
+    default: { return false; }
   }
+
+  return true;
 }
 
-void AdvancedMatchEngine::AddShortOrder(const OrderRequest& order) {
-  if (order.type == OrderType::kLimit) {
-    int volume_left = order.volume;
-    int level_pos = 0;
-    while (volume_left > 0 && level_pos < 5) {
-      if (current_tick_.bid_volume[level_pos] > 0 && current_tick_.bid[level_pos] >= order.price) {
-        int traded = std::min(current_tick_.bid_volume[level_pos], volume_left);
-        volume_left -= traded;
-        // OnTrade
-      }
-      ++level_pos;
+bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
+  auto it = id_price_map_.find(order_id);
+  if (it == id_price_map_.end()) {
+    return false;
+  }
+  auto bid_order_list_it = bid_orderbooks_[ticker_id - 1].find(it->second);
+  if (bid_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
+    auto ask_order_list_it = ask_orderbooks_[ticker_id - 1].find(it->second);
+    if (ask_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
+      // bug
+      abort();
     }
-
-    if (volume_left > 0) {
-      uint64_t u64price = u64_price(order.price);
-      InnerOrder inner_order{};
-      inner_order.orig_order = order;
-      inner_order.traded = order.volume - volume_left;
-      inner_order.order_pos = 0;
-
-      if (inner_order.traded == 0) {
-        level_pos = 0;
-        while (level_pos < 5) {
-          if (current_tick_.ask_volume[level_pos] > 0 &&
-              u64_price(current_tick_.ask[level_pos]) == u64price) {
-            inner_order.order_pos = current_tick_.ask_volume[level_pos] + 1;
-            break;
-          }
-          ++level_pos;
+    auto& order_list = ask_order_list_it->second;
+    for (auto order_it = order_list.begin(); order_it != order_list.end();) {
+      if (order_it->orig_order.order_id == order_id) {
+        listener()->OnCanceled(order_it->orig_order, order_it->orig_order.volume);
+        order_list.erase(order_it);
+        if (order_list.empty()) {
+          ask_orderbooks_[ticker_id - 1].erase(ask_order_list_it);
         }
+        return true;
       }
-
-      ask_levels_[u64price].emplace_back(inner_order);
     }
   } else {
-    int volume_left = order.volume;
-    int level_pos = 0;
-    bool to_trade = true;
-
-    if (order.type == OrderType::kFok) {
-      while (volume_left > 0 && level_pos < 5) {
-        if (current_tick_.bid_volume[level_pos] > 0 &&
-            current_tick_.bid[level_pos] >= order.price) {
-          volume_left -= std::min(current_tick_.bid_volume[level_pos], volume_left);
+    auto& order_list = bid_order_list_it->second;
+    for (auto order_it = order_list.begin(); order_it != order_list.end();) {
+      if (order_it->orig_order.order_id == order_id) {
+        listener()->OnCanceled(order_it->orig_order, order_it->orig_order.volume);
+        order_list.erase(order_it);
+        if (order_list.empty()) {
+          ask_orderbooks_[ticker_id - 1].erase(bid_order_list_it);
         }
-        ++level_pos;
+        return true;
       }
-
-      if (volume_left != 0) {
-        to_trade = false;
-      }
-    }
-
-    if (to_trade) {
-      volume_left = order.volume;
-      level_pos = 0;
-      while (volume_left > 0 && level_pos < 5) {
-        if (current_tick_.bid_volume[level_pos] > 0 &&
-            current_tick_.bid[level_pos] >= order.price) {
-          int traded = std::min(current_tick_.bid_volume[level_pos], volume_left);
-          volume_left -= traded;
-          // OnTrade
-        }
-        ++level_pos;
-      }
-    }
-
-    if (volume_left != 0) {
-      // OnCancel
     }
   }
+
+  // bug
+  abort();
 }
 
-bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) { return false; }
+void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
+  auto& prev_tick = ticks_[tick.ticker_id - 1];
+  if (prev_tick.ticker_id == 0) {
+    prev_tick = tick;
+    return;
+  }
+
+  int bid_filled = 0;
+  int ask_filled = 0;
+  double delta_volume = tick.volume - prev_tick.volume;
+
+  // 估算多方和空方的成交量
+  // todo: 假如假如多或空没有挂单时，该如何估算双方的成交量
+  if (prev_tick.ask_volume[0] == 0 && prev_tick.bid_volume[0] == 0) {
+    bid_filled = 0;
+    ask_filled = 0;
+  } else if (prev_tick.bid_volume[0] == 0) {
+    ask_filled = static_cast<int>(delta_volume);
+  } else if (prev_tick.ask_volume[0] == 0) {
+    bid_filled = static_cast<int>(delta_volume);
+  } else {
+    // 当多空方都存在时，首先通过两个tick之间的turnover和volume差值，计算出
+    // 在这两个tick期间的成交均价avg_price，根据avg_price所处的位置不同，可
+    // 以分为三种情况：
+    // 1. avg_price >= ask，这种情况下假定所有成交都在空方
+    // 2. avg_price <= bid，这种情况下假定所有成交都在多方
+    // 3. bid < avg_price < ask，这种情况下，通过如下方法估算双边的成交量
+    //    spread = ask - price
+    //    bid_percentage = (avg_price - bid) / spread
+    //    ask_percentage = (ask - avg_price) / spread
+    //    volume = this_tick.volume - prev_tick.volume
+    //    bid_filled = bid_percentage * volume
+    //    ask_filled = ask_percentage * volume
+    double delta_turnover = tick.turnover - prev_tick.turnover;
+    auto* contract = ContractTable::get_by_id(tick.ticker_id);
+    assert(contract && contract->size > 0);
+    double avg_price = delta_turnover / (delta_volume * contract->size);
+    if (avg_price >= tick.ask[0]) {
+      ask_filled = static_cast<int>(delta_volume);
+    } else if (avg_price <= tick.bid[0]) {
+      bid_filled = static_cast<int>(delta_volume);
+    } else {
+      double spread = tick.ask[0] - tick.bid[0];
+      bid_filled = static_cast<int>(delta_volume * (avg_price - tick.bid[0]) / spread);
+      ask_filled = static_cast<int>(delta_volume * (tick.ask[0] - avg_price) / spread);
+    }
+  }
+
+  if (bid_filled > 0) {
+    auto& orderbook = bid_orderbooks_[tick.ticker_id - 1];
+    for (int level = 0; level < kMaxMarketLevel; ++level) {
+      if (tick.bid_volume[level] == 0) {
+        continue;
+      }
+      auto order_list_it = orderbook.find(u64_price(tick.bid[level]));
+      if (order_list_it != orderbook.end()) {
+        auto& order_list = order_list_it->second;
+        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
+          auto& order = *order_it;
+          if (order.queue_position < bid_filled) {
+            listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
+                                 tick.exchange_timestamp);
+            id_price_map_.erase(order.orig_order.order_id);
+            order_it = order_list.erase(order_it);
+          } else {
+            order.queue_position -= bid_filled;
+            ++order_it;
+          }
+          if (order_list.empty()) {
+            orderbook.erase(order_list_it);
+          }
+        }
+      }
+      bid_filled -= tick.bid_volume[level];
+      if (bid_filled <= 0) {
+        break;
+      }
+    }
+  }
+
+  if (ask_filled > 0) {
+    auto& orderbook = ask_orderbooks_[tick.ticker_id - 1];
+    for (int level = 0; level < kMaxMarketLevel; ++level) {
+      if (tick.ask_volume[level] == 0) {
+        continue;
+      }
+      auto order_list_it = orderbook.find(u64_price(tick.ask[level]));
+      if (order_list_it != orderbook.end()) {
+        auto& order_list = order_list_it->second;
+        for (auto order_it = order_list.begin(); order_it != order_list.end();) {
+          auto& order = *order_it;
+          if (order.queue_position < ask_filled) {
+            listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
+                                 tick.exchange_timestamp);
+            id_price_map_.erase(order.orig_order.order_id);
+            order_it = order_list.erase(order_it);
+          } else {
+            order.queue_position -= bid_filled;
+            ++order_it;
+          }
+          if (order_list.empty()) {
+            orderbook.erase(order_list_it);
+          }
+        }
+      }
+      ask_filled -= tick.ask_volume[level];
+      if (ask_filled <= 0) {
+        break;
+      }
+    }
+  }
+
+  // 空方小于bid价格的单应该全部成交
+  if (tick.bid_volume[0] > 0) {
+    auto& orderbook = ask_orderbooks_[tick.ticker_id - 1];
+    while (!orderbook.empty()) {
+      auto begin = orderbook.begin();
+      auto price_u64 = begin->first;
+      if (price_u64 > u64_price(tick.bid[0])) {
+        break;
+      }
+      auto& order_list = begin->second;
+      for (auto& order : order_list) {
+        listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
+                             tick.exchange_timestamp);
+        id_price_map_.erase(order.orig_order.order_id);
+      }
+      orderbook.erase(begin);
+    }
+  }
+
+  // 多方大于ask价格的单应该全部成交
+  if (tick.ask_volume[0] > 0) {
+    auto& orderbook = bid_orderbooks_[tick.ticker_id - 1];
+    while (!orderbook.empty()) {
+      auto begin = orderbook.begin();
+      auto price_u64 = begin->first;
+      if (price_u64 < u64_price(tick.ask[0])) {
+        break;
+      }
+      auto& order_list = begin->second;
+      for (auto& order : order_list) {
+        listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
+                             tick.exchange_timestamp);
+        id_price_map_.erase(order.orig_order.order_id);
+      }
+      orderbook.erase(begin);
+    }
+  }
+
+  ticks_[tick.ticker_id - 1] = tick;
+}
 
 }  // namespace ft

@@ -13,10 +13,7 @@
 
 namespace ft {
 
-inline uint64_t u64_price(double p) {
-  return (static_cast<uint64_t>(p * 100000000UL) + 50UL) / 10000UL;
-}
-
+// 估算订单位置双边成交量来确定挂单是否成交
 class AdvancedMatchEngine : public MatchEngine {
  public:
   bool Init() override;
@@ -28,21 +25,20 @@ class AdvancedMatchEngine : public MatchEngine {
   void OnNewTick(const TickData& tick) override;
 
  private:
-  void AddLongOrder(const OrderRequest& order);
-  void AddShortOrder(const OrderRequest& order);
-
- private:
   struct InnerOrder {
     OrderRequest orig_order;
-    int traded;
-    int order_pos;
+    int queue_position;
   };
 
-  TickData current_tick_;
-  std::vector<OrderRequest> orders_;
+  using BidOrderBook = std::map<uint64_t, std::list<InnerOrder>, std::greater<uint64_t>>;
+  using AskOrderBook = std::map<uint64_t, std::list<InnerOrder>, std::less<uint64_t>>;
 
-  std::map<uint64_t, std::list<InnerOrder>, std::greater<uint64_t>> bid_levels_;
-  std::map<uint64_t, std::list<InnerOrder>, std::less<uint64_t>> ask_levels_;
+ private:
+  std::vector<BidOrderBook> bid_orderbooks_;
+  std::vector<AskOrderBook> ask_orderbooks_;
+  // order_id -> price_u64：用于撤单时能快速找到订单队列
+  std::map<uint64_t, uint64_t> id_price_map_;
+  std::vector<TickData> ticks_;
 };
 
 }  // namespace ft
