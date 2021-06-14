@@ -32,6 +32,8 @@ include(fmt)
 include(spdlog)
 include(hiredis)
 include(yaml-cpp)
+include(libuv)
+include(nlohmann_json)
 
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE "third_party/cereal/include")

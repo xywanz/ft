@@ -1,6 +1,4 @@
-// Copyright [2020-2021] <Copyright Kevin, kevin.lau.gd@gmail.com>
-
-// Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
+// Copyright [2020-present] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #ifndef FT_INCLUDE_FT_UTILS_REDIS_H_
 #define FT_INCLUDE_FT_UTILS_REDIS_H_
