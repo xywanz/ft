@@ -104,7 +104,9 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
       }
       break;
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 
   return true;
@@ -116,6 +118,8 @@ bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
     return false;
   }
   uint64_t price_u64 = it->second;
+  id_price_map_.erase(it);
+
   auto bid_order_list_it = bid_orderbooks_[ticker_id - 1].find(price_u64);
   if (bid_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
     auto ask_order_list_it = ask_orderbooks_[ticker_id - 1].find(price_u64);

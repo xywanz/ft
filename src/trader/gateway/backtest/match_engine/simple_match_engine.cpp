@@ -26,6 +26,7 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
         listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
       } else {
         orders_[order.contract->ticker_id].emplace(order.order_id, order);
+        listener()->OnAccepted(order);
       }
       break;
     }
@@ -34,6 +35,11 @@ bool SimpleMatchEngine::InsertOrder(const OrderRequest& order) {
           (order.direction == Direction::kSell && IsEqual(ask, 0.0))) {
         OrderRejectedRsp rsp{order.order_id};
         listener()->OnRejected(order);
+      } else {
+        OrderRequest order_to_insert = order;
+        order_to_insert.price = order.direction == Direction::kBuy ? bid : ask;
+        orders_[order.contract->ticker_id].emplace(order.order_id, order_to_insert);
+        listener()->OnAccepted(order);
       }
       break;
     }
