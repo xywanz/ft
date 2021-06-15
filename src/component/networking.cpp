@@ -44,6 +44,7 @@ auto uv_read_cb(uv_stream_t* client, ssize_t nread, const uv_buf_t* buf) {
 }  // namespace
 
 NetworkNode::NetworkNode() {
+  signal(SIGPIPE, SIG_IGN);
   uv_loop_init(&loop_);
   uv_async_init(&loop_, &async_task_req_, uv_async_task);
   async_task_req_.data = this;
@@ -62,8 +63,6 @@ NetworkNode::~NetworkNode() {
 }
 
 bool NetworkNode::StartServer(int port) {
-  tcp_server_.data = this;
-
   struct sockaddr_in addr;
   if (uv_ip4_addr("127.0.0.1", port, &addr) != 0) {
     return false;
@@ -72,6 +71,7 @@ bool NetworkNode::StartServer(int port) {
   if (uv_tcp_init(&loop_, &tcp_server_) != 0) {
     return false;
   }
+  tcp_server_.data = this;
   if (uv_tcp_bind(&tcp_server_, reinterpret_cast<struct sockaddr*>(&addr), 0) != 0) {
     return false;
   }
@@ -90,9 +90,9 @@ bool NetworkNode::StartClient() {
   return true;
 }
 
-bool NetworkNode::Connect(int port, int* p_conn_id) {
-  int conn_id = next_conn_id();
+int NetworkNode::GenConnId() { return next_conn_id(); }
 
+bool NetworkNode::Connect(int port, int conn_id) {
   Task task{};
   task.conn_id = conn_id;
   task.type = kConnect;
@@ -100,11 +100,10 @@ bool NetworkNode::Connect(int port, int* p_conn_id) {
   PutTask(task);
   Notify();
 
-  if (p_conn_id) {
-    *p_conn_id = conn_id;
-  }
   return true;
 }
+
+bool NetworkNode::Connect(int port) { return Connect(port, GenConnId()); }
 
 bool NetworkNode::Disconnect(int conn_id) {
   Task task{};
@@ -206,6 +205,9 @@ void NetworkNode::DoSendMsg(int conn_id, char* data, std::size_t size) {
         break;
       }
     } else {
+      uv_close(reinterpret_cast<uv_handle_t*>(&conn->client), nullptr);
+      connections_.erase(it);
+      OnDisconnected(conn_id);
       break;
     }
   }
@@ -223,12 +225,21 @@ void NetworkNode::MainLoop() {
 void NetworkNode::OnUvConnect(int conn_id, int status) {
   auto it = connections_.find(conn_id);
   if (it == connections_.end() || conn_id != it->second->conn_id) {
+    return;
   }
   auto& conn = it->second;
 
   if (status < 0) {
     uv_close(reinterpret_cast<uv_handle_t*>(&conn->client), nullptr);
     connections_.erase(it);
+    OnDisconnected(conn_id);
+    return;
+  }
+
+  auto& client = conn->client;
+  if (uv_read_start(reinterpret_cast<uv_stream_t*>(&client), uv_alloc_cb, uv_read_cb) != 0) {
+    uv_close(reinterpret_cast<uv_handle_t*>(&client), nullptr);
+    connections_.erase(conn_id);
     OnDisconnected(conn_id);
     return;
   }
@@ -272,6 +283,7 @@ void NetworkNode::OnUvConnection(int status) {
 handle_error:
   uv_close(reinterpret_cast<uv_handle_t*>(&client), nullptr);
   connections_.erase(conn_id);
+  OnDisconnected(conn_id);
 }
 
 void NetworkNode::OnUvRead(int conn_id, const char* data, ssize_t len) {
@@ -284,7 +296,7 @@ void NetworkNode::OnUvRead(int conn_id, const char* data, ssize_t len) {
   if (len > 0) {
     auto& buf = conn->rcv_buf;
     buf.insert(buf.end(), data, data + len);
-    ssize_t pos = 0;
+    std::size_t pos = 0;
     while (pos + sizeof(uint64_t) <= buf.size() &&
            pos + sizeof(uint64_t) + *reinterpret_cast<uint64_t*>(&buf[pos]) <= buf.size()) {
       uint64_t msg_size = *reinterpret_cast<uint64_t*>(&buf[pos]);
@@ -292,6 +304,10 @@ void NetworkNode::OnUvRead(int conn_id, const char* data, ssize_t len) {
                                        &buf[pos + sizeof(uint64_t) + msg_size]);
       OnRecvMsg(conn_id, msg);
       pos += sizeof(uint64_t) + msg_size;
+    }
+    if (pos > 0) {
+      std::vector<char> new_buf(buf.begin() + pos, buf.end());
+      buf = std::move(new_buf);
     }
   } else if (len < 0) {
     if (len == UV_EOF) {
@@ -306,7 +322,7 @@ void NetworkNode::OnUvRead(int conn_id, const char* data, ssize_t len) {
 }
 
 void NetworkNode::OnUvAsyncTask() {
-  Task task;
+  Task task{};
   while (GetTask(&task)) {
     if (task.type == kConnect) {
       DoConnect(task.conn_id, task.args[0]);

@@ -40,7 +40,9 @@ class NetworkNode {
   NetworkNode();
   ~NetworkNode();
 
-  bool Connect(int port, int* conn_id);
+  int GenConnId();
+  bool Connect(int port, int conn_id);
+  bool Connect(int port);
   bool Disconnect(int conn_id);
 
   bool StartServer(int port);

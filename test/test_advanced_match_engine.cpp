@@ -1,7 +1,7 @@
 #include <queue>
 
-#include "gtest/gtest.h"
 #include "ft/base/contract_table.h"
+#include "gtest/gtest.h"
 #include "trader/gateway/backtest/match_engine/advanced_match_engine.h"
 
 using namespace ft;
