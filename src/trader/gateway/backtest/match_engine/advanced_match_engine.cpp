@@ -31,7 +31,7 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
       if ((order.direction == Direction::kBuy && tick.ask_volume[0] > 0 && order.price >= ask) ||
           (order.direction == Direction::kSell && tick.bid_volume[0] > 0 && order.price <= bid)) {
         double price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       } else {
         InnerOrder inner_order{};
         inner_order.orig_order = order;
@@ -92,7 +92,7 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
         listener()->OnCanceled(order, order.volume);
       } else {
         double price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       }
       break;
     }
@@ -101,7 +101,7 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
       if ((order.direction == Direction::kBuy && tick.ask_volume[0] > 0 && order.price >= ask) ||
           (order.direction == Direction::kSell && tick.bid_volume[0] > 0 && order.price <= bid)) {
         double price = order.direction == Direction::kBuy ? ask : bid;
-        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp);
+        listener()->OnTraded(order, order.volume, price, tick.exchange_timestamp_us);
       } else {
         listener()->OnCanceled(order, order.volume);
       }
@@ -191,7 +191,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
     //    bid_filled = bid_percentage * volume
     //    ask_filled = ask_percentage * volume
     double delta_turnover = tick.turnover - prev_tick.turnover;
-    auto* contract = ContractTable::get_by_id(tick.ticker_id);
+    auto* contract = ContractTable::get_by_index(tick.ticker_id);
     assert(contract && contract->size > 0);
     double avg_price = delta_turnover / (delta_volume * contract->size);
     if (avg_price >= tick.ask[0]) {
@@ -221,7 +221,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
         auto& order_list = begin->second;
         for (auto& order : order_list) {
           listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                               tick.exchange_timestamp);
+                               tick.exchange_timestamp_us);
           id_price_map_.erase(order.orig_order.order_id);
         }
         orderbook.erase(begin);
@@ -240,7 +240,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
           LOG_DEBUG("queue_position:{} bid_filled:{}", order.queue_position, bid_filled);
           if (order.queue_position < bid_filled) {
             listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                                 tick.exchange_timestamp);
+                                 tick.exchange_timestamp_us);
             id_price_map_.erase(order.orig_order.order_id);
             order_it = order_list.erase(order_it);
           } else {
@@ -272,7 +272,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
         auto& order_list = begin->second;
         for (auto& order : order_list) {
           listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                               tick.exchange_timestamp);
+                               tick.exchange_timestamp_us);
           id_price_map_.erase(order.orig_order.order_id);
         }
         orderbook.erase(begin);
@@ -291,7 +291,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
           LOG_DEBUG("queue_position:{} ask_filled:{}", order.queue_position, ask_filled);
           if (order.queue_position < ask_filled) {
             listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                                 tick.exchange_timestamp);
+                                 tick.exchange_timestamp_us);
             id_price_map_.erase(order.orig_order.order_id);
             order_it = order_list.erase(order_it);
           } else {
@@ -322,7 +322,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
       auto& order_list = begin->second;
       for (auto& order : order_list) {
         listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                             tick.exchange_timestamp);
+                             tick.exchange_timestamp_us);
         id_price_map_.erase(order.orig_order.order_id);
       }
       orderbook.erase(begin);
@@ -341,7 +341,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
       auto& order_list = begin->second;
       for (auto& order : order_list) {
         listener()->OnTraded(order.orig_order, order.orig_order.volume, order.orig_order.price,
-                             tick.exchange_timestamp);
+                             tick.exchange_timestamp_us);
         id_price_map_.erase(order.orig_order.order_id);
       }
       orderbook.erase(begin);
