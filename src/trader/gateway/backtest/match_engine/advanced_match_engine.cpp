@@ -14,14 +14,14 @@ static inline uint64_t u64_price(double p) {
   return (static_cast<uint64_t>(p * 100000000UL) + 50UL) / 10000UL;
 }
 
-bool EmuMatchEngine::Init() {
+bool AdvancedMatchEngine::Init() {
   bid_orderbooks_.resize(ContractTable::size());
   ask_orderbooks_.resize(ContractTable::size());
   ticks_.resize(ContractTable::size());
   return true;
 }
 
-bool EmuMatchEngine::InsertOrder(const OrderRequest& order) {
+bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
   auto& tick = ticks_[order.contract->ticker_id - 1];
   double ask = tick.ask[0];
   double bid = tick.bid[0];
@@ -113,7 +113,7 @@ bool EmuMatchEngine::InsertOrder(const OrderRequest& order) {
   return true;
 }
 
-bool EmuMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
+bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
   auto it = id_price_map_.find(order_id);
   if (it == id_price_map_.end()) {
     return false;
@@ -157,7 +157,7 @@ bool EmuMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
   abort();
 }
 
-void EmuMatchEngine::OnNewTick(const TickData& tick) {
+void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
   auto& prev_tick = ticks_[tick.ticker_id - 1];
   if (prev_tick.ticker_id == 0) {
     prev_tick = tick;
