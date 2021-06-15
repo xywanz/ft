@@ -70,12 +70,12 @@ class TestListener : public OrderEventListener {
   std::queue<Response> rsp_queue_;
 };
 
-TEST(EmuMatchEngine, Match) {
+TEST(AdvancedMatchEngine, Match) {
   ASSERT_TRUE(is_contractable_inited);
-  auto* contract = ContractTable::get_by_id(1);
+  auto* contract = ContractTable::get_by_index(1);
   ASSERT_TRUE(contract != nullptr);
 
-  EmuMatchEngine engine;
+  AdvancedMatchEngine engine;
   TestListener listener;
   auto& rsp_queue = listener.GetRspQueue();
   engine.RegisterListener(&listener);
