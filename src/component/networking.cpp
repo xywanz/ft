@@ -14,6 +14,7 @@ void on_uv_connect(uv_connect_t* req, int status) {
   auto* client = reinterpret_cast<uv_tcp_t*>(req->handle);
   auto* conn = reinterpret_cast<NetworkNode::Connection*>(client->data);
   reinterpret_cast<NetworkNode*>(req->data)->OnUvConnect(conn->conn_id, status);
+  delete req;
 }
 
 void uv_connection_cb(uv_stream_t* server, int status) {
@@ -144,9 +145,11 @@ void NetworkNode::DoConnect(int conn_id, int port) {
   auto conn = std::make_shared<Connection>();
   conn->conn_id = conn_id;
   conn->node = this;
-  uv_connect_t connect_req;
   struct sockaddr_in addr;
   auto& client = conn->client;
+
+  auto* connect_req = new uv_connect_t;
+  connect_req->data = this;
 
   if (uv_ip4_addr("127.0.0.1", static_cast<int>(port), &addr) != 0) {
     goto handle_error;
@@ -155,11 +158,9 @@ void NetworkNode::DoConnect(int conn_id, int port) {
   if (uv_tcp_init(&loop_, &client) != 0) {
     goto handle_error;
   }
-
   client.data = conn.get();
-  connect_req.data = this;
 
-  if (uv_tcp_connect(&connect_req, &client, reinterpret_cast<struct sockaddr*>(&addr),
+  if (uv_tcp_connect(connect_req, &client, reinterpret_cast<struct sockaddr*>(&addr),
                      on_uv_connect) != 0) {
     uv_close(reinterpret_cast<uv_handle_t*>(&client), nullptr);
     goto handle_error;
@@ -169,6 +170,7 @@ void NetworkNode::DoConnect(int conn_id, int port) {
   return;
 
 handle_error:
+  delete connect_req;
   OnDisconnected(conn_id);
 }
 
@@ -186,14 +188,16 @@ void NetworkNode::DoDisconnect(int conn_id) {
 }
 
 void NetworkNode::DoSendMsg(int conn_id, char* data, std::size_t size) {
-  auto it = connections_.find(conn_id);
-  if (it == connections_.end() || conn_id != it->second->conn_id) {
-    return;
-  }
-
-  auto& conn = it->second;
+  std::shared_ptr<Connection> conn;
   uv_buf_t buf;
   std::size_t nsend = 0;
+
+  auto it = connections_.find(conn_id);
+  if (it == connections_.end() || conn_id != it->second->conn_id) {
+    goto free_data;
+  }
+
+  conn = it->second;
   for (;;) {
     buf = uv_buf_init(data + nsend, size - nsend);
     int r = uv_try_write(reinterpret_cast<uv_stream_t*>(&conn->client), &buf, 1);
@@ -212,6 +216,7 @@ void NetworkNode::DoSendMsg(int conn_id, char* data, std::size_t size) {
     }
   }
 
+free_data:
   delete[] data;
 }
 
