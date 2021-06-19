@@ -164,12 +164,16 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
     return;
   }
 
-  int bid_filled = 0;
-  int ask_filled = 0;
   double delta_volume = tick.volume - prev_tick.volume;
+  if (delta_volume == 0) {
+    ticks_[tick.ticker_id - 1] = tick;
+    return;
+  }
 
   // 估算多方和空方的成交量
   // todo: 假如假如多或空没有挂单时，该如何估算双方的成交量
+  int bid_filled = 0;
+  int ask_filled = 0;
   if (prev_tick.ask_volume[0] == 0 && prev_tick.bid_volume[0] == 0) {
     bid_filled = 0;
     ask_filled = 0;
@@ -200,10 +204,11 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
       bid_filled = static_cast<int>(delta_volume);
     } else {
       double spread = tick.ask[0] - tick.bid[0];
+      assert(spread > 0);
       bid_filled = static_cast<int>(delta_volume * (avg_price - tick.bid[0]) / spread);
       ask_filled = static_cast<int>(delta_volume * (tick.ask[0] - avg_price) / spread);
     }
-    LOG_DEBUG("avg_price:{}", avg_price);
+    LOG_DEBUG("avg_price:{:.4f} bid:{} ask:{}", avg_price, tick.bid[0], tick.ask[0]);
   }
 
   LOG_DEBUG("bid_filled:{} ask_filled:{}", bid_filled, ask_filled);
