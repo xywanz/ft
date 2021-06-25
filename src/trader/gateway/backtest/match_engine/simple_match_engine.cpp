@@ -93,8 +93,7 @@ void SimpleMatchEngine::OnNewTick(const TickData& tick) {
     auto& order = it->second;
     if ((order.direction == Direction::kBuy && tick.ask[0] > 0 && order.price >= tick.ask[0]) ||
         (order.direction == Direction::kSell && tick.bid[0] > 0 && order.price <= tick.bid[0])) {
-      double price = order.direction == Direction::kBuy ? tick.ask[0] : tick.bid[0];
-      listener()->OnTraded(order, order.volume, price, cur_timestamp_us_);
+      listener()->OnTraded(order, order.volume, order.price, cur_timestamp_us_);
       it = map.erase(it);
     } else {
       ++it;
