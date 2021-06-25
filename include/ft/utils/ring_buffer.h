@@ -64,9 +64,9 @@ class RingBuffer {
  private:
   static constexpr uint64_t kIndexMask_ = capacity - 1;
 
-  alignas(64) std::atomic<uint64_t> head_;
-  alignas(64) std::atomic<uint64_t> tail_;
-  alignas(64) T buffer_[capacity];
+  alignas(64) std::atomic<uint64_t> head_{0};
+  alignas(64) std::atomic<uint64_t> tail_{0};
+  alignas(64) T buffer_[capacity]{};
 
   static_assert(capacity != 0 && (capacity & (capacity - 1)) == 0, "capacity must be power of 2");
 };
