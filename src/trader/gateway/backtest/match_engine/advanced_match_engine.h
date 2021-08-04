@@ -2,14 +2,12 @@
 
 #pragma once
 
-#include <algorithm>
 #include <functional>
 #include <list>
 #include <map>
 #include <vector>
 
-#include "ft/base/market_data.h"
-#include "trader/gateway/backtest/match_engine/match_engine.h"
+#include "match_engine.h"
 
 namespace ft {
 
@@ -30,12 +28,13 @@ class AdvancedMatchEngine : public MatchEngine {
     int queue_position;
   };
 
-  using BidOrderBook = std::map<uint64_t, std::list<InnerOrder>, std::greater<uint64_t>>;
-  using AskOrderBook = std::map<uint64_t, std::list<InnerOrder>, std::less<uint64_t>>;
+  struct OrderBook {
+    std::map<uint64_t, std::list<InnerOrder>, std::greater<uint64_t>> bid_levels;
+    std::map<uint64_t, std::list<InnerOrder>, std::less<uint64_t>> ask_levels;
+  };
 
  private:
-  std::vector<BidOrderBook> bid_orderbooks_;
-  std::vector<AskOrderBook> ask_orderbooks_;
+  std::vector<OrderBook> orderbooks_;
   // order_id -> price_u64：用于撤单时能快速找到订单队列
   std::map<uint64_t, uint64_t> id_price_map_;
   std::vector<TickData> ticks_;

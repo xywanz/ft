@@ -15,8 +15,7 @@ static inline uint64_t u64_price(double p) {
 }
 
 bool AdvancedMatchEngine::Init() {
-  bid_orderbooks_.resize(ContractTable::size());
-  ask_orderbooks_.resize(ContractTable::size());
+  orderbooks_.resize(ContractTable::size());
   ticks_.resize(ContractTable::size());
   return true;
 }
@@ -44,7 +43,8 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
             }
           }
           uint64_t price_u64 = u64_price(order.price);
-          bid_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          orderbooks_[order.contract->ticker_id - 1].bid_levels[price_u64].emplace_back(
+              inner_order);
           id_price_map_.emplace(order.order_id, price_u64);
         } else {
           for (int level = 0; level < kMaxMarketLevel; ++level) {
@@ -55,7 +55,8 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
             }
           }
           uint64_t price_u64 = u64_price(order.price);
-          ask_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          orderbooks_[order.contract->ticker_id - 1].ask_levels[price_u64].emplace_back(
+              inner_order);
           id_price_map_.emplace(order.order_id, price_u64);
         }
         listener()->OnAccepted(order);
@@ -73,13 +74,15 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
           inner_order.orig_order.price = bid;
           inner_order.queue_position = tick.bid_volume[0];
           uint64_t price_u64 = u64_price(bid);
-          bid_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          orderbooks_[order.contract->ticker_id - 1].bid_levels[price_u64].emplace_back(
+              inner_order);
           id_price_map_.emplace(order.order_id, price_u64);
         } else {
           inner_order.orig_order.price = ask;
           inner_order.queue_position = tick.ask_volume[0];
           uint64_t price_u64 = u64_price(ask);
-          ask_orderbooks_[order.contract->ticker_id - 1][price_u64].emplace_back(inner_order);
+          orderbooks_[order.contract->ticker_id - 1].ask_levels[price_u64].emplace_back(
+              inner_order);
           id_price_map_.emplace(order.order_id, price_u64);
         }
         listener()->OnAccepted(order);
@@ -107,7 +110,9 @@ bool AdvancedMatchEngine::InsertOrder(const OrderRequest& order) {
       }
       break;
     }
-    default: { return false; }
+    default: {
+      return false;
+    }
   }
 
   return true;
@@ -121,10 +126,13 @@ bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
   uint64_t price_u64 = it->second;
   id_price_map_.erase(it);
 
-  auto bid_order_list_it = bid_orderbooks_[ticker_id - 1].find(price_u64);
-  if (bid_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
-    auto ask_order_list_it = ask_orderbooks_[ticker_id - 1].find(price_u64);
-    if (ask_order_list_it == bid_orderbooks_[ticker_id - 1].end()) {
+  auto& bid_levels = orderbooks_[ticker_id - 1].bid_levels;
+  auto& ask_levels = orderbooks_[ticker_id - 1].ask_levels;
+
+  auto bid_order_list_it = bid_levels.find(price_u64);
+  if (bid_order_list_it == bid_levels.end()) {
+    auto ask_order_list_it = ask_levels.find(price_u64);
+    if (ask_order_list_it == ask_levels.end()) {
       // bug
       abort();
     }
@@ -134,7 +142,7 @@ bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
         listener()->OnCanceled(order_it->orig_order, order_it->orig_order.volume);
         order_list.erase(order_it);
         if (order_list.empty()) {
-          ask_orderbooks_[ticker_id - 1].erase(ask_order_list_it);
+          ask_levels.erase(ask_order_list_it);
         }
         return true;
       }
@@ -146,7 +154,7 @@ bool AdvancedMatchEngine::CancelOrder(uint64_t order_id, uint32_t ticker_id) {
         listener()->OnCanceled(order_it->orig_order, order_it->orig_order.volume);
         order_list.erase(order_it);
         if (order_list.empty()) {
-          ask_orderbooks_[ticker_id - 1].erase(bid_order_list_it);
+          bid_levels.erase(bid_order_list_it);
         }
         return true;
       }
@@ -189,8 +197,8 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
     // 2. avg_price <= bid，这种情况下假定所有成交都在多方
     // 3. bid < avg_price < ask，这种情况下，通过如下方法估算双边的成交量
     //    spread = ask - price
-    //    bid_percentage = (avg_price - bid) / spread
-    //    ask_percentage = (ask - avg_price) / spread
+    //    bid_percentage = (ask - avg_price) / spread
+    //    ask_percentage = (avg_price - bid) / spread
     //    volume = this_tick.volume - prev_tick.volume
     //    bid_filled = bid_percentage * volume
     //    ask_filled = ask_percentage * volume
@@ -205,8 +213,10 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
     } else {
       double spread = tick.ask[0] - tick.bid[0];
       assert(spread > 0);
-      bid_filled = static_cast<int>(delta_volume * (avg_price - tick.bid[0]) / spread);
-      ask_filled = static_cast<int>(delta_volume * (tick.ask[0] - avg_price) / spread);
+      ask_filled = static_cast<int>(std::round(delta_volume * (avg_price - tick.bid[0]) / spread));
+      bid_filled = delta_volume - ask_filled;
+      assert(ask_filled >= 0);
+      assert(bid_filled >= 0);
     }
     LOG_DEBUG("avg_price:{:.4f} bid:{} ask:{}", avg_price, tick.bid[0], tick.ask[0]);
   }
@@ -214,12 +224,12 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
   LOG_DEBUG("bid_filled:{} ask_filled:{}", bid_filled, ask_filled);
 
   if (bid_filled > 0) {
-    auto& orderbook = bid_orderbooks_[tick.ticker_id - 1];
+    auto& bid_levels = orderbooks_[tick.ticker_id - 1].bid_levels;
 
     if (tick.bid_volume[0] > 0) {
       uint64_t bid_u64 = u64_price(tick.bid[0]);
-      while (!orderbook.empty()) {
-        auto begin = orderbook.begin();
+      while (!bid_levels.empty()) {
+        auto begin = bid_levels.begin();
         if (begin->first <= bid_u64) {
           break;
         }
@@ -229,7 +239,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
                                tick.exchange_timestamp_us);
           id_price_map_.erase(order.orig_order.order_id);
         }
-        orderbook.erase(begin);
+        bid_levels.erase(begin);
       }
     }
 
@@ -237,8 +247,8 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
       if (tick.bid_volume[level] == 0) {
         continue;
       }
-      auto order_list_it = orderbook.find(u64_price(tick.bid[level]));
-      if (order_list_it != orderbook.end()) {
+      auto order_list_it = bid_levels.find(u64_price(tick.bid[level]));
+      if (order_list_it != bid_levels.end()) {
         auto& order_list = order_list_it->second;
         for (auto order_it = order_list.begin(); order_it != order_list.end();) {
           auto& order = *order_it;
@@ -253,7 +263,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
             ++order_it;
           }
           if (order_list.empty()) {
-            orderbook.erase(order_list_it);
+            bid_levels.erase(order_list_it);
           }
         }
       }
@@ -265,12 +275,12 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
   }
 
   if (ask_filled > 0) {
-    auto& orderbook = ask_orderbooks_[tick.ticker_id - 1];
+    auto& ask_levels = orderbooks_[tick.ticker_id - 1].ask_levels;
 
     if (tick.ask_volume[0] > 0) {
       uint64_t ask_u64 = u64_price(tick.bid[0]);
-      while (!orderbook.empty()) {
-        auto begin = orderbook.begin();
+      while (!ask_levels.empty()) {
+        auto begin = ask_levels.begin();
         if (begin->first >= ask_u64) {
           break;
         }
@@ -280,7 +290,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
                                tick.exchange_timestamp_us);
           id_price_map_.erase(order.orig_order.order_id);
         }
-        orderbook.erase(begin);
+        ask_levels.erase(begin);
       }
     }
 
@@ -288,8 +298,8 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
       if (tick.ask_volume[level] == 0) {
         continue;
       }
-      auto order_list_it = orderbook.find(u64_price(tick.ask[level]));
-      if (order_list_it != orderbook.end()) {
+      auto order_list_it = ask_levels.find(u64_price(tick.ask[level]));
+      if (order_list_it != ask_levels.end()) {
         auto& order_list = order_list_it->second;
         for (auto order_it = order_list.begin(); order_it != order_list.end();) {
           auto& order = *order_it;
@@ -304,7 +314,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
             ++order_it;
           }
           if (order_list.empty()) {
-            orderbook.erase(order_list_it);
+            ask_levels.erase(order_list_it);
           }
         }
       }
@@ -317,9 +327,9 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
 
   // 空方小于bid价格的单应该全部成交
   if (tick.bid_volume[0] > 0) {
-    auto& orderbook = ask_orderbooks_[tick.ticker_id - 1];
-    while (!orderbook.empty()) {
-      auto begin = orderbook.begin();
+    auto& ask_levels = orderbooks_[tick.ticker_id - 1].ask_levels;
+    while (!ask_levels.empty()) {
+      auto begin = ask_levels.begin();
       auto price_u64 = begin->first;
       if (price_u64 > u64_price(tick.bid[0])) {
         break;
@@ -330,15 +340,15 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
                              tick.exchange_timestamp_us);
         id_price_map_.erase(order.orig_order.order_id);
       }
-      orderbook.erase(begin);
+      ask_levels.erase(begin);
     }
   }
 
   // 多方大于ask价格的单应该全部成交
   if (tick.ask_volume[0] > 0) {
-    auto& orderbook = bid_orderbooks_[tick.ticker_id - 1];
-    while (!orderbook.empty()) {
-      auto begin = orderbook.begin();
+    auto& bid_levels = orderbooks_[tick.ticker_id - 1].bid_levels;
+    while (!bid_levels.empty()) {
+      auto begin = bid_levels.begin();
       auto price_u64 = begin->first;
       if (price_u64 < u64_price(tick.ask[0])) {
         break;
@@ -349,7 +359,7 @@ void AdvancedMatchEngine::OnNewTick(const TickData& tick) {
                              tick.exchange_timestamp_us);
         id_price_map_.erase(order.orig_order.order_id);
       }
-      orderbook.erase(begin);
+      bid_levels.erase(begin);
     }
   }
 
