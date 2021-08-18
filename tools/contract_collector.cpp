@@ -1,7 +1,7 @@
 // Copyright [2020] <Copyright Kevin, kevin.lau.gd@gmail.com>
 
 #include <dlfcn.h>
-
+#include <thread>
 #include "ft/base/contract_table.h"
 #include "ft/utils/getopt.hpp"
 #include "spdlog/spdlog.h"
@@ -40,6 +40,8 @@ int main() {
     exit(EXIT_FAILURE);
   }
 
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  
   if (!gateway->QueryContracts()) {
     spdlog::error("failed to query contracts");
     exit(EXIT_FAILURE);
