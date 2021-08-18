@@ -103,11 +103,14 @@ strategy_list: [
   {name: ctp_strategy0, trade_mq: ctp_strategy0_trade_mq, rsp_mq: ctp_strategy0_rsp_mq, md_mq: ctp_strategy0_md_mq, subscription_list: [IF2106]},
 ]
 ```
-配置完成后，准备启动ft_trader交易通道
+配置完成后，准备启动ft_trader交易通道(注：所有的可执行文件都在build/bin目录下)
 
-如果当前合约文件过于老旧，则在启动ft_trader前，使用contract_collect进行更新
+如果当前合约文件过于老旧，则在启动ft_trader前，使用contract_collect进行更新.
+注意：
+1. 如果更新失败，请查看环境是否支持zh_CN.GB2312编码
+2. 股票合约使用相同的程序，--config选项改为XTP的配置即可
 ```bash
-$ ./contract_collector --config=../config/ctp_config.yml --output=../config/contracts.csv
+$ ./contract_collector --config=../../config/ctp_config.yml --output=../../config/contracts.csv
 ```
 
 在启动ft_trader前，先启动redis-server服务。如未安装，在ubuntu系统上可通过apt进行安装
@@ -121,12 +124,12 @@ $ redis-server
 
 然后使用该配置文件启动ft_trader交易通道
 ```bash
-$ ./ft_trader --config=../config/ctp_config.yml
+$ ./ft_trader --config=../../config/ctp_config.yml
 ```
 
 最后启动demo策略
 ```bash
-$ ./strategy_engine --config=../config/ctp_config.yml --strategy=libspread_arb.so --name=ctp_strategy0
+$ ./strategy_engine --config=../../config/ctp_config.yml --strategy=../lib/libspread_arb.so --name=ctp_strategy0
 ```
 
 ## Maintainers
