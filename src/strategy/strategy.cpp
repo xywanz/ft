@@ -56,7 +56,7 @@ void Strategy::Run() {
         abort();
       }
       TickData* tick = reinterpret_cast<TickData*>(frame->getData());
-      OnTick(*tick);
+      OnTickMsg(*tick);
     }
   }
 }
@@ -83,7 +83,7 @@ void Strategy::RunBacktest() {
         abort();
       }
       TickData* tick = reinterpret_cast<TickData*>(frame->getData());
-      OnTick(*tick);
+      OnTickMsg(*tick);
       SendNotification(0);
     }
   }
