@@ -4,6 +4,4 @@
 
 https://github.com/xywanz/xyts-strategy-sdk
 
-https://gitee.com/stmcc/xyts-strategy-sdk
-
 目前只发布接口和二进制程序，文档完善中...
