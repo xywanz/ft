@@ -264,18 +264,14 @@ void StrategySpreadArb::OnDepth(const DepthData& depth) {
     if (spread >= param_->get_upper_line()) {
       // 超过上轨，如果仓位还没满做空spread
       if (pos.volume > -1) {
-        ctx_->Buy(leg2_contract_->contract_id, 1, OrderType::kLimit,
-                  leg2_contract_->upper_limit_price, std::chrono::milliseconds{100});
-        ctx_->Sell(leg1_contract_->contract_id, 1, OrderType::kLimit,
-                   leg1_contract_->lower_limit_price, std::chrono::milliseconds{100});
+        ctx_->Buy(leg2_contract_->contract_id, 1, OrderType::kMarket, 0);
+        ctx_->Sell(leg1_contract_->contract_id, 1, OrderType::kMarket, 0);
       }
     } else if (spread <= param_->get_lower_line()) {
       // 跌破下轨，如果仓位还没满则做多spread
       if (pos.volume < 1) {
-        ctx_->Sell(leg2_contract_->contract_id, 1, OrderType::kLimit,
-                   leg2_contract_->lower_limit_price std::chrono::milliseconds{100});
-        ctx_->Buy(leg1_contract_->contract_id, 1, OrderType::kLimit,
-                  leg1_contract_->upper_limit_price std::chrono::milliseconds{100});
+        ctx_->Sell(leg2_contract_->contract_id, 1, OrderType::kMarket, 0);
+        ctx_->Buy(leg1_contract_->contract_id, 1, OrderType::kMarket, 0);
       }
     }
   }
