@@ -1549,6 +1549,7 @@ xyts目前对接了以下api:
 - binance
 - yd
 - xele
+- xtp
 
 如需对接其他交易API，可继承TradeApi并实现相应的虚函数
 
@@ -1591,6 +1592,7 @@ xyts目前对接了以下api:
 - ctp2mini
 - binance
 - yd
+- xtp
 
 如需对接其他行情API，可继承DataFeedApi并实现相应的虚函数
 
@@ -1604,8 +1606,6 @@ class DataFeedApi : public xyu::NonCopyableNonMoveable {
   virtual bool Subscribe(const std::vector<std::string>& patterns) = 0;
 
   virtual bool Unsubscribe(const std::vector<std::string>& patterns) = 0;
-
-  virtual void Join() = 0;
 };
 ```
 
