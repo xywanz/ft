@@ -1197,15 +1197,10 @@ class BarGenerator {
 #include "xyts/strategy/bar_generator.h"
 
 #include <optional>
-#include <stdexcept>
 #include <string>
 
-#include "fmt/format.h"
-#include "nlohmann/json.hpp"
 #include "xydata/bar.h"
-#include "xydata/sessions.h"
 #include "xyu/datetime.h"
-#include "xyu/time.h"
 
 namespace dt = xyu::datetime;
 
@@ -1213,8 +1208,8 @@ namespace xyts::strategy {
 
 class BarGenHelper {
  public:
-  BarGenHelper(ContractPtr contract, std::chrono::seconds period, BarGenerator::Callback& cb,
-               std::chrono::microseconds now_ts);
+  BarGenHelper(StrategyContext* ctx, ContractPtr contract, std::chrono::seconds period,
+               BarGenerator::Callback& cb, std::chrono::microseconds now_ts);
 
   ~BarGenHelper();
 
@@ -1233,6 +1228,7 @@ class BarGenHelper {
 
   void CloseBar(std::chrono::microseconds bar_time);
 
+  StrategyContext* ctx_;
   ContractPtr contract_;
   BarGenerator::Callback& cb_;
 
@@ -1246,9 +1242,9 @@ class BarGenHelper {
   double low_px_ = 0;
 };
 
-BarGenHelper::BarGenHelper(ContractPtr contract, std::chrono::seconds period,
+BarGenHelper::BarGenHelper(StrategyContext* ctx, ContractPtr contract, std::chrono::seconds period,
                            BarGenerator::Callback& cb, std::chrono::microseconds now_ts)
-    : contract_(contract), cb_(cb) {
+    : ctx_(ctx), contract_(contract), cb_(cb) {
   bar_.contract_id = contract_->contract_id;
   snprintf(bar_.source, sizeof(bar_.source), "bargen");
   bar_.period = period;
@@ -1340,7 +1336,7 @@ void BarGenHelper::CloseBar(std::chrono::microseconds bar_time) {
     OpenBar(*last_depth_);
   }
   bar_.exchange_timestamp = bar_time;
-  bar_.local_timestamp = xyu::GetRealTimeUs();
+  bar_.local_timestamp = ctx_->GetWallTime();
   bar_.volume = last_depth_->volume;
   bar_.turnover = last_depth_->turnover;
   bar_.open_price = open_px_;
@@ -1398,7 +1394,7 @@ BarGenerator::Impl::Impl(StrategyContext* ctx, const std::vector<ContractPtr>& c
     if (helpers_.contains(contract->contract_id)) {
       continue;
     }
-    helpers_.emplace(contract->contract_id, BarGenHelper(contract, period, cb_, now));
+    helpers_.emplace(contract->contract_id, BarGenHelper(ctx, contract, period, cb_, now));
   }
 }
 
