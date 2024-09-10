@@ -1134,23 +1134,25 @@ class MyStrategy final : public Strategy {
   explicit MyStrategy(StrategyContext* ctx)
       : ctx_(ctx),
         param_(ctx->GetDerivedParamManager<MyStrategyParamManager>()),
-        contract_(ContractTable::GetByInstrument(param_->get_instr())) {
-    ctx_->SubscribeMarketData({param_->get_instr()});
-
-    // 1min K线
-    bargen_ = std::make_unique<BarGenerator>(ctx_, {contract_}, std::chrono:;seconds{60},
-                                             [this](const BarData& bar) { OnBar1Min(bar); });
+        bargen_(ctx) {
+    // 1min
+    bargen_.AddBarPeriod({"FUT_SHFE_rb-.+?"}, std::chrono::seconds{60},
+                         [this](const BarData& bar) { OnBar1Min(bar); });
+    // 5min
+    bargen_.AddBarPeriod({"FUT_SHFE_rb-.+?"}, std::chrono::seconds{300},
+                         [this](const BarData& bar) { OnBar5Min(bar); });
   }
 
   void OnDepth(const DepthData& depth) final { bargen_.UpdateBar(depth); }
 
   void OnBar1Min(const BarData& bar) {}
 
+  void OnBar5Min(const BarData& bar) {}
+
  private:
   StrategyContext* ctx_;
   MyStrategyParamManager* param_;
-  ContractPtr contract_;
-  std::unique_ptr<BarGenerator> bargen_;
+  BarGenerator bargen_;
 };
 ```
 
@@ -1170,17 +1172,16 @@ class MyStrategy final : public Strategy {
 
 namespace xyts::strategy {
 
+using BarCallback = std::function<void(const BarData&)>;
+
 class BarGenerator {
  public:
-  using Callback = std::function<void(const BarData&)>;
-
-  BarGenerator(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
-               std::chrono::seconds period, Callback&& cb);
-
-  BarGenerator(StrategyContext* ctx, const std::vector<std::string>& patterns,
-               std::chrono::seconds period, Callback&& cb);
+  explicit BarGenerator(StrategyContext* ctx);
 
   ~BarGenerator();
+
+  void AddBarPeriod(const std::vector<std::string>& patterns, std::chrono::seconds period,
+                    BarCallback&& cb);
 
   void UpdateBar(const DepthData& depth);
 
@@ -1209,19 +1210,21 @@ namespace xyts::strategy {
 class BarGenHelper {
  public:
   BarGenHelper(StrategyContext* ctx, ContractPtr contract, std::chrono::seconds period,
-               BarGenerator::Callback& cb, std::chrono::microseconds now_ts);
+               BarCallback cb);
 
   ~BarGenHelper();
 
   void UpdateBar(const DepthData& depth);
 
-  ContractPtr GetContract() const { return contract_; }
-
-  Volume GetLastVolume() const { return last_depth_ ? last_depth_->volume : 0; }
-
-  double GetLastTurnover() const { return last_depth_ ? last_depth_->turnover : 0; }
-
   void CheckBar(std::chrono::microseconds now_ts);
+
+  ContractPtr contract() const { return contract_; }
+
+  Volume last_volume() const { return last_depth_ ? last_depth_->volume : 0; }
+
+  double last_turnover() const { return last_depth_ ? last_depth_->turnover : 0; }
+
+  std::chrono::seconds period() const { return bar_.period; }
 
  private:
   void OpenBar(const DepthData& depth);
@@ -1230,7 +1233,7 @@ class BarGenHelper {
 
   StrategyContext* ctx_;
   ContractPtr contract_;
-  BarGenerator::Callback& cb_;
+  BarCallback cb_;
 
   std::vector<std::vector<std::chrono::microseconds>> intervals_;
   std::size_t interval_idx_ = 0;
@@ -1243,12 +1246,13 @@ class BarGenHelper {
 };
 
 BarGenHelper::BarGenHelper(StrategyContext* ctx, ContractPtr contract, std::chrono::seconds period,
-                           BarGenerator::Callback& cb, std::chrono::microseconds now_ts)
+                           BarCallback cb)
     : ctx_(ctx), contract_(contract), cb_(cb) {
   bar_.contract_id = contract_->contract_id;
   snprintf(bar_.source, sizeof(bar_.source), "bargen");
   bar_.period = period;
 
+  auto now_ts = ctx->GetWallTime();
   auto now = dt::datetime::fromtimestamp(now_ts);
   auto today = now.date();
 
@@ -1364,15 +1368,12 @@ void BarGenHelper::CheckBar(std::chrono::microseconds now_ts) {
 
 class BarGenerator::Impl {
  public:
-  using Callback = std::function<void(const BarData&)>;
-
-  Impl(StrategyContext* ctx, const std::vector<ContractPtr>& contracts, std::chrono::seconds period,
-       Callback&& cb);
-
-  Impl(StrategyContext* ctx, const std::vector<std::string>& patterns, std::chrono::seconds period,
-       Callback&& cb);
+  explicit Impl(StrategyContext* ctx);
 
   ~Impl();
+
+  void AddBarPeriod(const std::vector<std::string>& patterns, std::chrono::seconds period,
+                    BarCallback&& cb);
 
   void UpdateBar(const DepthData& depth);
 
@@ -1380,59 +1381,61 @@ class BarGenerator::Impl {
   void CheckBars();
 
   StrategyContext* ctx_;
-  Callback cb_;
-  std::unordered_map<ContractId, BarGenHelper> helpers_;
+  std::unordered_map<ContractId, std::vector<std::shared_ptr<BarGenHelper>>> contract_to_helpers_;
+  std::vector<std::shared_ptr<BarGenHelper>> all_helpers_;
 
   EventId timer_id_ = -1;
 };
 
-BarGenerator::Impl::Impl(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
-                         std::chrono::seconds period, Callback&& cb)
-    : ctx_(ctx), cb_(std::move(cb)) {
-  auto now = ctx_->GetWallTime();
-  for (const auto& contract : contracts) {
-    if (helpers_.contains(contract->contract_id)) {
-      continue;
-    }
-    helpers_.emplace(contract->contract_id, BarGenHelper(ctx, contract, period, cb_, now));
-  }
+BarGenerator::Impl::Impl(StrategyContext* ctx) : ctx_(ctx) {
+  timer_id_ = ctx_->AddPeriodicCallback(std::chrono::seconds{1}, [this](auto) { CheckBars(); });
 }
 
-BarGenerator::Impl::Impl(StrategyContext* ctx, const std::vector<std::string>& patterns,
-                         std::chrono::seconds period, Callback&& cb)
-    : Impl(ctx, ContractTable::GetByPatterns(patterns), period, std::move(cb)) {
-  timer_id_ = ctx_->AddPeriodicCallback(std::chrono::seconds{1}, [this](auto) { CheckBars(); });
+void BarGenerator::Impl::AddBarPeriod(const std::vector<std::string>& patterns,
+                                      std::chrono::seconds period, BarCallback&& cb) {
+  auto contracts = ContractTable::GetByPatterns(patterns);
+  for (const auto* contract : contracts) {
+    auto& helpers = contract_to_helpers_[contract->contract_id];
+    auto it = std::find_if(helpers.begin(), helpers.end(),
+                           [period](const auto& helper) { return helper->period() == period; });
+    if (it != helpers.end()) {
+      continue;
+    }
+    auto helper = std::make_shared<BarGenHelper>(ctx_, contract, period, cb);
+    helpers.emplace_back(helper);
+    all_helpers_.emplace_back(helper);
+  }
 }
 
 BarGenerator::Impl::~Impl() { ctx_->RemoveTimer(timer_id_); }
 
 void BarGenerator::Impl::UpdateBar(const DepthData& depth) {
-  if (auto it = helpers_.find(depth.contract_id); it != helpers_.end()) {
-    it->second.UpdateBar(depth);
+  if (auto it = contract_to_helpers_.find(depth.contract_id); it != contract_to_helpers_.end()) {
+    for (const auto& helper : it->second) {
+      helper->UpdateBar(depth);
+    }
   }
 }
 
 void BarGenerator::Impl::CheckBars() {
   auto now_ts = ctx_->GetWallTime();
-  for (auto& [_, helper] : helpers_) {
-    helper.CheckBar(now_ts);
+  for (const auto& helper : all_helpers_) {
+    helper->CheckBar(now_ts);
   }
 }
 
-BarGenerator::BarGenerator(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
-                           std::chrono::seconds period, Callback&& cb)
-    : impl_(std::make_unique<Impl>(ctx, contracts, period, std::move(cb))) {}
-
-BarGenerator::BarGenerator(StrategyContext* ctx, const std::vector<std::string>& patterns,
-                           std::chrono::seconds period, Callback&& cb)
-    : impl_(std::make_unique<Impl>(ctx, patterns, period, std::move(cb))) {}
+BarGenerator::BarGenerator(StrategyContext* ctx) : impl_(std::make_unique<Impl>(ctx)) {}
 
 BarGenerator::~BarGenerator() {}
+
+void BarGenerator::AddBarPeriod(const std::vector<std::string>& patterns,
+                                std::chrono::seconds period, BarCallback&& cb) {
+  impl_->AddBarPeriod(patterns, period, std::move(cb));
+}
 
 void BarGenerator::UpdateBar(const DepthData& depth) { impl_->UpdateBar(depth); }
 
 }  // namespace xyts::strategy
-
 ```
 
 ## 实盘MarketDataFilter扩展
