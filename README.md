@@ -1237,9 +1237,9 @@ class BarGenHelper {
 
   std::optional<DepthData> last_depth_;
   BarData bar_{};
-  double open_px_ = 0;
-  double high_px_ = 0;
-  double low_px_ = 0;
+  double open_px_ = std::numeric_limits<double>::quiet_NaN();
+  double high_px_ = std::numeric_limits<double>::quiet_NaN();
+  double low_px_ = std::numeric_limits<double>::quiet_NaN();
 };
 
 BarGenHelper::BarGenHelper(StrategyContext* ctx, ContractPtr contract, std::chrono::seconds period,
@@ -1315,7 +1315,7 @@ void BarGenHelper::UpdateBar(const DepthData& depth) {
       OpenBar(depth);
     }
   } else {
-    if (!last_depth_ || open_px_ == 0) {
+    if (!last_depth_ || std::isnan(open_px_)) {
       OpenBar(depth);
     } else {
       high_px_ = std::max(high_px_, depth.last_price);
@@ -1332,7 +1332,7 @@ void BarGenHelper::OpenBar(const DepthData& depth) {
 }
 
 void BarGenHelper::CloseBar(std::chrono::microseconds bar_time) {
-  if (open_px_ == 0) {
+  if (std::isnan(open_px_)) {
     OpenBar(*last_depth_);
   }
   bar_.exchange_timestamp = bar_time;
@@ -1355,9 +1355,9 @@ void BarGenHelper::CheckBar(std::chrono::microseconds now_ts) {
     interval_idx_++;
     if (last_depth_) {
       CloseBar(interval[2]);
-      open_px_ = 0;
-      high_px_ = 0;
-      low_px_ = 0;
+      open_px_ = std::numeric_limits<double>::quiet_NaN();
+      high_px_ = std::numeric_limits<double>::quiet_NaN();
+      low_px_ = std::numeric_limits<double>::quiet_NaN();
     }
   }
 }
@@ -1432,6 +1432,7 @@ BarGenerator::~BarGenerator() {}
 void BarGenerator::UpdateBar(const DepthData& depth) { impl_->UpdateBar(depth); }
 
 }  // namespace xyts::strategy
+
 ```
 
 ## 实盘MarketDataFilter扩展
