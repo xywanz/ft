@@ -1,8 +1,4 @@
-此项目暂停维护，合作可直接联系作者本人
-
-新版框架请移步
-
-https://github.com/xywanz/xyts-strategy-sdk
+原ft项目做得太垃圾，已废弃。新框架xyts功能完善、稳定、延迟低，已经实盘验证，稳定运行多年，合作可直接联系作者本人。
 
 # xyts
 
@@ -1158,6 +1154,290 @@ class MyStrategy final : public Strategy {
 };
 ```
 
+下面是BarGenerator的实现，供参考学习
+
+```cpp
+// bar_generator.h
+#pragma once
+
+#include <functional>
+#include <memory>
+#include <vector>
+
+#include "xyts/core/contract_table.h"
+#include "xyts/core/market_data.h"
+#include "xyts/strategy/strategy_context.h"
+
+namespace xyts::strategy {
+
+class BarGenerator {
+ public:
+  using Callback = std::function<void(const BarData&)>;
+
+  BarGenerator(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
+               std::chrono::seconds period, Callback&& cb);
+
+  BarGenerator(StrategyContext* ctx, const std::vector<std::string>& patterns,
+               std::chrono::seconds period, Callback&& cb);
+
+  ~BarGenerator();
+
+  void UpdateBar(const DepthData& depth);
+
+ private:
+  class Impl;
+  std::unique_ptr<Impl> impl_;
+};
+
+}  // namespace xyts::strategy
+```
+
+```cpp
+// bar_generator.cpp
+#include "xyts/strategy/bar_generator.h"
+
+#include <optional>
+#include <stdexcept>
+#include <string>
+
+#include "fmt/format.h"
+#include "nlohmann/json.hpp"
+#include "xydata/bar.h"
+#include "xydata/sessions.h"
+#include "xyu/datetime.h"
+#include "xyu/time.h"
+
+namespace dt = xyu::datetime;
+
+namespace xyts::strategy {
+
+class BarGenHelper {
+ public:
+  BarGenHelper(ContractPtr contract, std::chrono::seconds period, BarGenerator::Callback& cb,
+               std::chrono::microseconds now_ts);
+
+  ~BarGenHelper();
+
+  void UpdateBar(const DepthData& depth);
+
+  ContractPtr GetContract() const { return contract_; }
+
+  Volume GetLastVolume() const { return last_depth_ ? last_depth_->volume : 0; }
+
+  double GetLastTurnover() const { return last_depth_ ? last_depth_->turnover : 0; }
+
+  void CheckBar(std::chrono::microseconds now_ts);
+
+ private:
+  void OpenBar(const DepthData& depth);
+
+  void CloseBar(std::chrono::microseconds bar_time);
+
+  ContractPtr contract_;
+  BarGenerator::Callback& cb_;
+
+  std::vector<std::vector<std::chrono::microseconds>> intervals_;
+  std::size_t interval_idx_ = 0;
+
+  std::optional<DepthData> last_depth_;
+  BarData bar_{};
+  double open_px_ = 0;
+  double high_px_ = 0;
+  double low_px_ = 0;
+};
+
+BarGenHelper::BarGenHelper(ContractPtr contract, std::chrono::seconds period,
+                           BarGenerator::Callback& cb, std::chrono::microseconds now_ts)
+    : contract_(contract), cb_(cb) {
+  bar_.contract_id = contract_->contract_id;
+  snprintf(bar_.source, sizeof(bar_.source), "bargen");
+  bar_.period = period;
+
+  auto now = dt::datetime::fromtimestamp(now_ts);
+  auto today = now.date();
+
+  const auto* all_sessions = contract_->sessions;
+  if (!all_sessions) {
+    throw std::runtime_error("Failed to get sessions of " + contract_->instr);
+  }
+  std::vector<xydata::Session> sessions;
+  for (const auto& session : all_sessions->GetAllTradingSessions()) {
+    if (now.hour() >= 8 && now.hour() <= 16) {
+      if (session.open.hour() >= 8 && session.open.hour() <= 16) {
+        sessions.emplace_back(session);
+      }
+    } else {
+      if (session.open.hour() >= 20 || session.open.hour() <= 3) {
+        sessions.emplace_back(session);
+      }
+    }
+  }
+
+  auto time_intervals = xydata::SplitToBarIntervals(sessions, period);
+  auto combine_trading_date = [&](const auto& t) {
+    if (t >= dt::time(0) && t <= dt::time(3)) {
+      return dt::datetime::combine(today + dt::timedelta(1), t).timestamp();
+    } else {
+      return dt::datetime::combine(today, t).timestamp();
+    }
+  };
+  for (const auto& time_itv : time_intervals) {
+    std::vector<std::chrono::microseconds> interval;
+    interval.emplace_back(combine_trading_date(time_itv.begin));
+    interval.emplace_back(combine_trading_date(time_itv.end));
+    interval.emplace_back(combine_trading_date(time_itv.bar_time));
+    intervals_.emplace_back(std::move(interval));
+  }
+  while (interval_idx_ < intervals_.size()) {
+    if (now_ts < intervals_[interval_idx_][1] + std::chrono::seconds{1}) {
+      break;
+    }
+    interval_idx_++;
+  }
+}
+
+BarGenHelper::~BarGenHelper() {}
+
+void BarGenHelper::UpdateBar(const DepthData& depth) {
+  if (interval_idx_ >= intervals_.size()) {
+    return;
+  }
+  if (depth.volume == 0) {
+    return;
+  }
+
+  const auto& interval = intervals_[interval_idx_];
+  if (depth.exchange_timestamp < interval[0]) {
+    return;
+  }
+  if (depth.exchange_timestamp > interval[1]) {
+    interval_idx_++;
+    if (!last_depth_) {
+      OpenBar(depth);
+    } else {
+      CloseBar(interval[2]);
+      OpenBar(depth);
+    }
+  } else {
+    if (!last_depth_ || open_px_ == 0) {
+      OpenBar(depth);
+    } else {
+      high_px_ = std::max(high_px_, depth.last_price);
+      low_px_ = std::min(low_px_, depth.last_price);
+    }
+  }
+  last_depth_ = depth;
+}
+
+void BarGenHelper::OpenBar(const DepthData& depth) {
+  open_px_ = depth.last_price;
+  high_px_ = depth.last_price;
+  low_px_ = depth.last_price;
+}
+
+void BarGenHelper::CloseBar(std::chrono::microseconds bar_time) {
+  if (open_px_ == 0) {
+    OpenBar(*last_depth_);
+  }
+  bar_.exchange_timestamp = bar_time;
+  bar_.local_timestamp = xyu::GetRealTimeUs();
+  bar_.volume = last_depth_->volume;
+  bar_.turnover = last_depth_->turnover;
+  bar_.open_price = open_px_;
+  bar_.high_price = high_px_;
+  bar_.low_price = low_px_;
+  bar_.close_price = last_depth_->last_price;
+  cb_(bar_);
+}
+
+void BarGenHelper::CheckBar(std::chrono::microseconds now_ts) {
+  if (interval_idx_ >= intervals_.size()) {
+    return;
+  }
+  const auto& interval = intervals_[interval_idx_];
+  if (now_ts >= interval[1] + std::chrono::seconds{1}) {
+    interval_idx_++;
+    if (last_depth_) {
+      CloseBar(interval[2]);
+      open_px_ = 0;
+      high_px_ = 0;
+      low_px_ = 0;
+    }
+  }
+}
+
+class BarGenerator::Impl {
+ public:
+  using Callback = std::function<void(const BarData&)>;
+
+  Impl(StrategyContext* ctx, const std::vector<ContractPtr>& contracts, std::chrono::seconds period,
+       Callback&& cb);
+
+  Impl(StrategyContext* ctx, const std::vector<std::string>& patterns, std::chrono::seconds period,
+       Callback&& cb);
+
+  ~Impl();
+
+  void UpdateBar(const DepthData& depth);
+
+ private:
+  void CheckBars();
+
+  StrategyContext* ctx_;
+  Callback cb_;
+  std::unordered_map<ContractId, BarGenHelper> helpers_;
+
+  EventId timer_id_ = -1;
+};
+
+BarGenerator::Impl::Impl(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
+                         std::chrono::seconds period, Callback&& cb)
+    : ctx_(ctx), cb_(std::move(cb)) {
+  auto now = ctx_->GetWallTime();
+  for (const auto& contract : contracts) {
+    if (helpers_.contains(contract->contract_id)) {
+      continue;
+    }
+    helpers_.emplace(contract->contract_id, BarGenHelper(contract, period, cb_, now));
+  }
+}
+
+BarGenerator::Impl::Impl(StrategyContext* ctx, const std::vector<std::string>& patterns,
+                         std::chrono::seconds period, Callback&& cb)
+    : Impl(ctx, ContractTable::GetByPatterns(patterns), period, std::move(cb)) {
+  timer_id_ = ctx_->AddPeriodicCallback(std::chrono::seconds{1}, [this](auto) { CheckBars(); });
+}
+
+BarGenerator::Impl::~Impl() { ctx_->RemoveTimer(timer_id_); }
+
+void BarGenerator::Impl::UpdateBar(const DepthData& depth) {
+  if (auto it = helpers_.find(depth.contract_id); it != helpers_.end()) {
+    it->second.UpdateBar(depth);
+  }
+}
+
+void BarGenerator::Impl::CheckBars() {
+  auto now_ts = ctx_->GetWallTime();
+  for (auto& [_, helper] : helpers_) {
+    helper.CheckBar(now_ts);
+  }
+}
+
+BarGenerator::BarGenerator(StrategyContext* ctx, const std::vector<ContractPtr>& contracts,
+                           std::chrono::seconds period, Callback&& cb)
+    : impl_(std::make_unique<Impl>(ctx, contracts, period, std::move(cb))) {}
+
+BarGenerator::BarGenerator(StrategyContext* ctx, const std::vector<std::string>& patterns,
+                           std::chrono::seconds period, Callback&& cb)
+    : impl_(std::make_unique<Impl>(ctx, patterns, period, std::move(cb))) {}
+
+BarGenerator::~BarGenerator() {}
+
+void BarGenerator::UpdateBar(const DepthData& depth) { impl_->UpdateBar(depth); }
+
+}  // namespace xyts::strategy
+```
+
 ## 实盘MarketDataFilter扩展
 
 实盘中，如果同时接入了多个相同的行情源，用户可加载自定义的行情过滤器，xyts默认提供了两个过滤器
@@ -1483,4 +1763,3 @@ holiday
 2024-10-06
 2024-10-07
 ```
-
