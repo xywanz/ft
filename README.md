@@ -289,8 +289,8 @@ void StrategySpreadArb::OnOrder(const OrderResponse& order) {
   const auto* contract =
       order.contract_id == leg1_contract_->contract_id ? leg1_contract_ : leg2_contract_;
   LOG_INFO("{} {}{} {} {} px:{:.2f} fill/total:{}/{} order_id:{}", contract->instr, order.direction,
-           order.position_effect, order.status, order.error_code, order.price, order.accum_trade_volume,
-           order.original_volume, order.order_id);
+           order.position_effect, order.status, order.error_code, order.price,
+           order.accum_trade_volume, order.original_volume, order.order_id);
 
   if (order.current_trade_volume > 0) {
     LOG_INFO("{} {}{} {:.2f}@{}", contract->instr, order.direction, order.position_effect,
@@ -1157,6 +1157,185 @@ class MyStrategy final : public Strategy {
   std::unique_ptr<BarGenerator> bargen_;
 };
 ```
+
+## 实盘MarketDataFilter扩展
+
+实盘中，如果同时接入了多个相同的行情源，用户可加载自定义的行情过滤器，xyts默认提供了两个过滤器
+
+- duplicate_filter: 行情择优去重
+- timeout_filter: 如果行情的交易所时间戳比本地接收时间戳小得多，则丢弃该行情
+
+在market_center.yaml中配置filter即可使用
+
+```yaml
+market_data_filters:
+  - name: duplicate_filter
+    errata_ms: 50
+  - name: timeout_filter
+    timeout_ms: 5000
+```
+
+MarketDataFilter支持扩展，用户可将自定义的MarketFilter编译成so放在lib下即可加载
+
+```cpp
+#pragma once
+
+#include <chrono>
+
+#include "xyts/market_data_filter/market_data_filter.h"
+
+namespace xyts {
+
+class MyFilter final : public MarketDataFilter {
+ public:
+  explicit MyFilter(const YAML::Node& conf)
+      : timeout_(std::chrono::milliseconds(conf["timeout_ms"].as<int64_t>())) {}
+
+  bool Accept(const DepthData& depth) final {
+    return depth.local_timestamp - depth.exchange_timestamp < timeout;
+  }
+
+ private:
+  std::chrono::milliseconds timeout_;
+};
+
+REGISTER_MARKET_DATA_FILTER("my_filter", MyFilter);
+
+}  // namespace xyts
+
+```
+
+```c
+add_library(my_filter SHARED)
+target_include_directories(
+my_filter
+  PRIVATE
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/third_party/yaml-cpp/include")
+```
+
+```yaml
+# market_center.yaml
+market_data_filters:
+  - name: timeout_filter
+    timeout_ms: 1000
+```
+
+## 实盘DataCollector扩展
+
+交易过程中，交易信息（如订单、成交、持仓、账户资金、告警等）会通过发送到DataCollector模块用于实时监控，xyts默认提供了企业微信告警通知模块，用户也可自定义DataHandler来跟第三方或自己开发的监控进行对接。下面是个扩展的例子
+
+```cpp
+#pragma once
+
+#include <openssl/tls1.h>
+
+#include <boost/asio.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast.hpp>
+#include <boost/beast/websocket/ssl.hpp>
+#include <boost/system/error_code.hpp>
+
+#include "xyts/data_collector/collected_data_handler.h"
+#include "yaml-cpp/yaml.h"
+
+namespace xyts {
+
+class WechatSender final : public CollectedDataHandler {
+ public:
+  explicit WechatSender(const YAML::Node& conf);
+
+  void Handle(CollectedDataType type, const std::string& data) final;
+
+ private:
+  void SendAlarmMsg(const std::string& data);
+
+  boost::asio::io_context ioc_;
+  boost::asio::ssl::context ssl_{boost::asio::ssl::context::tlsv12_client};
+  std::string wechat_host_ = "qyapi.weixin.qq.com";
+  std::string wechat_robot_key_;
+  std::string target_;
+};
+
+}  // namespace xyts
+```
+
+## 实盘TradeApi扩展
+
+xyts目前对接了以下api:
+
+- ctp
+- ctp2mini
+- binance
+- yd
+- xele
+
+如需对接其他交易API，可继承TradeApi并实现相应的虚函数
+
+```cpp
+class TradeApi {
+ public:
+  virtual ~TradeApi() = default;
+
+  virtual bool SendOrder(const OrderRequest& request) = 0;
+
+  virtual bool CancelOrder(const CancellationRequest& request) = 0;
+
+  virtual TradeInfo QueryTradeInfo() = 0;
+
+  virtual std::vector<Contract> QueryContracts() = 0;
+
+  virtual std::vector<Account> QueryAccounts() = 0;
+
+  auto* GetEventRing() { return &event_ring_; }
+
+ protected:
+  template <class EventType>
+  void PushEvent(const EventType& event) {
+    auto* ptr = event_ring_.PrepareEnqueueBlocking();
+    *ptr = event;
+    event_ring_.CommitEnqueue();
+  }
+
+ private:
+  using OrderEventRing = xyu::SPSCRingBuffer<OrderEvent, 1024>;
+  OrderEventRing event_ring_;
+};
+```
+
+## 实盘DataFeedApi扩展
+
+xyts目前对接了以下api:
+
+- ctp
+- ctp2mini
+- binance
+- yd
+
+如需对接其他行情API，可继承DataFeedApi并实现相应的虚函数
+
+```cpp
+class DataFeedApi : public xyu::NonCopyableNonMoveable {
+ public:
+  virtual ~DataFeedApi() = default;
+
+  virtual DataFeedStatus GetStatus() const = 0;
+
+  virtual bool Subscribe(const std::vector<std::string>& patterns) = 0;
+
+  virtual bool Unsubscribe(const std::vector<std::string>& patterns) = 0;
+
+  virtual void Join() = 0;
+};
+```
+
+## OrderBook
+
+实时合成OrderBook，且能够以自定义频率进行快照采样，目前支持的交易所有：上交所、深交所、港交所
+
+## 回测里的MatchingEngine扩展
+
+## 回测里的自定义费率
 
 ## 合约标准命名规则
 
