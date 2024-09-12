@@ -1,5 +1,10 @@
 原ft项目做得太垃圾，已废弃。新框架xyts功能完善、稳定、延迟低，已经实盘验证，稳定运行多年，合作可直接联系作者本人。
 
+xyts sdk已经发布在https://github.com/xywanz/xyts-strategy-sdk
+
+一同发布的还有一个可以跑起来的策略demo，里面放了一天的行情数据，可以回测，https://github.com/xywanz/strategy
+
+
 # xyts
 
 本篇主要介绍如何在xyts上进行策略开发，并附带介绍一些xyts的可扩展模块
@@ -201,7 +206,7 @@ class StrategySpreadArb final : public Strategy {
   // 构造函数必须如下所示，只传入一个StrategyContext指针。
   // 我们需要将ctx保存下来，用于接下来与交易环境进行交互。
   // 构造函数就相当于策略的初始化，构造策略时策略上下文已经完成了初始化。
-  explict StrategySpreadArb(StrategyContext* ctx);
+  explicit StrategySpreadArb(StrategyContext* ctx);
 
   ~StrategySpreadArb();
 
@@ -227,10 +232,10 @@ StrategySpreadArb::StrategySpreadArb(StrategyContext* ctx)
       leg1_contract_(ContractTable::GetByInstrument(param_->get_leg1_instr())),
       leg2_contract_(ContractTable::GetByInstrument(param_->get_leg2_instr())) {
   if (!leg1_contract_) {
-    throw std::runtime_error("Unknown leg1 {}" + param_->get_leg1_instr());
+    throw std::runtime_error("Unknown leg1 " + param_->get_leg1_instr());
   }
   if (!leg2_contract_) {
-    throw std::runtime_error("Unknown leg2 {}" + param_->get_leg2_instr());
+    throw std::runtime_error("Unknown leg2 " + param_->get_leg2_instr());
   }
 
   // 订阅leg1和leg2的行情和持仓信息
@@ -260,7 +265,7 @@ void StrategySpreadArb::OnDepth(const DepthData& depth) {
       return;
     }
     double spread = leg1_mid_price_ - leg2_mid_price_;
-    auto pos = ctx_->GetLogicalPosition(depth.contract_id);
+    auto pos = ctx_->GetLogicalPosition(leg1_contract_->contract_id);
     if (spread >= param_->get_upper_line()) {
       // 超过上轨，如果仓位还没满做空spread
       if (pos.volume > -1) {
@@ -1628,6 +1633,14 @@ class DataFeedApi : public xyu::NonCopyableNonMoveable {
 主力合约的YYYYmm规定为111111，如
 - FUT_SHFE_rb-111111
 - FUT_SHFE_hc-111111
+
+### 期权
+
+`OPT_{exchange}_{symbol}-{YYYYmm}-{C/P}-{strike}`
+
+如
+- OPT_XSHG_510300-202409-C-3.25
+- OPT_CFFEX_IO-202409-P-3500
 
 ## xydata
 
